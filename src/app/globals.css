@@ -1048,3 +1048,19 @@ select, textarea {
    kartunya sudah punya tepi. Dua tepi bersarang terbaca sebagai kotak di dalam
    kotak, dan itu yang membuat kartu kosong tampak lebih besar dari isinya. */
 .card .kosong, .papan-gulir .kosong { border: none; border-radius: 0; }
+
+/* ── modal override ─────────────────────────────────────────────────────── */
+.modal-lebar { max-width: 780px; }
+.modal-bagian h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.riwayat-baris {
+  display: flex; gap: 0.625rem; align-items: flex-start;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--divider);
+}
+.riwayat-baris:last-child { border-bottom: none; }

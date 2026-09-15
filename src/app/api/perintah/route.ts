@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { akuDari, jawab, jawabGalat } from '../_bantu.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
 import { buatWorkOrder } from '../../../domain/workOrder.js';
+import { simpanOverride } from '../../../domain/override.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -73,11 +74,34 @@ const SKEMA = {
     woId: z.number().int().positive(),
     alasan: z.string().min(5).max(1000),
   }),
+  /**
+   * Setiap medan OPSIONAL, dan itu bukan kelonggaran: `undefined` berarti
+   * approver tidak menyentuhnya, sementara nilai yang ada — termasuk string
+   * KOSONG untuk judgment — berarti ia sengaja menetapkannya. Membedakan
+   * keduanya adalah satu-satunya cara catatan warisan L1 bisa dihapus L2.
+   *
+   * Batas atas di sini cuma pagar bentuk; batas bisnis yang sesungguhnya
+   * (0-10.000 poin, 0-1.000 jam) ditegakkan di domain/override.ts, tempat ia
+   * berlaku untuk semua pemanggil, bukan cuma yang lewat rute ini.
+   */
+  save_override: z.object({
+    woId: z.number().int().positive(),
+    basePoints: z.number().nonnegative().optional(),
+    targetHours: z.number().nonnegative().optional(),
+    workCondition: z.string().min(1).max(50).optional(),
+    team: z.array(z.number().int().positive()).max(50).optional(),
+    waktu: z.object({
+      startTime: z.string().min(1),
+      endTime: z.string().min(1),
+    }).optional(),
+    judgment: z.string().max(500).optional(),
+  }),
 } as const;
 
 const Amplop = z.object({
   aksi: z.enum([
     'buat_wo', 'approve_l1', 'approve_l2', 'batal_wo', 'reject', 'kembalikan',
+    'save_override',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -131,6 +155,10 @@ export async function POST(req: Request): Promise<Response> {
       case 'kembalikan': {
         const d = isi.data as z.infer<typeof SKEMA.kembalikan>;
         return jawab(await kembalikanKeMekanik({ ...umum, ...d }));
+      }
+      case 'save_override': {
+        const d = isi.data as z.infer<typeof SKEMA.save_override>;
+        return jawab(await simpanOverride({ ...umum, ...d }));
       }
     }
   } catch (e) {

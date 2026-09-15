@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ModalOverride } from './ModalOverride.js';
 
 /**
  * Lima tombol, urutan sama persis dengan KMB V2:
@@ -35,6 +36,7 @@ export function AksiKartu({
   const [minta, setMinta] = useState<Aksi | null>(null);
   const [alasan, setAlasan] = useState('');
   const [sibuk, setSibuk] = useState(false);
+  const [bukaOverride, setBukaOverride] = useState(false);
   const [hasil, setHasil] = useState<{ baik: boolean; teks: string } | null>(null);
 
   async function kirim(aksi: Aksi) {
@@ -92,7 +94,12 @@ export function AksiKartu({
   return (
     <>
       <div className="wo-aksi">
-        <button className="btn-edit btn-ikon btn-sm" title="Edit override" disabled>✏️</button>
+        <button
+          className="btn-edit btn-ikon btn-sm"
+          title="Edit Override"
+          disabled={sibuk}
+          onClick={() => setBukaOverride(true)}
+        >✏️</button>
         <button
           className="btn-secondary btn-ikon btn-sm"
           title="Batalkan WO"
@@ -161,6 +168,20 @@ export function AksiKartu({
             </div>
           </div>
         </div>
+      )}
+
+      {bukaOverride && (
+        <ModalOverride
+          woId={woId}
+          onTutup={() => setBukaOverride(false)}
+          onSimpan={() => {
+            setBukaOverride(false);
+            setHasil({ baik: true, teks: `Koreksi ${nomor} tersimpan.` });
+            // Kartu harus digambar ulang: angka yang baru dikoreksi ikut
+            // menentukan perkiraan poin yang tampil di kartu itu sendiri.
+            router.refresh();
+          }}
+        />
       )}
     </>
   );

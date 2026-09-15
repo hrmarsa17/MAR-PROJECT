@@ -202,3 +202,179 @@ export async function hitunganTab(aku: Identitas): Promise<HitunganTab> {
     ditolak: Number(r['ditolak']),
   };
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BEKAL MODAL EDIT OVERRIDE
+   ══════════════════════════════════════════════════════════════════════════
+   Modal ini mengubah angka yang jadi uang, jadi ia harus menampilkan DUA hal
+   berdampingan untuk tiap medan:
+
+     nilai EFEKTIF  yang berlaku sekarang — itu yang diisikan ke kotaknya
+     nilai ASAL     dari katalog atau isian manual — itu yang ditulis "Original:"
+
+   Kalau cuma yang efektif, approver kedua tak punya cara tahu bahwa angka di
+   depannya sudah pernah dikoreksi orang lain. Kalau cuma yang asal, ia akan
+   menimpa koreksi itu tanpa sadar.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+export interface BarisRiwayatOverride {
+  level: 'supervisor' | 'superintendent';
+  kind: string;
+  value: unknown;
+  oleh: string;
+  set_at: string;
+}
+
+export interface BekalOverride {
+  woId: number;
+  woNumber: string;
+  status: string;
+  bolehDiubah: boolean;
+  efektif: {
+    basePoints: number;
+    targetHours: number;
+    workCondition: string;
+    team: number[];
+    startTime: string | null;
+    endTime: string | null;
+    sessionHours: number;
+  };
+  asal: {
+    basePoints: number | null;
+    targetHours: number | null;
+    workCondition: string;
+    team: number[];
+    startTime: string | null;
+    endTime: string | null;
+    sessionHours: number;
+  };
+  /** Jam dari shift sebelum transfer. TIDAK bisa disunting, ikut ditambahkan. */
+  partialHours: number;
+  judgment: { teks: string; sumber: 'supervisor' | 'superintendent' | null };
+  unit: { nama: string | null; factor: number };
+  riwayat: BarisRiwayatOverride[];
+  mekanik: { id: number; nama: string; jabatan: string | null }[];
+  kondisi: { kunci: string; label: string; faktor: number }[];
+}
+
+const STATUS_BOLEH_DIUBAH_TAMPILAN = [
+  'pending_mechanic_work', 'in_progress', 'pending_transfer',
+  'pending_supervisor', 'pending_superintendent',
+];
+
+export async function bekalOverride(
+  aku: Identitas,
+  woId: number,
+): Promise<BekalOverride | null> {
+  const { nilaiEfektif } = await import('./nilaiEfektif.js');
+
+  return sql.begin(async (tx) => {
+    const wo = (
+      await tx<{
+        id: number; wo_number: string; status: string; work_condition: string;
+        is_manual: boolean; partial_hours: string; session_hours: string | null;
+        start_time: Date | null; end_time: Date | null;
+        job_base_points: string | null; job_plan_hours: string | null;
+        manual_base_points: string | null; manual_target_hours: string | null;
+        unit_nama: string | null;
+      }[]>`
+        SELECT w.id, w.wo_number, w.status::text, w.work_condition::text AS work_condition,
+               w.is_manual, w.partial_hours, w.session_hours, w.start_time, w.end_time,
+               j.base_points AS job_base_points, j.plan_hours AS job_plan_hours,
+               w.manual_base_points, w.manual_target_hours,
+               u.unit_name AS unit_nama
+          FROM work_orders w
+          LEFT JOIN jobs  j ON j.id = w.job_id
+          LEFT JOIN units u ON u.id = w.unit_id
+         WHERE w.id = ${woId} AND w.tenant_id = ${aku.tenantId}
+      `
+    )[0];
+    if (!wo) return null;
+
+    // Resolver yang SAMA dengan yang dipakai menghitung uang. Kalau layar ini
+    // memakai rumusnya sendiri, suatu hari ia akan menampilkan angka yang
+    // berbeda dari yang dibayarkan — dan itu ditemukan lewat slip gaji.
+    const ne = await nilaiEfektif(tx, woId);
+
+    const [timAsal, ov, mekanik, kondisi] = await Promise.all([
+      tx<{ mechanic_id: number }[]>`
+        SELECT mechanic_id FROM work_order_team WHERE work_order_id = ${woId}
+         ORDER BY mechanic_id
+      `,
+      tx<{ level: string; kind: string; value: unknown; oleh: string; set_at: Date }[]>`
+        SELECT o.level::text, o.kind::text, o.value, m.name AS oleh, o.set_at
+          FROM work_order_overrides o
+          JOIN mechanics m ON m.id = o.set_by
+         WHERE o.work_order_id = ${woId}
+         ORDER BY o.set_at ASC
+      `,
+      tx<{ id: number; nama: string; jabatan: string | null }[]>`
+        SELECT m.id, m.name AS nama, pr.label AS jabatan
+          FROM mechanics m
+          LEFT JOIN pay_rates pr ON pr.id = m.pay_rate_id
+         WHERE m.tenant_id = ${aku.tenantId} AND m.is_active AND m.role = 'mechanic'
+         ORDER BY m.name
+      `,
+      tx<{ kunci: string; label: string; faktor: string }[]>`
+        SELECT factor_key::text AS kunci,
+               coalesce(description, factor_key::text) AS label,
+               factor_value AS faktor
+          FROM factors
+         WHERE tenant_id = ${aku.tenantId} AND factor_type = 'work_condition'
+         ORDER BY factor_value
+      `,
+    ]);
+
+    const num = (v: string | null) => (v === null ? null : Number(v));
+    const ovTime = ov.find((r) => r.kind === 'time')?.value as
+      | { start_time?: string; end_time?: string } | undefined;
+
+    // Judgment efektif: L2 menang. Barisnya yang ADA berarti level itu pernah
+    // menyentuh — termasuk saat ia sengaja mengosongkan.
+    const jL2 = ov.find((r) => r.kind === 'judgment' && r.level === 'superintendent');
+    const jL1 = ov.find((r) => r.kind === 'judgment' && r.level === 'supervisor');
+    const jPakai = jL2 ?? jL1;
+
+    return {
+      woId: Number(wo.id),
+      woNumber: wo.wo_number,
+      status: wo.status,
+      bolehDiubah: STATUS_BOLEH_DIUBAH_TAMPILAN.includes(wo.status),
+      efektif: {
+        basePoints: ne.basePoints,
+        targetHours: ne.targetHours,
+        workCondition: ne.workCondition,
+        team: ne.team.map((t) => t.mechanicId).sort((a, b) => a - b),
+        startTime: ovTime?.start_time ?? wo.start_time?.toISOString() ?? null,
+        endTime: ovTime?.end_time ?? wo.end_time?.toISOString() ?? null,
+        sessionHours: Number(wo.session_hours ?? 0),
+      },
+      asal: {
+        basePoints: wo.is_manual ? num(wo.manual_base_points) : num(wo.job_base_points),
+        targetHours: wo.is_manual ? num(wo.manual_target_hours) : num(wo.job_plan_hours),
+        workCondition: wo.work_condition,
+        team: timAsal.map((t) => Number(t.mechanic_id)),
+        startTime: wo.start_time?.toISOString() ?? null,
+        endTime: wo.end_time?.toISOString() ?? null,
+        sessionHours: Number(wo.session_hours ?? 0),
+      },
+      partialHours: Number(wo.partial_hours ?? 0),
+      judgment: {
+        teks: typeof jPakai?.value === 'string' ? jPakai.value : '',
+        sumber: (jPakai?.level as 'supervisor' | 'superintendent' | undefined) ?? null,
+      },
+      unit: { nama: wo.unit_nama, factor: ne.unitFactor },
+      riwayat: ov.map((r) => ({
+        level: r.level as 'supervisor' | 'superintendent',
+        kind: r.kind,
+        value: r.value,
+        oleh: r.oleh,
+        set_at: r.set_at.toISOString(),
+      })),
+      mekanik: mekanik.map((m) => ({ id: Number(m.id), nama: m.nama, jabatan: m.jabatan })),
+      kondisi: kondisi.map((k) => ({
+        kunci: k.kunci, label: k.label, faktor: Number(k.faktor),
+      })),
+    };
+  });
+}

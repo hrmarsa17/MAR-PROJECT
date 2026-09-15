@@ -3,6 +3,7 @@ import { masukanTidakSah, tidakDitemukan } from '../../../lib/errors.js';
 import {
   antreanApproval, katalog, rincianWo, statusKiriman, woSaya,
 } from '../../../domain/kueri.js';
+import { bekalOverride } from '../../../domain/kueriApproval.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,13 @@ export async function GET(req: Request): Promise<Response> {
         if (!r) throw tidakDitemukan('Work order', id);
         return jawab(r);
       }
+      case 'override': {
+        const id = Number(url.searchParams.get('wo_id'));
+        if (!Number.isInteger(id) || id <= 0) throw masukanTidakSah('Parameter wo_id tidak sah');
+        const b = await bekalOverride(aku, id);
+        if (!b) throw tidakDitemukan('Work order', id);
+        return jawab(b);
+      }
       case 'kiriman': {
         // Aman ditekan berkali-kali — itulah gunanya. Tidak menulis apa pun.
         const opId = url.searchParams.get('op_id');
@@ -40,7 +48,7 @@ export async function GET(req: Request): Promise<Response> {
       }
       default:
         throw masukanTidakSah(
-          'Parameter "jenis" wajib: aku | antrean | wo_saya | katalog | wo | kiriman',
+          'Parameter "jenis" wajib: aku | antrean | wo_saya | katalog | wo | kiriman | override',
         );
     }
   } catch (e) {
