@@ -41,34 +41,36 @@ Konsekuensi yang penting untuk cara bekerja di sini:
 |---|---|
 | Lokasi | `C:\Users\gabri\OneDrive\1\Resurgam\KMBProject` |
 | Git | lokal saja, **belum ada remote** |
-| Uji | 28 lulus (16 rumus uang + 12 invarian basis data) |
-| Uji asap HTTP | 17 lulus (`scripts/uji-alur.ts`) |
+| Uji unit & integrasi | 56 lulus (`npm test`) |
+| Uji asap HTTP | buat-WO 13 · override 23 · alur override→approve 15 · payroll 23 |
 | Galat tipe | 0 |
-| Build produksi | bersih, 14 rute |
 
 ### Sudah jadi
 
 | Bagian | Keterangan |
 |---|---|
-| Skema Postgres | 37 tabel, `db/schema.sql` |
-| Benih + data contoh | `db/seed.sql`, `db/contoh.sql` |
-| Lapisan bisnis | buat WO, approve L1/L2, reject, kembalikan, batal |
+| Skema Postgres | 37 tabel, `db/schema.sql`; migrasi di `db/migrasi/` |
+| Benih + data contoh | `db/seed.sql`, `db/contoh.sql`, `db/katalog-contoh.sql` |
+| Lapisan bisnis | buat WO, approve L1/L2, reject, kembalikan, batal, **override** |
 | Idempotensi | `op_id` + `processed_ops` dalam satu transaksi |
-| Web | masuk, Monitoring, Approvals, Create WO (sederhana) |
-| Design system | merah, diturunkan dari `Theme.js` KMB V2 |
+| Periode & shift | `src/domain/periode.ts` (16→15), `src/domain/shift.ts` (06–18 / 18–06) |
+| **Dashboard Performa** | penuh: 4 kartu, tabel WO, 3 papan, tren SVG, Quick Stats |
+| **Create WO** | model pembuatan, blok Joblist #N, penguncian grup, preview, struk |
+| **Monitoring** | kartu mekanik + token utuh + pipeline per orang |
+| **Approvals** | 5 tab, kartu, aksi, **modal Edit Override** |
+| **Reports** | export payroll XLSX 2 sheet dari nilai beku |
+| Design system | merah dari `Theme.js`, plus lapisan gerak |
 
 ### Belum jadi
 
 | Bagian | Catatan |
 |---|---|
-| Create WO 1:1 | belum ada Model pembuatan, blok Joblist #N, panel Preview, Team Composition bergaya baris |
-| Modal Edit Override | tombol ✏️ sudah ada tapi `disabled` |
-| Performa | penanda; butuh periode gaji 16→15, leaderboard harian per shift, tren 3 periode |
-| Reports | penanda; butuh export Excel 2 sheet |
-| Teknis | penanda; butuh dashboard ban + PA/MTTR/MTBF |
-| Koreksi HM/KM | penanda; pagar naik-saja sudah jalan di jalur buat WO |
-| Reset token & impersonate | tombol ada, `disabled` |
-| Transfer WO | tabel & status sudah ada, perintahnya belum |
+| Monitoring — daftar WO mekanik | tab Assigned/Pending/Done, live timer, borongan, kirim kerja |
+| Transfer WO | tabel & status ada, perintahnya belum |
+| Detail Tyre | skema ada; spek di `03b-DETAIL-TYRE.md` |
+| Teknis | penanda; PA/MTBF/MTTR **tetap bulan kalender** |
+| Koreksi HM/KM | penanda; spek lengkap di `06-KOREKSI-HM-KM.md` |
+| Reset token & impersonate | tombol ada, belum berfungsi |
 | PWA offline | belum dimulai |
 
 ---
@@ -79,8 +81,18 @@ Konsekuensi yang penting untuk cara bekerja di sini:
 cd "C:\Users\gabri\OneDrive\1\Resurgam\KMBProject"
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 28 uji
+npm test             # 56 uji
 npm run typecheck
+
+npm run orang          # daftar akun + TOKEN untuk masuk
+npm run db:contoh      # isi ulang WO contoh (uji menghapusnya)
+npm run db:katalog     # isi ulang unit & joblist CONTOH
+npm run token:rapikan  # sisakan satu token aktif per orang
+
+npm run uji:wo             # 13 pemeriksaan buat-WO lewat HTTP
+npm run uji:override       # 23 pemeriksaan override
+npm run uji:alur-override  # 15 pemeriksaan override -> approve
+npm run uji:payroll        # 23 pemeriksaan export payroll
 ```
 
 ### Basis data pengembangan
@@ -143,7 +155,7 @@ sedang ditulis mesin basis data. Karena itu ia di `AppData\Local`.
 | **Warna dasar merah** | Permintaan Gabriel. Hue saja yang berubah; radius, bayangan, jarak, tipografi dipertahankan angka demi angka dari `Theme.js` |
 | **Approve merah utama, Reject maroon** | Begitu utama jadi merah, Approve dan Reject bertabrakan. Reject dibuat lebih gelap supaya terbaca lebih berat. **Belum dikonfirmasi Gabriel di layar** |
 | **Amber = "terpilih"** | Di KMB V2 amber punya peran sendiri (tab aktif, kartu pilihan, Kembalikan), bukan sisa tema lama |
-| **Token disimpan ter-hash** | KMB V2 memamerkan token setiap mekanik ke layar approver. **Penyimpangan dari 1:1 — menunggu keputusan Gabriel** |
+| **Token disimpan TERBACA** | Diputuskan Gabriel 15 Sep 2026, membatalkan hash yang sempat dipasang. Layar Monitoring ADA untuk membacakan token kembali kepada mekanik yang lupa; hash mematikan fungsi itu. Yang menjaganya gerbang peran + scope, bukan hash. **Jangan di-hash lagi tanpa keputusan baru** |
 | **base_points bisa disunting terus** | Gabriel: akan disesuaikan seiring sistem berjalan. Karena itu snapshot wajib — menyesuaikan katalog besok tidak boleh menggeser rupiah yang sudah dibayar |
 | **Joblist & unit disetorkan belakangan** | Katalog dibangun generik. Jangan menunggu datanya |
 | **Detail tyre disiapkan sejak awal** | Permintaan Gabriel. Strukturnya sudah ada di skema, bisa dinyalakan lewat data |
