@@ -35,7 +35,7 @@ function periksa(nama: string, ok: boolean, catatan = '') {
  * dan ikut mencabut token L1/L2 yang Gabriel pakai untuk masuk — token yang
  * bukan miliknya. Pembersihan yang menebak sasaran bukan pembersihan.
  */
-const tokenDibuat: number[] = [];
+const tokenDibuat: string[] = [];
 async function tokenUntuk(peran: string): Promise<{ token: string; id: number }> {
   const m = (
     await sql<{ id: number; tenant_id: number }[]>`
@@ -44,14 +44,15 @@ async function tokenUntuk(peran: string): Promise<{ token: string; id: number }>
     `
   )[0]!;
   const t = buatToken();
-  const baris = (
-    await sql<{ id: number }[]>`
-      INSERT INTO api_tokens (tenant_id, mechanic_id, token)
-      VALUES (${m.tenant_id}, ${m.id}, ${t})
-      RETURNING id
-    `
-  )[0]!;
-  tokenDibuat.push(Number(baris.id));
+  await sql`
+    INSERT INTO api_tokens (tenant_id, mechanic_id, token)
+    VALUES (${m.tenant_id}, ${m.id}, ${t})
+  `;
+  // Nilai tokennya yang dicatat, bukan id barisnya. Percobaan dengan
+  // id = ANY($1::bigint[]) TIDAK pernah cocok — dan gagalnya DIAM, jadi token
+  // uji menumpuk tanpa ada yang tahu. Ketahuan hanya karena Gabriel melihat
+  // token yang dicatatnya berganti sendiri.
+  tokenDibuat.push(t);
   return { token: t, id: m.id };
 }
 
@@ -197,7 +198,15 @@ console.log('\n─── 8. mekanik tidak boleh mengoreksi ───');
 
 // Bersihkan jejak uji supaya layar tidak menampilkan koreksi palsu.
 await sql`DELETE FROM work_order_overrides WHERE work_order_id = ${woId}`;
-await sql`DELETE FROM api_tokens WHERE id = ANY(${tokenDibuat}::bigint[])`;
+/* Pembersihan yang gagal diam-diam adalah pembersihan yang tidak ada. Jumlah
+   baris terhapus DIPERIKSA; kalau tak sama dengan yang dibuat, uji ini gagal
+   walau seluruh pemeriksaan lain lulus. */
+const terhapus = await sql`
+  DELETE FROM api_tokens WHERE token = ANY(${tokenDibuat}::text[]) RETURNING id
+`;
+periksa('token uji dibersihkan seluruhnya',
+  terhapus.length === tokenDibuat.length,
+  `dibuat ${tokenDibuat.length}, terhapus ${terhapus.length}`);
 await sql.end();
 
 console.log(`\n${gagal === 0 ? '✅' : '❌'}  ${lulus} lulus, ${gagal} gagal\n`);

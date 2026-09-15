@@ -29,9 +29,23 @@ WHERE t.code = 'KMB';
 INSERT INTO factors (tenant_id, factor_type, factor_key, factor_value, description)
 SELECT t.id, f.tipe, f.kunci, f.nilai, f.ket
 FROM tenants t, (VALUES
-  ('work_condition','normal',      1.0, 'Kondisi kerja biasa'),
-  ('work_condition','difficult',   1.2, 'Medan/cuaca menyulitkan'),
-  ('work_condition','extreme',     1.5, 'Kondisi ekstrem'),
+  -- ⚠️ work_condition BUKAN tingkat kesulitan — ia SHIFT.
+  -- Kunci `normal`/`difficult`/`extreme` adalah nama warisan yang sudah lama
+  -- tidak menggambarkan artinya; yang dibaca orang di seluruh layar KMB V2
+  -- adalah "Shift 1", "Shift 2", "Kondisi Ekstrim"
+  -- (ApprovalService.js:1276-1278, Approval.html:404,743-745,1170).
+  --
+  -- Ini penting untuk uang: ×1,2 adalah premi SHIFT MALAM, bukan bayaran untuk
+  -- medan berat. Sampai 15 Sep 2026 baris ini berbunyi "Medan/cuaca
+  -- menyulitkan", dan label seperti itu mengundang orang memilihnya untuk
+  -- pekerjaan berlumpur di siang hari — kenaikan 20% dengan alasan yang salah.
+  --
+  -- Kuncinya TIDAK diganti jadi shift_1/shift_2: ia sudah tertulis di baris WO
+  -- KMB V2 yang kelak dipindahkan, dan mengganti nama kunci berarti memigrasi
+  -- data uang demi kerapian nama. Yang diperbaiki labelnya.
+  ('work_condition','normal',      1.0, 'Shift 1'),
+  ('work_condition','difficult',   1.2, 'Shift 2'),
+  ('work_condition','extreme',     1.5, 'Kondisi Ekstrim'),
   ('timeliness',    'on_time',     1.0, 'Selesai dalam target jam'),
   ('timeliness',    'late',        0.8, 'Lewat target sampai 150%'),
   ('timeliness',    'way_late',    0.5, 'Lewat 150% target'),

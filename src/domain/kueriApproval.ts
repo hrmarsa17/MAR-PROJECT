@@ -34,6 +34,7 @@ export interface KartuApproval {
 
   dibuat_at: string;
   dikirim_at: string | null;
+  /** Sudah berupa label yang dibaca orang: "Shift 1", "Shift 2", … */
   kondisi: string;
   actual_hours: number | null;
   target_hours: number | null;
@@ -123,7 +124,12 @@ export async function kartuApproval(
 
       w.created_at   AS dibuat_at,
       w.submitted_at AS dikirim_at,
-      w.work_condition::text AS kondisi,
+      -- Label DIAMBIL dari tabel faktor, bukan dipetakan di layar.
+      -- work_condition bukan tingkat kesulitan melainkan SHIFT, dan kuncinya
+      -- (normal / difficult / extreme) nama warisan yang menyesatkan kalau
+      -- ditampilkan mentah. Satu sumber label untuk semua layar.
+      -- (Jangan pakai backtick di komentar ini: ia menutup template literal.)
+      coalesce(fwc.description, w.work_condition::text) AS kondisi,
       w.actual_hours,
       coalesce(j.plan_hours, w.manual_target_hours) AS target_hours,
       coalesce(j.base_points, w.manual_base_points) AS base_points,
@@ -143,6 +149,9 @@ export async function kartuApproval(
     LEFT JOIN jobs j                ON j.id  = w.job_id
     LEFT JOIN job_sub_components sc ON sc.id = j.sub_component_id
     LEFT JOIN job_components     c  ON c.id  = sc.component_id
+    LEFT JOIN factors fwc ON fwc.tenant_id = w.tenant_id
+                         AND fwc.factor_type = 'work_condition'
+                         AND fwc.factor_key = w.work_condition
     LEFT JOIN LATERAL (
       SELECT u2.unit_code, u2.unit_name AS unit_nama, u2.unit_factor
         FROM units u2 WHERE u2.id = w.unit_id

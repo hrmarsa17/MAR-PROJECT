@@ -16,7 +16,8 @@
     "db:katalog": "tsx scripts/isi-katalog-contoh.ts",
     "uji:wo": "tsx scripts/uji-buat-wo.ts",
     "uji:override": "tsx scripts/uji-override.ts",
-    "orang": "tsx scripts/lihat-orang.ts"
+    "orang": "tsx scripts/lihat-orang.ts",
+    "token:rapikan": "tsx scripts/rapikan-token.ts"
   },
   "dependencies": {
     "next": "^15.5.25",
