@@ -414,11 +414,15 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
       {/* ── read-only ──────────────────────────────────────────────────── */}
       <div className="modal-bagian">
         <h4 className="modal-bagian-judul">🔒 Read-Only</h4>
-        <div className="form-group">
+        <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Unit Factor</label>
+          {/* Kelas `readonly` dari sumber (`Approval.html:784`). Ia HARUS
+              terlihat berbeda dari kotak yang bisa diisi — kotak abu-abu yang
+              tak menerima ketikan tanpa tanda apa pun terbaca sebagai rusak,
+              bukan sebagai terkunci. */}
           <input
-            readOnly value={`${bekal.unit.factor}${bekal.unit.nama ? ` (${bekal.unit.nama})` : ''}`}
-            style={{ background: 'var(--bg-secondary)' }}
+            className="readonly" readOnly tabIndex={-1}
+            value={`${bekal.unit.factor}${bekal.unit.nama ? ` (${bekal.unit.nama})` : ''}`}
           />
           <p className="form-hint">
             Faktor unit ikut unitnya, bukan pendapat approver. Mengubahnya
