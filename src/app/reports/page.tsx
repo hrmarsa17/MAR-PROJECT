@@ -1,25 +1,37 @@
 import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
-import { BelumDibangun } from '../BelumDibangun.js';
+import { sectionYangBoleh } from '../../domain/kueri.js';
+import { sql } from '../../lib/db.js';
+import { FormLaporan } from './FormLaporan.js';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Reports() {
   const aku = await akuServer();
   if (!aku) redirect('/masuk');
+  /* Gerbang layar. Gerbang DATA-nya ada lagi di /api/laporan — di KMB V2
+     halaman reports dibatasi L2 sementara fungsi di belakangnya menerima L1
+     juga, dan gerbang layar bukan gerbang data. */
   if (!aku.bolehLihat.report) redirect('/monitoring');
 
+  const scope = await sectionYangBoleh(aku.mechanicId);
+  const sections = await sql<{ code: string; name: string }[]>`
+    SELECT code::text, name FROM sections
+     WHERE tenant_id = ${aku.tenantId} AND is_active
+       AND (${scope}::text[] IS NULL OR code::text = ANY(${scope}::text[]))
+     ORDER BY sort_order
+  `;
+
   return (
-    <BelumDibangun
-      ikon="📊"
-      judul="Reports"
-      isi="Export data insentif mekanik untuk kebutuhan payroll"
-      dariKmbV2={[
-        'Export Payroll Excel 2 sheet — Sheet 1 ringkasan per mekanik, Sheet 2 detail per WO',
-        'Pilihan periode: Bulan & Tahun (periode gaji 16 → 15) atau Rentang Tanggal bebas',
-        'Filter per section',
-        'Angka rupiah diambil dari nilai yang DIBEKUKAN saat approve — bukan dihitung ulang dengan tarif hari ini',
-      ]}
-    />
+    <div className="container-sempit">
+      <div className="page-header">
+        <h1 className="page-title">📊 Reports</h1>
+        <p className="page-subtitle">
+          Angka di berkas ini dibaca dari nilai yang dibekukan saat poin terbit —
+          bukan dihitung ulang dengan tarif hari ini.
+        </p>
+      </div>
+      <FormLaporan sections={sections.map((s) => ({ code: s.code, name: s.name }))} />
+    </div>
   );
 }

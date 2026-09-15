@@ -217,7 +217,12 @@ kecelakaan yang sama.
    medan `totalPoin`: kartu "Total Poin" menjumlah poin per WO sementara papan
    di bawahnya menjumlah poin per orang, dan karena model poin penuh keduanya
    memang berbeda. Ditiru 1:1 dari KMB V2 — jangan diubah tanpa keputusannya.
-5. **Reports** — export Excel. Angka dari nilai yang **dibekukan**.
+5. ~~**Reports**~~ — **SELESAI**. `src/app/reports/` +
+   `src/domain/kueriPayroll.ts` + `src/domain/excelPayroll.ts` +
+   `GET /api/laporan`. Dua worksheet bergaya penuh lewat exceljs.
+   Dibuktikan `npm run uji:payroll` (23 pemeriksaan) — yang terpenting:
+   **menaikkan seluruh tarif dua kali lipat TIDAK menggeser total laporan
+   satu rupiah pun.** Itu luka KMB V2 yang paling mahal.
 6. **Monitoring** lengkap — spek di `03-MONITORING.md`. Transfer WO, live timer,
    pengelompokan borongan.
 7. Koreksi HM/KM, Teknis.

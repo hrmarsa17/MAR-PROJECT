@@ -18,9 +18,11 @@
     "uji:override": "tsx scripts/uji-override.ts",
     "orang": "tsx scripts/lihat-orang.ts",
     "token:rapikan": "tsx scripts/rapikan-token.ts",
-    "uji:alur-override": "tsx scripts/uji-override-approve.ts"
+    "uji:alur-override": "tsx scripts/uji-override-approve.ts",
+    "uji:payroll": "tsx scripts/uji-payroll.ts"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "next": "^15.5.25",
     "postgres": "^3.4.5",
     "react": "^19.3.0",

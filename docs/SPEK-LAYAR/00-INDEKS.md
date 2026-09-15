@@ -43,14 +43,14 @@ daftar periksa implementasi tetap terpisah di setiap berkas.
 
 | # | Layar | Berkas | Spek | Layar dibangun |
 |---|---|---|---|---|
-| 1 | Dashboard Performa | [`01-PERFORMA.md`](01-PERFORMA.md) | ✅ | ⬜ penanda |
+| 1 | Dashboard Performa | [`01-PERFORMA.md`](01-PERFORMA.md) | ✅ | ✅ dibangun |
 | 2 | Create Work Order | [`02-CREATE-WO.md`](02-CREATE-WO.md) | ✅ | 🟡 sebagian |
 | 3 | Monitoring | [`03-MONITORING.md`](03-MONITORING.md) | ✅ | 🟡 sebagian |
 | 3b | Detail Tyre | [`03b-DETAIL-TYRE.md`](03b-DETAIL-TYRE.md) | ✅ | ⬜ |
-| 4 | Approvals | [`04-APPROVALS.md`](04-APPROVALS.md) | ✅ | 🟡 sebagian |
+| 4 | Approvals | [`04-APPROVALS.md`](04-APPROVALS.md) | ✅ | 🟡 sebagian (override ✅) |
 | 5 | Teknis | [`05-TEKNIS.md`](05-TEKNIS.md) | ✅ | ⬜ penanda |
 | 6 | Koreksi HM & KM | [`06-KOREKSI-HM-KM.md`](06-KOREKSI-HM-KM.md) | ✅ | ⬜ penanda |
-| 7 | Reports | [`07-REPORTS.md`](07-REPORTS.md) | ✅ | ⬜ penanda |
+| 7 | Reports | [`07-REPORTS.md`](07-REPORTS.md) | ✅ | ✅ dibangun |
 
 **Dua kolom, sengaja.** Spek selesai **tidak** berarti layarnya jadi. Kolom kanan
 yang menentukan apa yang masih harus dikerjakan; daftar periksa implementasinya
