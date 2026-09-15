@@ -253,6 +253,15 @@ kecelakaan yang sama.
 
 ---
 
+## 8b. GILIRAN CODEX: REVIEW, BUKAN BANGUN
+
+Kalau Anda Codex dan Gabriel menyerahkan giliran untuk **memeriksa**, bukan
+melanjutkan: baca `docs/REVIEW-CODEX.md`. Di situ ada cakupan review, tempat
+yang paling mungkin bercacat, dan lima pola kesalahan yang sudah ketahuan —
+yang mungkin masih ada di tempat yang belum diperiksa.
+
+---
+
 ## 9. BACAAN WAJIB SEBELUM MENYENTUH JALUR UANG
 
 - `docs/SPEK-LAYAR/00-INDEKS.md` — kontrak porting per layar; **baca ini sebelum menyentuh layar mana pun**
