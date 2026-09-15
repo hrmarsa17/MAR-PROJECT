@@ -18,7 +18,7 @@ if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
 }
 
 const { sql } = await import('../src/lib/db.js');
-const { buatToken, hashToken, petunjukToken } = await import('../src/lib/auth.js');
+const { buatToken } = await import('../src/lib/auth.js');
 
 // Token sekali pakai untuk uji ini, dicabut di akhir.
 const l2 = (
@@ -31,8 +31,8 @@ if (!l2) { console.error('Tidak ada akun L2 di basis data dev.'); process.exit(1
 const token = buatToken();
 const tokenBaris = (
   await sql<{ id: number }[]>`
-    INSERT INTO api_tokens (tenant_id, mechanic_id, token_hash, token_hint)
-    VALUES (${l2.tenant_id}, ${l2.id}, ${hashToken(token)}, ${petunjukToken(token)})
+    INSERT INTO api_tokens (tenant_id, mechanic_id, token)
+    VALUES (${l2.tenant_id}, ${l2.id}, ${token})
     RETURNING id
   `
 )[0]!;

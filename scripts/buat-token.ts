@@ -3,9 +3,10 @@
  *
  *   npx tsx scripts/buat-token.ts UJI-L2
  *
- * Token ditampilkan SEKALI di sini, lalu hanya hash-nya yang tersimpan. Kalau
- * hilang, ia tidak bisa dibaca kembali dari mana pun — harus diterbitkan ulang.
- * Itu memang tujuannya.
+ * Menerbitkan token BARU akan mencabut token lama orang itu — artinya mekanik
+ * harus memasukkan yang baru di HP-nya. Untuk mekanik yang cuma LUPA tokennya,
+ * jangan pakai skrip ini: bukakan layar Monitoring dan salin token yang sudah
+ * ada. Itu memang gunanya layar itu.
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -25,7 +26,7 @@ if (existsSync(env)) {
 }
 
 const { sql } = await import('../src/lib/db.js');
-const { buatToken, hashToken, petunjukToken } = await import('../src/lib/auth.js');
+const { buatToken } = await import('../src/lib/auth.js');
 
 const kode = process.argv[2];
 if (!kode) {
@@ -52,15 +53,16 @@ await sql`
    WHERE mechanic_id = ${mek.id} AND is_active
 `;
 await sql`
-  INSERT INTO api_tokens (tenant_id, mechanic_id, token_hash, token_hint)
-  VALUES (${mek.tenant_id}, ${mek.id}, ${hashToken(token)}, ${petunjukToken(token)})
+  INSERT INTO api_tokens (tenant_id, mechanic_id, token)
+  VALUES (${mek.tenant_id}, ${mek.id}, ${token})
 `;
 
 console.log('');
 console.log(`  ${mek.name}  (${mek.role})`);
 console.log(`  TOKEN: ${token}`);
 console.log('');
-console.log('  Ditampilkan sekali. Yang tersimpan hanya hash-nya.');
+console.log('  Token lama orang ini dicabut. Yang ini bisa dibaca lagi kapan saja');
+console.log('  di layar Monitoring — mekanik yang lupa tak perlu token baru.');
 console.log('');
 
 await sql.end();

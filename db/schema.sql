@@ -536,17 +536,33 @@ CREATE TABLE api_tokens (
   id          bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   tenant_id   smallint NOT NULL REFERENCES tenants(id),
   mechanic_id integer NOT NULL REFERENCES mechanics(id) ON DELETE CASCADE,
-  token_hash  text NOT NULL UNIQUE,            -- sha256. Tak pernah disimpan telanjang.
-  token_hint  text NOT NULL,                   -- 4 huruf terakhir, untuk layar
+  token       text NOT NULL UNIQUE,            -- TERBACA. Lihat catatan di bawah.
   is_active   boolean NOT NULL DEFAULT true,
   created_at  timestamptz NOT NULL DEFAULT now(),
   expires_at  timestamptz,
   revoked_at  timestamptz,
   last_used_at timestamptz
 );
--- Di KMB V2 tab Monitoring memamerkan token setiap mekanik ke L1 dan L2.
--- Dengan hash, layar itu tidak bisa lagi menampilkannya; ia berubah jadi tombol
--- "Reset token" — yang memang fungsinya.
+-- ── TOKEN DISIMPAN TERBACA, DAN ITU DISENGAJA ───────────────────────────────
+-- Keputusan Gabriel 15 Sep 2026, setelah saya sempat membuatnya ter-hash.
+--
+-- Token di sini BUKAN kata sandi yang dipilih orang; ia kunci yang diterbitkan
+-- sistem dan dititipkan ke mekanik. Fungsi layar Monitoring justru MEMBACAKANNYA
+-- kembali: mekanik di lapangan kehilangan link atau lupa tokennya, lalu bertanya
+-- ke L1/L2 yang membuka Monitoring dan menyalinkannya.
+--
+-- Dengan hash, alur itu mati. Yang tersisa cuma "terbitkan token baru" — dan
+-- token baru berarti mekanik harus memasukkannya lagi di HP-nya, yang justru
+-- pekerjaan yang ingin dihindari. Saya menukar kebiasaan lapangan yang sudah
+-- jalan dengan pengamanan terhadap ancaman yang bukan ancamannya.
+--
+-- Yang menjaganya BUKAN hash, melainkan siapa yang bisa membuka layarnya:
+-- Monitoring hanya untuk L1/L2, dan daftarnya disaring menurut scope section
+-- penonton. Token mekanik memang boleh dilihat atasannya — itu memang gunanya.
+--
+-- JANGAN di-hash lagi tanpa keputusan baru dari Gabriel. Kalau kelak ada alasan
+-- untuk itu, alur "mekanik lupa token" harus punya pengganti yang nyata lebih
+-- dulu, bukan sesudahnya.
 
 CREATE TABLE push_subscriptions (
   id          bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

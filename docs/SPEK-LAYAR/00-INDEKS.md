@@ -272,9 +272,10 @@ Teknis). Hijau `#059669` tetap untuk rupiah.
 
 ## 6. Keputusan yang masih menunggu Gabriel
 
-1. **Token di Monitoring.** Di KMB Project token disimpan ter-hash ⇒ tak bisa
-   ditampilkan lagi, hanya bisa diterbitkan ulang. Di KMB V2 ia tampil telanjang,
-   dan usaha menutupinya pernah di-*revert* (`77dd7e8`). Perubahan alur nyata.
+1. ~~**Token di Monitoring.**~~ **DIPUTUSKAN 15 Sep 2026: ditampilkan utuh.**
+   Hash dibatalkan — layar itu ADA untuk membacakan token kembali kepada mekanik
+   yang lupa. Lihat [`03-MONITORING.md` §A](03-MONITORING.md) dan catatan di
+   `db/schema.sql` pada `api_tokens`. **Jangan di-hash lagi tanpa keputusan baru.**
 2. **Approve vs Reject** harus bisa dibedakan sekilas di layar?
 3. Apakah rasio `base_points ÷ plan_hours` aturan resmi atau kebetulan?
 4. Peran **foreman** (ada di SUM, tidak di KMB) — ikut atau tidak?

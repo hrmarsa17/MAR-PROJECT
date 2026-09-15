@@ -1,17 +1,20 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { sql, type Tx } from './db.js';
 import { tidakBerhak } from './errors.js';
 
 /**
  * TOKEN.
  *
- * Bentuk pemakaiannya sengaja sama dengan KMB V2: mekanik mengetik token
- * sekali, lalu tidak pernah diminta lagi. Yang berubah cuma satu — token
- * TIDAK PERNAH disimpan telanjang.
+ * Bentuk pemakaiannya sama dengan KMB V2: mekanik mengetik token sekali, lalu
+ * tidak pernah diminta lagi.
  *
- * Akibatnya yang disengaja: tab Monitoring tidak bisa lagi memamerkan token
- * setiap mekanik ke L1 dan L2 seperti di KMB V2 (`app.js:2663`). Yang tersisa
- * di layar hanya empat huruf terakhir sebagai penanda, dan tombol reset.
+ * ── DISIMPAN TERBACA ────────────────────────────────────────────────────────
+ * Keputusan Gabriel 15 Sep 2026, membatalkan hash yang sempat saya pasang.
+ * Alasan penuhnya ada di `db/schema.sql` pada tabel `api_tokens`; ringkasnya:
+ * layar Monitoring ADA untuk membacakan token kembali kepada mekanik yang
+ * lupa, dan hash mematikan justru fungsi itu.
+ *
+ * Yang menjaganya bukan hash, melainkan siapa yang bisa membuka layarnya.
  */
 
 export interface Identitas {
@@ -30,25 +33,17 @@ export interface Identitas {
   bolehLihat: { performa: boolean; teknis: boolean; report: boolean };
 }
 
-export function hashToken(token: string): string {
-  return createHash('sha256').update(token.trim()).digest('hex');
-}
-
 /** 20 huruf hex — panjang yang sama dengan token KMB V2 yang sudah dikenal. */
 export function buatToken(): string {
   return randomBytes(10).toString('hex');
 }
 
-export function petunjukToken(token: string): string {
-  return token.trim().slice(-4);
-}
-
 /**
  * Menukar token jadi identitas.
  *
- * Perbandingan hash dilakukan basis data lewat index unik, bukan pemindaian
- * baris demi baris seperti `_resolveToken` di V2 yang membaca seluruh sheet
- * ApiTokens setiap permintaan.
+ * Pencocokan dilakukan basis data lewat index unik, bukan pemindaian baris demi
+ * baris seperti `_resolveToken` di V2 yang membaca seluruh sheet ApiTokens
+ * setiap permintaan.
  */
 export async function identitasDariToken(
   token: string | null | undefined,
@@ -68,7 +63,7 @@ export async function identitasDariToken(
            m.may_view_performance, m.may_view_technical, m.may_view_report
       FROM api_tokens t
       JOIN mechanics m ON m.id = t.mechanic_id
-     WHERE t.token_hash = ${hashToken(token)}
+     WHERE t.token = ${token.trim()}
        AND t.is_active
        AND t.revoked_at IS NULL
        AND (t.expires_at IS NULL OR t.expires_at > now())
@@ -79,7 +74,7 @@ export async function identitasDariToken(
 
   // Jejak pemakaian, sengaja tidak menunggu — kegagalan mencatat tidak boleh
   // menggagalkan permintaan yang sah.
-  void q`UPDATE api_tokens SET last_used_at = now() WHERE token_hash = ${hashToken(token)}`;
+  void q`UPDATE api_tokens SET last_used_at = now() WHERE token = ${token.trim()}`;
 
   const peran = r.role as Identitas['peran'];
   const l2 = peran === 'superintendent';

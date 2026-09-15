@@ -80,27 +80,52 @@ Kisi kosong: `Belum ada mekanik dalam scope Anda.`
   `&back=` supaya tampilan mekanik punya tombol kembali.
 - `copyLink` (`:443-448`) disimpan hanya untuk kompatibilitas pemanggil lama.
 
-> **Keputusan yang menunggu Gabriel.** Token di layar ini **terlihat telanjang**.
-> Commit `77dd7e8` di `MAR-project` adalah *revert* dari “Tutup token di
-> Monitoring supaya layarnya aman di-screenshot” — jadi menyembunyikannya
-> pernah dicoba dan **dibatalkan**. Di KMB Project token disimpan **ter-hash**,
-> sehingga menampilkannya kembali **mustahil** — yang bisa hanya menerbitkan
-> token baru. Ini perubahan perilaku nyata: alur “mekanik lupa token → approver
-> menyalinkan” berubah jadi “approver menerbitkan token baru”.
-> **Tanya Gabriel sebelum membangun layar ini.**
+> **DIPUTUSKAN GABRIEL 15 Sep 2026: token DITAMPILKAN UTUH.** Sempat saya
+> simpan ter-hash; itu keliru, dan Gabriel membatalkannya.
+>
+> Token di sini bukan kata sandi yang dipilih orang — ia kunci terbitan sistem
+> yang dititipkan ke mekanik. **Membacakannya kembali adalah fungsi utama layar
+> ini**: mekanik di lapangan lupa tokennya, bertanya ke L1/L2, yang membukanya
+> di sini lalu menekan Copy. Dengan hash alur itu mati, dan yang tersisa cuma
+> "terbitkan token baru" — yang justru memaksa mekanik memasukkan ulang di
+> HP-nya, pekerjaan yang ingin dihindari.
+>
+> Yang menjaganya bukan hash melainkan siapa yang bisa membuka layarnya:
+> Monitoring ditolak untuk peran `mechanic`, dan daftarnya disaring menurut
+> scope section penonton. Commit `77dd7e8` di KMB V2 adalah *revert* dari usaha
+> menyembunyikan token — jadi ini sudah pernah dicoba dan ditolak di sana juga.
 
 ### Sumber angkanya
 
-Sudah ada di KMB Project: `src/domain/kueriMonitoring.ts` — hitungan pipeline
-per mekanik dihitung dari keanggotaan tim, dan token hanya diberi *hint*.
+`getMonitoringData()` di `MechanicService.js:149-249`. Sudah diport ke
+`src/domain/kueriMonitoring.ts`.
+
+Empat hal yang menentukan angkanya:
+
+1. **Hanya `role = 'mechanic'`** (`:170` memanggil `getMechanicsByRole`). L1 & L2
+   tidak pernah muncul — yang ditanyakan layar ini "siapa mengerjakan apa".
+2. **Dihitung dari keanggotaan tim**, bukan dari siapa yang membuat WO.
+3. **`approved` DIBATASI periode gaji berjalan** (`:216`); tiga penghitung lain
+   TIDAK (`:198-202`) — "WO Juli yang belum disetujui justru pekerjaan yang harus
+   dikejar, dan menyaringnya membuat ia lenyap dari pandangan semua orang."
+4. **`cancelled` dan `rejected` dilewati seluruhnya** (`:208`).
+
+Urutan kartu: `pending_mechanic_work` terbanyak di atas, nama sebagai pemutus
+seri (`:241`) — yang harus dikejar hari ini naik sendiri.
 
 ```sql
 -- per mekanik, dari keanggotaan tim (bukan dari created_by)
-count(*) FILTER (WHERE w.status = 'pending_mechanic_work')   AS pending_mechanic_work
-count(*) FILTER (WHERE w.status = 'pending_supervisor')      AS pending_l1
-count(*) FILTER (WHERE w.status = 'pending_superintendent')  AS pending_l2
-count(*) FILTER (WHERE w.status = 'approved')                AS approved
+count(*) FILTER (WHERE w.status = 'pending_mechanic_work')   AS perlu_diisi
+count(*) FILTER (WHERE w.status = 'pending_supervisor')      AS menunggu_l1
+count(*) FILTER (WHERE w.status = 'pending_superintendent')  AS menunggu_l2
+count(*) FILTER (WHERE w.status = 'approved'
+                   AND w.approved_l2_at BETWEEN $mulai AND $akhir) AS approved
 ```
+
+> ⚠️ **Label sumber berbohong.** Kartu keempat di `MechanicDashboard.html:375`
+> berbunyi `✅ Approved (semua waktu)` padahal `:216` membatasinya ke periode
+> berjalan. Yang salah labelnya, bukan angkanya — di KMB Project labelnya
+> diperbaiki jadi `✅ Approved` + rentang periodenya, angkanya tetap sama.
 
 ---
 

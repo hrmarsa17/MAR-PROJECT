@@ -9,6 +9,19 @@ export default async function Monitoring() {
   const aku = await akuServer();
   if (!aku) redirect('/masuk');
 
+  // Layar ini menampilkan token setiap mekanik. Yang menjaganya bukan hash,
+  // melainkan gerbang ini — dan scope section di lapisan kueri.
+  if (aku.peran === 'mechanic') {
+    return (
+      <div className="container">
+        <div className="page-header">
+          <h1 className="page-title">📊 Monitoring Mekanik</h1>
+        </div>
+        <div className="kosong">Layar ini untuk L1 dan L2.</div>
+      </div>
+    );
+  }
+
   const [ringkas, kartu] = await Promise.all([
     ringkasMonitoring(aku),
     kartuMekanik(aku),
@@ -19,8 +32,8 @@ export default async function Monitoring() {
       <div className="page-header">
         <h1 className="page-title">📊 Monitoring Mekanik</h1>
         <p className="page-subtitle">
-          Statistik pipeline &amp; akses per-mekanik. <b>Reset</b> bila mekanik
-          kehilangan tokennya, atau <b>Buka</b> untuk masuk atas nama mekanik.
+          Pencapaian &amp; progres WO tiap mekanik, berikut tokennya.
+          Tekan <b>Copy Token</b> untuk mekanik yang lupa tokennya.
         </p>
       </div>
 
@@ -39,11 +52,15 @@ export default async function Monitoring() {
         </div>
         <div className="stat-card hijau">
           <div className="stat-value">{ringkas.approved}</div>
-          <div className="stat-label">✅ Approved (semua waktu)</div>
+          {/* KMB V2 menulis "Approved (semua waktu)" di sini padahal angkanya
+              periode berjalan (MechanicService.js:216). Labelnya yang salah,
+              bukan angkanya — jadi labelnya yang diperbaiki. */}
+          <div className="stat-label">✅ Approved</div>
+          <div className="stat-subtitle">{ringkas.periodeLabel}</div>
         </div>
       </div>
 
-      <CariMekanik daftar={kartu} bisaKelolaToken={aku.peran !== 'mechanic'} />
+      <CariMekanik daftar={kartu} bisaKelolaToken />
     </div>
   );
 }
