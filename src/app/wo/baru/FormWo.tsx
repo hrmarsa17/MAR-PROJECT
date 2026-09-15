@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { BlokJoblist } from './BlokJoblist.js';
+import { Portal } from '../../Portal.js';
 import {
   blokBaru, grupBolehUntuk, meterUntuk,
   type Blok, type GrupMode, type Katalog,
@@ -343,6 +344,9 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
       </form>
 
       {struk && (
+        <Portal>
+        {/* Struk BOLEH ditutup dari tirai: isinya hasil, bukan isian. Tak ada
+            yang hilang kalau tertutup, dan nomornya tetap ada di Monitoring. */}
         <div className="modal-tirai" onClick={() => setStruk(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -371,6 +375,7 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

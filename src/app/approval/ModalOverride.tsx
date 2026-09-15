@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Portal } from '../Portal.js';
 import type { BekalOverride } from '../../domain/kueriApproval.js';
 import { durasiJam } from '../../lib/format.js';
 
@@ -434,16 +435,18 @@ function Bingkai({
      peringatan. Jalan keluarnya dua, dan keduanya harus disengaja: tombol ×
      di kepala, atau Cancel di kaki. */
   return (
-    <div className="modal-tirai">
-      <div className="modal modal-lebar">
-        <div className="modal-header">
-          <h3>{judul}</h3>
-          <button type="button" className="modal-tutup" title="Tutup" onClick={onTutup}>×</button>
+    <Portal>
+      <div className="modal-tirai">
+        <div className="modal modal-lebar">
+          <div className="modal-header">
+            <h3>{judul}</h3>
+            <button type="button" className="modal-tutup" title="Tutup" onClick={onTutup}>×</button>
+          </div>
+          <div className="modal-body">{children}</div>
+          {kaki && <div className="modal-footer">{kaki}</div>}
         </div>
-        <div className="modal-body">{children}</div>
-        {kaki && <div className="modal-footer">{kaki}</div>}
       </div>
-    </div>
+    </Portal>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ModalOverride } from './ModalOverride.js';
+import { Portal } from '../Portal.js';
 
 /**
  * Lima tombol, urutan sama persis dengan KMB V2:
@@ -124,7 +125,12 @@ export function AksiKartu({
       {hasil && !hasil.baik && <div className="kabar kabar-salah">{hasil.teks}</div>}
 
       {minta && (
-        <div className="modal-tirai" onClick={() => !sibuk && setMinta(null)}>
+        <Portal>
+        {/* Tirai tidak menutup saat diklik — kotaknya berisi alasan yang baru
+            diketik, dan alasan itu wajib minimal lima huruf. Menghilangkannya
+            karena kursor meleset berarti mengetik ulang. Sama dengan KMB V2,
+            yang tak memberi onclick pada tirai modal mana pun. */}
+        <div className="modal-tirai">
           <div className="modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{JUDUL[minta]} — {nomor}</h3>
@@ -168,6 +174,7 @@ export function AksiKartu({
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {bukaOverride && (
