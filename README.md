@@ -46,25 +46,45 @@ tests/
 
 ```bash
 npm install
-npm test          # uji rumus uang, tidak butuh basis data
+npm test          # 28 uji: rumus uang + invarian basis data
 npm run typecheck
 ```
 
-Untuk basis data:
+### Basis data pengembangan
+
+Instans **terpisah** di port 5433, bukan Postgres yang mungkin sudah kamu pakai
+di 5432. Tanpa kata sandi, boleh dihapus kapan saja.
 
 ```bash
-createdb kmb_project
-psql kmb_project -f db/schema.sql
-psql kmb_project -f db/seed.sql
-export DATABASE_URL=postgres://localhost:5432/kmb_project
+PGBIN="/c/Program Files/PostgreSQL/18/bin"
+DATA="/c/Users/gabri/AppData/Local/kmbproject-pg"
+
+# sekali saja
+"$PGBIN/initdb.exe" -D "$DATA" -U postgres --auth=trust --encoding=UTF8
+
+# tiap kali mau dipakai (lepas dari shell, supaya tak ikut mati)
+powershell -NoProfile -Command "Start-Process '$PGBIN/postgres.exe' \
+  -ArgumentList '-D','$DATA','-p','5433' -WindowStyle Hidden"
+
+# pasang skema
+"$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d postgres \
+  -c "CREATE DATABASE kmb_project;"
+"$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d kmb_project \
+  -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
 ```
+
+> **Jangan taruh direktori data Postgres di OneDrive.** Sinkronisasi latar akan
+> menyentuh berkas yang sedang ditulis mesin basis data dan merusaknya. Karena
+> itu ia di `AppData\Local`, yang tidak ikut tersinkron.
+
+Sambungan dibaca dari `.env` (lihat `.env.example`).
 
 ## Keadaan sekarang
 
 | Tahap | Status |
 |---|---|
-| 1 · Skema + benih | ✅ berdiri |
-| 2 · Lapisan bisnis (WO, approval, scoring) | 🔨 inti selesai, uji konkurensi belum |
+| 1 · Skema + benih | ✅ berdiri, 37 tabel |
+| 2 · Lapisan bisnis (WO, approval, scoring) | ✅ 28 uji lulus, termasuk konkurensi |
 | 3 · Web | belum |
 | 4 · PWA offline | belum |
 | 5 · Dashboard, payroll, koreksi meter | belum |
