@@ -10,3 +10,9 @@ coverage/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# Berkas payroll SUNGGUHAN dari KMB V2 — acuan bentuk export, bukan bagian
+# proyek. Isinya nama dan gaji orang yang benar-benar bekerja di sana; sekali
+# masuk git ia ada di riwayat selamanya, termasuk di salinan siapa pun yang
+# kelak meng-clone repo ini. Dibaca lewat `npx tsx scripts/baca-xlsx.ts`.
+*.xlsx

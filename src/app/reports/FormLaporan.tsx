@@ -114,7 +114,7 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
         </p>
 
         {/* ── saklar mode ───────────────────────────────────────────────── */}
-        <div className="pilihan-grid" style={{ marginTop: 'var(--spacing-lg)' }}>
+        <div className="saklar-mode">
           {([
             ['month', '📅 Pilih Bulan & Tahun'],
             ['range', '📆 Rentang Tanggal'],
@@ -130,7 +130,7 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
           ))}
         </div>
 
-        <div className="form-group" style={{ marginTop: 'var(--spacing-lg)', maxWidth: 360 }}>
+        <div className="form-group" style={{ marginTop: 'var(--spacing-lg)' }}>
           <label className="form-label" htmlFor="sec">Pilih Section</label>
           <select id="sec" value={section} onChange={(e) => setSection(e.target.value)}>
             {sections.length !== 1 && (
@@ -155,14 +155,7 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
               Bulan yang Anda pilih adalah bulan <b>penutup</b> — memilih{' '}
               <i>September</i> berarti <b>16 Agustus – 15 September</b>.
             </div>
-            {/* Rentang yang BENAR-BENAR akan diekspor, dihitung dari pilihan
-                sekarang. Penjelasan aturan saja tidak cukup: yang menghapus
-                keraguan adalah melihat tanggalnya sendiri sebelum menekan
-                Generate. */}
-            <div className="kotak-periode">
-              Akan mengekspor: <b>{rentangDari(bulan, tahun)}</b>
-            </div>
-            <div className="form-row" style={{ maxWidth: 480 }}>
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="bln">Bulan penutup</label>
                 <select id="bln" value={bulan} onChange={(e) => setBulan(Number(e.target.value))}>
@@ -189,7 +182,7 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
                 pemeriksaan, bukan untuk membayar.
               </div>
             )}
-          <div className="form-row" style={{ maxWidth: 480 }}>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="dari">Dari Tanggal</label>
               <input id="dari" type="date" value={mulai} onChange={(e) => setMulai(e.target.value)} />
@@ -203,7 +196,7 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
         )}
 
         <button
-          type="button" className="btn-export"
+          type="button" className="btn-export btn-blok"
           disabled={sibuk}
           onClick={() => void generate()}
         >
@@ -221,12 +214,18 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
             </div>
 
             <div className="hasil-angka">
-              <div><div className="hasil-nilai">{hasil.statistik.mekanik}</div>
-                   <div className="hasil-label">Mekanik</div></div>
-              <div><div className="hasil-nilai">{hasil.barisDetail}</div>
-                   <div className="hasil-label">WO Selesai</div></div>
-              <div><div className="hasil-nilai">{rupiah(hasil.statistik.idr)}</div>
-                   <div className="hasil-label">Total IDR</div></div>
+              <div className="hasil-kotak">
+                <div className="hasil-nilai">{hasil.statistik.mekanik}</div>
+                <div className="hasil-label">Mekanik</div>
+              </div>
+              <div className="hasil-kotak">
+                <div className="hasil-nilai">{hasil.barisDetail}</div>
+                <div className="hasil-label">WO Selesai</div>
+              </div>
+              <div className="hasil-kotak">
+                <div className="hasil-nilai">{rupiah(hasil.statistik.idr)}</div>
+                <div className="hasil-label">Total IDR</div>
+              </div>
             </div>
 
             {/* Siapa yang TIDAK ikut dibayar, disebut namanya. Aturan akun uji
@@ -251,7 +250,7 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
                 Berkasnya dibentuk saat diminta, bukan disimpan di memori layar:
                 laporan sebesar ini tak perlu dititipkan ke peramban. */}
             <a
-              className="btn-download"
+              className="btn-download btn-blok"
               href={`/api/laporan?${parameter().toString()}`}
             >⬇️ Download Excel</a>
           </div>
@@ -259,22 +258,6 @@ export function FormLaporan({ sections, periodeBerjalan }: Props) {
       </div>
     </div>
   );
-}
-
-/**
- * Rentang yang dihasilkan sebuah bulan penutup: 16 bulan sebelumnya sampai 15
- * bulan itu. Aturannya sama dengan `src/domain/periode.ts`; di sini ia hanya
- * DIBACAKAN, tidak dipakai menghitung apa pun — batas yang sesungguhnya tetap
- * dihitung server.
- */
-function rentangDari(bulanPenutup: number, tahunPenutup: number): string {
-  const akhir = new Date(tahunPenutup, bulanPenutup - 1, 15);
-  const mulai = new Date(tahunPenutup, bulanPenutup - 2, 16);
-  const B = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
-  const samaTahun = mulai.getFullYear() === akhir.getFullYear();
-  return `${mulai.getDate()} ${B[mulai.getMonth()]}`
-       + (samaTahun ? '' : ` ${mulai.getFullYear()}`)
-       + ` – ${akhir.getDate()} ${B[akhir.getMonth()]} ${akhir.getFullYear()}`;
 }
 
 function samaDenganPeriode(

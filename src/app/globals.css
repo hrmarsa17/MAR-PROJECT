@@ -1318,13 +1318,37 @@ select, textarea {
 .btn-download:hover { background: #059669; color: #fff; }
 @media (max-width: 560px) { .hasil-angka { grid-template-columns: 1fr; } }
 
-.kotak-periode {
-  background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46;
-  border-radius: 8px; padding: 10px 12px; margin-bottom: 1rem;
-  font-size: 0.875rem;
+/* Saklar dua pilihan yang membelah lebar penuh, bentuk dari layar Reports
+   KMB V2. Bukan sekadar dua tombol berdampingan: keduanya SAMA LEBAR, dan
+   yang aktif berlatar penuh — itu yang membuatnya terbaca sebagai satu
+   sakelar berposisi dua, bukan dua aksi yang berdiri sendiri. */
+.saklar-mode {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  margin-top: var(--spacing-lg); margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.saklar-mode > .pilihan {
+  border: none; border-radius: 0; margin: 0;
+  padding: 0.75rem 1rem; font-size: 0.875rem; font-weight: 600;
+  background: var(--card); color: var(--text-secondary);
+}
+.saklar-mode > .pilihan:hover:not(.terpilih) {
+  background: var(--bg-secondary); transform: none;
+}
+.saklar-mode > .pilihan.terpilih {
+  background: var(--pilih-text); color: #fff; border: none;
 }
 .kotak-awas {
   background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E;
   border-radius: 8px; padding: 10px 12px; margin-bottom: 1rem;
   font-size: 0.8125rem; line-height: 1.5;
+}
+
+/* Statistik hasil: kartu putih di dalam kotak hijau. Kotak putih itu yang
+   membuat angkanya terbaca sebagai hasil yang bisa dikutip, bukan sebagai
+   bagian dari kalimat "berhasil dibuat". */
+.hasil-kotak {
+  background: var(--card); border: 1px solid #A7F3D0;
+  border-radius: var(--radius-sm); padding: 0.875rem 0.5rem;
 }

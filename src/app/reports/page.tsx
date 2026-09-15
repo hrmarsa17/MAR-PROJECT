@@ -35,10 +35,7 @@ export default async function Reports() {
     <div className="container-sempit">
       <div className="page-header">
         <h1 className="page-title">📊 Reports</h1>
-        <p className="page-subtitle">
-          Angka di berkas ini dibaca dari nilai yang dibekukan saat poin terbit —
-          bukan dihitung ulang dengan tarif hari ini.
-        </p>
+        <p className="page-subtitle">Export data insentif mekanik untuk kebutuhan payroll</p>
       </div>
       <FormLaporan
         sections={sections.map((s) => ({ code: s.code, name: s.name }))}

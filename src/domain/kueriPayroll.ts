@@ -53,9 +53,18 @@ export interface BarisDetail {
   mekanikId: number;
   mekanikKode: string;
   nama: string;
+  /** Label jabatan yang dibaca orang (mechanics.grade). */
   jabatan: string;
+  /** Golongan tarif (pay_rates.position) — dipakai sheet Ringkasan. */
+  posisi: string;
+  /** "YYYY-MM-DD" di zona tenant. */
   tglSubmit: string | null;
   tglApproved: string | null;
+  /** "HH:MM" di zona tenant. */
+  jamMulai: string | null;
+  jamSelesai: string | null;
+  /** Kunci mentah, supaya pembuat workbook memakai labelnya sendiri. */
+  kondisiKunci: string;
   woNumber: string;
   unitKode: string;
   komponen: string;
@@ -86,6 +95,8 @@ export interface BarisRingkas {
   totalPoin: number;
   /** Angka bila tarifnya tunggal sepanjang periode; null bila bercampur. */
   ratePoin: number | null;
+  /** Golongan tarif. Sheet Ringkasan memakainya — lihat catatan excelPayroll. */
+  posisi: string;
   totalIdr: number;
 }
 
@@ -150,6 +161,9 @@ export async function dataPayroll(
     komponen: string | null; deskripsi: string | null;
     kondisi: string | null; lokasi: string | null;
     start_time: Date | null; end_time: Date | null;
+    tgl_submit_tz: string | null; tgl_approved_tz: string | null;
+    jam_mulai_tz: string | null; jam_selesai_tz: string | null;
+    kondisi_kunci: string; posisi: string | null;
     s_actual: string | null; s_base: string | null; s_unit: string | null;
     s_kondisi: string | null; s_waktu: string | null; s_safety: string | null;
     s_mtbf: string | null; s_final: string | null;
@@ -167,6 +181,19 @@ export async function dataPayroll(
                 ELSE coalesce(j.job_description, '-') END            AS deskripsi,
            coalesce(fwc.description, w.work_condition::text) AS kondisi,
            w.location AS lokasi, w.start_time, w.end_time,
+           -- Tanggal & jam DIGESER KE ZONA TENANT di Postgres. Kalau digeser
+           -- di Node, ia memakai zona proses — yang di server bisa saja UTC,
+           -- dan "16 Agt 07:00" berubah jadi "16 Agt 00:00" di berkas gaji.
+           to_char(w.submitted_at AT TIME ZONE ${tz}, 'YYYY-MM-DD')          AS tgl_submit_tz,
+           to_char(coalesce(w.approved_l2_at, w.created_at) AT TIME ZONE ${tz},
+                   'YYYY-MM-DD')                                            AS tgl_approved_tz,
+           to_char(w.start_time AT TIME ZONE ${tz}, 'HH24:MI')               AS jam_mulai_tz,
+           to_char(w.end_time   AT TIME ZONE ${tz}, 'HH24:MI')               AS jam_selesai_tz,
+           -- Kunci mentahnya ikut: sheet Detail memakai label yang BERBEDA
+           -- dari layar (Ringan/Sedang/Berat, bukan Shift 1/2). Lihat catatan
+           -- di excelPayroll.ts.
+           w.work_condition::text AS kondisi_kunci,
+           pr.position::text      AS posisi,
            ss.actual_hours          AS s_actual,
            ss.base_points           AS s_base,
            ss.unit_factor           AS s_unit,
@@ -179,6 +206,7 @@ export async function dataPayroll(
       FROM mechanic_points mp
       JOIN work_orders w ON w.id = mp.work_order_id
       JOIN mechanics   m ON m.id = mp.mechanic_id
+      LEFT JOIN pay_rates pr ON pr.id = m.pay_rate_id
       JOIN sections    s ON s.id = w.section_id
       LEFT JOIN scoring_snapshots ss ON ss.work_order_id = w.id
       LEFT JOIN units u ON u.id = w.unit_id
@@ -218,8 +246,12 @@ export async function dataPayroll(
     mekanikKode: r.kode,
     nama: r.nama,
     jabatan: r.jabatan?.trim() || '-',
-    tglSubmit: r.submitted_at?.toISOString() ?? null,
-    tglApproved: r.approved_at?.toISOString() ?? null,
+    posisi: r.posisi?.trim() || '-',
+    tglSubmit: r.tgl_submit_tz,
+    tglApproved: r.tgl_approved_tz,
+    jamMulai: r.jam_mulai_tz,
+    jamSelesai: r.jam_selesai_tz,
+    kondisiKunci: r.kondisi_kunci,
     woNumber: r.wo_number,
     unitKode: r.unit_kode ?? '-',
     komponen: r.komponen ?? '-',
@@ -249,7 +281,8 @@ export async function dataPayroll(
     if (!g) {
       g = {
         mekanikId: d.mekanikId, mekanikKode: d.mekanikKode, nama: d.nama,
-        jabatan: d.jabatan, totalWo: 0, totalPoin: 0, ratePoin: null, totalIdr: 0,
+        jabatan: d.jabatan, posisi: d.posisi,
+        totalWo: 0, totalPoin: 0, ratePoin: null, totalIdr: 0,
         tarif: new Set<number>(),
       };
       peta.set(d.mekanikId, g);
