@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
 import { sectionYangBoleh } from '../../domain/kueri.js';
 import { sql } from '../../lib/db.js';
+import { periodeSaatIni } from '../../domain/periode.js';
 import { FormLaporan } from './FormLaporan.js';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,14 @@ export default async function Reports() {
      ORDER BY sort_order
   `;
 
+  /* Periode berjalan dihitung DI SERVER dan dikirim ke layar.
+     Kalau layar menghitungnya sendiri, ia memakai jam peramban — dan jam
+     peramban bukan zona bisnis. Satu definisi periode, dan yang memegangnya
+     tetap `src/domain/periode.ts`. */
+  const p = periodeSaatIni();
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   return (
     <div className="container-sempit">
       <div className="page-header">
@@ -31,7 +40,16 @@ export default async function Reports() {
           bukan dihitung ulang dengan tarif hari ini.
         </p>
       </div>
-      <FormLaporan sections={sections.map((s) => ({ code: s.code, name: s.name }))} />
+      <FormLaporan
+        sections={sections.map((s) => ({ code: s.code, name: s.name }))}
+        periodeBerjalan={{
+          label: p.label,
+          mulai: iso(p.mulai),
+          akhir: iso(p.akhir),
+          bulanPenutup: p.akhir.getMonth() + 1,
+          tahunPenutup: p.akhir.getFullYear(),
+        }}
+      />
     </div>
   );
 }

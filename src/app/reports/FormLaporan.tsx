@@ -15,6 +15,11 @@ import { useMemo, useState } from 'react';
 
 interface Props {
   sections: { code: string; name: string }[];
+  /** Periode gaji yang SEDANG berjalan, dihitung server. */
+  periodeBerjalan: {
+    label: string; mulai: string; akhir: string;
+    bulanPenutup: number; tahunPenutup: number;
+  };
 }
 
 interface Pratinjau {
@@ -29,13 +34,19 @@ const NAMA_BULAN = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ];
 
-export function FormLaporan({ sections }: Props) {
+export function FormLaporan({ sections, periodeBerjalan }: Props) {
   const kini = new Date();
   const [mode, setMode] = useState<'month' | 'range'>('month');
-  const [bulan, setBulan] = useState(kini.getMonth() + 1);
-  const [tahun, setTahun] = useState(kini.getFullYear());
-  const [mulai, setMulai] = useState(awalBulan(kini));
-  const [akhir, setAkhir] = useState(akhirBulan(kini));
+  const [bulan, setBulan] = useState(periodeBerjalan.bulanPenutup);
+  const [tahun, setTahun] = useState(periodeBerjalan.tahunPenutup);
+  /* Rentang pun DIAWALI periode gaji berjalan (16 ke 15), bukan 1 sampai akhir
+     bulan kalender seperti sumber. Bawaan kalender itu penyimpangan yang
+     mahal: orang membuka layar, menekan Generate, dan mendapat berkas yang
+     rentangnya BUKAN periode gaji — tanpa satu pun tanda bahwa itu bukan
+     yang biasa dibayarkan. Rentang bebas tetap ada; yang berubah titik
+     mulainya. */
+  const [mulai, setMulai] = useState(periodeBerjalan.mulai);
+  const [akhir, setAkhir] = useState(periodeBerjalan.akhir);
   const [section, setSection] = useState('all');
 
   const [sibuk, setSibuk] = useState(false);
@@ -144,6 +155,13 @@ export function FormLaporan({ sections }: Props) {
               Bulan yang Anda pilih adalah bulan <b>penutup</b> — memilih{' '}
               <i>September</i> berarti <b>16 Agustus – 15 September</b>.
             </div>
+            {/* Rentang yang BENAR-BENAR akan diekspor, dihitung dari pilihan
+                sekarang. Penjelasan aturan saja tidak cukup: yang menghapus
+                keraguan adalah melihat tanggalnya sendiri sebelum menekan
+                Generate. */}
+            <div className="kotak-periode">
+              Akan mengekspor: <b>{rentangDari(bulan, tahun)}</b>
+            </div>
             <div className="form-row" style={{ maxWidth: 480 }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="bln">Bulan penutup</label>
@@ -162,6 +180,15 @@ export function FormLaporan({ sections }: Props) {
             </div>
           </>
         ) : (
+          <>
+            {!samaDenganPeriode(mulai, akhir, periodeBerjalan) && (
+              <div className="kotak-awas">
+                ⚠️ Rentang ini <b>bukan</b> periode gaji. Periode berjalan:{' '}
+                <b>{periodeBerjalan.label}</b> ({periodeBerjalan.mulai} sampai{' '}
+                {periodeBerjalan.akhir}). Pakai rentang bebas hanya untuk
+                pemeriksaan, bukan untuk membayar.
+              </div>
+            )}
           <div className="form-row" style={{ maxWidth: 480 }}>
             <div className="form-group">
               <label className="form-label" htmlFor="dari">Dari Tanggal</label>
@@ -172,6 +199,7 @@ export function FormLaporan({ sections }: Props) {
               <input id="sampai" type="date" value={akhir} onChange={(e) => setAkhir(e.target.value)} />
             </div>
           </div>
+          </>
         )}
 
         <button
@@ -233,12 +261,26 @@ export function FormLaporan({ sections }: Props) {
   );
 }
 
-function awalBulan(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+/**
+ * Rentang yang dihasilkan sebuah bulan penutup: 16 bulan sebelumnya sampai 15
+ * bulan itu. Aturannya sama dengan `src/domain/periode.ts`; di sini ia hanya
+ * DIBACAKAN, tidak dipakai menghitung apa pun — batas yang sesungguhnya tetap
+ * dihitung server.
+ */
+function rentangDari(bulanPenutup: number, tahunPenutup: number): string {
+  const akhir = new Date(tahunPenutup, bulanPenutup - 1, 15);
+  const mulai = new Date(tahunPenutup, bulanPenutup - 2, 16);
+  const B = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+  const samaTahun = mulai.getFullYear() === akhir.getFullYear();
+  return `${mulai.getDate()} ${B[mulai.getMonth()]}`
+       + (samaTahun ? '' : ` ${mulai.getFullYear()}`)
+       + ` – ${akhir.getDate()} ${B[akhir.getMonth()]} ${akhir.getFullYear()}`;
 }
-function akhirBulan(d: Date): string {
-  const t = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+
+function samaDenganPeriode(
+  a: string, b: string, p: { mulai: string; akhir: string },
+): boolean {
+  return a === p.mulai && b === p.akhir;
 }
 function rupiah(n: number): string {
   return 'Rp ' + Math.round(n).toLocaleString('id-ID');
