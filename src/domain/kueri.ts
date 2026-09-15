@@ -30,7 +30,7 @@ export interface KartuWo {
 }
 
 /** Scope kosong = boleh melihat semua section. Perilaku KMB V2 dipertahankan. */
-async function sectionYangBoleh(mechanicId: number): Promise<string[] | null> {
+export async function sectionYangBoleh(mechanicId: number): Promise<string[] | null> {
   const rows = await sql<{ section: string }[]>`
     SELECT section::text FROM mechanic_sections WHERE mechanic_id = ${mechanicId}
   `;

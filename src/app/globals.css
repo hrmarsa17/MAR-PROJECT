@@ -639,3 +639,125 @@ textarea { min-height: 64px; resize: vertical; }
 @media (max-width: 768px) {
   .team-member-row .mechanic-select { max-width: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DASHBOARD PERFORMA
+   Ditulis ulang dari Main.html, termasuk alasan tiap keputusan bentuknya.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Tiga papan sejajar, lebar sama. Sejajar karena dibaca BERSAMAAN — "siapa
+   unggul periode ini" di sebelah "siapa bergerak hari ini". Menaruh salah
+   satunya lebih kecil membuatnya terbaca sebagai yang kurang penting, padahal
+   justru yang harian yang berubah tiap hari. */
+.grid-papan {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  align-items: stretch;
+}
+/* Tinggi DIPATOK, daftarnya yang bergulir. Tanpa patokan, papan periode dengan
+   15 nama menjulur sampai layar harus digulir hanya untuk mencapai grafik di
+   bawahnya — dan yang di urutan 12 tak pernah dilihat siapa pun. Yang dicari
+   orang di papan peringkat adalah puncaknya; sisanya cukup dapat dijangkau. */
+.grid-papan > .card { display: flex; flex-direction: column; max-height: 430px; padding: 0; }
+.papan-isi { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0;
+             padding: 0.5rem 1.25rem; }
+/* min-height:0 wajib: tanpa itu anak flex menolak menyusut di bawah tinggi
+   isinya, dan overflow-y tak pernah aktif — kartunya yang memanjang. */
+.papan-gulir { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
+
+.card-header-tumpuk { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.card-sub { font-size: 0.72rem; color: var(--text-secondary); font-weight: 500; }
+
+/* Spanduk "perkiraan": UNGU. Di sistem ini ungu hanya dipakai untuk angka yang
+   BUKAN kenyataan final — sama dengan spanduk demo di Teknis. Sekali orang
+   mengenalinya, ia tak perlu membaca ulang. Sengaja TIDAK merah: ini bukan
+   kesalahan, cuma angka yang belum selesai. */
+.taksir {
+  background: #F5F3FF; border: 1px solid #DDD6FE; color: #5B21B6;
+  border-radius: 8px; padding: 7px 10px; margin: 0 0 8px;
+  font-size: 0.72rem; line-height: 1.45;
+}
+
+.papan-baris {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem 0; border-bottom: 1px solid var(--divider);
+}
+.papan-baris:last-child { border-bottom: none; }
+.papan-rank { font-size: 1.25rem; min-width: 36px; text-align: center;
+              font-weight: 700; color: var(--text-secondary); }
+.papan-info { flex: 1; min-width: 0; }
+.papan-nama { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.15rem; }
+/* Jabatan dipotong dengan elipsis, tak pernah dibiarkan mendorong angka di
+   kanan sampai turun baris. */
+.papan-grade { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600;
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.papan-wo { color: var(--text-secondary); font-size: 0.8rem; }
+
+/* ── YANG BESAR ADALAH POIN, BUKAN RUPIAH ─────────────────────────────────
+   Papan ini diurutkan menurut POIN. Selama semua tarif bernilai sama, urutan
+   poin dan urutan rupiah kebetulan sama persis, dan rupiah yang besar terbaca
+   seolah itu dasar peringkatnya. Begitu tarif per jabatan menyala keduanya
+   BERPISAH: seorang junior bisa unggul poin tapi kalah rupiah dari seniornya.
+   Papan yang terurut sempurna menurut poin akan tampak ACAK kalau yang dibaca
+   mata lebih dulu adalah rupiahnya.
+
+   Rupiah tetap ada, sekadar lebih kecil: ia hasil, bukan ukuran. */
+.papan-angka { text-align: right; white-space: nowrap; }
+.papan-poin { font-weight: 800; font-size: 1.05rem; line-height: 1.15;
+              font-variant-numeric: tabular-nums; }
+.papan-poin span { font-weight: 500; color: var(--text-secondary);
+                   font-size: 0.72rem; margin-left: 2px; }
+.papan-rupiah { font-weight: 500; color: #059669; font-size: 0.78rem;
+                white-space: nowrap; margin-top: 2px;
+                font-variant-numeric: tabular-nums; }
+
+/* Grafik + Quick Stats */
+.grid-bawah { display: grid; grid-template-columns: 2fr 1fr; gap: var(--spacing-lg);
+              align-items: stretch; }
+.grid-bawah > .card { display: flex; flex-direction: column; padding: 0; }
+.tren-isi { flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+            padding: var(--spacing-lg); min-height: 250px; }
+.tren-svg { width: 100%; height: auto; max-height: 280px; overflow: visible; }
+.tren-label { font-size: 10px; fill: var(--text-secondary); }
+
+.qs-butir { padding: 0.875rem 0; border-bottom: 1px solid var(--divider); }
+.qs-butir:last-child { border-bottom: none; }
+.qs-label { color: var(--text-secondary); font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+.qs-nilai { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+/* Rincian jabatan. Sengaja jauh lebih kecil dari angka besarnya: ia keterangan,
+   bukan angka kedua yang bersaing dibaca. */
+.qs-jabatan { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.qs-jabatan-baris { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.78rem; }
+.qs-jabatan-nama { color: #475569; flex: 1; min-width: 0;
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Titik-titik penghubung supaya mata tak tersesat saat namanya pendek dan
+   angkanya jauh di kanan. */
+.qs-jabatan-titik { flex: 0 1 auto; border-bottom: 1px dotted #CBD5E1;
+                    min-width: 0.75rem; transform: translateY(-0.2rem); }
+.qs-jabatan-n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.qs-jabatan-kosong { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.4rem; }
+
+.tabel-gulir { max-height: 380px; overflow-y: auto; }
+.tabel-gulir .table th { position: sticky; top: 0; background: var(--card); z-index: 1; }
+.sel-judgment { max-width: 220px; color: #92400E; }
+.sel-kosong { color: #CBD5E1; }
+
+@media (max-width: 1280px) { .grid-papan { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1024px) {
+  .grid-papan { grid-template-columns: 1fr; }
+  .grid-bawah { grid-template-columns: 1fr; }
+  .grid-papan > .card { max-height: none; }
+}
+@media (max-width: 640px) {
+  /* Di layar sempit angka turun ke barisnya sendiri. Poin & rupiah harus turun
+     BERSAMA sebagai satu blok — kalau hanya rupiah yang dibungkus, ia terpisah
+     dari poin dan kembali jadi angka yang paling menonjol, persis yang ingin
+     dihindari. */
+  .papan-baris { flex-wrap: wrap; }
+  .papan-angka { width: 100%; display: flex; align-items: baseline;
+                 justify-content: flex-end; gap: 0.5rem; margin-top: 0.15rem; }
+  .papan-angka .papan-rupiah { margin-top: 0; }
+}

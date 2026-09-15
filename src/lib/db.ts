@@ -11,8 +11,35 @@ import postgres, { type TransactionSql } from 'postgres';
 /** OID tipe int8 (bigint) di Postgres. */
 const OID_INT8 = 20;
 
+/**
+ * TIDAK ADA ALAMAT BAWAAN — dan itu disengaja.
+ *
+ * Sampai 15 Sep 2026 baris ini berbunyi:
+ *
+ *     process.env['DATABASE_URL'] ?? 'postgres://localhost:5432/kmb_project'
+ *
+ * Port 5432 di mesin ini BUKAN basis data pengembangan; ia milik Gabriel.
+ * Basis data dev berdiri di 5433. Artinya skrip apa pun yang lupa memuat `.env`
+ * akan diam-diam mengarah ke basis data yang salah — dan ia hanya ketahuan
+ * karena instans itu kebetulan berkata sandi. Kalau tidak, sebuah skrip bisa
+ * saja MENULIS ke sana.
+ *
+ * Menebak alamat basis data adalah bentuk kemudahan yang harganya tidak
+ * sebanding. Lebih baik berhenti di sini dengan pesan yang menyebutkan apa yang
+ * harus dilakukan.
+ */
+const alamat = process.env['DATABASE_URL'];
+if (!alamat) {
+  throw new Error(
+    'DATABASE_URL belum diisi. Basis data TIDAK ditebak — port 5432 di mesin ' +
+    'pengembangan ini milik instans lain.\n' +
+    '  • Next.js & vitest memuat .env sendiri.\n' +
+    "  • Skrip `npx tsx` harus mengimpor './muat-env.js' SEBELUM src/lib/db.js.",
+  );
+}
+
 export const sql = postgres(
-  process.env['DATABASE_URL'] ?? 'postgres://localhost:5432/kmb_project',
+  alamat,
   {
     max: Number(process.env['DB_POOL_MAX'] ?? 10),
     idle_timeout: 20,
