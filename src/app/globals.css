@@ -1091,3 +1091,118 @@ select, textarea {
    menggulir HALAMAN di belakangnya, dan isi layar bergeser diam-diam saat
    modalnya ditutup. */
 .modal-tirai { overscroll-behavior: contain; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MODAL — angka dari Approval.html:150-180
+   ══════════════════════════════════════════════════════════════════════════
+   Modal KMB V2 terasa lebih luwes bukan karena animasinya, melainkan karena
+   BOBOTNYA: garis 2px bukan 1px, judul 1,25rem bukan 1rem, kepala berpadding
+   penuh 1,5rem, dan baris tim duduk di atas baki abu-abu alih-alih melayang.
+   Salinan saya memakai skala kartu biasa, dan di dalam kotak sesempit ini
+   semuanya jadi tipis dan berdesakan.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.modal-tirai { background: rgba(0, 0, 0, 0.5); }
+.modal {
+  border-radius: 12px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 2px solid #F3F4F6;
+}
+.modal-header h3 { font-size: 1.25rem; font-weight: 700; }
+.modal-body { padding: 1.5rem; }
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 2px solid #F3F4F6;
+  gap: 0.75rem;
+}
+/* Tombol tutup: tanpa latar sampai disentuh. Ia jalan keluar, bukan pilihan
+   yang ditawarkan — memberinya latar tetap membuatnya bersaing dengan Cancel. */
+.modal-tutup {
+  background: none; border: none; color: var(--text-secondary);
+  width: 32px; height: 32px; min-height: 32px; border-radius: 6px;
+  font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-tutup:hover { background: #F3F4F6; color: var(--text); }
+
+/* Isian DI DALAM modal lebih tebal daripada di halaman biasa: 2px, 0.95rem.
+   Di kotak sesempit ini garis 1px hilang di antara label dan petunjuk. */
+.modal .form-control,
+.modal input[type='text'], .modal input[type='number'], .modal input[type='date'],
+.modal input[type='datetime-local'], .modal select, .modal textarea {
+  border-width: 2px;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+}
+.modal .form-label {
+  display: block; font-size: 0.85rem; font-weight: 600;
+  color: #374151; margin-bottom: 0.5rem;
+}
+.modal .form-hint { font-size: 0.75rem; color: #9CA3AF; margin-top: 0.25rem; }
+.modal .form-group { margin-bottom: 1rem; }
+.modal input[readonly] {
+  background: #F9FAFB; color: var(--text-secondary); cursor: not-allowed;
+}
+
+/* Dua kolom yang benar-benar bisa menyusut. `min-width: 0` wajib: kotak
+   datetime punya lebar bawaan yang besar, dan tanpa ini ia menolak mengecil
+   lalu mendorong kolom sebelahnya keluar modal. */
+.modal .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.modal .form-row > * { min-width: 0; }
+@media (max-width: 560px) { .modal .form-row { grid-template-columns: 1fr; } }
+
+/* Baris tim duduk di atas baki abu-abu. Tanpa baki, dropdown dan tombol hapus
+   melayang di ruang putih dan tak terbaca sebagai satu kesatuan. */
+.modal .team-members { gap: 0.5rem; margin-bottom: 0.75rem; }
+.modal .team-member-row {
+  display: grid; grid-template-columns: 1fr 40px; gap: 0.5rem; align-items: center;
+  padding: 0.5rem; background: #F9FAFB; border-radius: 6px;
+}
+.modal .team-member-row .mechanic-select { max-width: none; }
+.modal .team-member-row .btn-ikon {
+  padding: 0.5rem; min-height: 0; border-radius: 6px; font-weight: 700;
+}
+
+/* Tombol tambah anggota: selebar penuh, bergaris putus-putus.
+   Bentuk ini dari sumber (`.team-editor-add`), dan gunanya jelas — ia
+   membaca sebagai "ada tempat kosong di sini", bukan sebagai aksi yang
+   bersaing dengan Simpan.
+
+   Sumber memberinya garis putus-putus BIRU di atas latar amber — sisa tema
+   lama yang tak ikut terganti saat temanya jadi biru. Di sini garisnya
+   disamakan amber; itu bukan penyimpangan bentuk, cuma membereskan warna
+   yang memang sudah tak nyambung di sana. */
+.modal .btn-tambah-anggota {
+  width: 100%; padding: 0.6rem;
+  background: var(--pilih-bg); color: var(--pilih-text);
+  border: 2px dashed #FCD34D; border-radius: 8px;
+  font-weight: 600; font-size: 0.85rem; cursor: pointer;
+}
+.modal .btn-tambah-anggota:hover:not(:disabled) { background: #FDE68A; }
+
+.modal .kabar { margin: 0.75rem 0 0; }
+
+/* Jam + menit adalah SATU medan yang kebetulan dua kotak — ia tidak boleh
+   ikut grid dua kolom modal, atau menitnya jatuh ke baris berikutnya. */
+.modal .kotak-jam-menit { display: flex; gap: 0.5rem; align-items: center; }
+.modal .kotak-jam-menit input { width: 5.5rem; }
+.modal .kotak-jam-menit span { font-weight: 600; font-size: 0.85rem; }
+
+/* Bacaan durasi, bukan pesan. Amber karena ia angka yang perlu dibaca ulang
+   sebelum disimpan; merah hanya ketika jamnya memang mustahil. */
+.kotak-durasi {
+  background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E;
+  border-radius: 8px; padding: 0.6rem 0.75rem;
+  font-size: 0.85rem; font-weight: 700; margin-top: 0.25rem;
+}
+.kotak-durasi.salah { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+
+/* `margin: auto` di dalam tirai flex: modal pendek — "Memuat…", pesan galat —
+   duduk di TENGAH layar, sementara modal panjang tetap mulai dari atas dan
+   menggulir. Tanpa ini yang pendek menempel di tepi atas dan terbaca sebagai
+   setengah termuat. Sama dengan `Approval.html:152`. */
+.modal { margin: auto; }

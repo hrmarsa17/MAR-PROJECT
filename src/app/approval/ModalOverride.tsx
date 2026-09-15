@@ -232,7 +232,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
             {/* Jam + menit terpisah, bukan desimal. "1,2 jam" harus dihitung di
                 kepala sebelum bisa dinilai wajar; "1 jam 12 menit" tidak. */}
             <label className="form-label">Target Hours</label>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div className="kotak-jam-menit">
               <input
                 type="number" min="0" step="1" placeholder="Jam" style={{ width: 90 }}
                 value={tJam} disabled={!bekal.bolehDiubah}
@@ -302,7 +302,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
             ))}
           </div>
           <button
-            type="button" className="btn-secondary btn-sm" style={{ marginTop: 8 }}
+            type="button" className="btn-tambah-anggota"
             disabled={!bekal.bolehDiubah}
             onClick={() => setTim([...tim, 0])}
           >+ Add Member</button>
@@ -335,8 +335,9 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
             />
           </div>
         </div>
-        <div className={`kabar ${waktuSah ? 'kabar-awas' : 'kabar-salah'}`}>
-          Durasi: {sesiJam === null ? '—'
+        <div className={`kotak-durasi${waktuSah ? '' : ' salah'}`}>
+          Durasi:{' '}
+          {sesiJam === null ? '—'
             : sesiJam <= 0 ? '⚠️ Jam selesai harus setelah jam mulai'
             : durasiJam(sesiJam)}
         </div>
