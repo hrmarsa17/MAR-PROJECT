@@ -1,6 +1,15 @@
 /** Penulisan angka dan waktu dalam kebiasaan Indonesia. */
 
-const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+/**
+ * Nama bulan pendek. `Agt`, bukan `Agu` — itu yang dipakai KMB V2 di seluruh
+ * layarnya (`_PeriodePayroll.js:45`, `DashboardService.js:535`), jadi itu yang
+ * sudah dibaca orang lapangan tiap hari. Keduanya sah dalam bahasa Indonesia;
+ * yang tidak sah adalah dua ejaan berbeda di satu sistem.
+ *
+ * Diekspor supaya `periode.ts` memakai daftar yang SAMA. Label periode dan
+ * label tanggal muncul berdampingan di layar Performa.
+ */
+export const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
 /** "12 Sep 2026 16:35" — seperti di layar KMB V2. */
 export function tanggalJam(nilai: string | Date | null | undefined): string {
