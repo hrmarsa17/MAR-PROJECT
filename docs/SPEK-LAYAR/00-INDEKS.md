@@ -20,8 +20,12 @@ Metode yang benar, dan yang dipakai di seluruh folder ini:
 
 > Untuk tiap layar: baca `<Layar>.html` untuk **bentuknya**, `<Layanan>.js` untuk
 > **angkanya**, lalu port apa adanya. Yang butuh keputusan Gabriel hanya hal yang
-> memang **baru** — warna merah, token yang di-hash. Sisanya sudah ada jawabannya
-> di repo.
+> memang **baru** — warna merah, misalnya. Sisanya sudah ada jawabannya di repo.
+
+Dan kalau saya memutuskan sesuatu yang bukan hal baru, itu tetap keliru meski
+niatnya baik: token sempat saya simpan ter-hash, dan itu mematikan fungsi utama
+layar Monitoring. Gabriel membatalkannya. Pola yang sama, sebab yang sama —
+mengarang alih-alih membaca sumbernya.
 
 Sumber: `C:\Users\gabri\OneDrive\1\KMB\MAR github\MAR-project`, cabang
 `feature/token-auth-web`. **BACA SAJA, JANGAN DISENTUH.** Itu sistem yang sedang
@@ -37,8 +41,6 @@ daftar periksa implementasi tetap terpisah di setiap berkas.
 
 ## 2. Isi folder
 
-| # | Layar | Berkas | Keadaan |
-|---|---|---|---|
 | # | Layar | Berkas | Spek | Layar dibangun |
 |---|---|---|---|---|
 | 1 | Dashboard Performa | [`01-PERFORMA.md`](01-PERFORMA.md) | ✅ | ⬜ penanda |
