@@ -1,0 +1,24 @@
+{
+  "name": "kmb-project",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sistem work order & insentif mekanik — pengganti KMB V2 (GAS + Sheets)",
+  "scripts": {
+    "db:reset": "tsx scripts/reset-db.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
