@@ -27,20 +27,32 @@ Sumber: `C:\Users\gabri\OneDrive\1\KMB\MAR github\MAR-project`, cabang
 `feature/token-auth-web`. **BACA SAJA, JANGAN DISENTUH.** Itu sistem yang sedang
 membayar orang setiap bulan.
 
+Lima spesifikasi lanjutan diverifikasi dari sumber pada **15 Sep 2026,
+commit `d806ee5`**. Rujukan barisnya mengikuti snapshot itu. Jika komentar
+berbeda dari kode yang berjalan, spesifikasi mencatat perbedaannya secara
+terang. **Selesai ditulis bukan berarti layar selesai diimplementasikan**;
+daftar periksa implementasi tetap terpisah di setiap berkas.
+
 ---
 
 ## 2. Isi folder
 
 | # | Layar | Berkas | Keadaan |
 |---|---|---|---|
-| 1 | Dashboard Performa | [`01-PERFORMA.md`](01-PERFORMA.md) | ✅ lengkap |
-| 2 | Create Work Order | [`02-CREATE-WO.md`](02-CREATE-WO.md) | ✅ lengkap |
-| 3 | Monitoring | [`03-MONITORING.md`](03-MONITORING.md) | ✅ lengkap |
-| 3b | Detail Tyre | `03b-DETAIL-TYRE.md` | ⬜ belum ditulis |
-| 4 | Approvals | `04-APPROVALS.md` | ⬜ belum ditulis |
-| 5 | Teknis | `05-TEKNIS.md` | ⬜ belum ditulis |
-| 6 | Koreksi HM & KM | `06-KOREKSI-HM-KM.md` | ⬜ belum ditulis |
-| 7 | Reports | `07-REPORTS.md` | ⬜ belum ditulis |
+| # | Layar | Berkas | Spek | Layar dibangun |
+|---|---|---|---|---|
+| 1 | Dashboard Performa | [`01-PERFORMA.md`](01-PERFORMA.md) | ✅ | ⬜ penanda |
+| 2 | Create Work Order | [`02-CREATE-WO.md`](02-CREATE-WO.md) | ✅ | 🟡 sebagian |
+| 3 | Monitoring | [`03-MONITORING.md`](03-MONITORING.md) | ✅ | 🟡 sebagian |
+| 3b | Detail Tyre | [`03b-DETAIL-TYRE.md`](03b-DETAIL-TYRE.md) | ✅ | ⬜ |
+| 4 | Approvals | [`04-APPROVALS.md`](04-APPROVALS.md) | ✅ | 🟡 sebagian |
+| 5 | Teknis | [`05-TEKNIS.md`](05-TEKNIS.md) | ✅ | ⬜ penanda |
+| 6 | Koreksi HM & KM | [`06-KOREKSI-HM-KM.md`](06-KOREKSI-HM-KM.md) | ✅ | ⬜ penanda |
+| 7 | Reports | [`07-REPORTS.md`](07-REPORTS.md) | ✅ | ⬜ penanda |
+
+**Dua kolom, sengaja.** Spek selesai **tidak** berarti layarnya jadi. Kolom kanan
+yang menentukan apa yang masih harus dikerjakan; daftar periksa implementasinya
+ada di bagian akhir tiap berkas.
 
 Urutan nomor mengikuti urutan menu di navbar (`Main.html:267-275`), bukan urutan
 kepentingan.
@@ -67,9 +79,10 @@ yang sama.
 
 ---
 
-## 4. Peta sumber untuk layar yang belum ditulis
+## 4. Peta sumber ringkas
 
-Sudah dipetakan — tinggal dibaca dan ditulis.
+Peta ini menjadi pintu masuk. Kontrak rinci, perbedaan sumber dengan target,
+dan daftar periksa ada di masing-masing berkas layar.
 
 ### 3b. Detail Tyre
 
@@ -95,13 +108,16 @@ sama:
 pun medan di sini; gerbangnya tetap Start & End Time. Mekanik yang sinyalnya
 hilang di lapangan harus tetap bisa melaporkan kerjanya.
 
-Semua data datang dari **satu panggilan** (`:1086-1091`) — form ini dibuka di
-lapangan dengan sinyal seadanya, dan layar yang terisi separuh lebih
-membingungkan daripada layar yang belum terisi sama sekali.
+Data aktual **sudah ikut daftar WO**, sehingga membuka modal tidak memanggil
+server lagi (`MechanicDashboard.html:1107-1128`). Komentar `:1086-1091` masih
+menyebut panggilan tunggal `siapkanFormTyre`; baca implementasinya juga.
 
-Skema KMB Project sudah siap: `job_detail_forms`, `option_lists`,
+Kerangka skema KMB Project sudah ada: `job_detail_forms`, `option_lists`,
 `option_values`, `job_detail_fields`, `work_order_detail_values`
-(`db/schema.sql:608-671`); tiga form + 10 posisi sudah ada di `db/seed.sql`.
+(`db/schema.sql:608-671`). Tiga form + 10 posisi ada di `db/seed.sql`, tetapi
+lima medan Remove/Instal, isi pilihan dan pengikatannya masih kurang. Detail
+ban harus disimpan setelah transaksi inti jam kerja committed; lihat
+[`03b-DETAIL-TYRE.md`](03b-DETAIL-TYRE.md) untuk kontrak dan ketidaksesuaian sumber.
 
 ### 4. Approvals — **paling kritis, kerjakan lebih dulu**
 
@@ -168,13 +184,21 @@ peran.
 | | 176-240 | gambar riwayat + form ganti panel |
 | | 242-270 | `perbaiki(woId, woNo, hmLama)` · `simpanPanel()` |
 | `Km.html` | 277 | kembaran KM |
-| `_KoreksiHm.js` / `_KoreksiKm.js` | 105 / 86 | sisi server |
+| `_KoreksiHm.js` / `_KoreksiKm.js` | 105 / 86 | **pembungkus tipis saja** |
+| **`_Meter.js`** | **448** | **inti sesungguhnya — HM & KM satu mesin** |
 
 Dua layar kembar. Form ganti panel: `HM panel baru` · `Berlaku sejak`
 (`2026-09-01 08:00`) · alasan (`cth: panel jam rusak, diganti unit baru 1 Sep`).
 
-Skema sudah siap: `meter_readings`, `meter_panel_changes`, `meter_corrections`
-(`db/schema.sql:570-607`).
+> Yang menentukan bukan `_KoreksiHm.js`/`_KoreksiKm.js` — keduanya cuma delapan
+> baris pemetaan nama. Seluruh aturannya tinggal di `_Meter.js` **sekali**, dan
+> itu disengaja (`:12-22`): menyalinnya untuk KM berarti dua tempat yang harus
+> diingat bersamaan setiap kali aturannya berubah, dan yang terlupa selalu yang
+> lebih jarang dipakai. **Bangun satu `src/domain/meter.ts`, bukan dua.**
+
+Tabel sudah tersedia: `meter_readings`, `meter_panel_changes`, `meter_corrections`
+(`db/schema.sql:570-607`). Perintah koreksi/panel dan keselarasan bacaan dengan
+`work_orders` belum tersedia; tabel saja belum membuktikan rantai meter aman.
 
 > Rantai meter **tidak boleh disaring** oleh penyaring tampilan apa pun
 > (`_PeriodePayroll.js:419-427`): menyaring di sana memutus rantai meter dan
@@ -192,8 +216,10 @@ Satu kartu `📥 Export Payroll Excel`:
 - `#selSection` — penyaring section
 - panel Bulan: `#selMonth` + `#selYear`; panel Rentang: dua `input[type=date]`
 - `#btnExport` → `#errorBox` atau `#resultBox`
-- hasil: 3 statistik (`#statMechanics` 👷 · `#statWos` 📋 · `#statIdr` 💰),
-  `#resultPeriod`, `#boxDikecualikan` (akun uji), tombol `#btnDownload`
+- hasil: 3 statistik berlabel polos — `Mekanik` · `WO Selesai` · `Total IDR`
+  (`Reports.html:228-242`; **tanpa emoji** — satu-satunya emoji di kotak hasil
+  adalah ✅ di kepalanya, `:224`), `#resultPeriod`, `#boxDikecualikan` (akun uji),
+  tombol `#btnDownload`
 
 **Wajib**: angka diambil dari **nilai beku** — `mechanic_points.points` dan
 `idr_value` (kolom GENERATED), **bukan** dihitung ulang dari katalog atau rate
@@ -202,8 +228,11 @@ tersimpan sementara payroll menghitung ulang dengan rate sekarang, jadi dua laya
 tak pernah cocok kalau rate pernah berubah (`db/schema.sql:500-504`).
 
 Ada alat pembanding di sumber yang layak diport sebagai uji:
-`cocokkanPapanDenganPayroll()` di `_PeriodePayroll.js:604-717` — membuktikan
-papan peringkat dan export payroll menghasilkan rupiah yang sama.
+`cocokkanPapanDenganPayroll()` di `_PeriodePayroll.js:604-717`. Alat sumber
+membandingkan agregasi nilai tersimpan di kedua sisi; **belum membuktikan
+berkas Excel aktual cocok**, karena jalur export lama masih menghitung ulang
+dengan tarif terkini. Uji target harus membandingkan hasil export yang benar-
+benar dibentuk dengan agregasi `mechanic_points.idr_value`.
 
 ---
 
@@ -251,3 +280,25 @@ Teknis). Hijau `#059669` tetap untuk rupiah.
 4. Peran **foreman** (ada di SUM, tidak di KMB) — ikut atau tidak?
 5. Multi-tenant sungguhan, atau satu tenant selamanya?
 6. Web KMB V2 **tidak responsif** di beberapa layar — ditiru, atau diperbaiki?
+
+---
+
+## 7. Temuan lintas layar sebelum implementasi
+
+Ini hasil pembacaan kode, **bukan hasil uji runtime atau perubahan aturan bisnis**.
+Rincian sumber dan bagian yang masih membutuhkan keputusan ada pada tautan.
+
+| Area | Celah yang tidak boleh tertutup oleh klaim “1:1” | Rujukan |
+|---|---|---|
+| Approvals | Scope/tenant dan izin reject/kembalikan di target perlu diaudit; `op_id` UI belum bertahan antarpercobaan. Komentar sumber tentang deteksi WO kembar juga ada yang tertinggal | [04-APPROVALS.md](04-APPROVALS.md) |
+| Reports | Export sumber memakai tarif terkini; target wajib nilai beku. Kolom Rate/Poin saat tarif berubah dalam satu periode dan definisi jumlah WO harus jelas | [07-REPORTS.md](07-REPORTS.md) |
+| Performa/Reports | Aturan akun uji, tanggal awal pilot, dan periode harus memakai definisi yang sama; pengecualian penonton akun uji di sumber belum mempunyai padanan target | [07-REPORTS.md](07-REPORTS.md) |
+| Detail Tyre | Benih form belum lengkap; kegagalan detail tidak boleh membatalkan jam. Retry sumber masih memakai HM pada satu cabang yang semestinya KM | [03b-DETAIL-TYRE.md](03b-DETAIL-TYRE.md) |
+| Teknis | Target belum punya padanan waktu unit down/RFU untuk PA/MTBF/MTTR. Sumber punya ketidaksesuaian kunci sisa umur serta perilaku demo | [05-TEKNIS.md](05-TEKNIS.md) |
+| Koreksi meter | Koreksi harus menyelaraskan WO dan bacaan meter; penggantian panel perlu dihubungkan ke rantai/perhitungan, bukan hanya dicatat | [06-KOREKSI-HM-KM.md](06-KOREKSI-HM-KM.md) |
+
+Tahap berikutnya tetap **Create WO 1:1**, sesuai urutan
+[`SERAH-TERIMA.md`](../SERAH-TERIMA.md) §7b. Sebelum menyentuh fitur terkait
+uang/meter, selesaikan celah penjagaan yang dicatat spesifikasinya dan uji
+invariannya. Jangan menganggap kerangka basis data sudah menegakkan seluruh
+kontrak hanya karena tabelnya tersedia.
