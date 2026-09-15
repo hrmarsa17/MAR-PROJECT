@@ -628,3 +628,14 @@ textarea { min-height: 64px; resize: vertical; }
   .stat-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .stat-value { font-size: 1.5rem; }
 }
+
+/* ============================================================================
+   TEAM COMPOSITION — bentuk dari WorkOrder.html:91-95
+   ============================================================================ */
+
+.team-members { display: flex; flex-direction: column; gap: 0.75rem; }
+.team-member-row { display: flex; align-items: center; gap: 0.75rem; }
+.team-member-row .mechanic-select { flex: 1; max-width: 360px; }
+@media (max-width: 768px) {
+  .team-member-row .mechanic-select { max-width: none; }
+}

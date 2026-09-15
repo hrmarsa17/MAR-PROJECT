@@ -148,8 +148,20 @@ export async function katalog(aku: Identitas) {
           LEFT JOIN job_components     c  ON c.id  = sc.component_id
          WHERE j.tenant_id = ${aku.tenantId} AND j.is_active
          ORDER BY j.job_description`,
-    sql`SELECT id, name, role::text FROM mechanics
-         WHERE tenant_id = ${aku.tenantId} AND is_active ORDER BY name`,
+    // Section mekanik ikut dikirim: dropdown tim disaring per section, dan
+    // mekanik TANPA section selalu tampil (perilaku KMB V2 — kosong berarti
+    // milik semua section).
+    sql`SELECT m.id, m.name, m.role::text,
+               coalesce(sec.daftar, ARRAY[]::text[]) AS sections,
+               pr.label AS jabatan
+          FROM mechanics m
+          LEFT JOIN pay_rates pr ON pr.id = m.pay_rate_id
+          LEFT JOIN LATERAL (
+            SELECT array_agg(ms.section::text ORDER BY ms.section::text) AS daftar
+              FROM mechanic_sections ms WHERE ms.mechanic_id = m.id
+          ) sec ON true
+         WHERE m.tenant_id = ${aku.tenantId} AND m.is_active
+         ORDER BY m.name`,
   ]);
 
   return { sections, units, jobs, mekanik };

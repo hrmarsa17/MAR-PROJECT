@@ -9,7 +9,7 @@ interface Job {
   component: string | null; sub_component: string | null;
   job_description: string; plan_hours: string; base_points: string | null;
 }
-interface Mekanik { id: number; name: string; role: string }
+interface Mekanik { id: number; name: string; role: string; sections: string[]; jabatan: string | null }
 interface Katalog { sections: Section[]; units: Unit[]; jobs: Job[]; mekanik: Mekanik[] }
 
 /** Nilai berbeda saja, urut, tanpa yang kosong. */
@@ -28,6 +28,7 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
   const [subKomponen, setSubKomponen] = useState('');
   const [jobId, setJobId] = useState('');
   const [tim, setTim] = useState<number[]>([]);
+  const [semuaSection, setSemuaSection] = useState(false);
   const [kondisi, setKondisi] = useState('normal');
   const [lokasi, setLokasi] = useState('');
   const [keterangan, setKeterangan] = useState('');
@@ -93,6 +94,18 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
     [datar, jobCocokModel, komponen, subKomponen],
   );
 
+  // Penyaringan mekanik per section. Mekanik TANPA section selalu tampil —
+  // kosong berarti milik semua section, sama seperti KMB V2. Dulu daftar ini
+  // dibandingkan sebagai satu string utuh, sehingga orang ber-section ganda
+  // ("tyreman,field") tidak pernah cocok dan dropdown-nya kosong.
+  const mekanikTersedia = useMemo(() => {
+    if (!kat) return [];
+    if (semuaSection || !section) return kat.mekanik;
+    return kat.mekanik.filter(
+      (m) => m.sections.length === 0 || m.sections.includes(section),
+    );
+  }, [kat, section, semuaSection]);
+
   // Mengganti tingkat atas mengosongkan yang di bawahnya. Tanpa ini, pilihan
   // lama tertinggal dan WO bisa terkirim dengan job dari unit yang berbeda.
   function gantiSection(v: string) {
@@ -110,8 +123,9 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
   }
 
   const jobDipilih = daftarJob.find((j) => String(j.id) === jobId) ?? null;
+  const timTerisi = tim.filter((x) => x > 0);
   const siap =
-    !!section && tim.length > 0 && !!jobId && (!sec?.requires_unit || !!unitId);
+    !!section && timTerisi.length > 0 && !!jobId && (!sec?.requires_unit || !!unitId);
 
   async function kirim(e: React.FormEvent) {
     e.preventDefault();
@@ -135,7 +149,7 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
               workCondition: kondisi,
               ...(lokasi ? { location: lokasi } : {}),
               ...(keterangan ? { keterangan } : {}),
-              teamMechanicIds: tim,
+              teamMechanicIds: timTerisi,
             }],
           },
         }),
@@ -262,21 +276,77 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
             </div>
           )}
 
+          {/* Team Composition — bentuknya diambil dari WorkOrder.html:1152-1162.
+              Deretan baris, tiap baris satu dropdown + tombol hapus merah, lalu
+              "+ Add Team Member" dan toggle "tampilkan semua section".
+
+              Dropdown, bukan tombol: mekaniknya puluhan. */}
           <div className="form-group">
-            <label className="form-label">Tim mekanik</label>
-            <div className="pilihan-grid">
-              {kat.mekanik.map((m) => {
-                const ikut = tim.includes(m.id);
-                return (
-                  <button
-                    type="button" key={m.id} className={ikut ? 'pilihan terpilih' : 'pilihan'}
-                    onClick={() => setTim(ikut ? tim.filter((x) => x !== m.id) : [...tim, m.id])}
+            <label className="form-label">
+              Team Composition <span className="wajib">*</span>{' '}
+              <span className="form-hint" style={{ display: 'inline', fontWeight: 400 }}>
+                (tiap mekanik dapat poin penuh)
+              </span>
+            </label>
+
+            <div className="team-members">
+              {tim.map((idAnggota, i) => (
+                <div className="team-member-row" key={i}>
+                  <select
+                    className="mechanic-select"
+                    value={idAnggota === 0 ? '' : String(idAnggota)}
+                    onChange={(e) => {
+                      const baru = [...tim];
+                      baru[i] = Number(e.target.value || 0);
+                      setTim(baru);
+                    }}
                   >
-                    {m.name}
-                  </button>
-                );
-              })}
+                    <option value="">-- Select Mechanic --</option>
+                    {mekanikTersedia.map((m) => (
+                      <option
+                        key={m.id}
+                        value={m.id}
+                        // Orang yang sudah dipilih di baris lain disembunyikan,
+                        // supaya tidak bisa masuk tim dua kali.
+                        disabled={tim.includes(m.id) && tim[i] !== m.id}
+                      >
+                        {m.name}{m.jabatan ? ` — ${m.jabatan}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn-reject btn-ikon"
+                    title="Hapus anggota"
+                    onClick={() => setTim(tim.filter((_, j) => j !== i))}
+                  >✕</button>
+                </div>
+              ))}
             </div>
+
+            <div className="pilihan-grid" style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                style={{ flex: '0 0 auto' }}
+                onClick={() => setTim([...tim, 0])}
+              >+ Add Team Member</button>
+              <label
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontWeight: 400, fontSize: '0.8125rem', margin: 0,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={semuaSection}
+                  onChange={(e) => setSemuaSection(e.target.checked)}
+                  style={{ width: 'auto', minHeight: 0 }}
+                />
+                🔓 Tampilkan mekanik semua section
+              </label>
+            </div>
+
             <p className="form-hint" style={{ marginTop: 6 }}>
               Setiap anggota menerima poin <b>penuh</b>, bukan dibagi — menambah orang
               menambah pengeluaran.
@@ -298,7 +368,7 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
             <div className="kabar bentrok" style={{ background: 'transparent', border: '1px solid var(--garis)', color: 'var(--redup)' }}>
               {jobDipilih.job_description} · target {Number(jobDipilih.plan_hours).toFixed(1)} jam
               {jobDipilih.base_points !== null && <> · base {Number(jobDipilih.base_points).toFixed(2)} poin</>}
-              {' · '}{tim.length} mekanik
+              {' · '}{timTerisi.length} mekanik
             </div>
           )}
 
