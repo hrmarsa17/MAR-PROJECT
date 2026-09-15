@@ -266,6 +266,106 @@ export async function batalkanWo(m: {
   });
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Tolak
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function tolakWo(m: {
+  opId: string; tenantId: number; actorId: number; woId: number; alasan: string;
+}): Promise<HasilPerintah<{ woId: number }>> {
+  return jalankanPerintah({
+    opId: m.opId, tenantId: m.tenantId, actorId: m.actorId, action: 'reject',
+    jalankan: async ({ tx }) => {
+      const peran = await perankuAdalah(tx, m.actorId);
+      if (peran !== 'supervisor' && peran !== 'superintendent') {
+        throw tidakBerhak('Hanya L1 atau L2 yang boleh menolak');
+      }
+      if (!m.alasan || m.alasan.trim().length < 5) {
+        throw aturanBisnis('Alasan penolakan wajib diisi — mekanik berhak tahu sebabnya');
+      }
+
+      const wo = await rebutStatus(
+        tx, m.woId, ['pending_supervisor', 'pending_superintendent'], 'rejected',
+      );
+      if (!wo) {
+        const kini = await siapaYangMemproses(tx, m.woId);
+        if (!kini) throw tidakDitemukan('Work order', m.woId);
+        throw konflikKeadaan(`WO ${kini.wo_number} sudah diproses`, { status: kini.status });
+      }
+
+      await tx`
+        UPDATE work_orders
+           SET rejected_by = ${m.actorId}, rejected_at = now(),
+               rejection_reason = ${m.alasan.trim()}
+         WHERE id = ${m.woId}
+      `;
+      await tx`
+        INSERT INTO approvals (work_order_id, stage, decision, putaran, approver_id, judgment)
+        VALUES (${m.woId},
+                ${peran === 'superintendent' ? 'superintendent' : 'supervisor'}::approval_stage,
+                'reject', ${Number(wo['putaran'])}, ${m.actorId}, ${m.alasan.trim()})
+      `;
+      await catat(tx, m.tenantId, m.actorId, 'reject', m.woId, {
+        wo_number: wo['wo_number'], alasan: m.alasan,
+      });
+      return { woId: m.woId };
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Kembalikan ke mekanik
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Berbeda dari menolak: WO tetap hidup, dikembalikan untuk diperbaiki.
+ *
+ * `putaran` naik satu. Itulah yang membuat mekanik bisa mengirim ulang WO yang
+ * sama tanpa baris approval-nya bertabrakan dengan kiriman sebelumnya — kunci
+ * approval adalah (wo, tahap, keputusan, putaran).
+ */
+export async function kembalikanKeMekanik(m: {
+  opId: string; tenantId: number; actorId: number; woId: number; alasan: string;
+}): Promise<HasilPerintah<{ woId: number; putaran: number }>> {
+  return jalankanPerintah({
+    opId: m.opId, tenantId: m.tenantId, actorId: m.actorId, action: 'kembalikan',
+    jalankan: async ({ tx }) => {
+      const peran = await perankuAdalah(tx, m.actorId);
+      if (peran !== 'supervisor' && peran !== 'superintendent') {
+        throw tidakBerhak('Hanya L1 atau L2 yang boleh mengembalikan WO');
+      }
+      if (!m.alasan || m.alasan.trim().length < 5) {
+        throw aturanBisnis('Alasan wajib diisi — mekanik perlu tahu apa yang harus diperbaiki');
+      }
+
+      const wo = await rebutStatus(
+        tx, m.woId,
+        ['pending_supervisor', 'pending_superintendent'],
+        'pending_mechanic_work',
+      );
+      if (!wo) {
+        const kini = await siapaYangMemproses(tx, m.woId);
+        if (!kini) throw tidakDitemukan('Work order', m.woId);
+        throw konflikKeadaan(`WO ${kini.wo_number} sudah diproses`, { status: kini.status });
+      }
+
+      const putaranBaru = Number(wo['putaran']) + 1;
+      await tx`
+        UPDATE work_orders
+           SET putaran = ${putaranBaru},
+               returned_by = ${m.actorId}, returned_at = now(),
+               return_reason = ${m.alasan.trim()},
+               approved_l1_by = NULL, approved_l1_at = NULL
+         WHERE id = ${m.woId}
+      `;
+      await catat(tx, m.tenantId, m.actorId, 'kembalikan', m.woId, {
+        wo_number: wo['wo_number'], alasan: m.alasan, putaran: putaranBaru,
+      });
+      return { woId: m.woId, putaran: putaranBaru };
+    },
+  });
+}
+
 async function catat(
   tx: Tx, tenantId: number, actorId: number,
   action: string, woId: number, details: Record<string, unknown>,

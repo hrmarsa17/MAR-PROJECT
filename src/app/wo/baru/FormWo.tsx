@@ -162,19 +162,19 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
     }
   }
 
-  if (muatGagal) return <div className="kabar salah">Gagal memuat katalog: {muatGagal}</div>;
+  if (muatGagal) return <div className="kabar kabar-salah">Gagal memuat katalog: {muatGagal}</div>;
   if (!kat) return <div className="kosong">Memuat katalog…</div>;
 
   return (
-    <form className="kartu" onSubmit={kirim}>
-      <div className="medan">
-        <label>Section</label>
-        <div className="aksi">
+    <form className="card" onSubmit={kirim}>
+      <div className="form-group">
+        <label className="form-label">Section</label>
+        <div className="pilihan-grid">
           {kat.sections.map((s) => (
             <button
               type="button"
               key={s.code}
-              className={section === s.code ? 'utama' : ''}
+              className={section === s.code ? 'pilihan terpilih' : 'pilihan'}
               onClick={() => gantiSection(s.code)}
             >
               {s.name}
@@ -185,10 +185,10 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
 
       {sec && (
         <>
-          <div className="baris">
+          <div className="form-row">
             {sec.requires_unit ? (
-              <div className="medan">
-                <label htmlFor="unit">Unit</label>
+              <div className="form-group">
+                <label className="form-label" htmlFor="unit">Unit</label>
                 <select id="unit" value={unitId} onChange={(e) => gantiUnit(e.target.value)}>
                   <option value="">— pilih unit —</option>
                   {unitTersedia.map((u) => (
@@ -200,8 +200,8 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
                 </select>
               </div>
             ) : (
-              <div className="medan">
-                <label htmlFor="model">Jenis pekerjaan</label>
+              <div className="form-group">
+                <label className="form-label" htmlFor="model">Jenis pekerjaan</label>
                 <select id="model" value={model} onChange={(e) => gantiModel(e.target.value)}>
                   <option value="">— pilih —</option>
                   {beda(jobSection.map((j) => j.unit_model)).map((m) => (
@@ -211,8 +211,8 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
               </div>
             )}
 
-            <div className="medan">
-              <label htmlFor="kondisi">Kondisi kerja</label>
+            <div className="form-group">
+              <label className="form-label" htmlFor="kondisi">Kondisi kerja</label>
               <select id="kondisi" value={kondisi} onChange={(e) => setKondisi(e.target.value)}>
                 <option value="normal">Normal</option>
                 <option value="difficult">Menyulitkan</option>
@@ -222,16 +222,16 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
           </div>
 
           {!datar && modelTerpilih && (
-            <div className="baris">
-              <div className="medan">
-                <label htmlFor="komp">Komponen</label>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="komp">Komponen</label>
                 <select id="komp" value={komponen} onChange={(e) => gantiKomponen(e.target.value)}>
                   <option value="">— pilih —</option>
                   {daftarKomponen.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="medan">
-                <label htmlFor="sub">Sub komponen</label>
+              <div className="form-group">
+                <label className="form-label" htmlFor="sub">Sub komponen</label>
                 <select
                   id="sub" value={subKomponen} disabled={!komponen}
                   onChange={(e) => { setSubKomponen(e.target.value); setJobId(''); }}
@@ -244,8 +244,8 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
           )}
 
           {(datar || subKomponen) && (
-            <div className="medan">
-              <label htmlFor="job">Pekerjaan</label>
+            <div className="form-group">
+              <label className="form-label" htmlFor="job">Pekerjaan</label>
               <select id="job" value={jobId} onChange={(e) => setJobId(e.target.value)}>
                 <option value="">— pilih pekerjaan —</option>
                 {daftarJob.map((j) => (
@@ -255,21 +255,21 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
                 ))}
               </select>
               {daftarJob.length === 0 && (
-                <p className="sub" style={{ marginTop: 6 }}>
+                <p className="form-hint" style={{ marginTop: 6 }}>
                   Tidak ada pekerjaan untuk pilihan ini.
                 </p>
               )}
             </div>
           )}
 
-          <div className="medan">
-            <label>Tim mekanik</label>
-            <div className="aksi">
+          <div className="form-group">
+            <label className="form-label">Tim mekanik</label>
+            <div className="pilihan-grid">
               {kat.mekanik.map((m) => {
                 const ikut = tim.includes(m.id);
                 return (
                   <button
-                    type="button" key={m.id} className={ikut ? 'utama' : ''}
+                    type="button" key={m.id} className={ikut ? 'pilihan terpilih' : 'pilihan'}
                     onClick={() => setTim(ikut ? tim.filter((x) => x !== m.id) : [...tim, m.id])}
                   >
                     {m.name}
@@ -277,19 +277,19 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
                 );
               })}
             </div>
-            <p className="sub" style={{ marginTop: 6 }}>
+            <p className="form-hint" style={{ marginTop: 6 }}>
               Setiap anggota menerima poin <b>penuh</b>, bukan dibagi — menambah orang
               menambah pengeluaran.
             </p>
           </div>
 
-          <div className="baris">
-            <div className="medan">
-              <label htmlFor="lokasi">Lokasi</label>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="lokasi">Lokasi</label>
               <input id="lokasi" value={lokasi} onChange={(e) => setLokasi(e.target.value)} />
             </div>
-            <div className="medan">
-              <label htmlFor="ket">Keterangan</label>
+            <div className="form-group">
+              <label className="form-label" htmlFor="ket">Keterangan</label>
               <input id="ket" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} />
             </div>
           </div>
@@ -302,13 +302,13 @@ export function FormWo({ bolehManual }: { bolehManual: boolean }) {
             </div>
           )}
 
-          {kabar && <div className={`kabar ${kabar.baik ? 'benar' : 'salah'}`}>{kabar.teks}</div>}
+          {kabar && <div className={`kabar ${kabar.baik ? "kabar-benar" : "kabar-salah"}`}>{kabar.teks}</div>}
 
           <button className="utama" disabled={!siap || sibuk}>
             {sibuk ? 'Mengirim…' : 'Buat WO'}
           </button>
           {bolehManual && (
-            <p className="sub" style={{ marginTop: 10 }}>
+            <p className="form-hint" style={{ marginTop: 10 }}>
               Pekerjaan di luar katalog belum tersedia di layar ini.
             </p>
           )}

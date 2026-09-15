@@ -31,13 +31,19 @@ export default function Masuk() {
   }
 
   return (
-    <>
-      <h1>Masuk</h1>
-      <p className="sub">Ketikkan token yang diberikan atasan Anda. Sekali saja.</p>
+    <div className="container-sempit" style={{ maxWidth: 420 }}>
+      <div className="page-header">
+        <h1 className="page-title">⚙️ Mechanic Activity Report</h1>
+        <p className="page-subtitle">
+          Ketikkan token yang diberikan atasan Anda. Sekali saja.
+        </p>
+      </div>
 
-      <form className="kartu" onSubmit={kirim} style={{ maxWidth: 420 }}>
-        <div className="medan">
-          <label htmlFor="token">Token</label>
+      <form className="card" onSubmit={kirim}>
+        <div className="form-group">
+          <label className="form-label" htmlFor="token">
+            Token <span className="wajib">*</span>
+          </label>
           <input
             id="token"
             value={token}
@@ -46,15 +52,16 @@ export default function Masuk() {
             autoCapitalize="none"
             spellCheck={false}
             placeholder="20 huruf"
+            style={{ fontFamily: 'var(--font-mono)' }}
           />
         </div>
 
-        {galat && <div className="kabar salah">{galat}</div>}
+        {galat && <div className="kabar kabar-salah">{galat}</div>}
 
-        <button className="utama" disabled={sibuk || token.trim().length < 8}>
+        <button className="btn-primary btn-blok" disabled={sibuk || token.trim().length < 8}>
           {sibuk ? 'Memeriksa…' : 'Masuk'}
         </button>
       </form>
-    </>
+    </div>
   );
 }

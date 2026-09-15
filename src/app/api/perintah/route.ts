@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { akuDari, jawab, jawabGalat } from '../_bantu.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
 import { buatWorkOrder } from '../../../domain/workOrder.js';
-import { approveL1, approveL2, batalkanWo } from '../../../domain/approval.js';
+import {
+  approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
+} from '../../../domain/approval.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,10 +65,20 @@ const SKEMA = {
     woId: z.number().int().positive(),
     alasan: z.string().min(5).max(1000),
   }),
+  reject: z.object({
+    woId: z.number().int().positive(),
+    alasan: z.string().min(5).max(1000),
+  }),
+  kembalikan: z.object({
+    woId: z.number().int().positive(),
+    alasan: z.string().min(5).max(1000),
+  }),
 } as const;
 
 const Amplop = z.object({
-  aksi: z.enum(['buat_wo', 'approve_l1', 'approve_l2', 'batal_wo']),
+  aksi: z.enum([
+    'buat_wo', 'approve_l1', 'approve_l2', 'batal_wo', 'reject', 'kembalikan',
+  ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
   op_id: z.string().min(8).max(100),
@@ -111,6 +123,14 @@ export async function POST(req: Request): Promise<Response> {
       case 'batal_wo': {
         const d = isi.data as z.infer<typeof SKEMA.batal_wo>;
         return jawab(await batalkanWo({ ...umum, ...d }));
+      }
+      case 'reject': {
+        const d = isi.data as z.infer<typeof SKEMA.reject>;
+        return jawab(await tolakWo({ ...umum, ...d }));
+      }
+      case 'kembalikan': {
+        const d = isi.data as z.infer<typeof SKEMA.kembalikan>;
+        return jawab(await kembalikanKeMekanik({ ...umum, ...d }));
       }
     }
   } catch (e) {

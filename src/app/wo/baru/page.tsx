@@ -9,12 +9,14 @@ export default async function BuatWo() {
   if (!aku) redirect('/masuk');
 
   return (
-    <>
-      <h1>Buat Work Order</h1>
-      <p className="sub">
-        Pilih section, unit, lalu pekerjaannya bertingkat sampai ketemu.
-      </p>
+    <div className="container-sempit">
+      <div className="page-header">
+        <h1 className="page-title">📝 Create Work Order</h1>
+        <p className="page-subtitle">
+          Pilih section, unit, lalu pekerjaannya bertingkat sampai ketemu.
+        </p>
+      </div>
       <FormWo bolehManual={aku.peran !== 'mechanic'} />
-    </>
+    </div>
   );
 }

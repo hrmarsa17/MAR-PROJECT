@@ -1,125 +1,630 @@
-:root {
-  --latar: #f6f7f9;
-  --kartu: #ffffff;
-  --garis: #dfe3e8;
-  --teks: #1a1d21;
-  --redup: #666e77;
-  --utama: #1f6feb;
-  --utama-teks: #ffffff;
-  --bahaya: #c62828;
-  --hati-hati: #a06000;
-  --hati-hati-latar: #fff6e0;
-  --berhasil: #1b7f4d;
-  --radius: 8px;
-}
+/* ============================================================================
+   DESIGN SYSTEM — turunan langsung dari Theme.js KMB V2
+   ============================================================================
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --latar: #14171a;
-    --kartu: #1c2024;
-    --garis: #2e343a;
-    --teks: #e8eaed;
-    --redup: #9aa3ab;
-    --utama: #4c8ef7;
-    --hati-hati: #e0a33a;
-    --hati-hati-latar: #35290f;
-    --berhasil: #4ec98a;
-    --bahaya: #ef6b6b;
-  }
+   Nama kelas sengaja SAMA PERSIS dengan KMB V2 (.navbar, .nav-link, .stat-card,
+   .wo-card, .badge-*, .filter-tab, .btn-approve, …). Bukan kerapian: orang
+   lapangan sudah hafal bentuk dan posisinya, dan setiap penyimpangan adalah
+   pelatihan ulang yang tidak diminta siapa pun.
+
+   Yang berubah dari KMB V2 hanya HUE: biru (#2563EB) menjadi merah. Skala
+   abu-abu, radius, bayangan, jarak, dan tipografi dipertahankan angka demi
+   angka.
+
+   Satu benturan yang harus diputuskan: di KMB V2, Approve memakai warna utama
+   (biru) dan Reject memakai merah bahaya. Begitu warna utama menjadi merah,
+   keduanya bertabrakan. Penyelesaiannya di sini:
+
+       Approve      merah utama solid      — aksi yang diharapkan
+       Reject       maroon gelap solid     — terbaca lebih berat, bukan lebih ramai
+       Kembalikan   amber                  — tidak berubah
+
+   Tiga tombol tetap bisa dibedakan sekilas, dan urutannya tidak digeser.
+   ============================================================================ */
+
+:root {
+  /* ---- Netral: dipertahankan persis dari Theme.js ---- */
+  --bg: #F8FAFC;
+  --bg-secondary: #F3F4F6;
+  --card: #FFFFFF;
+  --border: #E5E7EB;
+  --divider: #E5E7EB;
+  --text: #111827;
+  --text-secondary: #6B7280;
+  --text-disabled: #9CA3AF;
+
+  /* ---- Warna utama: biru -> merah ---- */
+  --primary: #DC2626;
+  --primary-hover: #B91C1C;
+  --primary-active: #991B1B;
+  --primary-soft: rgba(220, 38, 38, 0.10);
+  --primary-softer: #FEF2F2;
+
+  /* ---- Reject: lebih gelap dari utama supaya tidak tertukar ---- */
+  --reject: #7F1D1D;
+  --reject-hover: #641414;
+
+  /* ---- Semantik: dipertahankan ---- */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #0EA5E9;
+
+  /* ---- Amber: bahasa "terpilih", bukan sisa tema lama ---- */
+  --pilih-bg: #FFFBEB;
+  --pilih-border: #F59E0B;
+  --pilih-text: #B45309;
+  --tab-aktif: #92400E;
+
+  /* ---- Bentuk ---- */
+  --radius: 16px;
+  --radius-sm: 10px;
+  --input-border: #D1D5DB;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --focus-ring: 0 0 0 3px rgba(220, 38, 38, 0.25);
+
+  /* ---- Jarak: skala Styles.html ---- */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
 
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
 body {
   margin: 0;
-  background: var(--latar);
-  color: var(--teks);
-  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
 }
 
-a { color: var(--utama); }
+a { color: var(--primary); text-decoration: none; }
 
-.bungkus { max-width: 1040px; margin: 0 auto; padding: 16px; }
+/* ============================================================================
+   NAVBAR
+   ============================================================================ */
 
-header.atas {
-  background: var(--kartu);
-  border-bottom: 1px solid var(--garis);
-  position: sticky; top: 0; z-index: 10;
+.navbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
-header.atas .bungkus {
-  display: flex; align-items: center; gap: 16px;
-  padding-block: 12px; flex-wrap: wrap;
+
+.navbar-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
-header.atas .merek { font-weight: 700; letter-spacing: -0.01em; }
-header.atas nav { display: flex; gap: 14px; flex-wrap: wrap; }
-header.atas nav a { text-decoration: none; color: var(--redup); font-weight: 500; }
-header.atas nav a:hover { color: var(--teks); }
-header.atas .aku { margin-left: auto; color: var(--redup); font-size: 13px; }
 
-h1 { font-size: 20px; margin: 20px 0 4px; letter-spacing: -0.01em; }
-.sub { color: var(--redup); font-size: 13px; margin: 0 0 18px; }
+.nav-brand {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
 
-.kartu {
-  background: var(--kartu);
-  border: 1px solid var(--garis);
+.nav-links { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+
+.nav-link {
+  padding: 0.625rem 1.25rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  display: inline-block;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav-link:hover { background: var(--bg-secondary); color: var(--text); }
+
+/* Aktif = pill lembut + garis bawah tebal. Di KMB V2 ini biru; di sini merah,
+   dengan bentuk yang sama persis. */
+.nav-link.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+.nav-user { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.user-email { font-size: 0.875rem; color: var(--text-secondary); }
+
+/* ============================================================================
+   LAYOUT & JUDUL
+   ============================================================================ */
+
+.container { max-width: 1400px; margin: 0 auto; padding: var(--spacing-xl); }
+.container-sempit { max-width: 900px; margin: 0 auto; padding: var(--spacing-xl); }
+
+.page-header { margin-bottom: var(--spacing-xl); }
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.page-subtitle { font-size: 1rem; color: var(--text-secondary); margin: 0; }
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: var(--spacing-xl) 0 var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ============================================================================
+   KARTU
+   ============================================================================ */
+
+.card, .stat-card, .form-container, .wo-card, .mechanic-card, .mon-card {
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.card { padding: var(--spacing-lg); }
+.card:hover, .stat-card:hover, .wo-card:hover { box-shadow: var(--shadow-hover); }
+.mechanic-card:hover, .mon-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-hover);
 }
 
-.kartu .judul { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.kartu .nomor { font-weight: 700; font-variant-numeric: tabular-nums; }
-.kartu .pekerjaan { color: var(--teks); }
-.kartu .rinci {
-  margin-top: 8px; color: var(--redup); font-size: 13px;
-  display: flex; gap: 16px; flex-wrap: wrap;
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
 }
-.kartu .rinci b { color: var(--teks); font-weight: 600; }
+.card-title { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+.card-subtitle { font-size: 0.8125rem; color: var(--text-secondary); }
 
-.lencana {
-  display: inline-block; padding: 1px 8px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; border: 1px solid var(--garis);
-  color: var(--redup);
+/* ---- Kartu statistik ---- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
 }
-.lencana.awas {
-  background: var(--hati-hati-latar);
-  color: var(--hati-hati);
-  border-color: currentColor;
+.stat-card { padding: var(--spacing-lg); }
+.stat-icon { font-size: 1.25rem; }
+.stat-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
+}
+.stat-value { font-size: 2rem; font-weight: 700; line-height: 1.15; margin-top: 0.125rem; }
+.stat-subtitle { font-size: 0.75rem; color: var(--text-secondary); }
+
+/* Warna latar lembut per kartu, seperti KMB V2 */
+.stat-card.biru { background: #EFF6FF; border-color: #DBEAFE; }
+.stat-card.ungu { background: #F5F3FF; border-color: #E9D5FF; }
+.stat-card.hijau { background: #ECFDF5; border-color: #A7F3D0; }
+.stat-card.amber { background: #FFFBEB; border-color: #FDE68A; }
+
+/* ============================================================================
+   BADGE
+   ============================================================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-blue { background: #EFF6FF; color: #2563EB; }
+.badge-purple { background: #F3E8FF; color: #7C3AED; }
+.badge-success, .badge-green { background: #ECFDF5; color: #059669; }
+.badge-warning, .badge-orange, .badge-amber { background: #FEF3C7; color: #B45309; }
+.badge-danger, .badge-red { background: #FEF2F2; color: #DC2626; }
+.badge-grey, .badge-gray { background: #F3F4F6; color: #6B7280; }
+
+/* ============================================================================
+   TOMBOL
+   ============================================================================ */
+
+button, .btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 38px;
+}
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-primary, .btn-create, .btn-save, .btn-download, .btn-submit,
+.btn-export, .btn-approve {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-primary:hover:not(:disabled), .btn-create:hover:not(:disabled),
+.btn-save:hover:not(:disabled), .btn-download:hover:not(:disabled),
+.btn-submit:hover:not(:disabled), .btn-export:hover:not(:disabled),
+.btn-approve:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
-.aksi { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-
-button, .tombol {
-  font: inherit; font-weight: 600;
-  padding: 8px 14px; border-radius: var(--radius);
-  border: 1px solid var(--garis); background: var(--kartu); color: var(--teks);
-  cursor: pointer; min-height: 40px;
+.btn-secondary, .btn-cancel, .btn-back {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border);
 }
-button:hover:not(:disabled) { border-color: var(--redup); }
-button:disabled { opacity: 0.55; cursor: progress; }
-button.utama { background: var(--utama); color: var(--utama-teks); border-color: transparent; }
-button.bahaya { color: var(--bahaya); }
-
-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-input, select, textarea {
-  font: inherit; width: 100%; padding: 9px 10px; min-height: 40px;
-  border: 1px solid var(--garis); border-radius: var(--radius);
-  background: var(--kartu); color: var(--teks);
+.btn-secondary:hover:not(:disabled), .btn-cancel:hover:not(:disabled) {
+  background: var(--bg-secondary);
 }
-.medan { margin-bottom: 12px; }
-.baris { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 560px) { .baris { grid-template-columns: minmax(0, 1fr); } }
 
-.kabar { padding: 10px 12px; border-radius: var(--radius); margin: 10px 0; font-size: 14px; }
-.kabar.salah { background: #fdecec; color: var(--bahaya); }
-.kabar.benar { background: #e9f7ef; color: var(--berhasil); }
-.kabar.bentrok { background: var(--hati-hati-latar); color: var(--hati-hati); }
-@media (prefers-color-scheme: dark) {
-  .kabar.salah { background: #3a1c1c; }
-  .kabar.benar { background: #12301f; }
+/* Reject lebih GELAP dari Approve, bukan lebih terang — supaya bobotnya terasa
+   dan tidak tertukar sekilas dengan aksi yang diharapkan. */
+.btn-reject, .btn-danger {
+  background: var(--reject);
+  color: #fff;
+  border-color: var(--reject);
 }
+.btn-reject:hover:not(:disabled), .btn-danger:hover:not(:disabled) {
+  background: var(--reject-hover);
+  border-color: var(--reject-hover);
+}
+
+.btn-kembalikan {
+  background: var(--warning);
+  color: #fff;
+  border-color: var(--warning);
+}
+.btn-kembalikan:hover:not(:disabled) { background: #D97706; border-color: #D97706; }
+
+.btn-edit { background: #2563EB; color: #fff; border-color: #2563EB; }
+.btn-edit:hover:not(:disabled) { background: #1D4ED8; }
+
+.btn-gelap { background: #111827; color: #fff; border-color: #111827; }
+.btn-gelap:hover:not(:disabled) { background: #000; }
+
+.btn-ikon { padding: 0.5rem 0.625rem; }
+.btn-sm { padding: 0.3125rem 0.625rem; font-size: 0.75rem; min-height: 30px; }
+.btn-blok { width: 100%; }
+
+/* ============================================================================
+   FORM
+   ============================================================================ */
+
+.form-group { margin-bottom: var(--spacing-md); }
+.form-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-bottom: 0.375rem;
+  color: var(--text);
+}
+.form-label .wajib { color: var(--primary); }
+.form-hint { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+.form-control, input[type='text'], input[type='number'], input[type='date'],
+input[type='password'], select, textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9375rem;
+  padding: 0.5625rem 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  min-height: 40px;
+}
+.form-control:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+textarea { min-height: 64px; resize: vertical; }
+
+.form-row {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* ---- Kartu pilihan (Section, Location, Model pembuatan) ----
+   Terpilih = amber. Ini bahasa "pilihan Anda", berbeda dari merah yang berarti
+   "aksi utama". Memakai satu warna untuk dua makna membuat layar jadi ramai. */
+.pilihan-grid { display: flex; gap: 0.625rem; flex-wrap: wrap; }
+.pilihan {
+  flex: 1 1 auto;
+  min-width: 140px;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  cursor: pointer;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+.pilihan:hover { border-color: var(--text-secondary); }
+.pilihan.terpilih {
+  background: var(--pilih-bg);
+  border-color: var(--pilih-border);
+  color: var(--pilih-text);
+}
+.pilihan .sub { display: block; font-weight: 400; font-size: 0.75rem; opacity: 0.85; }
+
+/* ============================================================================
+   TAB FILTER
+   ============================================================================ */
+
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-lg);
+}
+.filter-tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.filter-tab:hover { background: var(--bg-secondary); }
+.filter-tab.active {
+  background: var(--tab-aktif);
+  border-color: var(--tab-aktif);
+  color: #fff;
+}
+.filter-tab .count {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0 0.4375rem;
+  font-size: 0.6875rem;
+}
+.filter-tab.active .count { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+/* ============================================================================
+   TABEL
+   ============================================================================ */
+
+.tabel-bungkus { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table th {
+  background: var(--card);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.625rem 0.75rem;
+  white-space: nowrap;
+}
+.table td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--divider); }
+.table tbody tr:nth-child(even) td { background: #F9FAFB; }
+.table tbody tr:hover td { background: var(--bg); }
+
+/* ============================================================================
+   KARTU WO (layar Approval)
+   ============================================================================ */
+
+.wo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--spacing-md);
+}
+.wo-card { padding: var(--spacing-md); display: flex; flex-direction: column; }
+.wo-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.wo-nomor { font-weight: 700; color: var(--primary); font-size: 0.9375rem; }
+.wo-lencana { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+
+.wo-bagian { margin-bottom: 0.625rem; }
+.wo-bagian-judul {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--divider);
+  margin-bottom: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.wo-baris {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  padding: 0.0625rem 0;
+}
+.wo-baris .label { color: var(--text-secondary); }
+.wo-baris .nilai { font-weight: 600; text-align: right; }
+.wo-baris .nilai.sorot { color: var(--primary); }
+
+.wo-tim { display: flex; flex-direction: column; gap: 0.125rem; }
+.wo-tim span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #047857;
+  border-bottom: 1px solid var(--divider);
+  padding: 0.1875rem 0;
+}
+
+.wo-aksi {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ============================================================================
+   KARTU MEKANIK (layar Monitoring)
+   ============================================================================ */
+
+.mekanik-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+}
+.mechanic-card { padding: var(--spacing-md); }
+.mekanik-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.mechanic-avatar {
+  width: 38px; height: 38px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #F87171, #DC2626);
+  color: #fff;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.mekanik-nama { font-weight: 700; font-size: 0.9375rem; }
+.mekanik-kode { font-size: 0.75rem; color: var(--text-secondary); display: flex; gap: 0.375rem; align-items: center; flex-wrap: wrap; }
+.mekanik-angka { display: flex; gap: 0.375rem; flex-wrap: wrap; margin-bottom: 0.625rem; }
+.mekanik-token { display: flex; gap: 0.375rem; align-items: center; }
+.mekanik-token input {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+}
+
+/* ============================================================================
+   PESAN
+   ============================================================================ */
+
+.kabar {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-md);
+  border: 1px solid transparent;
+}
+.kabar-info { background: #EFF6FF; color: #1E40AF; border-color: #BFDBFE; }
+.kabar-awas { background: #FFFBEB; color: #92400E; border-color: #FDE68A; }
+.kabar-salah { background: #FEF2F2; color: #991B1B; border-color: #FECACA; }
+.kabar-benar { background: #ECFDF5; color: #065F46; border-color: #A7F3D0; }
 
 .kosong {
-  text-align: center; color: var(--redup);
-  padding: 40px 16px; border: 1px dashed var(--garis); border-radius: var(--radius);
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 3rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+/* ============================================================================
+   MODAL
+   ============================================================================ */
+
+.modal-tirai {
+  position: fixed; inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 2rem 1rem;
+  z-index: 100;
+  overflow-y: auto;
+}
+.modal {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 4rem);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.modal-body { padding: var(--spacing-lg); overflow-y: auto; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 0.5rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--border);
+}
+.modal-bagian {
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-secondary);
+  border-bottom: 1px solid var(--divider);
+  padding-bottom: 0.375rem; margin: var(--spacing-lg) 0 var(--spacing-md);
+  display: flex; align-items: center; gap: 0.375rem;
+}
+.modal-bagian:first-child { margin-top: 0; }
+
+/* ============================================================================
+   RESPONSIF
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .container, .container-sempit { padding: var(--spacing-md); }
+  .page-title { font-size: 1.5rem; }
+  .form-row { grid-template-columns: minmax(0, 1fr); }
+  .navbar-inner { padding: 0.625rem 1rem; gap: 0.75rem; }
+  .nav-link { padding: 0.5rem 0.875rem; font-size: 0.875rem; }
+  .wo-grid, .mekanik-grid { grid-template-columns: minmax(0, 1fr); }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .stat-value { font-size: 1.5rem; }
 }
