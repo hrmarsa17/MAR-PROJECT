@@ -97,9 +97,31 @@ export async function buatWorkOrder(
         if (b.teamMechanicIds.length === 0) {
           throw aturanBisnis('WO wajib punya minimal satu anggota tim');
         }
-        if (section.requires_unit && !b.unitId) {
+        /* WO MANUAL TIDAK PUNYA UNIT, dan itu bukan kelonggaran.
+           "Bersih gudang" atau "Training mekanik" memang tidak dikerjakan pada
+           satu unit; di KMB V2 unitnya diisi penanda 'OTHERS'
+           (`WorkOrderService.js:232`) yang bukan unit sungguhan.
+
+           Sampai 16 Sep 2026 pagar `requires_unit` di bawah ini berlaku juga
+           untuk WO manual, sehingga Others TIDAK BISA dibuat di section field
+           maupun tyreman — dua section terbesar. Fiturnya ada di layar,
+           ditolak server, dan tak ada uji yang menyentuhnya. */
+        if (!b.manual && section.requires_unit && !b.unitId) {
           throw aturanBisnis(`Section ${m.sectionCode} wajib memilih unit`);
         }
+        if (b.manual && b.unitId) {
+          throw aturanBisnis(
+            'WO manual tidak boleh terikat unit — pekerjaannya memang tidak '
+            + 'dikerjakan pada satu unit. Hapus pilihan unitnya.',
+          );
+        }
+
+        /* Unit SEMU bukan unit. Ia baris penanda yang di layar berfungsi
+           sebagai jalan pintas ke job manual (`unit_scope = 'others'` di KMB
+           V2). Melekatkannya ke WO sungguhan membuat WO yang seolah punya unit
+           padahal tidak — dan faktor unitnya ikut masuk perhitungan uang.
+           KMB V2 menolaknya di DUA tempat; di sini satu, karena satu pintu. */
+        if (b.unitId) await tolakUnitSemu(tx, b.unitId);
 
         if (b.jobId) await pastikanJobCocok(tx, b.jobId, section.id, b.unitId ?? null);
 
@@ -193,6 +215,21 @@ function tolakKembarDalamGrup(blok: BlokWo[], mode: 'unit' | 'job'): void {
       );
     }
     terlihat.set(kunci, i + 1);
+  }
+}
+
+async function tolakUnitSemu(tx: Tx, unitId: number): Promise<void> {
+  const u = (
+    await tx<{ is_virtual: boolean; unit_name: string }[]>`
+      SELECT is_virtual, unit_name FROM units WHERE id = ${unitId}
+    `
+  )[0];
+  if (!u) throw tidakDitemukan('Unit', unitId);
+  if (u.is_virtual) {
+    throw aturanBisnis(
+      `"${u.unit_name}" bukan unit sungguhan — ia penanda jalan pintas ke job `
+      + 'manual. Pilih unit yang benar, atau centang "Job manual (Others)".',
+    );
   }
 }
 
