@@ -40,6 +40,7 @@ export default function Masuk() {
       </div>
 
       <form className="card" onSubmit={kirim}>
+        <div className="card-body">
         <div className="form-group">
           <label className="form-label" htmlFor="token">
             Token <span className="wajib">*</span>
@@ -61,6 +62,7 @@ export default function Masuk() {
         <button className="btn-primary btn-blok" disabled={sibuk || token.trim().length < 8}>
           {sibuk ? 'Memeriksa…' : 'Masuk'}
         </button>
+        </div>
       </form>
     </div>
   );

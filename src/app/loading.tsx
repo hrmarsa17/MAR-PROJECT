@@ -29,7 +29,7 @@ export default function Memuat() {
         ))}
       </div>
 
-      <div className="card" style={{ marginTop: 'var(--spacing-lg)' }}>
+      <div className="card card-body" style={{ marginTop: 'var(--spacing-lg)' }}>
         {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}

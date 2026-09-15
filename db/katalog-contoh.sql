@@ -110,3 +110,71 @@ BEGIN
 
   RAISE NOTICE 'Katalog contoh terpasang.';
 END $$;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MEKANIK CONTOH + JABATAN
+-- ════════════════════════════════════════════════════════════════════════════
+-- Quick Stats memecah "Mekanik Aktif" menurut kolom `grade` — jabatan yang
+-- dibaca orang. Mekanik yang lahir dari bekal uji tidak punya grade, jadi
+-- rinciannya cuma berbunyi "(tanpa jabatan)" dan kartunya kehilangan gunanya.
+--
+-- `grade` SENGAJA bukan nama golongan tarif. Di KMB V2 keduanya kolom terpisah:
+-- `position` kunci ke tarif dan tak boleh tampil di layar, `grade` label bebas
+-- untuk dibaca. Memakai nama golongan sebagai jabatan akan membocorkan pita
+-- gaji seseorang ke layar yang dibuka satu ruangan.
+-- ════════════════════════════════════════════════════════════════════════════
+
+DO $$
+DECLARE
+  v_tenant smallint;
+  v_junior integer;
+  v_senior integer;
+  v_field  smallint;
+  v_tyre   smallint;
+BEGIN
+  SELECT id INTO v_tenant FROM tenants WHERE code = 'KMB';
+  SELECT id INTO v_junior FROM pay_rates WHERE tenant_id = v_tenant AND position = 'junior';
+  SELECT id INTO v_senior FROM pay_rates WHERE tenant_id = v_tenant AND position = 'senior';
+  SELECT id INTO v_field  FROM sections  WHERE tenant_id = v_tenant AND code = 'field';
+  SELECT id INTO v_tyre   FROM sections  WHERE tenant_id = v_tenant AND code = 'tyreman';
+  IF v_junior IS NULL THEN RAISE EXCEPTION 'pay_rates belum ada — jalankan db/seed.sql'; END IF;
+
+  -- Jabatan untuk mekanik yang sudah ada (dari bekal uji).
+  UPDATE mechanics SET grade = 'Mekanik'        WHERE mechanic_code = 'UJI-M1' AND grade IS NULL;
+  UPDATE mechanics SET grade = 'Mekanik Senior' WHERE mechanic_code = 'UJI-M2' AND grade IS NULL;
+
+  INSERT INTO mechanics (tenant_id, mechanic_code, name, role, pay_rate_id, grade)
+  VALUES
+    (v_tenant, 'CONTOH-M03', 'CONTOH Budi Santoso',  'mechanic', v_junior, 'Mekanik'),
+    (v_tenant, 'CONTOH-M04', 'CONTOH Agus Riyanto',  'mechanic', v_senior, 'Mekanik Senior'),
+    (v_tenant, 'CONTOH-M05', 'CONTOH Dedi Kurniawan','mechanic', v_junior, 'Tyreman'),
+    (v_tenant, 'CONTOH-M06', 'CONTOH Eko Prasetyo',  'mechanic', v_junior, 'Tyreman'),
+    (v_tenant, 'CONTOH-M07', 'CONTOH Fajar Nugroho', 'mechanic', v_junior, 'Helper')
+  ON CONFLICT (tenant_id, mechanic_code) DO NOTHING;
+
+  -- Section per orang. Yang TIDAK punya baris di sini boleh dilihat semua
+  -- section — perilaku KMB V2 yang sengaja dipertahankan.
+  INSERT INTO mechanic_sections (mechanic_id, section)
+  SELECT m.id, s.kode::citext
+    FROM mechanics m
+    JOIN (VALUES
+      ('CONTOH-M03', 'field'),
+      ('CONTOH-M04', 'field'),
+      ('CONTOH-M05', 'tyreman'),
+      ('CONTOH-M06', 'tyreman')
+    ) AS s(kode_mek, kode) ON s.kode_mek = m.mechanic_code::text
+   WHERE m.tenant_id = v_tenant
+  ON CONFLICT (mechanic_id, section) DO NOTHING;
+
+  -- Token, supaya layar Monitoring bisa dicoba sungguhan. Nilainya jelas
+  -- bertanda CONTOH — tidak mungkin tertukar dengan token orang sungguhan.
+  INSERT INTO api_tokens (tenant_id, mechanic_id, token)
+  SELECT v_tenant, m.id, 'contoh' || lpad((row_number() OVER (ORDER BY m.id))::text, 14, '0')
+    FROM mechanics m
+   WHERE m.tenant_id = v_tenant
+     AND m.mechanic_code::text LIKE 'CONTOH-M%'
+     AND NOT EXISTS (SELECT 1 FROM api_tokens t WHERE t.mechanic_id = m.id AND t.is_active)
+  ON CONFLICT (token) DO NOTHING;
+
+  RAISE NOTICE 'Mekanik contoh + jabatan terpasang.';
+END $$;

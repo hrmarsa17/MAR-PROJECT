@@ -188,7 +188,15 @@ a { color: var(--primary); text-decoration: none; }
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
-.card { padding: var(--spacing-lg); }
+/* KARTU TIDAK BERPADDING — yang berpadding kepala dan badannya.
+   Bentuk KMB V2 (`Main.html:99-102`), dan alasannya terasa begitu ada kartu
+   yang isinya harus menyentuh tepi: tabel bergulir, daftar peringkat, grafik.
+   Dengan padding di `.card`, semuanya harus dinolkan satu per satu lewat gaya
+   sebaris — dan yang terlewat adalah judulnya, yang lalu menempel ke garis
+   tepi. Persis yang terjadi di layar Performa.
+
+   `overflow: hidden` supaya sudut membulatnya memotong isi yang menyentuh tepi. */
+.card { padding: 0; overflow: hidden; }
 .card:hover, .stat-card:hover, .wo-card:hover { box-shadow: var(--shadow-hover); }
 .mechanic-card:hover, .mon-card:hover {
   border-color: var(--primary);
@@ -200,9 +208,13 @@ a { color: var(--primary); text-decoration: none; }
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
   flex-wrap: wrap;
+  /* 20px 24px — angka sumber, bukan taksiran. Garis pemisahnya yang membuat
+     judul tidak lagi terbaca menempel pada tepi kartu. */
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--divider);
 }
+.card-body { padding: 1.5rem; }
 .card-title { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
 .card-subtitle { font-size: 0.8125rem; color: var(--text-secondary); }
 
@@ -660,7 +672,7 @@ textarea { min-height: 64px; resize: vertical; }
    15 nama menjulur sampai layar harus digulir hanya untuk mencapai grafik di
    bawahnya — dan yang di urutan 12 tak pernah dilihat siapa pun. Yang dicari
    orang di papan peringkat adalah puncaknya; sisanya cukup dapat dijangkau. */
-.grid-papan > .card { display: flex; flex-direction: column; max-height: 430px; padding: 0; }
+.grid-papan > .card { display: flex; flex-direction: column; max-height: 430px; }
 .papan-isi { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0;
              padding: 0.5rem 1.25rem; }
 /* min-height:0 wajib: tanpa itu anak flex menolak menyusut di bawah tinggi
@@ -716,7 +728,7 @@ textarea { min-height: 64px; resize: vertical; }
 /* Grafik + Quick Stats */
 .grid-bawah { display: grid; grid-template-columns: 2fr 1fr; gap: var(--spacing-lg);
               align-items: stretch; }
-.grid-bawah > .card { display: flex; flex-direction: column; padding: 0; }
+.grid-bawah > .card { display: flex; flex-direction: column; }
 .tren-isi { flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
             padding: var(--spacing-lg); min-height: 250px; }
 .tren-svg { width: 100%; height: auto; max-height: 280px; overflow: visible; }
@@ -1031,3 +1043,8 @@ select, textarea {
 @media (prefers-reduced-motion: reduce) {
   .rangka { animation: none; background: #F1F5F9; }
 }
+
+/* Keadaan kosong DI DALAM kartu tidak perlu garis putus-putusnya sendiri —
+   kartunya sudah punya tepi. Dua tepi bersarang terbaca sebagai kotak di dalam
+   kotak, dan itu yang membuat kartu kosong tampak lebih besar dari isinya. */
+.card .kosong, .papan-gulir .kosong { border: none; border-radius: 0; }

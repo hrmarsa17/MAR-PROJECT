@@ -22,6 +22,7 @@ export function BelumDibangun({
       </div>
 
       <div className="card">
+        <div className="card-body">
         <div className="card-title">Belum dibangun</div>
         <p className="card-subtitle" style={{ marginTop: 8 }}>
           Yang akan ada di sini, mengikuti KMB V2:
@@ -29,6 +30,7 @@ export function BelumDibangun({
         <ul style={{ margin: '12px 0 0', paddingLeft: 20, fontSize: '0.875rem', lineHeight: 1.9 }}>
           {dariKmbV2.map((b) => <li key={b}>{b}</li>)}
         </ul>
+        </div>
       </div>
     </div>
   );

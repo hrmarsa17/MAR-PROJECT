@@ -73,7 +73,7 @@ export default async function Performa() {
       </div>
 
       {/* ── Work Order Terbaru ───────────────────────────────────────────── */}
-      <div className="card" style={{ padding: 0, marginBottom: 'var(--spacing-lg)' }}>
+      <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
         <div className="card-header">
           <span className="card-title">📋 Work Order Terbaru</span>
           <FilterStatus />
@@ -199,7 +199,7 @@ export default async function Performa() {
               )}
             </div>
             <div className="qs-butir">
-              <div className="qs-label">Periode Ini</div>
+              <div className="qs-label">Bulan Ini</div>
               <div className="qs-nilai">{stat.bulanIni} WO</div>
             </div>
             <div className="qs-butir">
