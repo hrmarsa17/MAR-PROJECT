@@ -27,17 +27,31 @@ function periksa(nama: string, ok: boolean, catatan = '') {
   else { gagal++; console.log(`  ❌ ${nama}${catatan ? ` — ${catatan}` : ''}`); }
 }
 
+/**
+ * Token sekali pakai untuk uji ini.
+ *
+ * Id barisnya DICATAT supaya pembersihan di akhir hanya menghapus yang dibuat
+ * di sini. Percobaan pertama menghapus menurut waktu ("dibuat < 1 jam lalu")
+ * dan ikut mencabut token L1/L2 yang Gabriel pakai untuk masuk — token yang
+ * bukan miliknya. Pembersihan yang menebak sasaran bukan pembersihan.
+ */
+const tokenDibuat: number[] = [];
 async function tokenUntuk(peran: string): Promise<{ token: string; id: number }> {
   const m = (
     await sql<{ id: number; tenant_id: number }[]>`
-      SELECT id, tenant_id FROM mechanics WHERE role = ${peran} AND is_active LIMIT 1
+      SELECT id, tenant_id FROM mechanics
+       WHERE role = ${peran} AND is_active ORDER BY id LIMIT 1
     `
   )[0]!;
   const t = buatToken();
-  await sql`
-    INSERT INTO api_tokens (tenant_id, mechanic_id, token)
-    VALUES (${m.tenant_id}, ${m.id}, ${t})
-  `;
+  const baris = (
+    await sql<{ id: number }[]>`
+      INSERT INTO api_tokens (tenant_id, mechanic_id, token)
+      VALUES (${m.tenant_id}, ${m.id}, ${t})
+      RETURNING id
+    `
+  )[0]!;
+  tokenDibuat.push(Number(baris.id));
   return { token: t, id: m.id };
 }
 
@@ -183,7 +197,7 @@ console.log('\n─── 8. mekanik tidak boleh mengoreksi ───');
 
 // Bersihkan jejak uji supaya layar tidak menampilkan koreksi palsu.
 await sql`DELETE FROM work_order_overrides WHERE work_order_id = ${woId}`;
-await sql`DELETE FROM api_tokens WHERE mechanic_id IN (${l1.id}, ${l2.id}) AND created_at > now() - interval '1 hour'`;
+await sql`DELETE FROM api_tokens WHERE id = ANY(${tokenDibuat}::bigint[])`;
 await sql.end();
 
 console.log(`\n${gagal === 0 ? '✅' : '❌'}  ${lulus} lulus, ${gagal} gagal\n`);
