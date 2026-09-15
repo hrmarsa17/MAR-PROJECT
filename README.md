@@ -48,6 +48,19 @@ tests/
 npm install
 npm test          # 28 uji: rumus uang + invarian basis data
 npm run typecheck
+npm run dev       # http://localhost:3000
+```
+
+Untuk masuk, terbitkan token dulu:
+
+```bash
+npm run token -- UJI-L2      # tampil sekali, hanya hash-nya yang tersimpan
+```
+
+Uji asap lewat HTTP (server harus sudah jalan):
+
+```bash
+npx tsx scripts/uji-alur.ts <token_L1> <token_L2> http://127.0.0.1:3000
 ```
 
 ### Basis data pengembangan
@@ -85,7 +98,7 @@ Sambungan dibaca dari `.env` (lihat `.env.example`).
 |---|---|
 | 1 · Skema + benih | ✅ berdiri, 37 tabel |
 | 2 · Lapisan bisnis (WO, approval, scoring) | ✅ 28 uji lulus, termasuk konkurensi |
-| 3 · Web | belum |
+| 3 · Web | 🔨 masuk, buat WO, approval L1/L2 jalan; override & tolak belum |
 | 4 · PWA offline | belum |
 | 5 · Dashboard, payroll, koreksi meter | belum |
 | 6 · Layar admin katalog | belum |
