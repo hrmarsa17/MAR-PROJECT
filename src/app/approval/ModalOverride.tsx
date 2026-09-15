@@ -43,6 +43,24 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
   const [selesai, setSelesai] = useState('');
   const [judgment, setJudgment] = useState('');
 
+  /* Halaman di belakang DIKUNCI selama modal terbuka.
+     Tanpa ini, roda mouse yang kebetulan berada di luar kotak modal
+     menggulir halaman approval di belakangnya — dan saat modalnya ditutup,
+     layar sudah berada di tempat yang berbeda dari sebelum dibuka. Terbaca
+     sebagai antarmuka yang berubah sendiri.
+
+     Lebar scrollbar diganti padding supaya isi halaman tidak melompat
+     mendatar sesaat kuncinya dipasang. */
+  useEffect(() => {
+    const b = document.body;
+    const geser = window.innerWidth - document.documentElement.clientWidth;
+    const overflowAsli = b.style.overflow;
+    const padAsli = b.style.paddingRight;
+    b.style.overflow = 'hidden';
+    if (geser > 0) b.style.paddingRight = `${geser}px`;
+    return () => { b.style.overflow = overflowAsli; b.style.paddingRight = padAsli; };
+  }, []);
+
   useEffect(() => {
     let batal = false;
     fetch(`/api/data?jenis=override&wo_id=${woId}`)
@@ -171,7 +189,22 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
   }
 
   return (
-    <Bingkai judul={`✏️ Edit Override — ${bekal.woNumber}`} onTutup={onTutup}>
+    <Bingkai
+      judul={`✏️ Edit Override — ${bekal.woNumber}`}
+      onTutup={onTutup}
+      kaki={
+        <>
+          <button type="button" className="btn-secondary" onClick={onTutup}>Cancel</button>
+          <button
+            type="button" className="btn-primary"
+            disabled={sibuk || !bekal.bolehDiubah}
+            onClick={() => void simpan()}
+          >
+            {sibuk ? 'Menyimpan…' : '💾 Save Override'}
+          </button>
+        </>
+      }
+    >
       {!bekal.bolehDiubah && (
         <div className="kabar kabar-salah">
           WO ini berstatus <b>{bekal.status}</b> dan tidak bisa dikoreksi lagi —
@@ -181,7 +214,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
 
       {/* ── medan yang bisa diubah ─────────────────────────────────────── */}
       <div className="modal-bagian">
-        <h4>📝 Editable Fields</h4>
+        <h4 className="modal-bagian-judul">📝 Editable Fields</h4>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Base Points</label>
@@ -281,7 +314,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
 
       {/* ── jam kerja ──────────────────────────────────────────────────── */}
       <div className="modal-bagian">
-        <h4>⏱️ Waktu Kerja (koreksi jam mekanik)</h4>
+        <h4 className="modal-bagian-judul">⏱️ Waktu Kerja (koreksi jam mekanik)</h4>
         <p className="form-hint" style={{ marginTop: 0 }}>
           Untuk mekanik yang lupa menekan stop, atau salah jam mulai.
         </p>
@@ -317,7 +350,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
 
       {/* ── judgment ───────────────────────────────────────────────────── */}
       <div className="modal-bagian">
-        <h4>🗒️ Judgment / Catatan Approver (opsional)</h4>
+        <h4 className="modal-bagian-judul">🗒️ Judgment / Catatan Approver (opsional)</h4>
         <p className="form-hint" style={{ marginTop: 0 }}>
           Alasan pengerjaan lama atau menyimpang. Tampil di dashboard.
         </p>
@@ -340,7 +373,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
       {/* ── riwayat ────────────────────────────────────────────────────── */}
       {bekal.riwayat.length > 0 && (
         <div className="modal-bagian">
-          <h4>✏️ Riwayat Override</h4>
+          <h4 className="modal-bagian-judul">✏️ Riwayat Override</h4>
           {bekal.riwayat.map((r, i) => (
             <div className="riwayat-baris" key={i}>
               <span className={`badge ${r.level === 'superintendent' ? 'badge-purple' : 'badge-amber'}`}>
@@ -360,7 +393,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
 
       {/* ── read-only ──────────────────────────────────────────────────── */}
       <div className="modal-bagian">
-        <h4>🔒 Read-Only</h4>
+        <h4 className="modal-bagian-judul">🔒 Read-Only</h4>
         <div className="form-group">
           <label className="form-label">Unit Factor</label>
           <input
@@ -375,32 +408,40 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
       </div>
 
       {galat && <div className="kabar kabar-salah">{galat}</div>}
-
-      <div className="modal-footer" style={{ padding: 0, borderTop: 'none', marginTop: 16 }}>
-        <button type="button" className="btn-secondary" onClick={onTutup}>Cancel</button>
-        <button
-          type="button" className="btn-primary"
-          disabled={sibuk || !bekal.bolehDiubah}
-          onClick={() => void simpan()}
-        >
-          {sibuk ? 'Menyimpan…' : '💾 Save Override'}
-        </button>
-      </div>
     </Bingkai>
   );
 }
 
+/**
+ * Bingkai modal. Kaki DIPISAH dari badan, bukan ditaruh di dalamnya: badan yang
+ * menggulir sementara kaki tetap terpaku berarti tombol Simpan selalu
+ * terjangkau. Saat keduanya menyatu, modal sepanjang ini mendorong tombolnya
+ * keluar layar dan orang mengira formulirnya belum selesai.
+ */
 function Bingkai({
-  judul, onTutup, children,
-}: { judul: string; onTutup: () => void; children: React.ReactNode }) {
+  judul, onTutup, children, kaki,
+}: {
+  judul: string;
+  onTutup: () => void;
+  children: React.ReactNode;
+  kaki?: React.ReactNode;
+}) {
+  /* TIRAI TIDAK MENUTUP SAAT DIKLIK, dan itu disengaja.
+     Di KMB V2 tak satu pun dari tiga modalnya punya onclick di tirainya
+     (`Approval.html:715,729,793`). Alasannya jelas begitu dipakai: ini
+     formulir berisi koreksi angka uang yang baru diketik, dan menutupnya
+     karena kursor meleset ke luar berarti pekerjaan itu hilang tanpa
+     peringatan. Jalan keluarnya dua, dan keduanya harus disengaja: tombol ×
+     di kepala, atau Cancel di kaki. */
   return (
-    <div className="modal-tirai" onClick={onTutup}>
-      <div className="modal modal-lebar" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-tirai">
+      <div className="modal modal-lebar">
         <div className="modal-header">
           <h3>{judul}</h3>
-          <button type="button" className="btn-secondary btn-sm" onClick={onTutup}>✕</button>
+          <button type="button" className="modal-tutup" title="Tutup" onClick={onTutup}>×</button>
         </div>
         <div className="modal-body">{children}</div>
+        {kaki && <div className="modal-footer">{kaki}</div>}
       </div>
     </div>
   );
