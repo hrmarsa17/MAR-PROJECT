@@ -206,11 +206,17 @@ kecelakaan yang sama.
 2. **Modal Edit Override** — isi lengkapnya di `00-INDEKS.md` §4 bagian Approvals.
    Perintah `save_override` belum ada. **Ingat: `partial_hours` transfer tidak
    boleh tertimpa picker** (sudah dijaga `src/domain/nilaiEfektif.ts`).
-3. **`src/domain/periode.ts`** — **belum ada, dan lima hal bergantung padanya.**
-   Definisi + uji batasnya di `docs/SPEK-LAYAR/01-PERFORMA.md` §7a.
-4. **Performa** — spek lengkap di `01-PERFORMA.md`. Yang paling mudah salah:
-   papan harian dikunci `submitted_at` (bukan `awarded_at`), jendelanya satu
-   **shift** bukan 24 jam, dan periode gaji 16→15 bukan kalender.
+3. ~~`src/domain/periode.ts`~~ — **SELESAI** (`a964003`). 28 uji, termasuk batas
+   tanggal 15/16 dan sambungan antar periode yang harus tepat 1 milidetik.
+   Ada juga `src/domain/shift.ts` — jam shift 06–18 / 18–06, **satu tempat**,
+   dipakai bersama papan harian dan (nanti) Dashboard Teknis.
+4. ~~**Performa**~~ — **SELESAI** (`7b7bd91`). `src/app/performa/` +
+   `src/domain/kueriPerforma.ts`. Grafik digambar SVG di server, bukan Chart.js
+   dari CDN — alasannya di `TrenSvg.tsx`.
+   **Satu hal menunggu jawaban Gabriel**, tercatat di `kueriPerforma.ts` pada
+   medan `totalPoin`: kartu "Total Poin" menjumlah poin per WO sementara papan
+   di bawahnya menjumlah poin per orang, dan karena model poin penuh keduanya
+   memang berbeda. Ditiru 1:1 dari KMB V2 — jangan diubah tanpa keputusannya.
 5. **Reports** — export Excel. Angka dari nilai yang **dibekukan**.
 6. **Monitoring** lengkap — spek di `03-MONITORING.md`. Transfer WO, live timer,
    pengelompokan borongan.
