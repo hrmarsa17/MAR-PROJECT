@@ -229,7 +229,9 @@ export async function hitunganTab(aku: Identitas): Promise<HitunganTab> {
 export interface BarisRiwayatOverride {
   level: 'supervisor' | 'superintendent';
   kind: string;
-  value: unknown;
+  /** Nilai SEBELUM koreksi. `undefined` bila memang belum pernah ada. */
+  lama: unknown;
+  baru: unknown;
   oleh: string;
   set_at: string;
 }
@@ -310,12 +312,20 @@ export async function bekalOverride(
         SELECT mechanic_id FROM work_order_team WHERE work_order_id = ${woId}
          ORDER BY mechanic_id
       `,
-      tx<{ level: string; kind: string; value: unknown; oleh: string; set_at: Date }[]>`
-        SELECT o.level::text, o.kind::text, o.value, m.name AS oleh, o.set_at
-          FROM work_order_overrides o
-          JOIN mechanics m ON m.id = o.set_by
-         WHERE o.work_order_id = ${woId}
-         ORDER BY o.set_at ASC
+      /* Riwayat dari AUDIT_LOGS, bukan dari tabel override.
+         Kunci utama tabel override (wo, level, kind) hanya menyimpan nilai
+         TERAKHIR — koreksi kedua menghapus jejak yang pertama. Audit menyimpan
+         tiap langkah berikut nilai LAMA-nya, dan itulah yang membuat layar bisa
+         menampilkan "20 → 30" alih-alih cuma "30", persis seperti KMB V2
+         (`Approval.html:1250-1252`). */
+      tx<{ oleh: string; set_at: Date; details: Record<string, unknown> }[]>`
+        SELECT m.name AS oleh, a.occurred_at AS set_at, a.details
+          FROM audit_logs a
+          JOIN mechanics m ON m.id = a.actor_id
+         WHERE a.entity_type = 'work_order'
+           AND a.entity_id = ${String(woId)}
+           AND a.action = 'save_override'
+         ORDER BY a.occurred_at ASC
       `,
       tx<{ id: number; nama: string; jabatan: string | null }[]>`
         SELECT m.id, m.name AS nama, pr.label AS jabatan
@@ -335,13 +345,21 @@ export async function bekalOverride(
     ]);
 
     const num = (v: string | null) => (v === null ? null : Number(v));
-    const ovTime = ov.find((r) => r.kind === 'time')?.value as
-      | { start_time?: string; end_time?: string } | undefined;
 
-    // Judgment efektif: L2 menang. Barisnya yang ADA berarti level itu pernah
-    // menyentuh — termasuk saat ia sengaja mengosongkan.
-    const jL2 = ov.find((r) => r.kind === 'judgment' && r.level === 'superintendent');
-    const jL1 = ov.find((r) => r.kind === 'judgment' && r.level === 'supervisor');
+    // Judgment & waktu efektif dibaca dari tabel override (keadaan SEKARANG),
+    // bukan dari audit (riwayat langkahnya).
+    const kini = await tx<{ level: string; kind: string; value: unknown }[]>`
+      SELECT level::text, kind::text, value FROM work_order_overrides
+       WHERE work_order_id = ${woId}
+    `;
+    // Waktu efektif: override L2 menang atas L1; tanpa keduanya pakai kolom WO.
+    const ovTime = (
+      kini.find((r) => r.kind === 'time' && r.level === 'superintendent')
+      ?? kini.find((r) => r.kind === 'time' && r.level === 'supervisor')
+    )?.value as { start_time?: string; end_time?: string } | undefined;
+
+    const jL2 = kini.find((r) => r.kind === 'judgment' && r.level === 'superintendent');
+    const jL1 = kini.find((r) => r.kind === 'judgment' && r.level === 'supervisor');
     const jPakai = jL2 ?? jL1;
 
     return {
@@ -374,9 +392,10 @@ export async function bekalOverride(
       },
       unit: { nama: wo.unit_nama, factor: ne.unitFactor },
       riwayat: ov.map((r) => ({
-        level: r.level as 'supervisor' | 'superintendent',
-        kind: r.kind,
-        value: r.value,
+        level: String(r.details['level']) as 'supervisor' | 'superintendent',
+        kind: String(r.details['kind']),
+        lama: r.details['lama'],
+        baru: r.details['baru'],
         oleh: r.oleh,
         set_at: r.set_at.toISOString(),
       })),

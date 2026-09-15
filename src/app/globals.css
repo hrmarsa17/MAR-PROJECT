@@ -1206,3 +1206,9 @@ select, textarea {
    menggulir. Tanpa ini yang pendek menempel di tepi atas dan terbaca sebagai
    setengah termuat. Sama dengan `Approval.html:152`. */
 .modal { margin: auto; }
+
+/* Riwayat override: nilai lama dicoret, nilai baru disorot. Bentuk ini dari
+   `Approval.html:1250-1252` — tanpa yang lama, riwayat cuma menyebut keadaan
+   sekarang dan tidak menjelaskan apa pun. */
+.riwayat-lama { text-decoration: line-through; color: #9CA3AF; }
+.riwayat-baru { color: #B45309; font-weight: 700; }

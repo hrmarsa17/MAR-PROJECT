@@ -304,7 +304,13 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
           <button
             type="button" className="btn-tambah-anggota"
             disabled={!bekal.bolehDiubah}
-            onClick={() => setTim([...tim, 0])}
+            onClick={() => {
+              // Sumber tidak pernah membuat baris kosong: ia langsung memilih
+              // mekanik pertama. Baris kosong cuma menambah satu keadaan tak
+              // sah yang harus dijaga validasinya.
+              const bebas = bekal.mekanik.find((m) => !tim.includes(m.id));
+              setTim([...tim, bebas ? bebas.id : 0]);
+            }}
           >+ Add Member</button>
           {/* Tidak ada kolom persentase, dan itu disengaja: setiap anggota
               menerima poin PENUH. Menampilkan kotak persen mengundang orang
@@ -339,7 +345,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
           Durasi:{' '}
           {sesiJam === null ? '—'
             : sesiJam <= 0 ? '⚠️ Jam selesai harus setelah jam mulai'
-            : durasiJam(sesiJam)}
+            : `${durasiJam(sesiJam)} (${bulat2(sesiJam)} jam)`}
         </div>
         {bekal.partialHours > 0 && (
           <p className="form-hint">
@@ -356,7 +362,8 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
         <p className="form-hint" style={{ marginTop: 0 }}>
           Alasan pengerjaan lama atau menyimpang. Tampil di dashboard.
         </p>
-        {bekal.judgment.sumber === 'supervisor' && (
+        {bekal.judgment.sumber === 'supervisor'
+          && bekal.status === 'pending_superintendent' && (
           <div className="kabar kabar-info" style={{ fontSize: '0.8125rem' }}>
             ↩️ Catatan ini ditulis L1. Anda boleh mengubahnya, atau kosongkan
             untuk menghapus.
@@ -381,11 +388,22 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
               <span className={`badge ${r.level === 'superintendent' ? 'badge-purple' : 'badge-amber'}`}>
                 {r.level === 'superintendent' ? 'L2' : 'L1'}
               </span>
-              <div>
-                <div style={{ fontWeight: 600 }}>{namaJenis(r.kind)}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                  {ringkasNilai(r.kind, r.value, bekal)} · {r.oleh} ·{' '}
-                  {new Date(r.set_at).toLocaleString('id-ID')}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.8125rem' }}>
+                  <b>{namaJenis(r.kind)}</b>:{' '}
+                  {/* Nilai lama DICORET, lalu panah ke yang baru — bentuk sumber
+                      (`Approval.html:1250-1252`). Tanpa yang lama, riwayat cuma
+                      menyebut keadaan sekarang dan tak menjelaskan apa pun. */}
+                  {r.lama !== undefined && r.lama !== null && (
+                    <>
+                      <span className="riwayat-lama">{ringkasNilai(r.kind, r.lama, bekal)}</span>
+                      {' → '}
+                    </>
+                  )}
+                  <span className="riwayat-baru">{ringkasNilai(r.kind, r.baru, bekal)}</span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  {r.oleh} · {new Date(r.set_at).toLocaleString('id-ID')}
                 </div>
               </div>
             </div>
@@ -399,7 +417,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
         <div className="form-group">
           <label className="form-label">Unit Factor</label>
           <input
-            readOnly value={`${bekal.unit.factor}${bekal.unit.nama ? ` — ${bekal.unit.nama}` : ''}`}
+            readOnly value={`${bekal.unit.factor}${bekal.unit.nama ? ` (${bekal.unit.nama})` : ''}`}
             style={{ background: 'var(--bg-secondary)' }}
           />
           <p className="form-hint">
@@ -428,16 +446,24 @@ function Bingkai({
   children: React.ReactNode;
   kaki?: React.ReactNode;
 }) {
-  /* TIRAI TIDAK MENUTUP SAAT DIKLIK, dan itu disengaja.
-     Di KMB V2 tak satu pun dari tiga modalnya punya onclick di tirainya
-     (`Approval.html:715,729,793`). Alasannya jelas begitu dipakai: ini
-     formulir berisi koreksi angka uang yang baru diketik, dan menutupnya
-     karena kursor meleset ke luar berarti pekerjaan itu hilang tanpa
-     peringatan. Jalan keluarnya dua, dan keduanya harus disengaja: tombol ×
-     di kepala, atau Cancel di kaki. */
+  /* KOREKSI ATAS CATATAN SAYA SEBELUMNYA.
+     Saya pernah menulis di sini bahwa KMB V2 tak menutup modalnya saat tirai
+     diklik. Itu SALAH: pencarian saya cuma mencari atribut `onclick` sebaris,
+     sementara sumbernya memasangnya lewat addEventListener —
+     `Approval.html:1339`:
+
+         editModal.addEventListener('click', e => { if (e.target === this) closeEditModal(); });
+
+     Jadi tirai memang menutup, dan perilaku itu dikembalikan supaya 1:1.
+     Risikonya nyata — koreksi yang baru diketik hilang kalau kursor meleset —
+     tapi mengubahnya adalah keputusan Gabriel, bukan keputusan porting, dan
+     saya sudah sekali memutuskannya sendiri atas dasar yang keliru. */
   return (
     <Portal>
-      <div className="modal-tirai">
+      <div
+        className="modal-tirai"
+        onClick={(e) => { if (e.target === e.currentTarget) onTutup(); }}
+      >
         <div className="modal modal-lebar">
           <div className="modal-header">
             <h3>{judul}</h3>

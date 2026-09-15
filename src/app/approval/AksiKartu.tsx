@@ -39,6 +39,12 @@ export function AksiKartu({
   const [sibuk, setSibuk] = useState(false);
   const [bukaOverride, setBukaOverride] = useState(false);
   const [hasil, setHasil] = useState<{ baik: boolean; teks: string } | null>(null);
+  /* Pesan yang TIDAK mengakhiri hidup kartu ini — koreksi override, misalnya.
+     Dipisah dari `hasil` karena keduanya berbeda arti: `hasil.baik` berarti WO
+     ini sudah selesai diputuskan dan kartunya akan pergi dari tab ini;
+     `kabarSingkat` cuma memberi tahu sesuatu tersimpan, dan tombolnya harus
+     TETAP ADA karena WO-nya masih menunggu keputusan. */
+  const [kabarSingkat, setKabarSingkat] = useState<string | null>(null);
 
   async function kirim(aksi: Aksi) {
     setSibuk(true);
@@ -70,7 +76,8 @@ export function AksiKartu({
           baik: true,
           teks:
             aksi === 'approve' && poin !== undefined
-              ? `${nomor} disetujui — ${Number(poin).toFixed(2)} poin untuk ${j.data.hasil.dibayar.length} mekanik`
+              ? `${nomor} disetujui — ${Number(poin).toFixed(2)} poin untuk `
+                + `${j.data.hasil.dibayar.length} mekanik. Kartunya pindah ke tab WO Approved.`
               : `${nomor}: ${JUDUL[aksi].toLowerCase()} berhasil`,
         });
         setMinta(null);
@@ -90,6 +97,9 @@ export function AksiKartu({
     }
   }
 
+  /* Kartu yang keputusannya sudah diambil digantikan pesannya: ia akan hilang
+     dari tab ini begitu halaman disegarkan, dan menawarkan tombol untuk WO yang
+     sudah disetujui cuma mengundang klik yang akan ditolak. */
   if (hasil?.baik) return <div className="kabar kabar-benar">{hasil.teks}</div>;
 
   return (
@@ -123,6 +133,7 @@ export function AksiKartu({
       </div>
 
       {hasil && !hasil.baik && <div className="kabar kabar-salah">{hasil.teks}</div>}
+      {kabarSingkat && <div className="kabar kabar-benar">{kabarSingkat}</div>}
 
       {minta && (
         <Portal>
@@ -183,9 +194,15 @@ export function AksiKartu({
           onTutup={() => setBukaOverride(false)}
           onSimpan={() => {
             setBukaOverride(false);
-            setHasil({ baik: true, teks: `Koreksi ${nomor} tersimpan.` });
-            // Kartu harus digambar ulang: angka yang baru dikoreksi ikut
-            // menentukan perkiraan poin yang tampil di kartu itu sendiri.
+            /* BUKAN `setHasil` — override tidak mengakhiri apa pun. WO-nya masih
+               menunggu persetujuan, dan tombol Approve HARUS tetap ada.
+               Sampai 15 Sep 2026 baris ini memakai setHasil({baik:true}), dan
+               akibatnya kelima tombol lenyap begitu koreksi disimpan: approver
+               menyimpan koreksinya lalu tak punya cara menyetujui WO-nya
+               sendiri tanpa memuat ulang halaman. */
+            setKabarSingkat(`Koreksi ${nomor} tersimpan — WO masih menunggu persetujuan.`);
+            // Kartu digambar ulang: angka yang baru dikoreksi ikut menentukan
+            // perkiraan poin yang tampil di kartu itu sendiri.
             router.refresh();
           }}
         />

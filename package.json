@@ -17,7 +17,8 @@
     "uji:wo": "tsx scripts/uji-buat-wo.ts",
     "uji:override": "tsx scripts/uji-override.ts",
     "orang": "tsx scripts/lihat-orang.ts",
-    "token:rapikan": "tsx scripts/rapikan-token.ts"
+    "token:rapikan": "tsx scripts/rapikan-token.ts",
+    "uji:alur-override": "tsx scripts/uji-override-approve.ts"
   },
   "dependencies": {
     "next": "^15.5.25",
