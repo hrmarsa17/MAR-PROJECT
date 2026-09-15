@@ -30,7 +30,11 @@ export interface Statistik {
   approved: number;
   pending: number;
   /**
-   * ⚠️ MENUNGGU KEPUTUSAN GABRIEL — dua angka di satu layar yang tidak berjumlah.
+   * DIPUTUSKAN GABRIEL 15 Sep 2026: TETAP 1:1 dengan KMB V2. Jangan diubah.
+   *
+   * Yang berikut ini dibiarkan tertulis lengkap bukan karena masih terbuka,
+   * melainkan supaya orang berikutnya yang menemukan selisihnya tahu bahwa ia
+   * sudah dilihat, ditimbang, dan sengaja dipertahankan — bukan terlewat.
    *
    * Angka ini menjumlah `work_orders.final_points`: poin PER WO, dihitung sekali.
    * Papan peringkat di layar yang sama menjumlah `mechanic_points.points`: poin
@@ -42,13 +46,11 @@ export interface Statistik {
    * berjumlah 88. Subtitelnya yang paling menyesatkan: "terdistribusi" justru
    * menggambarkan 88, bukan 52,8.
    *
-   * Ini DITIRU APA ADANYA dari KMB V2 (`DashboardService.js:220` menjumlah
-   * wo.final_points; `:754` menjumlah record.points) — bukan karena benar,
-   * melainkan karena mengubah arti angka uang di layar adalah keputusan Gabriel,
-   * bukan keputusan porting. Tiga pilihannya:
-   *   a. biarkan 1:1 (orang lapangan sudah terbiasa)
-   *   b. angkanya tetap, subtitelnya diperbaiki jadi jujur
-   *   c. angkanya diganti jadi jumlah poin per orang, supaya berjumlah dgn papan
+   * Ditiru apa adanya dari KMB V2 (`DashboardService.js:220` menjumlah
+   * wo.final_points; `:754` menjumlah record.points). Gabriel memilih
+   * mempertahankannya: orang lapangan sudah membaca layar ini setiap hari, dan
+   * mengubah arti sebuah angka uang menuntut mereka belajar ulang sesuatu yang
+   * sudah mereka pahami — harga yang lebih besar daripada selisihnya sendiri.
    */
   totalPoin: number;
   mekanikAktif: number;

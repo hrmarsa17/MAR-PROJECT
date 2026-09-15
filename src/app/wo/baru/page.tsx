@@ -9,14 +9,22 @@ export default async function BuatWo() {
   if (!aku) redirect('/masuk');
 
   return (
-    <div className="container-sempit">
+    <div className="container">
       <div className="page-header">
-        <h1 className="page-title">📝 Create Work Order</h1>
+        <h1 className="page-title">Create Work Order 📝</h1>
         <p className="page-subtitle">
-          Pilih section, unit, lalu pekerjaannya bertingkat sampai ketemu.
+          Tambahkan satu atau beberapa pekerjaan sekaligus. Setiap blok di bawah
+          akan terbit sebagai 1 work order dengan nomor sendiri.
         </p>
       </div>
-      <FormWo bolehManual={aku.peran !== 'mechanic'} />
+      {/* Angka poin hanya untuk L2. Mekanik dan L1 memilih pekerjaan
+          berdasarkan APA yang dikerjakan, bukan berapa nilainya. Penyaringnya
+          ada DI SERVER juga (`katalog()` tidak mengirim base_points ke
+          non-L2) — ini cuma menghentikan tampilannya. */}
+      <FormWo
+        bolehManual={aku.peran !== 'mechanic'}
+        bolehLihatPoin={aku.peran === 'superintendent'}
+      />
     </div>
   );
 }

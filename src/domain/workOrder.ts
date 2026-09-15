@@ -78,6 +78,8 @@ export async function buatWorkOrder(
 
       await pastikanBolehSection(tx, m.actorId, section.id);
 
+      if (m.grup) tolakKembarDalamGrup(m.blok, m.grup.mode);
+
       const grupId = m.grup ? crypto.randomUUID() : null;
       const dibuat: WoDibuat[] = [];
 
@@ -154,6 +156,44 @@ export async function buatWorkOrder(
       return { dibuat, grupId };
     },
   });
+}
+
+/**
+ * Baris kembar di dalam satu grup ditolak SEBELUM satu pun WO terbit.
+ *
+ * Bentuk grupnya menentukan apa yang harus berbeda:
+ *
+ *   mode 'unit'  1 unit · banyak job  → JOB tiap baris harus berbeda
+ *   mode 'job'   1 job · banyak unit  → UNIT tiap baris harus berbeda
+ *
+ * Layar sudah memeriksa ini lebih dulu (`cekKembarKlien` di KMB V2) supaya orang
+ * tahu tanpa menunggu bolak-balik jaringan, tapi pemeriksaan di layar BUKAN
+ * pagar: PWA, permintaan yang disusun tangan, dan versi layar lama semuanya
+ * masuk lewat pintu yang sama. Pagarnya di sini.
+ *
+ * Melempar, bukan melewati diam-diam: dua baris identik dalam satu grup adalah
+ * dua WO yang akan dibayar dua kali untuk pekerjaan yang sama.
+ */
+function tolakKembarDalamGrup(blok: BlokWo[], mode: 'unit' | 'job'): void {
+  if (blok.length < 2) {
+    throw aturanBisnis(
+      'Mode grup butuh minimal 2 joblist. Tambah joblist, atau buat tanpa grup.',
+    );
+  }
+  const terlihat = new Map<string, number>();
+  for (let i = 0; i < blok.length; i++) {
+    const b = blok[i]!;
+    const kunci = mode === 'unit' ? String(b.jobId ?? '') : String(b.unitId ?? '');
+    if (!kunci) continue;   // baris manual tanpa job/unit tak bisa dibandingkan
+    const sebelumnya = terlihat.get(kunci);
+    if (sebelumnya !== undefined) {
+      throw aturanBisnis(
+        `Joblist #${i + 1}: ${mode === 'unit' ? 'job' : 'unit'} ini sudah ada di grup ` +
+        `(sama dengan joblist #${sebelumnya}).`,
+      );
+    }
+    terlihat.set(kunci, i + 1);
+  }
 }
 
 /** Scope kosong = boleh semua section. Perilaku KMB V2 dipertahankan. */

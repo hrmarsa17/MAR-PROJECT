@@ -761,3 +761,112 @@ textarea { min-height: 64px; resize: vertical; }
                  justify-content: flex-end; gap: 0.5rem; margin-top: 0.15rem; }
   .papan-angka .papan-rupiah { margin-top: 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CREATE WORK ORDER
+   Bentuknya dari buildBlockHtml() (WorkOrder.html:988-1163).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.grup-bar {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg); box-shadow: var(--shadow);
+}
+.grup-ringkas {
+  margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--divider);
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.gr-baris {
+  display: flex; justify-content: space-between; gap: 1rem; font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.gr-nilai { font-weight: 700; color: var(--text); text-align: right; }
+
+/* Satu blok = satu WO. Diberi bingkai sendiri supaya batas antar pekerjaan
+   terlihat — tanpa itu, formulir lima joblist terbaca sebagai satu formulir
+   panjang dan orang kehilangan jejak baris mana yang sedang diisi. */
+.wo-blok {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg); box-shadow: var(--shadow);
+}
+.wo-blok-kepala {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: var(--spacing-md); padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--divider);
+}
+.wo-blok-judul { font-weight: 700; font-size: 0.9375rem; }
+.wo-blok-hapus {
+  background: transparent; border: none; color: var(--primary);
+  font-size: 1.375rem; line-height: 1; cursor: pointer; padding: 0 0.375rem;
+  border-radius: var(--radius-control);
+}
+.wo-blok-hapus:hover { background: #FEF2F2; }
+
+.others-spanduk {
+  background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E;
+  border-radius: var(--radius-control); padding: 0.625rem 0.75rem;
+  margin-bottom: var(--spacing-md); font-size: 0.8125rem;
+}
+.others-baris {
+  display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  padding: 0.625rem 0.75rem; margin-bottom: var(--spacing-md);
+  font-size: 0.8125rem; font-weight: 600;
+}
+.others-baris input { width: auto; min-height: 0; }
+
+/* Tanda kunci grup. Muncul di kolom yang TIDAK bisa diubah lagi — tanpa
+   kalimatnya, kolom yang mati terbaca sebagai formulir rusak. */
+.tanda-kunci {
+  font-size: 0.75rem; color: #92400E; background: #FFFBEB;
+  border: 1px solid #FDE68A; border-radius: 6px;
+  padding: 0.3125rem 0.5rem; margin: 0.375rem 0 0;
+}
+
+/* Catatan kaki meter. CATATAN, bukan pagar: unit bisa berganti panel jam, dan
+   menolak angka yang "mundur" akan menghalangi orang mencatat kenyataan. */
+.kaki-meter { font-size: 0.75rem; margin: 0.375rem 0 0; line-height: 1.5; }
+.kaki-meter.ada { color: #065F46; }
+.kaki-meter.bebas { color: var(--text-secondary); font-style: italic; }
+
+.pratinjau {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-control); padding: 0.75rem 0.875rem;
+  margin-bottom: var(--spacing-md);
+}
+.pratinjau-judul {
+  margin: 0 0 0.5rem; font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);
+}
+.pratinjau-kisi { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.375rem 1rem; }
+.pratinjau-butir { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8125rem; }
+.pratinjau-label { color: var(--text-secondary); }
+.pratinjau-nilai { font-weight: 600; text-align: right; color: var(--text-secondary); }
+.pratinjau-nilai.sorot { color: var(--primary); font-weight: 800; }
+
+.saklar-kecil {
+  display: flex; align-items: center; gap: 0.375rem;
+  font-weight: 400; font-size: 0.8125rem; margin: 0;
+}
+.saklar-kecil input { width: auto; min-height: 0; }
+
+/* Spanduk "kiriman belum dipastikan". Kuning, bukan merah: ini BUKAN
+   kegagalan — pekerjaannya mungkin justru sudah masuk. Merah akan membuat
+   orang menekan kirim ulang, persis yang harus dicegah. */
+.kiriman-spanduk {
+  background: #FFFBEB; border: 2px solid #F59E0B; color: #78350F;
+  border-radius: var(--radius-card); padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg); font-size: 0.875rem; line-height: 1.55;
+}
+
+.struk-baris {
+  display: flex; gap: 0.625rem; align-items: flex-start;
+  padding: 0.625rem 0; border-bottom: 1px solid var(--divider);
+}
+.struk-baris:last-child { border-bottom: none; }
+.struk-baris.buruk { background: #FEF2F2; }
+
+@media (max-width: 640px) {
+  .pratinjau-kisi { grid-template-columns: 1fr; }
+}

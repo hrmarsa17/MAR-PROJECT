@@ -1,6 +1,8 @@
 import { akuDari, jawab, jawabGalat } from '../_bantu.js';
 import { masukanTidakSah, tidakDitemukan } from '../../../lib/errors.js';
-import { antreanApproval, katalog, rincianWo, woSaya } from '../../../domain/kueri.js';
+import {
+  antreanApproval, katalog, rincianWo, statusKiriman, woSaya,
+} from '../../../domain/kueri.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,9 +32,15 @@ export async function GET(req: Request): Promise<Response> {
         if (!r) throw tidakDitemukan('Work order', id);
         return jawab(r);
       }
+      case 'kiriman': {
+        // Aman ditekan berkali-kali — itulah gunanya. Tidak menulis apa pun.
+        const opId = url.searchParams.get('op_id');
+        if (!opId || opId.length < 8) throw masukanTidakSah('Parameter op_id tidak sah');
+        return jawab(await statusKiriman(aku, opId));
+      }
       default:
         throw masukanTidakSah(
-          'Parameter "jenis" wajib: aku | antrean | wo_saya | katalog | wo',
+          'Parameter "jenis" wajib: aku | antrean | wo_saya | katalog | wo | kiriman',
         );
     }
   } catch (e) {

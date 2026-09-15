@@ -164,7 +164,89 @@ export async function katalog(aku: Identitas) {
          ORDER BY m.name`,
   ]);
 
-  return { sections, units, jobs, mekanik };
+  const [kondisi, meter] = await Promise.all([
+    // Kondisi kerja datang dari tabel faktor, TIDAK ditulis di layar. Di KMB V2
+    // daftarnya juga dikirim server; menuliskannya di layar berarti pengalinya
+    // punya dua versi — yang tampil dan yang menghitung.
+    sql`SELECT factor_key::text AS kunci, factor_value AS faktor,
+               coalesce(description, factor_key::text) AS label
+          FROM factors
+         WHERE tenant_id = ${aku.tenantId} AND factor_type = 'work_condition'
+         ORDER BY factor_value`,
+    meterTerakhirPerUnit(aku.tenantId),
+  ]);
+
+  return { sections, units, jobs, mekanik, kondisi, meter };
+}
+
+/**
+ * Angka meter TERAKHIR tiap unit, untuk catatan kaki di layar buat-WO.
+ *
+ * Yang diambil yang PALING BESAR, bukan yang tanggalnya paling baru
+ * (`_Meter.js:413-417`): meter tak pernah mundur, dan WO yang dibuat menyusul
+ * untuk pekerjaan kemarin tidak boleh menarik angka ini mundur.
+ *
+ * Ini CATATAN, bukan pagar. Unit bisa berganti panel jam, dan menolak angka
+ * yang "mundur" akan menghalangi orang mencatat kenyataan. Manusia yang menilai.
+ */
+async function meterTerakhirPerUnit(tenantId: number) {
+  const rows = await sql<{
+    unit_id: number; kind: string; nilai: string; oleh: string | null; at: Date;
+  }[]>`
+    SELECT DISTINCT ON (r.unit_id, r.kind)
+           r.unit_id, r.kind::text AS kind, r.value AS nilai,
+           m.name AS oleh, r.recorded_at AS at
+      FROM meter_readings r
+      JOIN units u ON u.id = r.unit_id
+      LEFT JOIN mechanics m ON m.id = r.recorded_by
+     WHERE u.tenant_id = ${tenantId} AND r.value > 0
+     ORDER BY r.unit_id, r.kind, r.value DESC
+  `;
+  const out: Record<string, { nilai: number; oleh: string | null; at: string }> = {};
+  for (const r of rows) {
+    // Kunci "HM:12" / "KM:12" — dua peta dalam satu kiriman, karena keduanya
+    // angka yang berbeda dan tak bisa saling menggantikan.
+    out[`${r.kind}:${r.unit_id}`] = {
+      nilai: Number(r.nilai),
+      oleh: r.oleh,
+      at: r.at.toISOString(),
+    };
+  }
+  return out;
+}
+
+/**
+ * STATUS SEBUAH KIRIMAN. Read-only, aman dipanggil berkali-kali.
+ *
+ * Inilah yang menjawab pertanyaan yang tidak bisa dijawab layar sendiri:
+ * sambungan putus saat permintaan BERANGKAT (server tak pernah menerima) dan
+ * putus saat jawaban PULANG (server sudah menulis semuanya) terlihat persis
+ * sama dari sisi klien. Bertanya ke sini adalah satu-satunya cara tahu.
+ *
+ * `processed_ops` hanya terisi pada jalur BERHASIL, jadi ada baris = pekerjaan
+ * benar-benar tuntas, dan struk yang dulu dikirim masih utuh di sana.
+ */
+export async function statusKiriman(aku: Identitas, opId: string) {
+  const baris = await sql<{ result: unknown; created_at: Date; action: string }[]>`
+    SELECT result, created_at, action
+      FROM processed_ops
+     WHERE op_id = ${opId} AND tenant_id = ${aku.tenantId}
+  `;
+  const r = baris[0];
+  if (!r) {
+    // TIDAK ADA bukan berarti "gagal" — bisa juga masih berjalan. Yang bisa
+    // dipastikan cuma: tak ada yang tercatat tuntas, jadi aman dibuat ulang
+    // dengan op_id yang SAMA (kalau ternyata sedang berjalan, gerbang
+    // idempotensi yang menahannya).
+    return { keadaan: 'tidak_ada' as const, wo: [] };
+  }
+  const hasil = r.result as { dibuat?: { id: number; woNumber: string }[] };
+  return {
+    keadaan: 'selesai' as const,
+    aksi: r.action,
+    waktu: r.created_at.toISOString(),
+    wo: hasil.dibuat ?? [],
+  };
 }
 
 /** Rincian satu WO untuk layar approval, termasuk rincian skor bila sudah ada. */
