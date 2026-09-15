@@ -174,12 +174,48 @@ sebelum dan sesudah menyentuh jalur uang.**
 
 ## 7. LANGKAH BERIKUTNYA, BERURUT
 
-1. **Create WO 1:1** — Model pembuatan (Bebas / 1 unit banyak job / 1 job banyak unit), blok Joblist #N yang bisa ditambah-kurang, panel Preview (Base Points · Unit Factor · Estimated Points · Target Hours · Work Condition), Team Composition bergaya baris + "Add Team Member".
-2. **Modal Edit Override** — EDITABLE: base points, target hours (jam+menit terpisah), kondisi kerja, tim, waktu kerja dengan bacaan durasi; READ-ONLY: unit factor, work condition. Perintah `save_override` di belakangnya belum ada. **Ingat: `partial_hours` transfer tidak boleh tertimpa picker.**
-3. **Performa** — definisi angkanya ada di `docs/PETA-KMB-V2.md` §8. Yang paling mudah salah: leaderboard harian dikunci `submitted_at` (bukan `awarded_at`), dan periode gaji 16→15 bukan kalender.
-4. **Reports** — export Excel 2 sheet. Angka dari nilai yang **dibekukan**, bukan dihitung ulang.
-5. **Transfer WO**, Koreksi HM/KM, Teknis.
-6. **PWA offline** — invariannya sudah ditulis lengkap di `docs/PETA-KMB-V2.md` §6.
+> **BACA `docs/SPEK-LAYAR/00-INDEKS.md` LEBIH DULU.** Folder itu berisi kontrak
+> porting per layar: markup, kelas CSS, teks persis, definisi angka, dan
+> terjemahan kolomnya — semuanya berjejak `file:baris` ke sumber KMB V2.
+> **Jangan membangun layar dari screenshot.** Saya melakukannya sekali dan
+> hasilnya salah bentuk (pemilih tim jadi deretan tombol, padahal di sumber ia
+> dropdown berbaris); Gabriel yang menemukannya, bukan saya.
+
+### 7a. Selesaikan dulu speknya (4 layar tersisa)
+
+Peta sumber lengkap — berkas, rentang baris, dan apa isinya — sudah ada di
+`docs/SPEK-LAYAR/00-INDEKS.md` §4. Tinggal dibaca dan ditulis, tanpa menebak:
+
+1. `04-APPROVALS.md` ← `Approval.html` + `ApprovalService.js` — **paling kritis**
+2. `07-REPORTS.md` ← `Reports.html` + `PayrollService.js` — jalur uang
+3. `03b-DETAIL-TYRE.md` ← `MechanicDashboard.html:597-670,1086-1300` + `_DetailTyre.js`
+4. `05-TEKNIS.md` dan `06-KOREKSI-HM-KM.md`
+
+Bentuk berkasnya dan aturan menulisnya ada di `00-INDEKS.md` §3. Aturan pokok:
+**kalau komentar sumber menjelaskan _kenapa_ sesuatu berbentuk begitu, kutip
+alasannya** — komentar itu catatan kecelakaan, dan membuang alasannya mengundang
+kecelakaan yang sama.
+
+### 7b. Lalu bangun, berurut
+
+1. **Create WO 1:1** — daftar periksanya di `docs/SPEK-LAYAR/02-CREATE-WO.md` §6.
+   Yang belum: `.grup-bar` 3 kartu Model pembuatan, penguncian acuan grup, blok
+   Joblist #N tambah-kurang, panel Preview (L2 saja), medan HM/KM + catatan kaki,
+   checkbox Others, Location 2 kartu, struk hasil + nomor kiriman.
+   *(Team Composition sudah benar — dropdown berbaris.)*
+2. **Modal Edit Override** — isi lengkapnya di `00-INDEKS.md` §4 bagian Approvals.
+   Perintah `save_override` belum ada. **Ingat: `partial_hours` transfer tidak
+   boleh tertimpa picker** (sudah dijaga `src/domain/nilaiEfektif.ts`).
+3. **`src/domain/periode.ts`** — **belum ada, dan lima hal bergantung padanya.**
+   Definisi + uji batasnya di `docs/SPEK-LAYAR/01-PERFORMA.md` §7a.
+4. **Performa** — spek lengkap di `01-PERFORMA.md`. Yang paling mudah salah:
+   papan harian dikunci `submitted_at` (bukan `awarded_at`), jendelanya satu
+   **shift** bukan 24 jam, dan periode gaji 16→15 bukan kalender.
+5. **Reports** — export Excel. Angka dari nilai yang **dibekukan**.
+6. **Monitoring** lengkap — spek di `03-MONITORING.md`. Transfer WO, live timer,
+   pengelompokan borongan.
+7. Koreksi HM/KM, Teknis.
+8. **PWA offline** — invariannya di `docs/PETA-KMB-V2.md` §6.
 
 ---
 
@@ -196,6 +232,7 @@ sebelum dan sesudah menyentuh jalur uang.**
 
 ## 9. BACAAN WAJIB SEBELUM MENYENTUH JALUR UANG
 
+- `docs/SPEK-LAYAR/00-INDEKS.md` — kontrak porting per layar; **baca ini sebelum menyentuh layar mana pun**
 - `docs/PETA-KMB-V2.md` — peta 8 subsistem KMB V2 + 35 insiden, berjejak `file:baris`
 - `docs/ARSITEKTUR.md` — bentuk target dan alasan tiap pilihan
 - `src/domain/scoring.ts` — rumus poin & rupiah, fungsi murni
