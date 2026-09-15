@@ -3,6 +3,7 @@ import { akuDari, jawab, jawabGalat } from '../_bantu.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
 import { buatWorkOrder } from '../../../domain/workOrder.js';
 import { simpanOverride } from '../../../domain/override.js';
+import { kirimKerja } from '../../../domain/kirimKerja.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -96,12 +97,27 @@ const SKEMA = {
     }).optional(),
     judgment: z.string().max(500).optional(),
   }),
+  /**
+   * HM & KM sengaja TIDAK ADA di sini.
+   *
+   * Keduanya diisi saat WO dibuat, dan layar kirim-kerja tidak menanyakannya
+   * (medannya disembunyikan di semua section sejak 1 Agu 2026,
+   * `MechanicDashboard.html:1002-1007`). Menerimanya di sini berarti membuka
+   * kembali jalan yang dulu MENGOSONGKAN angka yang sudah benar setiap kali
+   * mekanik mengirim tanpa mengisi — kolomnya jadi kosong tanpa satu pun galat.
+   */
+  kirim_kerja: z.object({
+    woId: z.number().int().positive(),
+    startTime: z.string().min(1),
+    endTime: z.string().min(1),
+    partCategory: z.enum(['baru', 'repair', 'kanibal']).optional(),
+  }),
 } as const;
 
 const Amplop = z.object({
   aksi: z.enum([
     'buat_wo', 'approve_l1', 'approve_l2', 'batal_wo', 'reject', 'kembalikan',
-    'save_override',
+    'save_override', 'kirim_kerja',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -159,6 +175,10 @@ export async function POST(req: Request): Promise<Response> {
       case 'save_override': {
         const d = isi.data as z.infer<typeof SKEMA.save_override>;
         return jawab(await simpanOverride({ ...umum, ...d }));
+      }
+      case 'kirim_kerja': {
+        const d = isi.data as z.infer<typeof SKEMA.kirim_kerja>;
+        return jawab(await kirimKerja({ ...umum, ...d }));
       }
     }
   } catch (e) {

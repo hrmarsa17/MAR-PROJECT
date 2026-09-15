@@ -29,10 +29,19 @@ export interface AksesMenu {
   bolehLihat: { performa: boolean; teknis: boolean; report: boolean };
 }
 
-const LABEL_PERAN: Record<string, string> = {
-  mechanic: 'MEKANIK',
-  supervisor: 'PLANNER',
-  superintendent: 'MANAGER',
+/**
+ * Lencana peran — 1:1 dengan `MechanicDashboard.html:300-303`.
+ *
+ * L1 (supervisor) sengaja TANPA lencana; itu permintaan 10 Agu 2026 yang
+ * tertulis di sumbernya. Warnanya pun berbeda per peran: mekanik amber,
+ * manager ungu. Sampai 16 Sep 2026 layar ini memberi ketiganya lencana ungu
+ * yang sama — bukan salah fatal, tapi tiap orang lapangan mengenali dirinya
+ * dari warna itu.
+ */
+const LENCANA: Record<string, { teks: string; kelas: string } | null> = {
+  mechanic: { teks: 'MECHANIC', kelas: 'badge badge-warning' },
+  supervisor: null,
+  superintendent: { teks: 'MANAGER', kelas: 'badge badge-purple' },
 };
 
 export function NavBar({ aku }: { aku: AksesMenu }) {
@@ -70,7 +79,9 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
         </div>
 
         <div className="nav-user">
-          <span className="badge badge-purple">{LABEL_PERAN[aku.peran] ?? aku.peran}</span>
+          {LENCANA[aku.peran] && (
+            <span className={LENCANA[aku.peran]!.kelas}>{LENCANA[aku.peran]!.teks}</span>
+          )}
           <span className="user-email">{aku.nama}</span>
         </div>
       </div>

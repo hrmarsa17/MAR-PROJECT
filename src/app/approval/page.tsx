@@ -58,12 +58,15 @@ export default async function Approval({
         </p>
       </div>
 
-      <div className="filter-tabs">
+      {/* `.sub-nav-tab`, bukan `.filter-tab` — di KMB V2 pil ini bernama
+          `sub-nav-tab` (`Approval.html:147`), sementara `.filter-tab` adalah
+          tab bergaris bawah milik layar mekanik. Dua bentuk yang berbeda. */}
+      <div className="sub-nav">
         {TAB.map((t) => (
           <a
             key={t.kunci}
             href={`/approval?tab=${t.kunci}`}
-            className={`filter-tab${t.kunci === tab ? ' active' : ''}`}
+            className={`sub-nav-tab${t.kunci === tab ? ' active' : ''}`}
           >
             {t.ikon} {t.label}
             <span className="count">{hitung[t.kunci]}</span>

@@ -342,19 +342,31 @@ Kalimat ini identik di `kirimLangsung` (`:826`). **Bawa apa adanya.**
 
 ## C. Yang harus dibangun di KMB Project
 
-- [ ] Selector: 4 statistik, pencarian klien, kartu mekanik + penghitung 4 kolom
-- [ ] **Putuskan dulu** perilaku token (hash ⇒ tak bisa disalin) — tanya Gabriel
-- [ ] Impersonate: `?as=` + `?back=`, spanduk `Viewing As`
-- [ ] Tiga tab dengan penghitung; tab mengganti rute
-- [ ] Pengelompokan borongan + `grup_total`/`grup_selesai` **dari server**
-- [ ] Lencana borongan untuk anggota yang berdiri sendiri di sebuah tab
-- [ ] Kartu insiden (`safety_incident` ⇒ poin 0)
-- [ ] Tim dengan diri sendiri di depan + `(Anda)`
-- [ ] Live timer per WO di `localStorage`, jeda otomatis saat WO lain dimulai
-- [ ] Picker 24 jam sendiri (jangan `datetime-local`)
-- [ ] `📮 Kirim` langsung + konfirmasi menyebut durasi
+- [x] Selector: 4 statistik, pencarian klien, kartu mekanik + penghitung 4 kolom
+- [x] **Putuskan dulu** perilaku token — diputuskan Gabriel 15 Sep 2026: **utuh**
+- [x] Impersonate: `?as=`, spanduk `Viewing As` — `src/app/monitoring/page.tsx`
+- [x] Tiga tab dengan penghitung; tab mengganti rute
+- [x] Pengelompokan borongan + `grup_total`/`grup_selesai` **dari server**
+- [x] Lencana borongan untuk anggota yang berdiri sendiri di sebuah tab
+- [x] Kartu insiden (`safety_incident` ⇒ poin 0)
+- [x] Tim dengan diri sendiri di depan + `(Anda)`
+- [x] Live timer per WO di `localStorage`, jeda otomatis saat WO lain dimulai
+- [x] Picker 24 jam sendiri (jangan `datetime-local`) — `PilihWaktu24.tsx`
+- [x] `📮 Kirim` langsung + konfirmasi menyebut durasi
 - [ ] Transfer WO ke shift berikutnya (`work_order_transfers` sudah ada di skema)
-- [ ] Pesan putus-sambungan apa adanya — jangan disederhanakan jadi “gagal”
+- [x] Pesan putus-sambungan apa adanya — jangan disederhanakan jadi “gagal”
+- [ ] Detail Tyre di dalam modal → `03b-DETAIL-TYRE.md`
+
+### Penyimpangan yang DISENGAJA dari sumber (16 Sep 2026)
+
+| hal | sumber | di sini | alasan |
+|---|---|---|---|
+| `pending_transfer` | masuk tab Assigned **lengkap dengan tombol Kirim** (`_statusToGroup` cabang default `:672`) | tetap di tab Assigned, tombol Kirim **diganti keterangan** | mesin transisi kita tidak mengizinkan `pending_transfer → pending_supervisor`; tombolnya dijamin gagal |
+| `rejected` | `_statusToGroup` memetakannya ke tab Done (`:670`) — **tapi `:77` sudah membuangnya lebih dulu** | dibuang di kueri, cabangnya tidak ditulis ulang | dua aturan yang bertentangan di satu berkas cepat atau lambat dipakai salah satunya |
+| HM/KM/spare part | dikirim layar (selalu kosong karena medannya disembunyikan), divalidasi server | **tidak ada di skema perintah sama sekali** | menerimanya membuka kembali jalan yang dulu mengosongkan angka yang sudah benar |
+| tirai modal | diklik → menutup (`:514`) | tidak menutup | isian jam manual di dalamnya hilang kalau kursor meleset |
+| `.wo-grid` / `.wo-card` | nama kelas sama dengan Approval, angka berbeda | dibungkus `.layar-mekanik` | 340px yang bocor ke Approval adalah sebab tombol Reject melar, 14 Sep 2026 |
+| tombol “Buka →” | hanya untuk mekanik yang punya token (ia membuka URL bertoken) | untuk semua mekanik (`?as=` pakai sesi approver) | mekanik yang belum punya token justru yang paling butuh dibantu dari layar ini |
 
 ### Catatan skema
 

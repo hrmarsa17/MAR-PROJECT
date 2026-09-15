@@ -20,7 +20,8 @@
     "token:rapikan": "tsx scripts/rapikan-token.ts",
     "uji:alur-override": "tsx scripts/uji-override-approve.ts",
     "uji:payroll": "tsx scripts/uji-payroll.ts",
-    "uji:others": "tsx scripts/uji-others.ts"
+    "uji:others": "tsx scripts/uji-others.ts",
+    "uji:kirim": "tsx scripts/uji-kirim-kerja.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

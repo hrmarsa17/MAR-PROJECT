@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { KartuMekanik } from '../../domain/kueriMonitoring.js';
 
 /**
@@ -129,6 +130,19 @@ export function CariMekanik({
                   </div>
                 )
               )}
+
+              {/* "Buka →" — pengganti impersonate (`openAs`, MechanicDashboard.html:449).
+                  Di KMB V2 tombol ini hanya ada bila mekaniknya punya token, karena
+                  ia bekerja dengan membuka URL bertoken orang itu. Di sini ia
+                  memakai sesi approver sendiri (`?as=`), jadi mekanik yang BELUM
+                  punya token pun tetap bisa dibuka — justru orang itulah yang paling
+                  butuh dibantu dari layar ini. */}
+              {/* `btn` ikut disebut: gaya dasar tombol di berkas ini terpasang
+                  pada `button, .btn`, jadi <a> tanpa kelas itu hanya mewarisi
+                  warnanya — tanpa padding, radius, maupun tinggi. */}
+              <Link className="btn btn-gelap btn-sm mekanik-buka" href={`/monitoring?as=${m.id}`}>
+                Buka →
+              </Link>
             </article>
           ))}
         </div>
