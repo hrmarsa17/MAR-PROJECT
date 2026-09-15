@@ -870,3 +870,164 @@ textarea { min-height: 64px; resize: vertical; }
 @media (max-width: 640px) {
   .pratinjau-kisi { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GERAK
+   ══════════════════════════════════════════════════════════════════════════
+   Ditambahkan 15 Sep 2026 setelah Gabriel bilang layarnya "terlalu kaku,
+   tidak liquid" dibanding GAS. Ia benar, dan sebabnya terukur: KMB V2 punya
+   ~35 aturan transition, 3 keyframes, dan scrollbar bergaya. Salinan saya
+   punya DUA transition dan nol keyframes.
+
+   Warnanya sudah sama, bentuknya sudah sama — yang hilang PERPINDAHAN antar
+   keadaan. Tanpa transisi, setiap hover dan setiap klik berpindah dalam satu
+   frame; mata membacanya sebagai patah, bukan cepat.
+
+   Angkanya diambil dari Styles.html:74-77 apa adanya. Tidak ada yang di atas
+   300ms: antarmuka yang lambat terasa berat, bukan halus.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* ── kartu ──────────────────────────────────────────────────────────────────
+   Bayangan DAN garis tepi ikut beranimasi. Kalau hanya bayangannya, tepi yang
+   berubah warna tetap melompat dan seluruh geraknya jadi setengah jadi. */
+.card, .stat-card, .form-container, .wo-card, .mechanic-card, .mon-card,
+.wo-blok, .grup-bar {
+  transition: box-shadow var(--transition-base),
+              border-color var(--transition-base),
+              transform var(--transition-base);
+}
+
+/* Kartu yang bisa DIKLIK naik sedikit; kartu yang cuma dibaca tidak.
+   Membedakannya adalah caranya memberi tahu mana yang bisa ditekan tanpa
+   menulis satu kata pun. */
+.wo-card:hover, .mechanic-card:hover, .mon-card:hover { transform: translateY(-2px); }
+.wo-blok:hover { border-color: var(--primary); box-shadow: var(--shadow-hover); }
+
+/* ── tombol ─────────────────────────────────────────────────────────────── */
+.btn-primary, .btn-create, .btn-save, .btn-download, .btn-submit, .btn-export,
+.btn-approve, .btn-secondary, .btn-cancel, .btn-back, .btn-reject, .btn-danger,
+.btn-kembalikan, .btn-edit, .btn-gelap, button {
+  transition: background var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+}
+.btn-primary:hover:not(:disabled), .btn-create:hover:not(:disabled),
+.btn-save:hover:not(:disabled), .btn-submit:hover:not(:disabled),
+.btn-export:hover:not(:disabled), .btn-approve:hover:not(:disabled),
+.btn-reject:hover:not(:disabled), .btn-danger:hover:not(:disabled),
+.btn-kembalikan:hover:not(:disabled), .btn-gelap:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+/* Ditekan = turun kembali. Tanpa keadaan :active, tombol yang naik saat hover
+   terasa mengambang dan tak pernah benar-benar "kena". */
+.btn-primary:active:not(:disabled), .btn-create:active:not(:disabled),
+.btn-save:active:not(:disabled), .btn-submit:active:not(:disabled),
+.btn-export:active:not(:disabled), .btn-approve:active:not(:disabled),
+.btn-reject:active:not(:disabled), .btn-danger:active:not(:disabled),
+.btn-kembalikan:active:not(:disabled), .btn-gelap:active:not(:disabled),
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+button:disabled { transform: none !important; box-shadow: none !important; }
+
+/* ── isian ──────────────────────────────────────────────────────────────────
+   Cincin fokus yang muncul seketika terbaca sebagai galat. Dengan 150ms ia
+   terbaca sebagai "kolom ini sekarang milik Anda". */
+.form-control, input[type='text'], input[type='number'], input[type='date'],
+input[type='datetime-local'], input[type='email'], input[type='password'],
+select, textarea {
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* ── pilihan, tab, baris ────────────────────────────────────────────────── */
+.pilihan, .filter-tab, .nav-link, .team-member-row, .papan-baris,
+.struk-baris, .qs-butir, .others-baris {
+  transition: all var(--transition-fast);
+}
+.pilihan:hover:not(.terpilih) { transform: translateY(-1px); }
+.table tbody tr td { transition: background var(--transition-fast); }
+.papan-baris:hover { background: var(--bg); }
+
+/* ── halaman & modal ────────────────────────────────────────────────────────
+   Isi halaman muncul dengan naik sedikit. Bukan hiasan: navigasi antar menu di
+   sini memuat ulang seluruh halaman, dan tanpa gerak apa pun pergantiannya
+   terbaca sebagai kedipan — layar lama hilang, layar baru muncul, tak ada yang
+   menghubungkan keduanya. */
+.container, .container-sempit { animation: naik var(--transition-slow) both; }
+
+.modal-tirai { animation: pudar var(--transition-base) both; }
+.modal { animation: naikModal var(--transition-slow) both; }
+
+@keyframes pudar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes naik {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes naikModal {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes putar { to { transform: rotate(360deg); } }
+
+/* Spanduk yang muncul karena sesuatu terjadi — bukan karena halaman dimuat —
+   masuk lebih tegas supaya tertangkap mata. */
+.kiriman-spanduk, .kabar { animation: naik var(--transition-base) both; }
+
+/* ── scrollbar ──────────────────────────────────────────────────────────────
+   Scrollbar bawaan Windows lebarnya 17px dan berwarna abu tua. Di dalam kartu
+   putih ia terbaca sebagai potongan antarmuka yang bukan bagian dari halaman —
+   dan itu, lebih dari apa pun, yang membuat papan peringkat terasa kaku. */
+* { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ── hormati yang tidak ingin ada gerak ─────────────────────────────────────
+   Sebagian orang mematikan animasi di sistemnya karena membuatnya mual atau
+   pusing. Mengabaikan setelan itu bukan soal selera. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .wo-card:hover, .mechanic-card:hover, .mon-card:hover,
+  .pilihan:hover, button:hover { transform: none !important; }
+}
+
+/* ── kerangka muat ──────────────────────────────────────────────────────────
+   Denyutnya lambat (1,4 detik) dan sangat tipis. Kerangka yang berkedip cepat
+   menarik mata ke tempat yang justru belum berisi apa-apa. */
+.rangka {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 37%, #F1F5F9 63%);
+  background-size: 400% 100%;
+  border-radius: 6px;
+  animation: rangkaDenyut 1.4s ease-in-out infinite;
+}
+@keyframes rangkaDenyut {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Teks yang hanya dibaca pembaca layar. Dipakai `loading.tsx` supaya keadaan
+   "sedang memuat" tetap terdengar, bukan cuma terlihat. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rangka { animation: none; background: #F1F5F9; }
+}

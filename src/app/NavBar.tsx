@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 /**
@@ -9,6 +10,17 @@ import { usePathname } from 'next/navigation';
  * lebih logis": tangan orang lapangan sudah hafal posisinya, dan menggeser
  * satu item berarti melatih ulang dua puluh empat orang untuk sesuatu yang
  * tidak mereka minta.
+ *
+ * ── <Link>, BUKAN <a> ───────────────────────────────────────────────────────
+ * Sampai 15 Sep 2026 menu ini memakai <a href> biasa, dan setiap klik memuat
+ * ulang SELURUH halaman: kedip putih, gulir kembali ke atas, navbar sendiri
+ * digambar ulang. Itu penyebab terbesar layar ini terasa kaku — bukan warnanya,
+ * bukan jaraknya.
+ *
+ * Dengan <Link>, navbar tetap terpasang dan hanya isinya yang berganti; Next
+ * juga mengambil halaman tujuan lebih dulu saat kursor menyentuh menunya.
+ * Di titik ini layar justru lebih ringan daripada KMB V2, yang memang tak punya
+ * pilihan lain selain memuat ulang.
  */
 
 export interface AksesMenu {
@@ -47,13 +59,13 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
           {menu
             .filter((m) => m.tampil)
             .map((m) => (
-              <a
+              <Link
                 key={m.href}
                 href={m.href}
                 className={`nav-link${path === m.href || path.startsWith(m.href + '/') ? ' active' : ''}`}
               >
                 {m.label}
-              </a>
+              </Link>
             ))}
         </div>
 
