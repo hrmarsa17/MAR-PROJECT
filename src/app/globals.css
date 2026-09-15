@@ -471,10 +471,14 @@ textarea { min-height: 64px; resize: vertical; }
 
 .wo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: var(--spacing-md);
+  /* 420px, angka sumber (`Approval.html:40`). Saya sempat memakai 340 dan itu
+     penyebab kelima tombol keputusan tak muat dalam satu baris: yang terakhir
+     terlempar ke baris sendiri lalu MELAR PENUH karena flex-nya membagi sisa
+     ruang. Lebar kartu yang menentukan, bukan tombolnya. */
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: var(--spacing-lg);
 }
-.wo-card { padding: var(--spacing-md); display: flex; flex-direction: column; }
+.wo-card { padding: var(--spacing-lg); display: flex; flex-direction: column; }
 .wo-card-head {
   display: flex;
   align-items: flex-start;
@@ -529,13 +533,34 @@ textarea { min-height: 64px; resize: vertical; }
   margin-top: auto;
   padding-top: 1rem;
   border-top: 2px solid #F3F4F6;
-  flex-wrap: wrap;
+  /* SATU BARIS, tidak pernah membungkus. Baris kedua yang berisi satu tombol
+     akan melar penuh dan terbaca sebagai tombol utama — padahal yang terlempar
+     ke sana justru yang paling tidak boleh menonjol. */
+  flex-wrap: nowrap;
 }
 /* Tombol ikon selebar isinya; tombol berteks berbagi sisa ruang rata.
    Tanpa aturan ini kelimanya berebut lebar menurut panjang labelnya, dan
    "✗ Reject" jadi jauh lebih lebar dari "✓ Approve" tanpa alasan. */
 .wo-aksi > .btn-ikon { flex: 0 0 auto; }
-.wo-aksi > button:not(.btn-ikon) { flex: 1 1 auto; min-width: 7rem; }
+/* `flex: 1 1 0` — bukan `1 1 auto`. Dengan `auto` lebarnya ikut panjang
+   labelnya, jadi "↩ Kembalikan" merebut ruang dari "✓ Approve" tanpa alasan.
+   Dengan basis 0 ketiganya persis sama lebar, apa pun isinya. */
+.wo-aksi > button:not(.btn-ikon) {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Di layar HP kartunya hanya selebar layar, dan lima tombol dalam satu baris
+   jadi terlalu sempit untuk dibaca. Di sana ia BOLEH membungkus — tapi dua per
+   baris, bukan satu yang melar penuh. Yang dicegah bukan membungkusnya,
+   melainkan satu tombol yang mendadak terlihat seperti tombol utama. */
+@media (max-width: 640px) {
+  .wo-aksi { flex-wrap: wrap; }
+  .wo-aksi > button:not(.btn-ikon) { flex: 1 1 calc(50% - 0.75rem); }
+}
 
 /* Spanduk hasil muncul SESUDAH baris tombol. Tanpa jarak atas ia menempel
    rapat pada tombol — persis yang dilaporkan sebagai tata letak bersinggungan.
