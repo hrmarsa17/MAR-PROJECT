@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Sistem work order & insentif mekanik — pengganti KMB V2 (GAS + Sheets)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "siapkan:produksi": "tsx scripts/siapkan-produksi.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -35,6 +39,7 @@
     "uji:unit": "tsx scripts/uji-unit.ts",
     "uji:surut2": "tsx scripts/uji-surut-faktor-tarif.ts",
     "uji:audit": "tsx scripts/uji-audit.ts",
+    "uji:siapkan": "tsx scripts/uji-siapkan-produksi.ts",
     "uji:token": "tsx scripts/uji-token.ts",
     "token:pulihkan": "tsx scripts/pulihkan-token.ts",
     "db:migrasi": "tsx scripts/migrasi.ts",
