@@ -34,7 +34,9 @@
     "uji:surut": "tsx scripts/uji-surut.ts",
     "uji:unit": "tsx scripts/uji-unit.ts",
     "uji:surut2": "tsx scripts/uji-surut-faktor-tarif.ts",
-    "uji:audit": "tsx scripts/uji-audit.ts"
+    "uji:audit": "tsx scripts/uji-audit.ts",
+    "db:bersih": "tsx scripts/bersihkan-dummy.ts",
+    "ws:matriks": "tsx scripts/pindah-matriks-workshop.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
