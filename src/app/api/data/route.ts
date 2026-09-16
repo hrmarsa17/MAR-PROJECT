@@ -3,11 +3,19 @@ import { masukanTidakSah, tidakBerhak, tidakDitemukan } from '../../../lib/error
 import {
   antreanApproval, katalog, rincianWo, statusKiriman, woSaya,
 } from '../../../domain/kueri.js';
-import { bekalOverride } from '../../../domain/kueriApproval.js';
+import {
+  bekalOverride, hitunganTab, kartuApproval, type TabApproval,
+} from '../../../domain/kueriApproval.js';
+import { calonPenerima, kartuTransfer } from '../../../domain/kueriTransfer.js';
 import { pratinjauSurut } from '../../../domain/terapkanSurut.js';
 import { pratinjauFaktorSurut } from '../../../domain/surutFaktor.js';
 import { pratinjauTarifSurut } from '../../../domain/surutTarif.js';
 import { riwayatAudit, type KategoriAudit } from '../../../domain/kueriAudit.js';
+import {
+  bolehLihatMekanikLain, hitunganTabMekanik, mekanikDilihat, woMekanik,
+  type TabWoMekanik,
+} from '../../../domain/kueriWoMekanik.js';
+import { bekalForm, detailUntukWo } from '../../../domain/kueriDetailForm.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +36,77 @@ export async function GET(req: Request): Promise<Response> {
         return jawab(await woSaya(aku));
       case 'katalog':
         return jawab(await katalog(aku));
+
+      /* SELURUH bekal layar Monitoring untuk satu orang, dalam SATU jawaban.
+         Sebelumnya semua ini dirender di server, yang berarti layar Monitoring
+         tidak bisa dibuka sama sekali tanpa sinyal — padahal ia justru layar
+         yang dipakai mekanik di pit untuk melapor.
+
+         Dikumpulkan jadi satu, bukan empat panggilan: di sinyal lapangan,
+         empat perjalanan bolak-balik adalah empat kesempatan untuk putus di
+         tengah dan meninggalkan layar setengah terisi. */
+      /* Bekal layar Approval, satu jawaban untuk satu tab. Alasannya sama
+         dengan `monitoring`: layar yang dirender server tidak bisa dibuka tanpa
+         sinyal, dan approval dari lapangan termasuk yang Gabriel minta bisa
+         luring. */
+      case 'approval': {
+        if (aku.peran === 'mechanic') throw tidakBerhak('Layar ini untuk L1 dan L2.');
+
+        const dimintaTab = url.searchParams.get('tab') ?? 'menunggu';
+        const sahTab = ['menunggu', 'aktif', 'approved', 'transfer', 'ditolak'];
+        const tab = (sahTab.includes(dimintaTab) ? dimintaTab : 'menunggu') as TabApproval;
+        const semua = url.searchParams.get('semua') === '1';
+
+        const [hitung, kartu, transfer, penerima] = await Promise.all([
+          hitunganTab(aku),
+          tab === 'transfer' ? Promise.resolve([]) : kartuApproval(aku, tab, semua ? 500 : 25),
+          tab === 'transfer' ? kartuTransfer(aku) : Promise.resolve([]),
+          tab === 'transfer' ? calonPenerima(aku) : Promise.resolve([]),
+        ]);
+
+        return jawab({
+          peran: aku.peran, tab, semua, hitung, kartu, transfer, penerima,
+          total: hitung[tab],
+        });
+      }
+
+      case 'monitoring': {
+        const minta = url.searchParams.get('as');
+        const sebagai = aku.peran === 'mechanic'
+          ? aku.mechanicId
+          : (minta ? Number(minta) : aku.mechanicId);
+        if (!Number.isFinite(sebagai)) throw masukanTidakSah('as tidak sah');
+
+        if (sebagai !== aku.mechanicId) {
+          if (aku.peran === 'mechanic'
+              || !(await bolehLihatMekanikLain(aku.mechanicId, sebagai))) {
+            throw tidakBerhak('Mekanik itu di luar scope Anda.');
+          }
+        }
+
+        const orang = await mekanikDilihat(aku.tenantId, sebagai);
+        if (!orang) throw tidakDitemukan('Mekanik', sebagai);
+
+        const dimintaTab = url.searchParams.get('tab');
+        const tab: TabWoMekanik =
+          dimintaTab === 'pending_approval' || dimintaTab === 'done'
+            ? dimintaTab : 'assigned';
+
+        const [hitung, daftar] = await Promise.all([
+          hitunganTabMekanik(aku.tenantId, sebagai),
+          woMekanik(aku.tenantId, sebagai, tab),
+        ]);
+        const [bekal, detail] = await Promise.all([
+          bekalForm(aku.tenantId),
+          detailUntukWo(aku.tenantId, daftar.map((w) => w.id)),
+        ]);
+
+        return jawab({
+          sebagai, sendiri: sebagai === aku.mechanicId, orang, tab, hitung, daftar,
+          bekal: [...bekal.values()],
+          detail: Object.fromEntries(detail),
+        });
+      }
       case 'wo': {
         const id = Number(url.searchParams.get('id'));
         if (!Number.isInteger(id) || id <= 0) {

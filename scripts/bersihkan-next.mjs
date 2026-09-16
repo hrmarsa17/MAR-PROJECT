@@ -6,7 +6,21 @@ import { resolve } from 'node:path';
  * MEMBUANG SISA .next SEBELUM MEMBANGUN — hanya di Windows, hanya di luar CI
  * ════════════════════════════════════════════════════════════════════════════
  *
- * Dijalankan otomatis oleh `npm run build` lewat skrip `prebuild`.
+ * Dijalankan otomatis oleh `npm run build` DAN `npm run dev`, lewat skrip
+ * `prebuild` dan `predev`.
+ *
+ * ── KENAPA KEDUANYA, BUKAN HANYA BUILD ──────────────────────────────────────
+ * `next dev` dan `next build` menulis ke `.next` yang SAMA dengan bentuk isi
+ * yang berbeda. Menjalankan yang satu sesudah yang lain meninggalkan campuran
+ * yang membuat keduanya gagal dengan galat yang tidak menyebut sebabnya sama
+ * sekali:
+ *
+ *     Cannot find module '../webpack-runtime.js'
+ *       ... .next\server\pages\_document.js
+ *
+ * Itu bukan modul yang hilang; itu sisa mode sebelumnya. Membersihkannya di
+ * kedua pintu masuk membuat urutan menjalankan perintah tidak lagi jadi hal
+ * yang perlu diingat siapa pun.
  *
  * ── MASALAHNYA ──────────────────────────────────────────────────────────────
  * Proyek ini berada di dalam OneDrive, dan OneDrive mengubah setiap berkas jadi

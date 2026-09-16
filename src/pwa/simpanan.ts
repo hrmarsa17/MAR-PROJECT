@@ -65,8 +65,15 @@ export interface ItemOutbox {
   ringkas?: string;
 }
 
+/**
+ * `approval`, bukan `antrean` — meski API-nya bernama `jenis=antrean`.
+ * Di aplikasi ini kata "antrean" sudah berarti OUTBOX (layar /antrean, berisi
+ * pekerjaan yang belum terkirim). Memakai kata yang sama untuk antrean
+ * persetujuan berarti dua hal yang sama sekali berbeda memakai satu nama di
+ * satu berkas — dan yang satu tidak boleh hilang sementara yang lain boleh.
+ */
 export type KunciKv =
-  | 'aku' | 'katalog' | 'wo_saya' | 'antrean' | 'monitoring'
+  | 'aku' | 'katalog' | 'wo_saya' | 'approval' | 'monitoring'
   | 'sw_snap' | 'sinkron_terakhir';
 
 /** IndexedDB tidak ada di server-render maupun di sebagian peramban jadul. */

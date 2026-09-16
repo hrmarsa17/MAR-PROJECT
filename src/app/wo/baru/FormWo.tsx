@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { kirimPerintah } from '../../../pwa/kirim.js';
+import { adaIndexedDb, bacaKv, simpanKv } from '../../../pwa/simpanan.js';
 import { BlokJoblist } from './BlokJoblist.js';
 import { Portal } from '../../Portal.js';
 import {
@@ -20,6 +21,10 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
 }) {
   const [kat, setKat] = useState<Katalog | null>(null);
   const [muatGagal, setMuatGagal] = useState<string | null>(null);
+  /** Katalog yang terpasang berasal dari simpanan HP, belum diperbarui server. */
+  const [katalogBasi, setKatalogBasi] = useState(false);
+  /** Penanda bahwa katalog PERNAH terpasang — dibaca di luar siklus render. */
+  const katPernahAda = useRef(false);
 
   const [grupMode, setGrupMode] = useState<GrupMode>('');
   const [blok, setBlok] = useState<Blok[]>([]);
@@ -33,20 +38,68 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
 
   const kunciBerikut = useRef(1);
 
+  /**
+   * KATALOG DISIMPAN DI HP — tanpa ini, WO tidak bisa DIBUAT tanpa sinyal.
+   *
+   * Mengirimnya sudah bisa diantrekan sejak antrean luring ada. Tapi formulir
+   * ini mustahil diisi tanpa katalog: 1.535 job, 103 unit, beserta cascade
+   * model → komponen → sub-komponen yang menentukan pilihan berikutnya. Tanpa
+   * katalog, yang terlihat cuma "Memuat katalog…" selamanya.
+   *
+   * Muatannya sekitar 324 KB — besar untuk sinyal lapangan, kecil untuk
+   * IndexedDB. Disimpan sekali, dipakai berhari-hari.
+   *
+   * Yang tersimpan dibaca DULU, baru jaringan. Bukan demi kecepatan: di sinyal
+   * tipis `fetch` bisa menggantung belasan detik sebelum menyerah, dan selama
+   * itu formulirnya tidak bisa disentuh sama sekali. Dengan urutan ini
+   * formulirnya langsung terpakai, lalu katalognya diperbarui diam-diam kalau
+   * jaringannya ternyata sampai.
+   */
   useEffect(() => {
-    fetch('/api/data?jenis=katalog')
-      .then((r) => r.json())
-      .then((j) => {
+    let batal = false;
+
+    const pasang = (k: Katalog, dariHp: boolean) => {
+      if (batal) return;
+      setKat(k);
+      katPernahAda.current = true;
+      setKatalogBasi(dariHp);
+      setBlok((lama) => {
+        if (lama.length > 0) return lama;   // jangan menimpa isian yang sudah ada
+        const sec = k.sections[0]?.code ?? '';
+        const kondisi = k.kondisi[0]?.kunci ?? 'normal';
+        return [blokBaru(kunciBerikut.current++, sec, kondisi)];
+      });
+    };
+
+    void (async () => {
+      if (adaIndexedDb()) {
+        try {
+          const simpan = await bacaKv<Katalog>('katalog');
+          if (simpan) pasang(simpan, true);
+        } catch { /* penyimpanan diblokir — lanjut ke jaringan */ }
+      }
+
+      try {
+        const r = await fetch('/api/data?jenis=katalog');
+        const j = await r.json();
         // Kegagalan TIDAK diringkas jadi daftar kosong — layar kosong yang
         // tampak normal lebih berbahaya daripada pesan galat.
         if (!j.ok) throw new Error(j.pesan ?? 'Gagal memuat katalog');
         const k: Katalog = j.data;
-        setKat(k);
-        const sec = k.sections[0]?.code ?? '';
-        const kondisi = k.kondisi[0]?.kunci ?? 'normal';
-        setBlok([blokBaru(kunciBerikut.current++, sec, kondisi)]);
-      })
-      .catch((e: Error) => setMuatGagal(e.message));
+        pasang(k, false);
+        if (adaIndexedDb()) {
+          try { await simpanKv('katalog', k); } catch { /* penuh atau diblokir */ }
+        }
+      } catch (e) {
+        /* Hanya jadi galat kalau TIDAK ADA katalog sama sekali. Kalau yang
+           tersimpan sudah terpasang, formulirnya sudah bisa dipakai dan
+           kegagalan jaringan cuma berarti angkanya mungkin belum yang terbaru
+           — itu disebutkan di spanduk, bukan sebagai galat. */
+        if (!batal && !katPernahAda.current) setMuatGagal((e as Error).message);
+      }
+    })();
+
+    return () => { batal = true; };
   }, []);
 
   /* Saat halaman dimuat: kalau ada kiriman yang belum dipastikan, munculkan
@@ -257,6 +310,18 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
 
   return (
     <>
+      {/* Katalog dari HP, bukan dari server. Disebutkan karena base point dan
+          jam rencana memang berubah di sistem ini — dan WO yang dibuat dengan
+          katalog basi tetap sah: yang menentukan poin adalah job_id, dan
+          angkanya dibekukan server saat disetujui, bukan saat WO dibuat. */}
+      {katalogBasi && (
+        <div className="kabar kabar-awas">
+          📴 Katalog dipakai dari simpanan di HP ini. Job dan unit yang baru
+          ditambahkan belum tentu ada di daftar. WO yang Anda buat tetap sah —
+          poinnya dihitung server saat disetujui.
+        </div>
+      )}
+
       {spanduk && (
         <div className="kiriman-spanduk">
           <strong>⚠️ Kiriman belum dipastikan</strong>

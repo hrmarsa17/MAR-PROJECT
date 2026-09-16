@@ -1,14 +1,8 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { akuServer } from '../../lib/sesi.js';
 import { kartuMekanik, ringkasMonitoring } from '../../domain/kueriMonitoring.js';
-import {
-  bolehLihatMekanikLain, hitunganTabMekanik, mekanikDilihat, woMekanik,
-  type TabWoMekanik,
-} from '../../domain/kueriWoMekanik.js';
 import { CariMekanik } from './CariMekanik.js';
-import { DaftarWoMekanik } from './DaftarWoMekanik.js';
-import { bekalForm, detailUntukWo } from '../../domain/kueriDetailForm.js';
+import { LayarMekanik } from './LayarMekanik.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,12 +13,6 @@ export const dynamic = 'force-dynamic';
  *   approver tanpa `?as=`  → selector: kartu mekanik + statistik pipeline
  *   mekanik, atau approver yang menekan "Buka →" → daftar WO orang itu
  */
-
-const TAB: { kunci: TabWoMekanik; label: string }[] = [
-  { kunci: 'assigned', label: 'Assigned' },
-  { kunci: 'pending_approval', label: 'Pending' },
-  { kunci: 'done', label: 'Done' },
-];
 
 export default async function Monitoring({
   searchParams,
@@ -42,8 +30,19 @@ export default async function Monitoring({
      ia lakukan dengan pesan itu. */
   const sebagai = aku.peran === 'mechanic' ? aku.mechanicId : mintaAs;
 
+  /* Daftar WO diambil DI KLIEN — itulah yang membuatnya bisa dibuka tanpa
+     sinyal. Halaman ini tinggal memastikan ada sesi, lalu menyerahkan sisanya.
+
+     Pemilih mekanik di bawah TETAP dirender server: ia pekerjaan kantor, bukan
+     pekerjaan pit, dan ia memuat token setiap orang — hal yang tidak ada
+     gunanya disimpan di HP siapa pun. */
   if (sebagai !== null && Number.isFinite(sebagai)) {
-    return DaftarWo({ aku, sebagai, tab: sp.tab });
+    return (
+      <LayarMekanik
+        as={aku.peran === 'mechanic' ? null : sebagai}
+        tab={sp.tab ?? 'assigned'}
+      />
+    );
   }
 
   const [ringkas, kartu] = await Promise.all([
@@ -86,106 +85,6 @@ export default async function Monitoring({
       </div>
 
       <CariMekanik daftar={kartu} bisaKelolaToken />
-    </div>
-  );
-}
-
-async function DaftarWo({
-  aku, sebagai, tab: tabMinta,
-}: {
-  aku: NonNullable<Awaited<ReturnType<typeof akuServer>>>;
-  sebagai: number;
-  tab: string | undefined;
-}) {
-  const sendiri = sebagai === aku.mechanicId;
-
-  if (!sendiri) {
-    if (aku.peran === 'mechanic'
-        || !(await bolehLihatMekanikLain(aku.mechanicId, sebagai))) {
-      return (
-        <div className="container">
-          <div className="page-header"><h1 className="page-title">Monitoring</h1></div>
-          <div className="kosong">Mekanik itu di luar scope Anda.</div>
-        </div>
-      );
-    }
-  }
-
-  const orang = await mekanikDilihat(aku.tenantId, sebagai);
-  if (!orang) {
-    return (
-      <div className="container">
-        <div className="page-header"><h1 className="page-title">Monitoring</h1></div>
-        <div className="kosong">Mekanik tidak ditemukan.</div>
-      </div>
-    );
-  }
-
-  const tab = (TAB.find((t) => t.kunci === tabMinta)?.kunci ?? 'assigned') as TabWoMekanik;
-  const [hitung, daftar] = await Promise.all([
-    hitunganTabMekanik(aku.tenantId, sebagai),
-    woMekanik(aku.tenantId, sebagai, tab),
-  ]);
-
-  /* Detail teknis ikut daftar WO, bukan diambil saat kartunya dibuka. Di KMB V2
-     layar sempat memanggil server lagi setiap kali kartu disentuh, dan mekanik
-     menatap "Memuat…" tiap kali (`MechanicService.js:98-101`). Metadata formnya
-     dibaca SEKALI untuk seluruh halaman — isinya sama untuk semua WO, dan
-     menyalinnya ke enam kartu berarti mengirim hal yang sama enam kali ke HP
-     yang sinyalnya seadanya. */
-  const [bekal, detail] = await Promise.all([
-    bekalForm(aku.tenantId),
-    detailUntukWo(aku.tenantId, daftar.map((w) => w.id)),
-  ]);
-
-  const tautan = (t: TabWoMekanik) =>
-    sendiri ? `/monitoring?tab=${t}` : `/monitoring?as=${sebagai}&tab=${t}`;
-
-  return (
-    <div className="container layar-mekanik">
-      {!sendiri && (
-        <div className="impersonate-banner">
-          <div className="impersonate-info">
-            <div className="impersonate-icon">👤</div>
-            <div className="impersonate-text">
-              <h3>Viewing As</h3>
-              <p>{orang.nama}</p>
-            </div>
-          </div>
-          <Link href="/monitoring" className="btn-back-to-self">
-            ← Kembali ke Monitoring
-          </Link>
-        </div>
-      )}
-
-      <div className="page-header">
-        <h1 className="page-title">Monitoring</h1>
-        <p className="page-subtitle">
-          {sendiri ? 'Track and submit your assigned work' : 'Kelola work order mekanik ini'}
-        </p>
-      </div>
-
-      {/* Tab mengganti RUTE, bukan menyaring di klien — sama dengan sumber
-          (`changeFilter`, :977-981). Itulah sebabnya `grup_total` harus datang
-          dari server: layar hanya memegang baris yang lolos tab ini. */}
-      <div className="filter-tabs">
-        {TAB.map((t) => (
-          <Link
-            key={t.kunci}
-            href={tautan(t.kunci)}
-            className={`filter-tab${t.kunci === tab ? ' active' : ''}`}
-          >
-            {t.label}
-            <span className="count">{hitung[t.kunci]}</span>
-          </Link>
-        ))}
-      </div>
-
-      <DaftarWoMekanik
-        daftar={daftar}
-        bekal={[...bekal.values()]}
-        detail={Object.fromEntries(detail)}
-      />
     </div>
   );
 }
