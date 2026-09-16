@@ -107,10 +107,32 @@ try {
 const modeTransaksi = /:6543\//.test(alamat);
 const tanpaServer = process.env['VERCEL'] === '1' || modeTransaksi;
 
+/**
+ * DB_POOL_MAX yang KOSONG berarti tidak disebut, bukan berarti nol.
+ *
+ * Sebelumnya baris ini berbunyi `Number(process.env['DB_POOL_MAX'] ?? bawaan)`.
+ * `??` hanya mundur ke bawaan saat nilainya null atau undefined — sementara
+ * `Number('')` adalah **0**, dan kolam berisi nol koneksi tidak melayani
+ * siapa pun.
+ *
+ * Itu bukan kemungkinan yang dikarang: papan Environment Variables di Vercel
+ * mendeteksi DB_POOL_MAX dari berkas contoh dan menyodorkannya sebagai isian
+ * kosong yang siap disimpan. Menekan Deploy tanpa mengisinya adalah hal yang
+ * paling wajar dilakukan — dan bawaannya yang sudah benar justru terbuang
+ * karenanya.
+ *
+ * Nilai yang tidak masuk akal (nol, minus, bukan angka) diperlakukan sama:
+ * kembali ke bawaan, bukan diteruskan ke postgres.js.
+ */
+const kolamDiminta = Number(process.env['DB_POOL_MAX']?.trim());
+const kolam = Number.isInteger(kolamDiminta) && kolamDiminta > 0
+  ? kolamDiminta
+  : (tanpaServer ? 1 : 10);
+
 export const sql = postgres(
   alamat,
   {
-    max: Number(process.env['DB_POOL_MAX'] ?? (tanpaServer ? 1 : 10)),
+    max: kolam,
     idle_timeout: 20,
     prepare: !modeTransaksi,
     onnotice: () => {},
