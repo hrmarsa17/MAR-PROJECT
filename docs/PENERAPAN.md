@@ -85,14 +85,53 @@ memang dituntut pooler mode-transaksi.
 
 Periksa: `https://<nama>.vercel.app/api/sehat`
 
-### 3. Isi orang dan katalog
+### 3. Katalog — dari laptop, TIGA perintah berurutan
+
+Basis data yang baru dipasang punya skema dan kebijakan, tapi **nol job dan nol
+unit**. Katalognya dipindahkan dari laptop, bukan lewat menu Admin: 1.535 baris
+lewat fungsi Vercel akan menabrak batas 10 detik (lihat kotak region di atas).
+
+Ganti `<PROD>` dengan alamat **session pooler** yang tadi dipakai.
+
+```bash
+# 1. Katalog KMB V2 — field, workshop, tyreman, unit
+DATABASE_URL="<PROD>" npx tsx scripts/pindah-katalog-v2.ts \
+    "C:\...\Backup manual\KMB\9152026_1340.xlsx" --terapkan --izinkan-luar
+
+# 2. Matriks workshop baru — 52 job SDT70 & DOLLY50T
+DATABASE_URL="<PROD>" npx tsx scripts/pindah-matriks-workshop.ts \
+    MARworkshop.xlsx --terapkan --izinkan-luar
+
+# 3. Petakan job tyreman ke form inspeksi ban
+DATABASE_URL="<PROD>" npx tsx scripts/migrasi.ts \
+    db/migrasi/004-form-ban-lengkap.sql --terapkan --izinkan-luar
+```
+
+Jalankan dulu **tanpa** `--terapkan` untuk melihat apa yang akan terjadi.
+
+> #### Kenapa langkah 3 ada, dan kenapa ia HARUS terakhir
+>
+> Migrasi 004 memetakan job tyreman ke form detail ban — form inspeksi, remove &
+> instal, repair. Ia sudah ikut dijalankan saat pemasangan, **ketika basis data
+> masih nol job**, jadi ia tidak memetakan apa pun.
+>
+> Kalau tidak diulang sesudah katalog masuk, WO tyreman tidak akan punya form
+> detailnya: mekanik mengirim kerja, dan tidak ada tempat mencatat tekanan, RTD,
+> maupun nomor seri ban. Layar Teknis lalu kosong tanpa alasan yang kelihatan.
+>
+> `migrasi.ts` biasanya melewati migrasi yang sudah tercatat — menyebut nama
+> berkasnya secara langsung memaksanya jalan lagi. Migrasi ini aman diulang.
+
+### 4. Orang dan pemeriksaan
 
 Masuk dengan token tadi, lalu dari dalam aplikasi:
 
-1. **Admin → Orang & Token** — tambahkan mekanik, L1, L2.
-2. **Admin → Katalog Job** — unggah katalog lewat Excel. Untuk katalog awal yang
-   ribuan baris, pakai skrip dari laptop (lihat kotak region di atas).
-3. **Admin → Kesehatan Sistem** — pastikan tidak ada butir merah.
+1. **Admin → Orang & Token → Ganti token** — ganti token bootstrap Anda lebih
+   dulu. Ia tercetak di layar saat pemasangan dan mungkin tersalin ke mana-mana.
+2. **Admin → Orang & Token** — tambahkan mekanik, L1, L2.
+3. **Admin → Katalog Job** — periksa jumlahnya: field 1.535, workshop 242,
+   tyreman 7, unit 103.
+4. **Admin → Kesehatan Sistem** — pastikan tidak ada butir merah.
 
 ### Memperbarui
 

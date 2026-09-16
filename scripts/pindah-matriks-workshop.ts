@@ -34,8 +34,15 @@ import ExcelJS from 'exceljs';
  * dan itu sengaja: unit yang tak pernah bisa dipilih hanya jadi data mati.
  */
 
-if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
-  console.error('DITOLAK: skrip ini menulis katalog. DATABASE_URL harus port 5433.');
+// Sama seperti pindah-katalog-v2: boleh ke produksi, tapi harus disebut.
+if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')
+    && !process.argv.includes('--izinkan-luar')) {
+  console.error(
+    '\nDITOLAK. DATABASE_URL bukan basis data pengembangan (port 5433).\n\n'
+    + 'Kalau ini memang basis data produksi:\n'
+    + '    ... --terapkan --izinkan-luar\n\n'
+    + 'Jalankan tanpa --terapkan lebih dulu untuk melihat apa yang akan terjadi.\n',
+  );
   process.exit(1);
 }
 

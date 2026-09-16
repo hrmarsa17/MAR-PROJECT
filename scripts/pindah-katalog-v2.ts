@@ -25,8 +25,24 @@ import ExcelJS from 'exceljs';
  *    (tanpa model unit & sub-komponen), bukan dipaksa masuk bentuk cascade.
  */
 
-if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
-  console.error('DITOLAK: skrip ini menulis katalog. DATABASE_URL harus port 5433.');
+/* Katalog awal memang harus bisa dipindahkan ke PRODUKSI — di sanalah basis
+   data yang baru dipasang berdiri dengan nol job. Tapi ia tidak boleh terjadi
+   karena DATABASE_URL kebetulan sedang menunjuk ke sana: 1.535 baris yang
+   menimpa katalog yang sedang dipakai adalah kecelakaan yang sulit dibalik.
+   Karena itu di luar basis data dev ia harus disebut dengan sengaja.
+
+   Impor lewat skrip, bukan lewat menu Admin, memang yang benar untuk katalog
+   sebesar ini: fungsi Vercel berhenti di 10 detik, sementara skrip tidak punya
+   batas waktu sama sekali. */
+if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')
+    && !process.argv.includes('--izinkan-luar')) {
+  console.error(
+    '\nDITOLAK. DATABASE_URL bukan basis data pengembangan (port 5433).\n\n'
+    + 'Kalau ini memang basis data produksi dan Anda memang bermaksud\n'
+    + 'memindahkan katalog ke sana, sebutkan dengan sengaja:\n'
+    + '    ... --terapkan --izinkan-luar\n\n'
+    + 'Jalankan tanpa --terapkan lebih dulu untuk melihat apa yang akan terjadi.\n',
+  );
   process.exit(1);
 }
 
