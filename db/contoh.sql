@@ -13,6 +13,9 @@ DECLARE
   v_wo      bigint;
   v_status  wo_status;
   v_grup    uuid;
+  v_job_ban integer;
+  v_unit_ban integer;
+  v_sec_ban smallint;
   i         integer;
 BEGIN
   SELECT id INTO v_tenant FROM tenants WHERE code = 'KMB';
@@ -176,6 +179,85 @@ BEGIN
 
   INSERT INTO work_order_transfer_recipients (transfer_id, mechanic_id)
   VALUES ((SELECT id FROM work_order_transfers WHERE work_order_id = v_wo), v_mek[2]);
+
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- WO BAN — supaya form Detail Tyre bisa dilihat tanpa merakit sendiri
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- Dua WO tyreman, dan yang pertama dibuat DUA KALI pada unit yang sama: yang
+  -- lama sudah approved berikut catatan inspeksinya, yang baru menunggu diisi.
+  -- Tanpa catatan lama, seluruh kolom Before berbunyi "belum ada" dan bentuk
+  -- yang paling khas dari layar ini justru tidak terlihat.
+  SELECT j.id, u.id INTO v_job_ban, v_unit_ban
+    FROM jobs j, units u
+   WHERE j.tenant_id = v_tenant AND j.detail_form_id = (
+           SELECT id FROM job_detail_forms WHERE tenant_id = v_tenant AND code = 'tyre_inspeksi')
+     AND u.tenant_id = v_tenant AND u.is_virtual = false AND u.is_active
+   ORDER BY j.id, u.id LIMIT 1;
+
+  IF v_job_ban IS NOT NULL THEN
+    SELECT id INTO v_sec_ban FROM sections WHERE tenant_id = v_tenant AND code = 'tyreman';
+
+    -- (a) WO LAMA yang sudah selesai — sumber nilai Before.
+    INSERT INTO work_orders (tenant_id, wo_number, section_id, job_id, unit_id,
+      status, created_by, work_condition, location, session_hours,
+      start_time, end_time, submitted_at, approved_l1_by, approved_l1_at,
+      approved_l2_by, approved_l2_at, mtbf_redo_status, final_points, created_at)
+    VALUES (v_tenant, next_wo_number(v_tenant, current_date - 3), v_sec_ban,
+            v_job_ban, v_unit_ban, 'approved', v_l1, 'normal', 'Workshop', 4.0,
+            now() - interval '3 days', now() - interval '3 days' + interval '4 hours',
+            now() - interval '3 days' + interval '4 hours', v_l1,
+            now() - interval '3 days' + interval '5 hours', v_l2,
+            now() - interval '3 days' + interval '6 hours', 'first_time', 17.6,
+            now() - interval '3 days')
+    RETURNING id INTO v_wo;
+    INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+
+    -- Sepuluh posisi tercatat, TAPI dua di antaranya sengaja tidak lengkap:
+    -- posisi 9 tanpa suhu, posisi 10 tidak dicatat sama sekali. Keduanya harus
+    -- terbaca "belum ada", bukan nol — dan itu justru yang perlu terlihat.
+    INSERT INTO work_order_detail_values
+      (work_order_id, form_id, position, field_key, value_after, recorded_by, recorded_at)
+    SELECT v_wo,
+           (SELECT id FROM job_detail_forms WHERE tenant_id = v_tenant AND code = 'tyre_inspeksi'),
+           p.pos, d.kunci, d.nilai, v_mek[1], now() - interval '3 days' + interval '4 hours'
+      FROM generate_series(1, 9) AS p(pos),
+      LATERAL (VALUES
+        ('pressure', (95 + p.pos)::text),
+        ('rtd',      (28 - p.pos)::text),
+        ('suhu',     CASE WHEN p.pos = 9 THEN NULL ELSE (38 + p.pos)::text END)
+      ) AS d(kunci, nilai)
+     WHERE d.nilai IS NOT NULL;
+
+    -- (b) WO BARU yang menunggu diisi mekanik — inilah yang dibuka di layar.
+    INSERT INTO work_orders (tenant_id, wo_number, section_id, job_id, unit_id,
+      status, created_by, work_condition, location, keterangan,
+      mtbf_redo_status, created_at)
+    VALUES (v_tenant, next_wo_number(v_tenant, current_date), v_sec_ban,
+            v_job_ban, v_unit_ban, 'pending_mechanic_work', v_l1, 'normal',
+            'Workshop', 'Inspeksi rutin — catat tekanan & RTD sepuluh posisi',
+            'first_time', now() - interval '3 hours')
+    RETURNING id INTO v_wo;
+    INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+
+    -- (c) WO Remove/Instal, bentuk kedua dari form ini.
+    SELECT j.id INTO v_job_ban FROM jobs j
+     WHERE j.tenant_id = v_tenant AND j.detail_form_id = (
+             SELECT id FROM job_detail_forms
+              WHERE tenant_id = v_tenant AND code = 'tyre_remove_instal')
+     ORDER BY j.id LIMIT 1;
+
+    IF v_job_ban IS NOT NULL THEN
+      INSERT INTO work_orders (tenant_id, wo_number, section_id, job_id, unit_id,
+        status, created_by, work_condition, location, keterangan,
+        mtbf_redo_status, created_at)
+      VALUES (v_tenant, next_wo_number(v_tenant, current_date), v_sec_ban,
+              v_job_ban, v_unit_ban, 'pending_mechanic_work', v_l1, 'normal',
+              'Lapangan', 'Ban posisi 3 pecah — ganti', 'first_time',
+              now() - interval '2 hours')
+      RETURNING id INTO v_wo;
+      INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+    END IF;
+  END IF;
 
   -- WO yang transfernya DITOLAK: jam sesinya hangus, dan mekanik membaca
   -- alasannya di kartunya sendiri. partial_hours sengaja TETAP 0 — itulah

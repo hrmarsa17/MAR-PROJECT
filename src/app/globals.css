@@ -1719,6 +1719,81 @@ select, textarea {
   overflow-wrap: anywhere;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   DETAIL TYRE — angka dari `MechanicDashboard.html:206-240`
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tyre-opsional { text-transform: none; font-weight: 400; color: var(--text-disabled); }
+
+.tyre-hint {
+  background: #F0F9FF; border: 1px solid #BAE6FD; color: #075985;
+  border-radius: 8px; padding: 9px 11px; font-size: 0.75rem;
+  line-height: 1.5; margin-bottom: 12px;
+}
+
+/* Tabel sepuluh posisi lebih lebar dari modal di ponsel. Ia digulir sendiri,
+   BUKAN dikecilkan hurufnya sampai tak terbaca di bawah sinar matahari. */
+.tyre-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tyre-tbl {
+  width: 100%; border-collapse: collapse; font-size: 0.8125rem; min-width: 520px;
+}
+.tyre-tbl th {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  padding: 6px 4px; font-weight: 700; color: var(--text-secondary);
+  font-size: 0.6875rem; text-align: center;
+}
+.tyre-tbl th.sub {
+  font-weight: 600; color: var(--text-disabled);
+  font-size: 0.625rem; text-transform: uppercase;
+}
+.tyre-tbl td { border: 1px solid var(--border); padding: 3px; text-align: center; }
+.tyre-tbl td.pos {
+  background: var(--bg-secondary); font-weight: 700; color: var(--text); width: 38px;
+}
+.tyre-tbl input {
+  width: 100%; border: none; padding: 7px 4px; text-align: center;
+  font-size: 0.8125rem; background: transparent; font-family: inherit;
+  min-height: 0; border-radius: 0;
+}
+.tyre-tbl input:focus {
+  outline: 2px solid #4299E1; outline-offset: -2px; border-radius: 3px; box-shadow: none;
+}
+
+/* Kolom yang terisi SENDIRI dibedakan lewat TANAHNYA, bukan warna teksnya:
+   teks abu-abu terbaca sebagai "nonaktif", padahal angka ini justru harus
+   dibaca. Tanah abu-abu terbaca sebagai "bukan Anda yang mengisi". */
+.tyre-ro {
+  background: #EDF2F7; color: #4A5568; font-size: 0.75rem; padding: 7px 4px;
+  font-variant-numeric: tabular-nums;
+}
+.tyre-ro.kosong { color: var(--text-disabled); font-style: italic; font-size: 0.6875rem; }
+.tyre-rtd-kritis { background: #FED7D7 !important; color: #822727; font-weight: 700; }
+
+.tyre-grid4 {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;
+}
+.tyre-blok {
+  border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  margin-bottom: 10px; background: var(--card);
+}
+.tyre-blok-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.tyre-blok-pos { font-weight: 800; color: var(--text); font-size: 0.875rem; }
+/* Tombol buang: tanpa latar dan paling redup sampai disentuh. Ia membuang
+   isian yang baru diketik, jadi tidak boleh terlihat semenarik "+ Tambah". */
+.tyre-blok-hapus {
+  background: none; border: none; color: var(--text-disabled);
+  cursor: pointer; font-size: 0.8125rem; padding: 4px 8px; min-height: 0;
+}
+.tyre-blok-hapus:hover { color: #E53E3E; background: none; }
+.tyre-sub {
+  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+  color: var(--text-secondary); letter-spacing: 0.5px; margin: 10px 0 6px;
+}
+.tyre-tambah { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.tyre-tambah select { max-width: 170px; }
+
 @media (max-width: 768px) {
   .layar-mekanik .wo-grid, .grup-body { grid-template-columns: minmax(0, 1fr); }
   .wo-details, .info-grid { grid-template-columns: minmax(0, 1fr); }

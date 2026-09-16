@@ -5,6 +5,7 @@ import { buatWorkOrder } from '../../../domain/workOrder.js';
 import { simpanOverride } from '../../../domain/override.js';
 import { kirimKerja } from '../../../domain/kirimKerja.js';
 import { mintaTransfer, setujuiTransfer, tolakTransfer } from '../../../domain/transfer.js';
+import { simpanDetail } from '../../../domain/detailForm.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -131,13 +132,26 @@ const SKEMA = {
     woId: z.number().int().positive(),
     alasan: z.string().min(5).max(1000),
   }),
+  /**
+   * Detail teknis, DIPISAH dari kirim kerja dengan sengaja.
+   *
+   * Jam kerja adalah uang; detail teknis catatan. Kalau keduanya satu
+   * transaksi, kegagalan menulis catatan membatalkan jam kerjanya — dan yang
+   * terbaca mekanik adalah "Gagal Kirim" merah di atas pekerjaan yang sungguh
+   * ia lakukan. `op_id`-nya sendiri, jadi bisa dicoba ulang tanpa mengirim jam
+   * lagi.
+   */
+  simpan_detail: z.object({
+    woId: z.number().int().positive(),
+    nilai: z.record(z.string(), z.record(z.string(), z.string().max(500))),
+  }),
 } as const;
 
 const Amplop = z.object({
   aksi: z.enum([
     'buat_wo', 'approve_l1', 'approve_l2', 'batal_wo', 'reject', 'kembalikan',
     'save_override', 'kirim_kerja',
-    'minta_transfer', 'setujui_transfer', 'tolak_transfer',
+    'minta_transfer', 'setujui_transfer', 'tolak_transfer', 'simpan_detail',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -211,6 +225,10 @@ export async function POST(req: Request): Promise<Response> {
       case 'tolak_transfer': {
         const d = isi.data as z.infer<typeof SKEMA.tolak_transfer>;
         return jawab(await tolakTransfer({ ...umum, ...d }));
+      }
+      case 'simpan_detail': {
+        const d = isi.data as z.infer<typeof SKEMA.simpan_detail>;
+        return jawab(await simpanDetail({ ...umum, ...d }));
       }
     }
   } catch (e) {

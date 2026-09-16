@@ -8,6 +8,7 @@ import {
 } from '../../domain/kueriWoMekanik.js';
 import { CariMekanik } from './CariMekanik.js';
 import { DaftarWoMekanik } from './DaftarWoMekanik.js';
+import { bekalForm, detailUntukWo } from '../../domain/kueriDetailForm.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,6 +127,17 @@ async function DaftarWo({
     woMekanik(aku.tenantId, sebagai, tab),
   ]);
 
+  /* Detail teknis ikut daftar WO, bukan diambil saat kartunya dibuka. Di KMB V2
+     layar sempat memanggil server lagi setiap kali kartu disentuh, dan mekanik
+     menatap "Memuat…" tiap kali (`MechanicService.js:98-101`). Metadata formnya
+     dibaca SEKALI untuk seluruh halaman — isinya sama untuk semua WO, dan
+     menyalinnya ke enam kartu berarti mengirim hal yang sama enam kali ke HP
+     yang sinyalnya seadanya. */
+  const [bekal, detail] = await Promise.all([
+    bekalForm(aku.tenantId),
+    detailUntukWo(aku.tenantId, daftar.map((w) => w.id)),
+  ]);
+
   const tautan = (t: TabWoMekanik) =>
     sendiri ? `/monitoring?tab=${t}` : `/monitoring?as=${sebagai}&tab=${t}`;
 
@@ -169,7 +181,11 @@ async function DaftarWo({
         ))}
       </div>
 
-      <DaftarWoMekanik daftar={daftar} />
+      <DaftarWoMekanik
+        daftar={daftar}
+        bekal={[...bekal.values()]}
+        detail={Object.fromEntries(detail)}
+      />
     </div>
   );
 }

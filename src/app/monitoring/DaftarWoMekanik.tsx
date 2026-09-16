@@ -6,6 +6,7 @@ import { ModalKerja } from './ModalKerja.js';
 import { durasiJam } from '../../lib/format.js';
 import type { KartuWoMekanik } from '../../domain/kueriWoMekanik.js';
 import { bersihkanTimer, msBerjalan, msKeJamMenit, timerWo } from './timer.js';
+import type { BekalForm, DetailWo } from '../../domain/kueriDetailForm.js';
 
 /**
  * DAFTAR WO MEKANIK — port dari `renderWOs` + `woCardHtml`
@@ -59,7 +60,14 @@ function kelompokkan(daftar: KartuWoMekanik[]): Kelompok[] {
   return grup;
 }
 
-export function DaftarWoMekanik({ daftar }: { daftar: KartuWoMekanik[] }) {
+export function DaftarWoMekanik({
+  daftar, bekal = [], detail = {},
+}: {
+  daftar: KartuWoMekanik[];
+  /** Metadata form dikirim SEKALI untuk seluruh daftar, bukan disalin per WO. */
+  bekal?: BekalForm[];
+  detail?: Record<string, DetailWo>;
+}) {
   const router = useRouter();
   const [buka, setBuka] = useState<KartuWoMekanik | null>(null);
   const [sibuk, setSibuk] = useState<number | null>(null);
@@ -189,7 +197,15 @@ export function DaftarWoMekanik({ daftar }: { daftar: KartuWoMekanik[] }) {
           tetap duduk di kotak isian WO B. Sekali tekan Kirim, WO B dilaporkan
           dengan jam milik WO A — tanpa satu pun galat. `key` memaksa modalnya
           lahir baru tiap WO. */}
-      {buka && <ModalKerja key={buka.id} wo={buka} onTutup={() => setBuka(null)} />}
+      {buka && (
+        <ModalKerja
+          key={buka.id}
+          wo={buka}
+          onTutup={() => setBuka(null)}
+          detail={detail[String(buka.id)] ?? null}
+          bekal={bekal.find((b) => b.formId === detail[String(buka.id)]?.formId) ?? null}
+        />
+      )}
     </>
   );
 }

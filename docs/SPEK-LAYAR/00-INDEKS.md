@@ -45,8 +45,8 @@ daftar periksa implementasi tetap terpisah di setiap berkas.
 |---|---|---|---|---|
 | 1 | Dashboard Performa | [`01-PERFORMA.md`](01-PERFORMA.md) | ✅ | ✅ dibangun |
 | 2 | Create Work Order | [`02-CREATE-WO.md`](02-CREATE-WO.md) | ✅ | ✅ dibangun |
-| 3 | Monitoring | [`03-MONITORING.md`](03-MONITORING.md) | ✅ | 🟡 selector ✅ · daftar WO + kirim kerja ✅ · transfer ✅ · detail tyre ⬜ |
-| 3b | Detail Tyre | [`03b-DETAIL-TYRE.md`](03b-DETAIL-TYRE.md) | ✅ | ⬜ |
+| 3 | Monitoring | [`03-MONITORING.md`](03-MONITORING.md) | ✅ | 🟡 selector ✅ · daftar WO ✅ · kirim kerja ✅ · transfer ✅ · detail tyre ✅ |
+| 3b | Detail Tyre | [`03b-DETAIL-TYRE.md`](03b-DETAIL-TYRE.md) | ✅ | ✅ dibangun |
 | 4 | Approvals | [`04-APPROVALS.md`](04-APPROVALS.md) | ✅ | 🟡 sebagian (override ✅) |
 | 5 | Teknis | [`05-TEKNIS.md`](05-TEKNIS.md) | ✅ | ⬜ penanda |
 | 6 | Koreksi HM & KM | [`06-KOREKSI-HM-KM.md`](06-KOREKSI-HM-KM.md) | ✅ | ⬜ penanda |

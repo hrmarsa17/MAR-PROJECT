@@ -451,20 +451,21 @@ menghapus seluruh posisi yang tidak disertakan dalam payload.
 
 ## 7. Daftar periksa implementasi
 
-Daftar ini **belum dicentang**: dokumen selesai tidak berarti fiturnya selesai.
+Dicentang 16 Sep 2026. Yang masih kosong adalah keputusan yang memang belum
+diambil manusia, bukan pekerjaan yang terlewat.
 
-- [ ] Satu jenis dari server; form mati tidak dibaca/ditulis termasuk payload lama.
-- [ ] Metadata ikut daftar WO; membuka modal tidak memerlukan permintaan per field.
-- [ ] Inspeksi 10 posisi dari config; Before abu-abu, null `belum ada`, nol tetap nol.
-- [ ] Before dari catatan terbaru WO lain per posisi; tidak mencampur waktu per field.
-- [ ] After dan blok posisi lama kembali saat WO dikembalikan lalu dibuka ulang.
-- [ ] Remove/Instal memuat seluruh 14 medan; posisi ganda ditolak; Repair tanpa posisi.
-- [ ] Lengkapi lima field seed, relasi option list, nilai pilihan, dan mapping job.
-- [ ] Tenant/scope/tim, jenis form, field, tipe, dan rentang posisi dijaga server.
-- [ ] Jam/status/tim + struk inti committed sebelum detail; uji kegagalan detail
+- [x] Satu jenis dari server; form mati tidak dibaca/ditulis termasuk payload lama.
+- [x] Metadata ikut daftar WO; membuka modal tidak memerlukan permintaan per field.
+- [x] Inspeksi 10 posisi dari config; Before abu-abu, null `belum ada`, nol tetap nol.
+- [x] Before dari catatan terbaru WO lain per posisi; tidak mencampur waktu per field.
+- [x] After dan blok posisi lama kembali saat WO dikembalikan lalu dibuka ulang.
+- [x] Remove/Instal memuat seluruh 14 medan; posisi ganda ditolak; Repair tanpa posisi.
+- [x] Lengkapi lima field seed, relasi option list, nilai pilihan, dan mapping job.
+- [x] Tenant/scope/tim, jenis form, field, tipe, dan rentang posisi dijaga server.
+- [x] Jam/status/tim + struk inti committed sebelum detail; uji kegagalan detail
       dan proses mati membuktikan jam tetap tersimpan.
-- [ ] Retry detail idempoten, termasuk detail terlambat sesudah laporan kerja masuk.
-- [ ] Retry dan submit normal menggunakan **KM** WO; nol tidak hilang.
+- [x] Retry detail idempoten, termasuk detail terlambat sesudah laporan kerja masuk.
+- [x] Retry dan submit normal menggunakan **KM** WO; nol tidak hilang.
 - [ ] Sepakati semantik hapus posisi/Repair tersimpan serta snapshot Before/KM;
       jangan menyamarkan keterbatasan sumber sebagai perilaku final.
 - [ ] Rekonsiliasi catatan detail dengan dashboard Teknis dan koreksi meter;

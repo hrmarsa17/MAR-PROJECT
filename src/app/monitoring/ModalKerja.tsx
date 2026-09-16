@@ -6,6 +6,8 @@ import { Portal } from '../Portal.js';
 import { PilihWaktu24 } from './PilihWaktu24.js';
 import { durasiJam } from '../../lib/format.js';
 import type { KartuWoMekanik } from '../../domain/kueriWoMekanik.js';
+import type { BekalForm, DetailWo } from '../../domain/kueriDetailForm.js';
+import { DetailTyre, type NilaiDetail } from './DetailTyre.js';
 import {
   bersihkanTimer, jedaLainnya, keWaktuLokal, msBerjalan, msKeHms, msKeJamMenit,
   simpanTimer, timerWo, type KeadaanTimer,
@@ -60,10 +62,12 @@ function PenghitungTimer({ st }: { st: KeadaanTimer }) {
 }
 
 export function ModalKerja({
-  wo, onTutup,
+  wo, onTutup, bekal = null, detail = null,
 }: {
   wo: KartuWoMekanik;
   onTutup: () => void;
+  bekal?: BekalForm | null;
+  detail?: DetailWo | null;
 }) {
   const router = useRouter();
   const bolehIsi = wo.bolehKirim;
@@ -74,6 +78,7 @@ export function ModalKerja({
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const [ringkas, setRingkas] = useState<string | null>(null);
   const [catatan, setCatatan] = useState('');
+  const [nilaiDetail, setNilaiDetail] = useState<NilaiDetail>({});
   /* Dinaikkan HANYA saat tombol timer ditekan — bukan tiap detik. Lihat
      catatan di PenghitungTimer: gambar ulang per detik membuat picker tanggal
      dan jam tidak bisa dibuka sama sekali. */
@@ -89,6 +94,8 @@ export function ModalKerja({
   if (!opId.current) opId.current = crypto.randomUUID();
   const opIdTransfer = useRef<string>('');
   if (!opIdTransfer.current) opIdTransfer.current = crypto.randomUUID();
+  const opIdDetail = useRef<string>('');
+  if (!opIdDetail.current) opIdDetail.current = crypto.randomUUID();
   const st = timerWo(wo.id);
 
   const sesiJam = (() => {
@@ -226,6 +233,39 @@ export function ModalKerja({
     }
   }
 
+  /**
+   * Detail teknis, DIKIRIM SESUDAH jam kerja committed.
+   *
+   * Mengembalikan kalimat tambahan untuk kabar keberhasilan — dan kalau
+   * detailnya gagal, kalimat itu mengatakannya dengan jujur. Menjawab "semua
+   * tersimpan" padahal yang tersimpan cuma jam adalah cara paling halus
+   * menghilangkan isian yang sudah diketik orang di lapangan.
+   */
+  async function kirimDetail(): Promise<string> {
+    if (!bekal || Object.keys(nilaiDetail).length === 0) return '';
+    try {
+      const r = await fetch('/api/perintah', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aksi: 'simpan_detail',
+          op_id: opIdDetail.current,
+          data: { woId: wo.id, nilai: nilaiDetail },
+        }),
+      });
+      const j = await r.json();
+      if (j.ok) {
+        const n = Number(j.data?.hasil?.ditulis ?? 0);
+        return n > 0 ? ` Detail tyre tersimpan (${n} isian).` : '';
+      }
+      return ` ⚠️ Jam kerja TERSIMPAN, tapi detail tyre gagal: ${j.pesan ?? 'tidak diketahui'}.`
+        + ' Buka lagi WO ini dan simpan detailnya — jamnya tidak perlu dikirim ulang.';
+    } catch {
+      return ' ⚠️ Jam kerja TERSIMPAN, tapi detail tyre belum sempat terkirim.'
+        + ' Buka lagi WO ini dan simpan detailnya — jamnya tidak perlu dikirim ulang.';
+    }
+  }
+
   async function kirim() {
     if (!waktuSah) return;
     setSibuk(true);
@@ -247,12 +287,17 @@ export function ModalKerja({
       if (j.ok) {
         bersihkanTimer(wo.id);   // baru dibersihkan setelah benar-benar terkirim
         const h = j.data?.hasil;
+        /* Jam sudah COMMITTED di sini, berikut struknya. Detail teknis
+           dikirim SESUDAHNYA sebagai perintah tersendiri: kegagalannya tidak
+           boleh menyentuh jam yang sudah diakui, dan jawabannya tidak boleh
+           berbunyi seolah semuanya tersimpan bila yang tersimpan hanya jam. */
+        const kabarDetail = await kirimDetail();
         setHasil({
           baik: true,
-          teks: h?.sudahTerkirim
+          teks: (h?.sudahTerkirim
             ? `${wo.woNumber}: laporan ini sudah terkirim sebelumnya — tidak ada yang tercatat dua kali.`
             : `Laporan terkirim! ${wo.woNumber} · ${durasiJam(h?.actualHours)}. `
-              + 'WO pindah ke tab Pending.',
+              + 'WO pindah ke tab Pending.') + kabarDetail,
         });
         router.refresh();
         return;
@@ -403,6 +448,16 @@ export function ModalKerja({
                 </div>
 
               </div>
+            )}
+
+            {/* Detail teknis muncul hanya selama WO masih boleh dikirim, dan
+                hanya bila jobnya memang terhubung ke sebuah form. WO yang
+                bukan pekerjaan ban: bagiannya cukup tidak ada. */}
+            {bolehIsi && bekal && detail && (
+              <DetailTyre
+                bekal={bekal} detail={detail}
+                nilai={nilaiDetail} onUbah={setNilaiDetail}
+              />
             )}
 
             {hasil && (
