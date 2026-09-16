@@ -38,6 +38,7 @@ if (!berkas) {
 }
 
 const { sql } = await import('../src/lib/db.js');
+const { bacaLingkup } = await import('../src/domain/katalogInduk.js');
 
 /** Sel berumus mengembalikan {formula, result}; katalog KMB penuh dengan itu. */
 function nilaiSel(v: unknown): unknown {
@@ -254,14 +255,21 @@ async function pindahUnit(): Promise<Hitung> {
       modelId = m[0] ? Number(m[0].id) : null;
     }
 
+    /* `global` PUNYA KOLOM SENDIRI sejak db/migrasi/008. Sebelum itu ia ikut
+       dipindahkan sebagai "tanpa baris unit_sections" — yang di skema kita
+       berarti "milik semua section", kebalikan dari maksudnya. 16 unit sewa
+       karena itu sempat berdiri sejajar dengan alat pegangan harian. */
+    const lingkupSel = semu ? 'others' : teks(r['unit_scope']);
+    const lingkup = bacaLingkup(lingkupSel);
+
     const hasil = await sql<{ id: number; tindakan: string }[]>`
       INSERT INTO units (tenant_id, unit_code, unit_name, unit_model_id, unit_factor,
                          odometer, brand, model_type, mtbf_eligible, is_active,
-                         is_virtual)
+                         is_virtual, is_global)
       VALUES (${TENANT}, ${kode}, ${nama}, ${modelId}, ${uf},
               ${odo || null}::odometer_type, ${teks(r['brand']) || null},
               ${teks(r['type']) || null}, ${bool(r['mtbf_eligible'], false)},
-              ${bool(r['is_active'])}, ${semu})
+              ${bool(r['is_active'])}, ${semu || lingkup.semu}, ${lingkup.global})
       ON CONFLICT (tenant_id, unit_code) DO UPDATE SET
         unit_name = EXCLUDED.unit_name,
         unit_model_id = coalesce(EXCLUDED.unit_model_id, units.unit_model_id),
@@ -270,26 +278,19 @@ async function pindahUnit(): Promise<Hitung> {
         brand = coalesce(EXCLUDED.brand, units.brand),
         model_type = coalesce(EXCLUDED.model_type, units.model_type),
         mtbf_eligible = EXCLUDED.mtbf_eligible, is_active = EXCLUDED.is_active,
-        is_virtual = EXCLUDED.is_virtual
+        is_virtual = EXCLUDED.is_virtual, is_global = EXCLUDED.is_global
       RETURNING id, CASE WHEN xmax = 0 THEN 'baru' ELSE 'ubah' END AS tindakan
     `;
     if (hasil[0]?.tindakan === 'baru') h.baru++; else h.ubah++;
 
-    // `unit_scope` = daftar section dipisah koma → baris unit_sections.
-    /* "global" berarti BOLEH SEMUA SECTION, dan di skema kita itu diwakili
-       dengan TIDAK punya baris sama sekali (`db/schema.sql:103`). Ia bukan
-       nama section yang tak dikenal — melaporkannya sebagai masalah membuat
-       18 unit yang sah terlihat rusak. */
-    /* Unit SEMU tidak punya section: ia bukan alat yang dikerjakan siapa pun.
-       Scope "others" di lembar itu miliknya sendiri, bukan nama section. */
-    const lingkupMentah = semu ? 'global' : teks(r['unit_scope']).toLowerCase();
-    const lingkup = (lingkupMentah === 'global' || lingkupMentah === 'all'
-      || lingkupMentah === 'semua')
-      ? []
-      : teks(r['unit_scope']).split(',').map((s) => s.trim()).filter(Boolean);
-    if (lingkup.length > 0 && hasil[0]) {
+    /* Daftar section diganti UTUH mengikuti lembarnya — termasuk saat ia jadi
+       kosong, karena unit yang dipindahkan dari tyreman ke global memang harus
+       kehilangan baris tyreman-nya. Sebelumnya penghapusan hanya dijalankan
+       kalau daftarnya tidak kosong, sehingga scope lama tidak pernah bisa
+       dicabut lewat pemindahan ulang. */
+    if (hasil[0]) {
       await sql`DELETE FROM unit_sections WHERE unit_id = ${hasil[0].id}`;
-      for (const s of lingkup) {
+      for (const s of lingkup.section) {
         const sid = section.get(s);
         if (!sid) { h.masalah.push(`${kode}: section "${s}" tidak dikenal`); continue; }
         await sql`INSERT INTO unit_sections (unit_id, section_id) VALUES (${hasil[0].id}, ${sid})
@@ -305,12 +306,29 @@ async function pindahUnit(): Promise<Hitung> {
 console.log(`\n${terapkan ? '▶  MENERAPKAN' : '👀 PRATINJAU (tidak menulis apa pun)'}`);
 console.log(`   ${berkas}\n`);
 
-const hasil: [string, Hitung][] = [
-  ['Job — field (Config_Jobs_Field)', await pindahJob('Config_Jobs_Field', 'field')],
-  ['Job — workshop (Config_Jobs_Workshop)', await pindahJob('Config_Jobs_Workshop', 'workshop')],
-  ['Job — tyreman (Config_Components)', await pindahTyreman()],
-  ['Unit (Config_Units)', await pindahUnit()],
-];
+/* `--hanya=unit` memindahkan SATU lembar saja.
+   Alasannya nyata: memulihkan lingkup unit dari sebuah backup tidak boleh
+   memaksa ikut memindahkan joblistnya juga. Backup yang dipakai memulihkan
+   lingkup bisa saja berumur berbeda dari ekspor yang dipakai memindahkan job —
+   dan 164 job yang ikut terbawa adalah perubahan yang tak seorang pun minta. */
+const hanya = (process.argv.find((a) => a.startsWith('--hanya='))?.split('=')[1] ?? '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+const pakai = (nama: string) => hanya.length === 0 || hanya.includes(nama);
+if (hanya.length > 0) console.log(`   hanya lembar: ${hanya.join(', ')}\n`);
+
+const hasil: [string, Hitung][] = [];
+if (pakai('field')) {
+  hasil.push(['Job — field (Config_Jobs_Field)',
+    await pindahJob('Config_Jobs_Field', 'field')]);
+}
+if (pakai('workshop')) {
+  hasil.push(['Job — workshop (Config_Jobs_Workshop)',
+    await pindahJob('Config_Jobs_Workshop', 'workshop')]);
+}
+if (pakai('tyreman')) {
+  hasil.push(['Job — tyreman (Config_Components)', await pindahTyreman()]);
+}
+if (pakai('unit')) hasil.push(['Unit (Config_Units)', await pindahUnit()]);
 
 let totalMasalah = 0;
 for (const [nama, h] of hasil) {

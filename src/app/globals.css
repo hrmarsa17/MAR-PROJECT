@@ -2038,6 +2038,17 @@ select, textarea {
 .aksi-sel { flex-wrap: wrap; }
 .form-hint.salah { color: var(--reject); }
 
+/* Sembilan kolom — lebih lebar dari tabel admin lain, jadi gulirnya diberi
+   ruang sendiri alih-alih memaksa semua tabel ikut melebar. */
+.tabel-unit { min-width: 980px; }
+.tabel-unit .akses-sel { max-width: 200px; }
+.kotak-global {
+  align-items: flex-start; border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm); padding: 0.6rem 0.7rem; background: var(--card);
+}
+.kotak-global input { margin-top: 0.2rem; }
+.kotak-global .form-hint { margin-top: 0.2rem; }
+
 /* ── Terapkan ke semua WO ────────────────────────────────────────────────── */
 .surut-judul { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
 .surut-angka {

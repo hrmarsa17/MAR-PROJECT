@@ -31,7 +31,8 @@
     "uji:admin": "tsx scripts/uji-admin.ts",
     "admin:nyalakan": "tsx scripts/nyalakan-admin.ts",
     "uji:impor": "tsx scripts/uji-impor.ts",
-    "uji:surut": "tsx scripts/uji-surut.ts"
+    "uji:surut": "tsx scripts/uji-surut.ts",
+    "uji:unit": "tsx scripts/uji-unit.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

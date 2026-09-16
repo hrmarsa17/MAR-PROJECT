@@ -8,8 +8,8 @@ import { mintaTransfer, setujuiTransfer, tolakTransfer } from '../../../domain/t
 import { simpanDetail } from '../../../domain/detailForm.js';
 import { gantiPanelMeter, koreksiMeterWo } from '../../../domain/meter.js';
 import {
-  cabutToken, simpanFaktor, simpanJob, simpanOrang, simpanSetelan, simpanTarif,
-  terbitkanToken,
+  cabutToken, hapusJob, hapusUnit, simpanFaktor, simpanJob, simpanOrang,
+  simpanSetelan, simpanTarif, simpanUnit, terbitkanToken,
 } from '../../../domain/admin.js';
 import { terapkanImpor } from '../../../domain/imporKatalog.js';
 import { terapkanSurut } from '../../../domain/terapkanSurut.js';
@@ -210,6 +210,30 @@ const SKEMA = {
     aktif: z.boolean(),
   }),
   /**
+   * `unitId` kosong = unit baru; ada = sunting (kodenya tidak ikut berubah).
+   *
+   * `section` adalah daftar section yang boleh MEMILIH unit ini — bukan section
+   * model alatnya. Larik KOSONG punya arti sendiri: "milik semua section", jadi
+   * ia wajib dikirim, bukan opsional. Kalau opsional, "tidak disebut" dan
+   * "sengaja dikosongkan" jadi tak terbedakan.
+   */
+  admin_unit: z.object({
+    unitId: z.number().int().positive().optional(),
+    kode: z.string().min(2).max(50).optional(),
+    nama: z.string().min(2).max(200),
+    unitModel: z.string().max(100).nullable().optional(),
+    section: z.array(z.string().max(50)).max(20),
+    global: z.boolean(),
+    unitFactor: z.number().positive(),
+    odometer: z.enum(['HM', 'KM']).nullable().optional(),
+    brand: z.string().max(100).nullable().optional(),
+    modelType: z.string().max(100).nullable().optional(),
+    mtbfEligible: z.boolean(),
+    aktif: z.boolean(),
+  }),
+  admin_hapus_job: z.object({ jobId: z.number().int().positive() }),
+  admin_hapus_unit: z.object({ unitId: z.number().int().positive() }),
+  /**
    * TERAPKAN SURUT — satu-satunya aksi yang menggeser uang yang sudah dibayar.
    *
    * `rupiahSesudahDilihat` bukan pelengkap: domain menghitung ulang pratinjaunya
@@ -257,7 +281,8 @@ const Amplop = z.object({
     'minta_transfer', 'setujui_transfer', 'tolak_transfer', 'simpan_detail',
     'koreksi_meter', 'ganti_panel_meter',
     'admin_orang', 'admin_token', 'admin_token_cabut',
-    'admin_job', 'admin_faktor', 'admin_tarif', 'admin_setelan', 'impor_katalog',
+    'admin_job', 'admin_unit', 'admin_hapus_job', 'admin_hapus_unit',
+    'admin_faktor', 'admin_tarif', 'admin_setelan', 'impor_katalog',
     'terapkan_surut',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
@@ -360,6 +385,18 @@ export async function POST(req: Request): Promise<Response> {
       case 'admin_job': {
         const d = isi.data as z.infer<typeof SKEMA.admin_job>;
         return jawab(await simpanJob({ ...umum, ...d }));
+      }
+      case 'admin_unit': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_unit>;
+        return jawab(await simpanUnit({ ...umum, ...d }));
+      }
+      case 'admin_hapus_job': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_hapus_job>;
+        return jawab(await hapusJob({ ...umum, ...d }));
+      }
+      case 'admin_hapus_unit': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_hapus_unit>;
+        return jawab(await hapusUnit({ ...umum, ...d }));
       }
       case 'admin_faktor': {
         const d = isi.data as z.infer<typeof SKEMA.admin_faktor>;

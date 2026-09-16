@@ -3,7 +3,9 @@ import { sql } from '../lib/db.js';
 import { aturanBisnis, tidakDitemukan } from '../lib/errors.js';
 import { jalankanPerintah, type HasilPerintah } from './runCommand.js';
 import { pastikanAdmin } from './admin.js';
-import { pastikanKomponen, pastikanModel, pastikanSub } from './katalogInduk.js';
+import {
+  bacaLingkup, bakuLingkup, pastikanKomponen, pastikanModel, pastikanSub,
+} from './katalogInduk.js';
 
 /**
  * IMPOR & EKSPOR KATALOG — lewat Excel, seperti yang sudah dikerjakan Gabriel.
@@ -39,8 +41,19 @@ const KOLOM_JOB = [
   'plan_hours', 'base_point', 'job_type', 'is_active',
 ] as const;
 
+/**
+ * `unit_scope` ADA di sini karena ia ada di sheet Gabriel.
+ *
+ * Sampai 16 Sep 2026 templat ini membuangnya, sehingga satu-satunya kolom yang
+ * menentukan section mana boleh memilih sebuah unit tidak pernah bisa diunggah
+ * — dan yang mengekspor lalu mengunggah balik berkasnya akan MENGHAPUS seluruh
+ * lingkup unitnya tanpa satu pun peringatan.
+ *
+ * Isinya daftar dipisah koma: "tyreman", "tyreman,field", "global", "others",
+ * atau kosong (= semua section). Sama persis seperti V2.
+ */
 const KOLOM_UNIT = [
-  'unit_code', 'unit_name', 'unit_model', 'unit_factor', 'odometer',
+  'unit_code', 'unit_name', 'unit_model', 'unit_scope', 'unit_factor', 'odometer',
   'brand', 'model_type', 'mtbf_eligible', 'is_active',
 ] as const;
 
@@ -51,7 +64,10 @@ export interface BarisJob {
 }
 
 export interface BarisUnit {
-  unit_code: string; unit_name: string; unit_model: string; unit_factor: number;
+  unit_code: string; unit_name: string; unit_model: string;
+  /** "tyreman" · "tyreman,field" · "global" · "" (= semua section). */
+  unit_scope: string;
+  unit_factor: number;
   odometer: string; brand: string; model_type: string;
   mtbf_eligible: boolean; is_active: boolean;
 }
@@ -153,11 +169,20 @@ export async function eksporKatalog(
   } else {
     const baris = await sql<Record<string, unknown>[]>`
       SELECT u.unit_code::text, u.unit_name, coalesce(um.code::text, '') AS unit_model,
+             /* Ditulis kembali dalam bentuk yang sama dengan sheet aslinya, supaya
+                yang diunduh selalu bisa diunggah balik tanpa kehilangan apa pun. */
+             CASE WHEN u.is_global THEN 'global'
+                  ELSE coalesce(sc.daftar, '') END AS unit_scope,
              u.unit_factor, coalesce(u.odometer::text, '') AS odometer,
              coalesce(u.brand, '') AS brand, coalesce(u.model_type, '') AS model_type,
              u.mtbf_eligible, u.is_active
         FROM units u
         LEFT JOIN unit_models um ON um.id = u.unit_model_id
+        LEFT JOIN LATERAL (
+          SELECT string_agg(s.code::text, ',' ORDER BY s.code) AS daftar
+            FROM unit_sections us JOIN sections s ON s.id = us.section_id
+           WHERE us.unit_id = u.id
+        ) sc ON true
        WHERE u.tenant_id = ${tenantId} AND NOT u.is_virtual
        ORDER BY u.unit_code
     `;
@@ -260,8 +285,21 @@ export async function bacaUntukPratinjau(
       if (odo && odo !== 'KM' && odo !== 'HM') {
         masalah.push({ baris: n, pesan: `${kunci}: odometer harus KM atau HM` }); return;
       }
+      /* Faktor unit adalah PENGALI POIN, dan berkas ini bisa membawa ratusan
+         baris sekaligus. Satu sel 15 yang dimaksud 1,5 melipatgandakan bayaran
+         setiap WO unit itu — dan pratinjau yang memuat 103 baris tidak akan
+         membuat siapa pun menyadarinya. */
+      if (uf > 5) {
+        masalah.push({
+          baris: n,
+          pesan: `${kunci}: unit_factor ${uf} di luar batas wajar (maksimal 5) — `
+            + 'periksa titik desimalnya',
+        });
+        return;
+      }
       baris.push({
         unit_code: kunci, unit_name: nama, unit_model: teks(ambil('unit_model')),
+        unit_scope: teks(ambil('unit_scope')),
         unit_factor: uf, odometer: odo, brand: teks(ambil('brand')),
         model_type: teks(ambil('model_type')),
         mtbf_eligible: boolDari(ambil('mtbf_eligible'), false),
@@ -348,8 +386,16 @@ async function bandingkan(
     const isi = baris as BarisUnit[];
     const lama = new Map(
       (await sql<Record<string, unknown>[]>`
-        SELECT unit_code::text AS kode, unit_name, unit_factor, is_active
-          FROM units WHERE tenant_id = ${tenantId}
+        SELECT u.unit_code::text AS kode, u.unit_name, u.unit_factor, u.is_active,
+               CASE WHEN u.is_global THEN 'global'
+                    ELSE coalesce(sc.daftar, '') END AS unit_scope
+          FROM units u
+          LEFT JOIN LATERAL (
+            SELECT string_agg(s.code::text, ',' ORDER BY s.code) AS daftar
+              FROM unit_sections us JOIN sections s ON s.id = us.section_id
+             WHERE us.unit_id = u.id
+          ) sc ON true
+         WHERE u.tenant_id = ${tenantId}
       `).map((r) => [String(r['kode']).toLowerCase(), r]),
     );
     for (const b of isi) {
@@ -363,6 +409,14 @@ async function bandingkan(
       if (Number(l['unit_factor']) !== b.unit_factor) {
         diubah.push({ kode: b.unit_code, medan: 'unit_factor',
           lama: String(l['unit_factor']), baru: String(b.unit_factor) }); ada = true;
+      }
+      /* Lingkup ikut dibandingkan, dan itu penting: ia menentukan section mana
+         yang melihat unit ini di layar buat WO. Perubahan yang tidak disebut di
+         pratinjau adalah perubahan yang tidak ada yang menyetujuinya. */
+      if (bakuLingkup(String(l['unit_scope'])) !== bakuLingkup(b.unit_scope)) {
+        diubah.push({ kode: b.unit_code, medan: 'unit_scope',
+          lama: String(l['unit_scope']) || '(semua section)',
+          baru: b.unit_scope || '(semua section)' }); ada = true;
       }
       if (Boolean(l['is_active']) !== b.is_active) {
         diubah.push({ kode: b.unit_code, medan: 'is_active',
@@ -454,15 +508,17 @@ export async function terapkanImpor(
             )[0];
             modelId = um ? Number(um.id) : null;
           }
-          const r = await tx<{ tindakan: string }[]>`
+          const lingkup = bacaLingkup(b.unit_scope);
+          const r = await tx<{ id: number; tindakan: string }[]>`
             INSERT INTO units (tenant_id, unit_code, unit_name, unit_model_id,
                                unit_factor, odometer, brand, model_type,
-                               mtbf_eligible, is_active)
+                               mtbf_eligible, is_active, is_global, is_virtual)
             VALUES (${m.tenantId}, ${b.unit_code}, ${b.unit_name}, ${modelId},
                     ${b.unit_factor},
                     ${b.odometer ? b.odometer : null}::odometer_type,
                     ${b.brand || null}, ${b.model_type || null},
-                    ${b.mtbf_eligible}, ${b.is_active})
+                    ${b.mtbf_eligible}, ${b.is_active},
+                    ${lingkup.global}, ${lingkup.semu})
             ON CONFLICT (tenant_id, unit_code) DO UPDATE SET
               unit_name = EXCLUDED.unit_name,
               unit_model_id = coalesce(EXCLUDED.unit_model_id, units.unit_model_id),
@@ -471,10 +527,36 @@ export async function terapkanImpor(
               brand = coalesce(EXCLUDED.brand, units.brand),
               model_type = coalesce(EXCLUDED.model_type, units.model_type),
               mtbf_eligible = EXCLUDED.mtbf_eligible,
-              is_active = EXCLUDED.is_active
-            RETURNING CASE WHEN xmax = 0 THEN 'baru' ELSE 'ubah' END AS tindakan
+              is_active = EXCLUDED.is_active,
+              is_global = EXCLUDED.is_global,
+              is_virtual = EXCLUDED.is_virtual
+            RETURNING id, CASE WHEN xmax = 0 THEN 'baru' ELSE 'ubah' END AS tindakan
           `;
           if (r[0]?.tindakan === 'baru') baru++; else diubah++;
+
+          /* Lingkup diganti UTUH mengikuti berkasnya. Menambal saja akan membuat
+             unit yang dipindahkan dari tyreman ke field tetap terlihat di
+             tyreman selamanya — dan tidak ada cara mengeluarkannya lewat Excel. */
+          if (r[0]) {
+            await tx`DELETE FROM unit_sections WHERE unit_id = ${r[0].id}`;
+            for (const kode of lingkup.section) {
+              const s = (
+                await tx<{ id: number }[]>`
+                  SELECT id FROM sections WHERE tenant_id = ${m.tenantId} AND code = ${kode}
+                `
+              )[0];
+              if (!s) {
+                throw aturanBisnis(
+                  `${b.unit_code}: section "${kode}" di kolom unit_scope tidak dikenal. `
+                  + 'Nilai yang berarti: nama section, "global", "others", atau kosong.',
+                );
+              }
+              await tx`
+                INSERT INTO unit_sections (unit_id, section_id) VALUES (${r[0].id}, ${s.id})
+                ON CONFLICT DO NOTHING
+              `;
+            }
+          }
         }
       }
 

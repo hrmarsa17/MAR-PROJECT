@@ -21,6 +21,53 @@ import type { Tx } from '../lib/db.js';
  * pemanggil memangkasnya lebih dulu.)
  */
 
+/**
+ * `unit_scope` sheet → bentuk yang dipakai basis data.
+ *
+ * Lima nilai yang berarti di KMB V2 (`ConfigService.js:162`):
+ *
+ *   ""                kosong  → milik SEMUA section
+ *   "field"           satu    → dedicated
+ *   "tyreman,field"   banyak  → dedicated ke dua section sekaligus
+ *   "global"          sewa    → disembunyikan sampai diminta
+ *   "others"          semu    → bukan unit sungguhan, jalan pintas ke job manual
+ *
+ * "tyre" diterima sebagai sinonim "tyreman" — itu yang ditulis orang lapangan,
+ * dan menolaknya cuma membuat data yang benar terlihat rusak.
+ *
+ * Sebaran sebenarnya di KMB (103 unit, backup 15 Sep 2026):
+ *   field 36 · tyreman 35 · tyreman,field 15 · global 16 · others 1 · kosong 0
+ */
+export interface LingkupUnit {
+  section: string[];
+  global: boolean;
+  semu: boolean;
+}
+
+export function bacaLingkup(mentah: string): LingkupUnit {
+  const bagian = String(mentah ?? '').toLowerCase()
+    .split(',').map((x) => x.trim()).filter(Boolean)
+    .map((x) => (x === 'tyre' ? 'tyreman' : x));
+
+  const semu = bagian.includes('others');
+  const global = bagian.includes('global');
+  return {
+    // 'global' dan 'others' BUKAN nama section. Menyimpannya sebagai baris
+    // unit_sections akan melahirkan section hantu di setiap dropdown.
+    section: semu || global ? [] : bagian.filter((x) => x !== 'all' && x !== 'semua'),
+    global,
+    semu,
+  };
+}
+
+/** Bentuk baku untuk dibandingkan — urutan koma tidak boleh dianggap perubahan. */
+export function bakuLingkup(mentah: string): string {
+  const l = bacaLingkup(mentah);
+  if (l.semu) return 'others';
+  if (l.global) return 'global';
+  return [...l.section].sort().join(',');
+}
+
 export async function pastikanModel(
   tx: Tx, tenantId: number, sectionId: number, kode: string, saatBaru: () => void,
 ): Promise<number> {

@@ -64,7 +64,7 @@ export function Katalog({
 
       {l.jenis === 'job'
         ? <TabelJob bekal={bekal} section={l.section!} kirim={kirim} sibuk={sibuk} />
-        : <TabelUnitCatatan />}
+        : <TabelUnit bekal={bekal} kirim={kirim} sibuk={sibuk} />}
     </div>
   );
 }
@@ -426,6 +426,12 @@ function TabelJob({
                         : `Hitung ulang ${j.woApproved} WO yang sudah disetujui`}
                       onClick={() => setSurut({ job: j, bp: Number(d.bp), ph: Number(d.ph) })}
                     >Terapkan ke semua WO</button>
+                    <TombolHapus
+                      nama={`${j.kode} — ${j.nama}`} sibuk={sibuk}
+                      penahan={j.woTotal > 0 ? `dipakai ${j.woTotal} WO` : null}
+                      onHapus={() => void kirim('admin_hapus_job', { jobId: j.id },
+                        `Job ${j.kode} dihapus.`)}
+                    />
                   </td>
                 </tr>
               );
@@ -799,13 +805,384 @@ function ModalSurut({
   );
 }
 
-function TabelUnitCatatan() {
+/* ── Tabel unit ───────────────────────────────────────────────────────────── */
+
+type Unit = BekalAdmin['unit'][number];
+
+const UNIT_BARU = (): Unit => ({
+  id: 0, kode: '', nama: '', unitModel: null, section: [], global: false,
+  virtual: false, unitFactor: 1, odometer: null, brand: null, modelType: null,
+  mtbfEligible: false, aktif: true, woTotal: 0, meterTotal: 0,
+});
+
+/**
+ * DAFTAR UNIT — dan satu hal yang harus terbaca dari layarnya.
+ *
+ * Sebuah unit terikat pada section lewat DUA jalan yang tidak sama, dan kolomnya
+ * sengaja dipisah supaya perbedaannya kelihatan:
+ *
+ *   "Dipilih section"  siapa yang boleh memilih unit ini saat membuat WO
+ *   "Model"            joblist mana yang ditawarkan untuknya
+ *
+ * Hauler modelnya milik field, tapi 35 Hauler dipegang TYREMAN yang mengurus
+ * bannya. Sampai 16 Sep 2026 layar buat WO menyaring unit dengan section MODEL,
+ * dan tyreman melihat 6 unit dari 50 miliknya.
+ */
+function TabelUnit({
+  bekal, kirim, sibuk,
+}: {
+  bekal: BekalAdmin; kirim: Kirim; sibuk: boolean;
+}) {
+  const [cari, setCari] = useState('');
+  const [sunting, setSunting] = useState<Unit | null>(null);
+  const [saring, setSaring] = useState('');
+
+  const hasil = bekal.unit.filter((u) => {
+    if (saring === 'global' && !u.global) return false;
+    /* Unit sewa TIDAK ikut saringan per-section, walau daftar sectionnya
+       kebetulan kosong. Di layar buat WO ia ada di lacinya sendiri; menampilkan
+       ia di bawah "Dipilih field" di sini akan menjanjikan sesuatu yang tidak
+       terjadi di sana. */
+    if (saring && saring !== 'global'
+      && (u.global || !(u.section.length === 0 || u.section.includes(saring)))) return false;
+    if (!cari.trim()) return true;
+    const q = cari.toLowerCase();
+    return u.kode.toLowerCase().includes(q) || u.nama.toLowerCase().includes(q)
+      || (u.unitModel ?? '').toLowerCase().includes(q);
+  });
+
   return (
-    <div className="kabar kabar-info">
-      Daftar unit disunting lewat Excel — kolomnya <code>unit_code</code>,{' '}
-      <code>unit_name</code>, <code>unit_model</code>, <code>unit_factor</code>,{' '}
-      <code>odometer</code>, dan seterusnya. <b>unit_factor adalah pengali poin</b>,
-      jadi perubahannya akan terlihat satu per satu di pratinjau sebelum diterapkan.
-    </div>
+    <>
+      <div className="admin-kepala">
+        <div className="panel-judul">{bekal.unit.length} unit</div>
+        <div className="admin-kepala-aksi">
+          <select className="form-control" style={{ maxWidth: 190 }} value={saring}
+                  onChange={(e) => setSaring(e.target.value)}>
+            <option value="">Semua lingkup</option>
+            {bekal.section.map((s) => (
+              <option key={s} value={s}>Dipilih {s}</option>
+            ))}
+            <option value="global">🌐 Global (sewa)</option>
+          </select>
+          <input className="form-control" style={{ maxWidth: 240 }} value={cari}
+                 onChange={(e) => setCari(e.target.value)}
+                 placeholder="🔍 Cari kode / nama / model…" />
+          <button className="btn-primary btn-sm" disabled={sibuk}
+                  onClick={() => setSunting(UNIT_BARU())}>+ Tambah unit</button>
+        </div>
+      </div>
+
+      <div className="kabar kabar-info">
+        <b>&ldquo;Dipilih section&rdquo; dan &ldquo;Model&rdquo; menjawab dua hal
+        yang berbeda.</b>{' '}
+        Yang pertama menentukan <b>siapa yang boleh memilih</b> unit ini saat
+        membuat WO; yang kedua menentukan <b>joblist mana</b> yang ditawarkan
+        untuknya. Karena itu Hauler bisa bermodel <i>field</i> tapi dipilih{' '}
+        <i>tyreman</i> — tyreman mengurus bannya, dan joblist ban tidak melihat
+        model sama sekali. Kosong = <b>boleh semua section</b>.{' '}
+        <b>🌐 Global</b> = unit sewa: tetap bisa dipilih, tapi disembunyikan di
+        layar buat WO sampai penggunanya menekan &ldquo;Tampilkan semua unit&rdquo;.
+      </div>
+
+      <div className="tabel-gulir">
+        <table className="table tabel-admin tabel-unit">
+          <thead>
+            <tr>
+              <th>Kode</th><th>Nama</th><th>Model</th><th>Dipilih section</th>
+              <th className="num">Faktor</th><th>Meter</th>
+              <th className="num">WO</th><th>Aktif</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {hasil.slice(0, 200).map((u) => (
+              <tr key={u.id} className={u.aktif ? '' : 'nonaktif'}>
+                <td className="kode-sel">{u.kode}</td>
+                <td>
+                  {u.nama}
+                  {u.virtual && <span className="badge badge-grey">bukan unit</span>}
+                </td>
+                <td>{u.unitModel ?? <i className="ro-kosong">belum punya joblist</i>}</td>
+                <td className="akses-sel">
+                  {u.global
+                    ? <span className="badge badge-warning">🌐 global</span>
+                    : u.section.length === 0
+                      ? <i className="ro-kosong">semua section</i>
+                      : u.section.map((s) => (
+                          <span key={s} className="badge badge-blue">{s}</span>
+                        ))}
+                </td>
+                {/* Faktor unit adalah PENGALI POIN. Ditebalkan kalau bukan 1,0
+                    supaya unit yang membayar lebih tidak lewat begitu saja. */}
+                <td className="num">
+                  {u.unitFactor === 1 ? '1' : <b>{u.unitFactor}</b>}
+                </td>
+                <td>{u.odometer ?? <i className="ro-kosong">–</i>}</td>
+                <td className="num">{u.woTotal || <i className="ro-kosong">–</i>}</td>
+                <td>{u.aktif ? 'ya' : 'tidak'}</td>
+                <td className="aksi-sel">
+                  <button className="btn-secondary btn-sm" disabled={sibuk}
+                          onClick={() => setSunting({ ...u })}>Ubah</button>
+                  <TombolHapus
+                    nama={u.nama} sibuk={sibuk}
+                    penahan={
+                      u.woTotal > 0 ? `dipakai ${u.woTotal} WO`
+                        : u.meterTotal > 0 ? `punya ${u.meterTotal} catatan meter`
+                          : null
+                    }
+                    onHapus={() => void kirim('admin_hapus_unit', { unitId: u.id },
+                      `Unit ${u.nama} dihapus.`)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {hasil.length > 200 && (
+        <p className="form-hint">
+          Menampilkan 200 dari {hasil.length}. Persempit pencariannya, atau ubah
+          borongan lewat Excel.
+        </p>
+      )}
+
+      {sunting && (
+        <ModalUnit
+          awal={sunting} bekal={bekal} sibuk={sibuk}
+          onTutup={() => setSunting(null)}
+          onSimpan={async (f) => {
+            const h = await kirim('admin_unit', {
+              ...(f.id ? { unitId: f.id } : { kode: f.kode.trim() }),
+              nama: f.nama.trim(), unitModel: f.unitModel || null,
+              section: f.section, global: f.global,
+              unitFactor: Number(f.unitFactor),
+              odometer: f.odometer || null,
+              brand: f.brand || null, modelType: f.modelType || null,
+              mtbfEligible: f.mtbfEligible, aktif: f.aktif,
+            }, f.id ? `${f.nama} tersimpan.` : `Unit ${f.nama} ditambahkan.`);
+            if (h) setSunting(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function ModalUnit({
+  awal, bekal, sibuk, onTutup, onSimpan,
+}: {
+  awal: Unit; bekal: BekalAdmin; sibuk: boolean;
+  onTutup: () => void; onSimpan: (f: Unit) => void;
+}) {
+  const [f, setF] = useState<Unit>(awal);
+  const ubah = (b: Partial<Unit>) => setF({ ...f, ...b });
+
+  const kodeBentrok = !f.id && bekal.unit.some(
+    (u) => u.kode.toLowerCase() === f.kode.trim().toLowerCase(),
+  );
+  const faktorLiar = Number(f.unitFactor) > 5;
+  const bolehSimpan = f.nama.trim().length >= 2 && Number(f.unitFactor) > 0
+    && !faktorLiar && !kodeBentrok && (!!f.id || f.kode.trim().length >= 2);
+
+  const modelDipilih = bekal.model.find((m) => m.code === f.unitModel);
+
+  return (
+    <Portal>
+      <div className="modal-tirai">
+        <div className="modal modal-lebar">
+          <div className="modal-header">
+            <h3>{f.id ? `Ubah ${awal.nama}` : 'Tambah unit'}</h3>
+            <button className="modal-tutup" onClick={onTutup}>✕</button>
+          </div>
+          <div className="modal-body">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-kode">
+                  Kode unit <span className="wajib">*</span>
+                </label>
+                <input id="u-kode" value={f.kode} disabled={!!f.id}
+                       onChange={(e) => ubah({ kode: e.target.value })}
+                       placeholder="cth: UNIT-110" />
+                {f.id
+                  ? <p className="form-hint">Kode tidak bisa diubah — WO lama menunjuk ke sini.</p>
+                  : kodeBentrok
+                    ? <p className="form-hint salah">Kode ini sudah dipakai unit lain.</p>
+                    : <p className="form-hint">Unik untuk seluruh plant.</p>}
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-nama">
+                  Nomor lambung <span className="wajib">*</span>
+                </label>
+                <input id="u-nama" value={f.nama}
+                       onChange={(e) => ubah({ nama: e.target.value })}
+                       placeholder="cth: XTN21" />
+                <p className="form-hint">Inilah yang dibaca orang lapangan di dropdown.</p>
+              </div>
+            </div>
+
+            {/* ── Lingkup: siapa yang boleh memilih ──────────────────────── */}
+            <div className="form-group">
+              <label className="form-label">Dipilih section</label>
+              <div className="pilih-section">
+                {bekal.section.map((s) => (
+                  <label key={s} className="pilih-baris">
+                    <input type="checkbox" checked={f.section.includes(s)}
+                           disabled={f.global}
+                           onChange={(e) => ubah({
+                             section: e.target.checked
+                               ? [...f.section, s] : f.section.filter((x) => x !== s),
+                           })} />
+                    <span>{s}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="form-hint">
+                Tidak dicentang sama sekali = <b>boleh dipilih semua section</b>.
+                Boleh lebih dari satu — 15 unit KMB dipilih tyreman <i>dan</i> field.
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="pilih-baris kotak-global">
+                <input type="checkbox" checked={f.global}
+                       onChange={(e) => ubah({ global: e.target.checked })} />
+                <span>
+                  🌐 <b>Global — unit sewa, bukan pegangan harian</b>
+                  <br />
+                  <span className="form-hint">
+                    Tetap bisa dipilih, tapi disembunyikan di layar buat WO sampai
+                    penggunanya menekan &ldquo;Tampilkan semua unit&rdquo;. Global
+                    menang atas daftar section di atas.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            {/* ── Model: joblist mana yang ditawarkan ────────────────────── */}
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-model">Model alat</label>
+                <select id="u-model" value={f.unitModel ?? ''}
+                        onChange={(e) => ubah({ unitModel: e.target.value || null })}>
+                  <option value="">— belum punya joblist —</option>
+                  {bekal.model.map((m) => (
+                    <option key={`${m.section}/${m.code}`} value={m.code}>
+                      {m.code} · {m.section} · {m.job} job
+                    </option>
+                  ))}
+                </select>
+                <p className="form-hint">
+                  {modelDipilih
+                    ? <>Unit ini akan menawarkan <b>{modelDipilih.job} job</b> section{' '}
+                        <b>{modelDipilih.section}</b>.</>
+                    : <>Tanpa model, section cascade (field &amp; workshop) tidak
+                       punya satu pun job untuk unit ini. Section datar seperti
+                       tyreman tetap jalan — joblist ban tidak melihat model.</>}
+                </p>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-faktor">
+                  Faktor unit <span className="wajib">*</span>
+                </label>
+                <input id="u-faktor" type="number" step="any" value={f.unitFactor}
+                       onChange={(e) => ubah({ unitFactor: Number(e.target.value) })} />
+                {/* Faktor unit mengalikan poin SETIAP WO unit ini. Satu ketikan
+                    15 yang dimaksud 1,5 tidak akan ketahuan sampai payroll. */}
+                {faktorLiar
+                  ? <p className="form-hint salah">
+                      {f.unitFactor} di luar batas wajar (maksimal 5) — periksa titik desimalnya.
+                    </p>
+                  : <p className="form-hint"><b>Pengali poin.</b> 1 = tanpa penyesuaian.</p>}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-odo">Meter</label>
+                <select id="u-odo" value={f.odometer ?? ''}
+                        onChange={(e) => ubah({
+                          odometer: (e.target.value || null) as Unit['odometer'],
+                        })}>
+                  <option value="">— tidak punya meter —</option>
+                  <option value="HM">HM — hour meter</option>
+                  <option value="KM">KM — kilometer</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-brand">Merek</label>
+                <input id="u-brand" value={f.brand ?? ''}
+                       onChange={(e) => ubah({ brand: e.target.value })}
+                       placeholder="cth: HYUNDAI" />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="u-tipe">Tipe</label>
+                <input id="u-tipe" value={f.modelType ?? ''}
+                       onChange={(e) => ubah({ modelType: e.target.value })}
+                       placeholder="cth: R1250" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Penanda</label>
+                <div className="pilih-section">
+                  <label className="pilih-baris">
+                    <input type="checkbox" checked={f.mtbfEligible}
+                           onChange={(e) => ubah({ mtbfEligible: e.target.checked })} />
+                    <span>Ikut hitungan MTBF</span>
+                  </label>
+                  <label className="pilih-baris">
+                    <input type="checkbox" checked={f.aktif}
+                           onChange={(e) => ubah({ aktif: e.target.checked })} />
+                    <span>Aktif</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {f.id > 0 && f.woTotal > 0 && (
+              <div className="kabar kabar-info">
+                Unit ini tercatat di <b>{f.woTotal} WO</b>. Karena itu ia tidak bisa
+                dihapus — yang benar adalah <b>menonaktifkan</b>, supaya ia hilang
+                dari dropdown tapi riwayatnya tetap bisa dijelaskan.
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={onTutup} disabled={sibuk}>Batal</button>
+            <button className="btn-primary" disabled={sibuk || !bolehSimpan}
+                    onClick={() => onSimpan(f)}>
+              {sibuk ? 'Menyimpan…' : f.id ? 'Simpan' : 'Tambah unit'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
+/**
+ * Tombol hapus yang MENOLAK LEBIH DULU, bukan mencoba lalu gagal.
+ *
+ * Baris yang sudah dipakai WO memang akan ditolak server — `work_orders.job_id`
+ * dan `unit_id` foreign key tanpa cascade. Tapi tombol yang terlihat bisa
+ * ditekan lalu memuntahkan galat adalah tombol yang berbohong. Di sini
+ * penahannya disebut di tooltipnya, sebelum ditekan.
+ */
+function TombolHapus({
+  nama, penahan, sibuk, onHapus,
+}: { nama: string; penahan: string | null; sibuk: boolean; onHapus: () => void }) {
+  return (
+    <button
+      className="btn-danger btn-sm" disabled={sibuk || penahan !== null}
+      title={penahan
+        ? `Tidak bisa dihapus — ${penahan}. Hapus centang Aktif untuk menyembunyikannya.`
+        : `Hapus ${nama} selamanya`}
+      onClick={() => {
+        if (confirm(
+          `Hapus ${nama}?\n\nBaris ini belum pernah dipakai WO mana pun, jadi `
+          + 'menghapusnya aman. Tindakan ini tidak bisa dibatalkan.',
+        )) onHapus();
+      }}
+    >Hapus</button>
   );
 }

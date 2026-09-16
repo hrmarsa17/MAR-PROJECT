@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react';
 import {
-  beda, meterUntuk,
-  type Blok, type Katalog, type Job,
+  beda, laciUntuk, meterUntuk,
+  type Blok, type Katalog, type Job, type Unit,
 } from './jenis.js';
 import { durasiJam } from '../../../lib/format.js';
 
@@ -38,14 +38,43 @@ export function BlokJoblist({
   const butuhUnit = sec?.requires_unit ?? true;
   const M = meterUntuk(blok.section);
 
-  const unitTersedia = useMemo(() => {
-    if (!sec) return [];
-    const milikSection = kat.units.filter(
-      (u) => u.section === null || u.section === blok.section,
-    );
-    if (tampilSemuaUnit) return kat.units;
-    return milikSection;
-  }, [kat, sec, blok.section, tampilSemuaUnit]);
+  /**
+   * Dropdown unit dibagi EMPAT laci, sama seperti KMB V2.
+   *
+   * Yang tidak boleh diulang: sampai 16 Sep 2026 penyaringnya memakai section
+   * MODEL unit, bukan section yang berhak memilihnya. Model Hauler milik field,
+   * padahal 35 Hauler adalah pegangan tyreman — jadi tyreman melihat 6 unit dari
+   * 50 miliknya, dan sisanya hanya muncul lewat tombol yang tak ada alasan ia
+   * tekan.
+   *
+   * "Unit section lain" TIDAK disembunyikan, juga seperti V2: field sesekali
+   * memang membantu unit tyreman, dan menyembunyikannya membuat orang mengira
+   * unitnya hilang dari katalog. Yang disembunyikan hanya unit SEWA.
+   */
+  const laci = useMemo(() => {
+    const kosong = { utama: [] as Unit[], lain: [] as Unit[], global: [] as Unit[], semu: [] as Unit[] };
+    if (!sec) return kosong;
+    for (const u of kat.units) kosong[laciUntuk(u, blok.section)].push(u);
+    return kosong;
+  }, [kat.units, sec, blok.section]);
+
+  const grupUnit = useMemo(() => {
+    const g: { label: string; unit: Unit[] }[] = [
+      { label: `★ Unit ${sec?.name ?? blok.section}`, unit: laci.utama },
+      { label: 'Unit section lain', unit: laci.lain },
+    ];
+    if (tampilSemuaUnit) {
+      g.push({ label: '🌐 Global — bukan pegangan harian', unit: laci.global });
+    }
+    /* Unit semu bukan alat: memilihnya adalah cara V2 mengatakan "job manual".
+       Ia hanya ditawarkan kepada yang memang boleh membuat job manual — server
+       menolaknya untuk yang lain, dan menawarkan pilihan yang pasti ditolak
+       adalah jebakan, bukan kelengkapan. */
+    if (bolehManual && laci.semu.length > 0) {
+      g.push({ label: '📝 Job manual', unit: laci.semu });
+    }
+    return g.filter((x) => x.unit.length > 0);
+  }, [laci, sec, blok.section, tampilSemuaUnit, bolehManual]);
 
   const jobSection = useMemo(
     () => kat.jobs.filter((j) => j.section === blok.section),
@@ -196,18 +225,40 @@ export function BlokJoblist({
                 <select
                   value={blok.unitId}
                   disabled={terkunciUnit}
-                  onChange={(e) =>
-                    ubah({ unitId: e.target.value, komponen: '', subKomponen: '', jobId: '' })
-                  }
+                  onChange={(e) => {
+                    /* Unit semu bukan alat — di V2 memilihnya adalah CARA
+                       mengatakan "job manual" (`WorkOrder.html:570`). Kalau ia
+                       cuma disimpan sebagai unitId biasa, server menolaknya saat
+                       kirim dan yang terbaca pembuat WO adalah galat atas
+                       pilihan yang layar sendiri tawarkan. */
+                    const u = kat.units.find((x) => String(x.id) === e.target.value);
+                    if (u?.is_virtual) {
+                      ubah({ others: true, unitId: '', komponen: '', subKomponen: '', jobId: '' });
+                      return;
+                    }
+                    ubah({ unitId: e.target.value, komponen: '', subKomponen: '', jobId: '' });
+                  }}
                 >
                   <option value="">-- Select Unit --</option>
-                  {unitTersedia.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.unit_name}
-                      {u.unit_model ? ` · ${u.unit_model}` : ' · belum punya joblist'}
-                    </option>
+                  {grupUnit.map((g) => (
+                    <optgroup key={g.label} label={`${g.label} (${g.unit.length})`}>
+                      {g.unit.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.unit_name}
+                          {u.unit_model ? ` · ${u.unit_model}` : ' · belum punya joblist'}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
+                {/* Tanpa baris ini orang mengira unitnya hilang dari katalog —
+                    persis kalimat yang dipakai V2. */}
+                {!tampilSemuaUnit && laci.global.length > 0 && (
+                  <p className="form-hint">
+                    🌐 {laci.global.length} unit global disembunyikan — tekan
+                    &ldquo;Tampilkan semua unit&rdquo; bila perlu.
+                  </p>
+                )}
                 {terkunciUnit && (
                   <p className="tanda-kunci">
                     🔒 Unit dikunci oleh grup — hapus joblist lain untuk mengubah

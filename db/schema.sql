@@ -145,11 +145,22 @@ CREATE TABLE units (
   odometer       odometer_type,
   mtbf_eligible  boolean NOT NULL DEFAULT false,
   is_virtual     boolean NOT NULL DEFAULT false,  -- ex sentinel 'OTHERS'/'WORKSHOP'
+  -- Unit sewa: boleh dipilih, tapi disembunyikan sampai diminta. Setara
+  -- unit_scope='global' di V2. Lihat db/migrasi/008-lingkup-unit.sql.
+  is_global      boolean NOT NULL DEFAULT false,
   notes          text,
   is_active      boolean NOT NULL DEFAULT true,
   UNIQUE (tenant_id, unit_code)
 );
 
+-- Section mana saja yang boleh MEMILIH unit ini — setara `unit_scope` di V2.
+-- Satu unit boleh milik beberapa section sekaligus: 15 unit KMB ber-scope
+-- "tyreman,field".
+--
+-- ⚠️ BUKAN section model unitnya. Sebuah Hauler modelnya milik field, tapi
+-- tyreman-lah yang mengurus bannya — dan itulah kenapa 35 unit bermodel Hauler
+-- ber-scope tyreman. Menyaring dropdown unit dengan section MODEL (bukan tabel
+-- ini) membuat tyreman kehilangan seluruh unitnya.
 CREATE TABLE unit_sections (
   unit_id    integer NOT NULL REFERENCES units(id) ON DELETE CASCADE,
   section_id smallint NOT NULL REFERENCES sections(id),

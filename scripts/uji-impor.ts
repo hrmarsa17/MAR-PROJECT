@@ -213,6 +213,61 @@ console.log('\n─── 9. bukan admin tidak bisa mengimpor ───');
   await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 }
 
+console.log('\n─── 9b. UNIT: yang diunduh harus bisa diunggah balik utuh ───');
+{
+  /* Lubang yang ditutup di sini nyata dan diam: sampai 16 Sep 2026 templat unit
+     TIDAK punya kolom `unit_scope`. Jadi siapa pun yang mengunduh daftar unit,
+     menyunting satu faktor, lalu mengunggahnya balik akan MENGHAPUS lingkup
+     seluruh unitnya — tyreman kehilangan 50 unit, tanpa satu pun peringatan,
+     dan pratinjaunya berkata "tidak berubah". */
+  const buf = await eksporKatalog(TENANT, 'unit', null);
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf as unknown as ArrayBuffer);
+  const ws = wb.getWorksheet(1)!;
+  const kepala = ((ws.getRow(1).values as unknown[]) ?? []).slice(1).map(String);
+  periksa('templat unit membawa unit_scope', kepala.includes('unit_scope'),
+    kepala.join(','));
+
+  const sebelum = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM unit_sections`;
+  const p = await bacaUntukPratinjau(TENANT, 'unit', null, buf);
+  const scopeBerubah = p.diubah.filter((d) => d.medan === 'unit_scope');
+  periksa('mengunggah balik apa adanya = tidak ada lingkup yang berubah',
+    scopeBerubah.length === 0,
+    JSON.stringify(scopeBerubah.slice(0, 3)));
+  periksa('dan tidak ada baris yang bermasalah', p.masalah.length === 0,
+    JSON.stringify(p.masalah.slice(0, 3)));
+
+  const a = await perintah('impor_katalog',
+    { jenis: 'unit', sectionCode: null, baris: p.baris });
+  periksa('penerapannya lolos', a.ok === true, a.pesan);
+  const sesudah = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM unit_sections`;
+  periksa('jumlah baris lingkup TETAP sesudah bolak-balik Excel',
+    sebelum[0]!.n === sesudah[0]!.n, `${sebelum[0]!.n} → ${sesudah[0]!.n}`);
+
+  const glob = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM units WHERE is_global`;
+  periksa('penanda global juga selamat', glob[0]!.n > 0, `${glob[0]!.n} unit global`);
+}
+
+console.log('\n─── 9c. faktor unit liar ditolak di pintu impor ───');
+{
+  const u = (await sql<{ kode: string; nama: string }[]>`
+    SELECT unit_code::text AS kode, unit_name AS nama FROM units
+     WHERE NOT is_virtual ORDER BY id LIMIT 1`)[0]!;
+  const buf = await berkas(
+    ['unit_code', 'unit_name', 'unit_model', 'unit_scope', 'unit_factor',
+      'odometer', 'brand', 'model_type', 'mtbf_eligible', 'is_active'],
+    [[u.kode, u.nama, '', 'field', 15, 'HM', '', '', 'FALSE', 'TRUE']],
+  );
+  const p = await bacaUntukPratinjau(TENANT, 'unit', null, buf);
+  periksa('faktor 15 ditandai bermasalah, tidak diam-diam masuk',
+    p.masalah.length === 1, JSON.stringify(p.masalah));
+  periksa('alasannya menyuruh memeriksa titik desimal',
+    /desimal/i.test(p.masalah[0]?.pesan ?? ''), p.masalah[0]?.pesan);
+}
+
 console.log('\n─── 10. kesehatan sistem ───');
 {
   const k = await periksaKesehatan(TENANT);

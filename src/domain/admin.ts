@@ -431,6 +431,270 @@ export async function simpanJob(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// KATALOG: UNIT
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface MasukanUnit {
+  opId: string;
+  tenantId: number;
+  actorId: number;
+  /** Ada = sunting, tidak ada = unit baru. */
+  unitId?: number;
+  kode?: string;
+  nama: string;
+  /** Model alat. Menentukan JOB mana yang ditawarkan untuknya — bukan sectionnya. */
+  unitModel?: string | null;
+  /** Section yang boleh MEMILIH unit ini. Kosong = semua section. */
+  section: string[];
+  /** Unit sewa: boleh dipilih, tapi disembunyikan sampai diminta. */
+  global: boolean;
+  unitFactor: number;
+  odometer?: 'HM' | 'KM' | null;
+  brand?: string | null;
+  modelType?: string | null;
+  mtbfEligible: boolean;
+  aktif: boolean;
+}
+
+/**
+ * Menyimpan SATU unit — baru maupun suntingan.
+ *
+ * ── DUA HUBUNGAN YANG BERBEDA, DAN PERNAH TERTUKAR ──────────────────────────
+ * Sebuah unit terikat pada section lewat DUA jalan yang sama sekali tidak sama:
+ *
+ *   `section[]`  → siapa yang boleh MEMILIHNYA saat membuat WO (`unit_sections`).
+ *   `unitModel`  → job mana yang ditawarkan UNTUKNYA di section cascade.
+ *
+ * Model sebuah Hauler milik field. Tapi 35 Hauler adalah pegangan TYREMAN, yang
+ * mengurus bannya — dan joblist tyreman datar, tidak menyentuh model sama
+ * sekali. Karena itu menyaring dropdown unit dengan section model (yang kita
+ * lakukan sampai 16 Sep 2026) menghapus 44 dari 50 unit tyreman dari layar.
+ *
+ * ── TIGA KEADAAN LINGKUP, BUKAN DUA ─────────────────────────────────────────
+ *   punya section  → dedicated: menonjol di sectionnya, tetap bisa dipilih yang lain
+ *   tanpa section  → milik semua section
+ *   global         → unit sewa: disembunyikan sampai diminta
+ * `global` menang atas daftar sectionnya, persis seperti V2.
+ */
+export async function simpanUnit(
+  m: MasukanUnit,
+): Promise<HasilPerintah<{ unitId: number; baru: boolean; kode: string }>> {
+  return jalankanPerintah({
+    opId: m.opId, tenantId: m.tenantId, actorId: m.actorId, action: 'admin_unit',
+    jalankan: async ({ tx }) => {
+      await pastikanAdmin(tx, m.actorId);
+
+      const nama = m.nama.trim();
+      if (nama.length < 2) throw aturanBisnis('Nama unit minimal 2 huruf');
+      if (!(m.unitFactor > 0)) throw aturanBisnis('Faktor unit harus lebih dari 0');
+      /* Faktor unit adalah PENGALI POIN. Batas atas bukan kerewelan: satu
+         ketikan 15 yang dimaksud 1,5 melipatgandakan bayaran setiap WO unit itu,
+         dan tidak ada yang akan menyadarinya sampai payroll terbit. */
+      if (m.unitFactor > 5) {
+        throw aturanBisnis(
+          `Faktor ${m.unitFactor} di luar batas wajar (maksimal 5). Faktor unit `
+          + 'adalah pengali poin — periksa lagi titik desimalnya.',
+        );
+      }
+
+      const idSection: number[] = [];
+      for (const s of m.section) {
+        if (!s.trim()) continue;
+        const r = (
+          await tx<{ id: number }[]>`
+            SELECT id FROM sections WHERE tenant_id = ${m.tenantId} AND code = ${s.trim()}
+          `
+        )[0];
+        if (!r) throw tidakDitemukan('Section', s);
+        idSection.push(Number(r.id));
+      }
+
+      let modelId: number | null = null;
+      if (m.unitModel?.trim()) {
+        /* Model dicari LINTAS SECTION dan yang pertama dipakai. Model unit di
+           V2 memang tidak bercabang per section — "Hauler" satu-satunya, dan
+           dialah yang menyambungkan unit ke 123 job field. */
+        const r = (
+          await tx<{ id: number }[]>`
+            SELECT id FROM unit_models
+             WHERE tenant_id = ${m.tenantId} AND code = ${m.unitModel.trim()}
+             ORDER BY id LIMIT 1
+          `
+        )[0];
+        if (!r) {
+          throw aturanBisnis(
+            `Model unit "${m.unitModel.trim()}" belum ada. Model dibuat lewat impor `
+            + 'katalog job, karena dialah yang menentukan joblist unit ini — '
+            + 'membuatnya kosong di sini menghasilkan unit tanpa satu pun pekerjaan.',
+          );
+        }
+        modelId = Number(r.id);
+      }
+
+      let id = m.unitId ?? 0;
+      let baru = false;
+      let kode = (m.kode ?? '').trim();
+
+      if (m.unitId) {
+        const lama = (
+          await tx<Record<string, unknown>[]>`
+            SELECT * FROM units WHERE id = ${m.unitId} AND tenant_id = ${m.tenantId}
+          `
+        )[0];
+        if (!lama) throw tidakDitemukan('Unit', m.unitId);
+        kode = String(lama['unit_code']);
+
+        await tx`
+          UPDATE units SET
+            unit_name = ${nama}, unit_model_id = ${modelId},
+            unit_factor = ${m.unitFactor},
+            odometer = ${m.odometer ?? null}::odometer_type,
+            brand = ${m.brand?.trim() || null}, model_type = ${m.modelType?.trim() || null},
+            mtbf_eligible = ${m.mtbfEligible}, is_global = ${m.global},
+            is_active = ${m.aktif}
+          WHERE id = ${m.unitId}
+        `;
+        await catat(tx, m.tenantId, m.actorId, 'admin_unit_ubah', 'unit',
+          String(m.unitId), { kode, nama, section: m.section, global: m.global, lama });
+      } else {
+        if (kode.length < 2) throw aturanBisnis('Kode unit minimal 2 huruf');
+        const bentrok = (
+          await tx<{ id: number }[]>`
+            SELECT id FROM units WHERE tenant_id = ${m.tenantId} AND unit_code = ${kode}
+          `
+        )[0];
+        if (bentrok) {
+          throw aturanBisnis(
+            `Kode ${kode} sudah dipakai. Kode unit unik untuk seluruh plant — `
+            + 'sunting unit yang sudah ada, atau pakai kode lain.',
+          );
+        }
+        const r = (
+          await tx<{ id: number }[]>`
+            INSERT INTO units (tenant_id, unit_code, unit_name, unit_model_id,
+                               unit_factor, odometer, brand, model_type,
+                               mtbf_eligible, is_global, is_active)
+            VALUES (${m.tenantId}, ${kode}, ${nama}, ${modelId}, ${m.unitFactor},
+                    ${m.odometer ?? null}::odometer_type, ${m.brand?.trim() || null},
+                    ${m.modelType?.trim() || null}, ${m.mtbfEligible}, ${m.global},
+                    ${m.aktif})
+            RETURNING id
+          `
+        )[0]!;
+        id = Number(r.id);
+        baru = true;
+        await catat(tx, m.tenantId, m.actorId, 'admin_unit_baru', 'unit', String(id),
+          { kode, nama, section: m.section, global: m.global, faktor: m.unitFactor });
+      }
+
+      // Daftar section diganti UTUH, bukan ditambal — sama seperti section orang.
+      await tx`DELETE FROM unit_sections WHERE unit_id = ${id}`;
+      for (const sid of idSection) {
+        await tx`
+          INSERT INTO unit_sections (unit_id, section_id) VALUES (${id}, ${sid})
+          ON CONFLICT DO NOTHING
+        `;
+      }
+
+      return { unitId: id, baru, kode };
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// HAPUS
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Menghapus baris katalog yang BELUM PERNAH DIPAKAI.
+ *
+ * Yang sudah dipakai TIDAK dihapus, dan itu bukan kehati-hatian berlebih:
+ * `work_orders.job_id` dan `work_orders.unit_id` adalah foreign key tanpa
+ * cascade, jadi basis data sendiri yang akan menolak. Tapi pesan galat foreign
+ * key bukan jawaban yang layak dibaca orang — dan yang benar memang bukan
+ * "paksa hapus" melainkan NONAKTIFKAN: WO lama menampilkan nama job dan unitnya
+ * lewat FK, sehingga menghapusnya akan membuat riwayat yang sudah dibayar tidak
+ * bisa dijelaskan lagi.
+ *
+ * Jadi tombol Hapus hanya untuk membereskan salah ketik yang baru dibuat.
+ */
+export async function hapusJob(
+  m: { opId: string; tenantId: number; actorId: number; jobId: number },
+): Promise<HasilPerintah<{ jobId: number; kode: string }>> {
+  return jalankanPerintah({
+    opId: m.opId, tenantId: m.tenantId, actorId: m.actorId, action: 'admin_hapus_job',
+    jalankan: async ({ tx }) => {
+      await pastikanAdmin(tx, m.actorId);
+      const job = (
+        await tx<{ kode: string; nama: string; wo: number }[]>`
+          SELECT j.job_code::text AS kode, j.job_description AS nama,
+                 (SELECT count(*)::int FROM work_orders w WHERE w.job_id = j.id) AS wo
+            FROM jobs j WHERE j.id = ${m.jobId} AND j.tenant_id = ${m.tenantId}
+        `
+      )[0];
+      if (!job) throw tidakDitemukan('Job', m.jobId);
+
+      if (job.wo > 0) {
+        throw aturanBisnis(
+          `${job.kode} sudah dipakai ${job.wo} WO dan tidak bisa dihapus — WO lama `
+          + 'membaca nama pekerjaannya dari baris ini. Hilangkan dari joblist dengan '
+          + 'menghapus centang Aktif; riwayatnya tetap bisa dijelaskan.',
+        );
+      }
+
+      await tx`DELETE FROM jobs WHERE id = ${m.jobId}`;
+      await catat(tx, m.tenantId, m.actorId, 'admin_job_hapus', 'job', String(m.jobId),
+        { kode: job.kode, nama: job.nama });
+      return { jobId: m.jobId, kode: job.kode };
+    },
+  });
+}
+
+export async function hapusUnit(
+  m: { opId: string; tenantId: number; actorId: number; unitId: number },
+): Promise<HasilPerintah<{ unitId: number; kode: string }>> {
+  return jalankanPerintah({
+    opId: m.opId, tenantId: m.tenantId, actorId: m.actorId, action: 'admin_hapus_unit',
+    jalankan: async ({ tx }) => {
+      await pastikanAdmin(tx, m.actorId);
+      const unit = (
+        await tx<{ kode: string; nama: string; wo: number; meter: number }[]>`
+          SELECT u.unit_code::text AS kode, u.unit_name AS nama,
+                 (SELECT count(*)::int FROM work_orders w WHERE w.unit_id = u.id) AS wo,
+                 (SELECT count(*)::int FROM meter_readings r WHERE r.unit_id = u.id)
+                 + (SELECT count(*)::int FROM meter_panel_changes c WHERE c.unit_id = u.id)
+                   AS meter
+            FROM units u WHERE u.id = ${m.unitId} AND u.tenant_id = ${m.tenantId}
+        `
+      )[0];
+      if (!unit) throw tidakDitemukan('Unit', m.unitId);
+
+      if (unit.wo > 0) {
+        throw aturanBisnis(
+          `${unit.nama} sudah dipakai ${unit.wo} WO dan tidak bisa dihapus. `
+          + 'Hilangkan dari daftar dengan menghapus centang Aktif — riwayat WO-nya '
+          + 'tetap utuh.',
+        );
+      }
+      /* Angka meter hidup lebih lama dari WO-nya: ia dipakai menghitung umur ban
+         dan MTBF, dan sengaja tidak ikut terhapus saat WO dibatalkan. Unit yang
+         punya riwayat meter karena itu bukan unit yang "belum pernah dipakai". */
+      if (unit.meter > 0) {
+        throw aturanBisnis(
+          `${unit.nama} punya ${unit.meter} catatan meter dan tidak bisa dihapus — `
+          + 'angka itu dipakai menghitung umur ban dan MTBF. Nonaktifkan saja.',
+        );
+      }
+
+      await tx`DELETE FROM units WHERE id = ${m.unitId}`;
+      await catat(tx, m.tenantId, m.actorId, 'admin_unit_hapus', 'unit', String(m.unitId),
+        { kode: unit.kode, nama: unit.nama });
+      return { unitId: m.unitId, kode: unit.kode };
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // FAKTOR, TARIF, SETELAN
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -565,13 +829,30 @@ export interface BekalAdmin {
     unitModel: string | null; komponen: string | null; subKomponen: string | null;
     /** WO berstatus approved yang memakai job ini — dasar tombol "terapkan surut". */
     woApproved: number;
+    /** WO apa pun statusnya. Nol = boleh dihapus. */
+    woTotal: number;
   }[];
   /** Pilihan cascade yang SUDAH ADA, supaya job baru menempel di cabang yang benar. */
   cabang: { section: string; model: string; komponen: string; subKomponen: string }[];
+  unit: {
+    id: number; kode: string; nama: string;
+    /** Model alat — menentukan joblist yang ditawarkan untuknya. */
+    unitModel: string | null;
+    /** Section yang boleh memilihnya. Kosong = semua section. */
+    section: string[];
+    global: boolean; virtual: boolean;
+    unitFactor: number; odometer: string | null;
+    brand: string | null; modelType: string | null;
+    mtbfEligible: boolean; aktif: boolean;
+    woTotal: number; meterTotal: number;
+  }[];
+  /** Model unit yang ada, per section — pilihan untuk formulir unit. */
+  model: { code: string; section: string; job: number }[];
 }
 
 export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
-  const [orang, tarif, faktor, setelan, section, job, cabang] = await Promise.all([
+  const [orang, tarif, faktor, setelan, section, job, cabang, unit, model] =
+    await Promise.all([
     sql<Record<string, never>[]>`
       SELECT m.id, m.mechanic_code::text AS kode, m.name AS nama, m.email::text AS email,
              m.role::text AS peran, m.pay_rate_id, m.grade, m.is_active AS aktif,
@@ -619,15 +900,17 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
              um.code::text  AS unit_model,
              c.name::text   AS komponen,
              sc.name::text  AS sub_komponen,
-             coalesce(wo.n, 0) AS wo_approved
+             coalesce(wo.disetujui, 0) AS wo_approved,
+             coalesce(wo.semua, 0) AS wo_total
         FROM jobs j
         JOIN sections s ON s.id = j.section_id
         LEFT JOIN unit_models        um ON um.id = j.unit_model_id
         LEFT JOIN job_sub_components sc ON sc.id = j.sub_component_id
         LEFT JOIN job_components     c  ON c.id  = sc.component_id
         LEFT JOIN LATERAL (
-          SELECT count(*)::int AS n FROM work_orders w
-           WHERE w.job_id = j.id AND w.status = 'approved'
+          SELECT count(*) FILTER (WHERE w.status = 'approved')::int AS disetujui,
+                 count(*)::int AS semua
+            FROM work_orders w WHERE w.job_id = j.id
         ) wo ON true
        WHERE j.tenant_id = ${tenantId}
        ORDER BY s.code, j.job_code
@@ -645,6 +928,38 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
         JOIN job_components     c  ON c.id  = sc.component_id
        WHERE j.tenant_id = ${tenantId}
        ORDER BY 1, 2, 3, 4
+    `,
+    /* Unit: daftar section datang dari `unit_sections`, BUKAN dari section
+       model. Keduanya menjawab pertanyaan yang berbeda — lihat simpanUnit(). */
+    sql<Record<string, never>[]>`
+      SELECT u.id, u.unit_code::text AS kode, u.unit_name AS nama,
+             um.code::text AS unit_model,
+             coalesce(sc.daftar, ARRAY[]::text[]) AS section,
+             u.is_global, u.is_virtual, u.unit_factor, u.odometer::text,
+             u.brand, u.model_type, u.mtbf_eligible, u.is_active AS aktif,
+             coalesce(p.wo, 0) AS wo_total, coalesce(p.meter, 0) AS meter_total
+        FROM units u
+        LEFT JOIN unit_models um ON um.id = u.unit_model_id
+        LEFT JOIN LATERAL (
+          SELECT array_agg(s.code::text ORDER BY s.code) AS daftar
+            FROM unit_sections us JOIN sections s ON s.id = us.section_id
+           WHERE us.unit_id = u.id
+        ) sc ON true
+        LEFT JOIN LATERAL (
+          SELECT (SELECT count(*)::int FROM work_orders w WHERE w.unit_id = u.id) AS wo,
+                 (SELECT count(*)::int FROM meter_readings r WHERE r.unit_id = u.id)
+                 + (SELECT count(*)::int FROM meter_panel_changes c WHERE c.unit_id = u.id)
+                   AS meter
+        ) p ON true
+       WHERE u.tenant_id = ${tenantId}
+       ORDER BY u.unit_name
+    `,
+    sql<Record<string, never>[]>`
+      SELECT um.code::text, s.code::text AS section,
+             (SELECT count(*)::int FROM jobs j WHERE j.unit_model_id = um.id) AS job
+        FROM unit_models um JOIN sections s ON s.id = um.section_id
+       WHERE um.tenant_id = ${tenantId} AND um.is_active
+       ORDER BY s.code, um.code
     `,
   ]);
 
@@ -682,11 +997,25 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
       unitModel: (j['unit_model'] as string) ?? null,
       komponen: (j['komponen'] as string) ?? null,
       subKomponen: (j['sub_komponen'] as string) ?? null,
-      woApproved: n(j['wo_approved']),
+      woApproved: n(j['wo_approved']), woTotal: n(j['wo_total']),
     })),
     cabang: (cabang as unknown as Record<string, unknown>[]).map((c) => ({
       section: String(c['section']), model: String(c['model']),
       komponen: String(c['komponen']), subKomponen: String(c['sub_komponen']),
+    })),
+    unit: (unit as unknown as Record<string, unknown>[]).map((u) => ({
+      id: n(u['id']), kode: String(u['kode']), nama: String(u['nama']),
+      unitModel: (u['unit_model'] as string) ?? null,
+      section: (u['section'] as string[]) ?? [],
+      global: Boolean(u['is_global']), virtual: Boolean(u['is_virtual']),
+      unitFactor: n(u['unit_factor']), odometer: (u['odometer'] as string) ?? null,
+      brand: (u['brand'] as string) ?? null,
+      modelType: (u['model_type'] as string) ?? null,
+      mtbfEligible: Boolean(u['mtbf_eligible']), aktif: Boolean(u['aktif']),
+      woTotal: n(u['wo_total']), meterTotal: n(u['meter_total']),
+    })),
+    model: (model as unknown as Record<string, unknown>[]).map((m) => ({
+      code: String(m['code']), section: String(m['section']), job: n(m['job']),
     })),
   };
 }

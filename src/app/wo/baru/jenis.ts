@@ -5,7 +5,33 @@ export interface Section {
 }
 export interface Unit {
   id: number; unit_code: string; unit_name: string;
-  unit_model: string | null; section: string | null; unit_factor: string | null;
+  /** Model alat — menentukan JOB mana yang ditawarkan untuknya (section cascade). */
+  unit_model: string | null;
+  /** Section yang boleh MEMILIHnya. Kosong = semua section. Bukan section model. */
+  sections: string[];
+  /** Unit sewa: boleh dipilih, tapi disembunyikan sampai diminta. */
+  is_global: boolean;
+  /** Bukan unit sungguhan — penanda jalan pintas ke job manual. */
+  is_virtual: boolean;
+  unit_factor: string | null;
+}
+
+/**
+ * Empat laci dropdown unit, persis seperti KMB V2 (`WorkOrder.html:501-535`).
+ *
+ * Urutan pemeriksaannya penting dan bukan selera: `others` diperiksa lebih dulu,
+ * lalu `global`, baru kecocokan section. Unit sewa yang kebetulan ber-scope
+ * field TETAP masuk laci global — kalau tidak, 16 unit sewa berdiri sejajar
+ * dengan alat pegangan harian di daftar yang sama.
+ */
+export type LaciUnit = 'utama' | 'lain' | 'global' | 'semu';
+
+export function laciUntuk(u: Unit, sectionAktif: string): LaciUnit {
+  if (u.is_virtual) return 'semu';
+  if (u.is_global) return 'global';
+  // Tanpa section sama sekali = milik semua section (baris yang belum diisi).
+  if (u.sections.length === 0 || u.sections.includes(sectionAktif)) return 'utama';
+  return 'lain';
 }
 export interface Job {
   id: number; job_code: string; section: string; unit_model: string | null;

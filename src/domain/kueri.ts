@@ -127,11 +127,31 @@ export async function katalog(aku: Identitas) {
     sql`SELECT code::text, name, picker_style::text, requires_unit
           FROM sections WHERE tenant_id = ${aku.tenantId} AND is_active
          ORDER BY sort_order`,
+    /**
+     * DUA hubungan yang berbeda, dan dulu tertukar.
+     *
+     *   `sections`   — section MANA yang boleh memilih unit ini (`unit_sections`,
+     *                  setara `unit_scope` V2). Boleh lebih dari satu.
+     *   `unit_model` — model alatnya, yang menentukan JOB mana yang ditawarkan
+     *                  untuknya di section cascade.
+     *
+     * Sampai 16 Sep 2026 baris ini mengambil `s.code` dari section MODEL dan
+     * layar memakainya untuk menyaring dropdown unit. Model sebuah Hauler milik
+     * field — jadi tyreman, yang mengurus ban 35 Hauler, melihat 6 unit dari 50
+     * miliknya. Yang 44 hanya muncul kalau ia menekan "Tampilkan semua unit",
+     * dan tak ada yang memberi tahu bahwa ia harus menekannya.
+     */
     sql`SELECT u.id, u.unit_code::text, u.unit_name, u.unit_factor,
-               um.code::text AS unit_model, s.code::text AS section
+               um.code::text AS unit_model,
+               u.is_global, u.is_virtual,
+               coalesce(sc.daftar, ARRAY[]::text[]) AS sections
           FROM units u
           LEFT JOIN unit_models um ON um.id = u.unit_model_id
-          LEFT JOIN sections   s  ON s.id  = um.section_id
+          LEFT JOIN LATERAL (
+            SELECT array_agg(s.code::text ORDER BY s.code) AS daftar
+              FROM unit_sections us JOIN sections s ON s.id = us.section_id
+             WHERE us.unit_id = u.id
+          ) sc ON true
          WHERE u.tenant_id = ${aku.tenantId} AND u.is_active
          ORDER BY u.unit_name`,
     sql`SELECT j.id, j.job_code::text,
