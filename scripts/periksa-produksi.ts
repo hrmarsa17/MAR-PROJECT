@@ -76,16 +76,30 @@ await sql.begin(async (tx) => {
 
   /* base_points 0 adalah pekerjaan yang dikerjakan tapi tidak dibayar. Ia sah
      secara skema, jadi tidak ada yang menahannya — hanya pembacaan seperti ini
-     yang menemukannya sebelum seseorang mengerjakannya sebulan penuh. */
-  const nol = await tx<{ kode: string; desc: string }[]>`
-    SELECT j.job_code::text AS kode, j.job_description AS desc
+     yang menemukannya sebelum seseorang mengerjakannya sebulan penuh.
+
+     KECUALI penanda job manual ("Others - Custom Job"). Baris itu memang
+     berpoin nol dan memang benar begitu: WO manual membawa
+     `manual_base_points` dan `manual_target_hours` sendiri di baris WO-nya
+     (workOrder.ts:140), jadi angka di katalognya tidak pernah dibaca. Ia
+     disebutkan terpisah, bukan disembunyikan — peringatan yang menyala
+     selamanya pada baris yang sudah benar mengajari orang mengabaikan
+     peringatan. */
+  const nol = await tx<{ kode: string; desc: string; penanda: boolean }[]>`
+    SELECT j.job_code::text AS kode, j.job_description AS desc,
+           (j.job_code::text ILIKE '%OTHERS%'
+             OR j.job_description ILIKE 'others%') AS penanda
       FROM jobs j WHERE j.is_active AND (j.base_points = 0 OR j.plan_hours = 0)
-     ORDER BY j.job_code LIMIT 10`;
-  if (nol.length > 0) {
-    ragu('job aktif berpoin/berjam NOL', nol.length, 'dikerjakan tapi tidak dibayar');
-    for (const r of nol) console.log(`         • ${r.kode}  ${r.desc}`);
+     ORDER BY j.job_code LIMIT 20`;
+  const sungguhan = nol.filter((r) => !r.penanda);
+  if (sungguhan.length > 0) {
+    ragu('job aktif berpoin/berjam NOL', sungguhan.length, 'dikerjakan tapi tidak dibayar');
+    for (const r of sungguhan) console.log(`         • ${r.kode}  ${r.desc}`);
   } else {
     baris('job aktif berpoin/berjam nol', 0);
+  }
+  for (const r of nol.filter((x) => x.penanda)) {
+    baris(`  ${r.kode}`, '', 'penanda job manual — poin dari baris WO, bukan katalog');
   }
 
   /* ── Unit ───────────────────────────────────────────────────────────────
