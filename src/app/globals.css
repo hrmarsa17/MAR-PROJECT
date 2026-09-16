@@ -1628,6 +1628,83 @@ select, textarea {
 /* Tombol "Buka →" di kartu Monitoring. */
 .mekanik-buka { display: inline-block; margin-top: 8px; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   TRANSFER WO — angka dari `Approval.html:469-539`
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Tombol Transfer di kaki modal kerja: GARIS LUAR, bukan oranye pekat.
+   Sumbernya menulis alasannya sendiri (`MechanicDashboard.html:675-678`) —
+   tombol sekunder ini tidak boleh terlihat lebih menonjol dari yang primer,
+   karena yang primer (Kirim) adalah jalan biasa dan transfer pengecualiannya. */
+.btn-transfer {
+  background: #fff; color: #C05621; border: 1px solid #F6AD55;
+}
+.btn-transfer:hover:not(:disabled) { background: #FFFAF0; border-color: #DD6B20; }
+
+.tr-peminta { font-size: 0.85rem; color: #4B5563; margin: 0 0 0.35rem; }
+
+/* Catatan mekanik: bergaris tepi kiri, bukan berbingkai penuh. Ia kutipan dari
+   orang lain, bukan peringatan sistem. */
+.tr-catatan {
+  margin: 0.5rem 0 0.75rem;
+  background: #FFFBEB; border-left: 3px solid #F59E0B;
+  padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Kotak dampak jam. Berdiri DI ATAS tombol, dan itu keputusan bentuk yang
+   disengaja: menekan Setujui menambah jam kerja yang dibayar, menekan Tolak
+   menghanguskannya. Angkanya harus sudah terbaca sebelum jari bergerak. */
+.tr-dampak {
+  background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px;
+  padding: 0.6rem 0.8rem; margin-bottom: 0.75rem;
+}
+.tr-dampak-judul {
+  font-size: 0.78rem; color: #0369A1; font-weight: 700; margin-bottom: 0.2rem;
+  letter-spacing: 0.03em;
+}
+.tr-dampak-isi { font-size: 0.9rem; color: #0C4A6E; line-height: 1.5; }
+.tr-sesudah { color: #B45309; }
+.tr-dampak-kaki { font-size: 0.78rem; color: #0369A1; margin-top: 0.25rem; }
+
+.tr-tim { font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 0.4rem; }
+.tr-label { font-size: 0.82rem; }
+
+/* Daftar penerima: kotak centang di dalam baki bergulir. Sumbernya memakai
+   `select multiple` + "Ctrl / Cmd + klik" — cara memilih yang tidak ada di
+   layar sentuh, dan yang membuat pilihan kedua menghapus yang pertama kalau
+   tombolnya lupa ditahan. */
+.tr-penerima {
+  max-height: 172px; overflow-y: auto;
+  border: 1px solid var(--input-border); border-radius: var(--radius-sm);
+  background: var(--card); padding: 0.25rem;
+}
+.tr-penerima-baris {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.375rem 0.5rem; border-radius: 6px;
+  font-size: 0.85rem; cursor: pointer;
+}
+.tr-penerima-baris:hover { background: var(--bg-secondary); }
+.tr-penerima-baris input { width: auto; min-height: 0; margin: 0; }
+.tr-penerima-kode {
+  margin-left: auto; font-size: 0.6875rem; color: var(--text-disabled);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pesan shift sebelumnya di kartu WO mekanik. Senada dengan catatan di kartu
+   approval — keduanya kutipan dari orang, bukan peringatan sistem. */
+.tr-pesan {
+  background: #FFFBEB; border-left: 3px solid #F59E0B;
+  padding: 6px 9px; border-radius: 6px;
+  font-size: 0.6875rem; line-height: 1.45; color: #92400E;
+  margin-bottom: 8px;
+}
+
+/* Bintang medan wajib. Dipakai sejak modal Override tapi tidak pernah punya
+   aturan sendiri, jadi selama ini ia mewarisi warna teks biasa dan tidak
+   menandai apa pun. Angkanya dari `Approval.html:520`. */
+.wajib { color: #DC2626; font-weight: 700; }
+
 @media (max-width: 768px) {
   .layar-mekanik .wo-grid, .grup-body { grid-template-columns: minmax(0, 1fr); }
   .wo-details, .info-grid { grid-template-columns: minmax(0, 1fr); }

@@ -353,7 +353,8 @@ Kalimat ini identik di `kirimLangsung` (`:826`). **Bawa apa adanya.**
 - [x] Live timer per WO di `localStorage`, jeda otomatis saat WO lain dimulai
 - [x] Picker 24 jam sendiri (jangan `datetime-local`) — `PilihWaktu24.tsx`
 - [x] `📮 Kirim` langsung + konfirmasi menyebut durasi
-- [ ] Transfer WO ke shift berikutnya (`work_order_transfers` sudah ada di skema)
+- [x] Transfer WO ke shift berikutnya — `src/domain/transfer.ts`, tab keputusan
+      di `src/app/approval/KartuTransferTampil.tsx`
 - [x] Pesan putus-sambungan apa adanya — jangan disederhanakan jadi “gagal”
 - [ ] Detail Tyre di dalam modal → `03b-DETAIL-TYRE.md`
 
@@ -367,6 +368,10 @@ Kalimat ini identik di `kirimLangsung` (`:826`). **Bawa apa adanya.**
 | tirai modal | diklik → menutup (`:514`) | tidak menutup | isian jam manual di dalamnya hilang kalau kursor meleset |
 | `.wo-grid` / `.wo-card` | nama kelas sama dengan Approval, angka berbeda | dibungkus `.layar-mekanik` | 340px yang bocor ke Approval adalah sebab tombol Reject melar, 14 Sep 2026 |
 | tombol “Buka →” | hanya untuk mekanik yang punya token (ia membuka URL bertoken) | untuk semua mekanik (`?as=` pakai sesi approver) | mekanik yang belum punya token justru yang paling butuh dibantu dari layar ini |
+| permintaan transfer | **8 kolom** ditempel ke baris WO, dibersihkan satu per satu saat keputusan turun — dua sengaja tidak | satu baris `work_order_transfers` + tabel penerima | riwayatnya terbaca; keputusan tidak menghapus apa pun |
+| pemilih penerima | `select multiple size=4` + “Ctrl / Cmd + klik” (`Approval.html:521-526`) | daftar kotak centang | Ctrl-klik tidak ada di layar sentuh, dan klik kedua tanpa menahan Ctrl menghapus pilihan pertama |
+| alasan menolak transfer | `prompt()` (`Approval.html:1115`) | modal alasan yang sama dengan Reject/Kembalikan | `prompt` tidak bisa menampilkan berapa jam yang akan hangus |
+| kunci saat approve | `LockService` + baca ulang segar (`ApprovalService.js:1794-1818`) | `rebutStatus` di transaksi yang sama | UPDATE bersyarat sudah menjadi kuncinya; tak ada kunci yang bisa tertinggal menggantung |
 
 ### Catatan skema
 

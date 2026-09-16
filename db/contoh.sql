@@ -61,6 +61,19 @@ BEGIN
       INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[2]);
     END IF;
 
+    -- WO berstatus pending_transfer WAJIB punya baris permintaannya. Tanpa itu
+    -- ia terhitung di tab Transfer tapi tidak punya kartu untuk digambar —
+    -- angkanya berbunyi "2" di atas daftar kosong, dan tak ada seorang pun bisa
+    -- memutuskannya. Data contoh yang tidak koheren melahirkan laporan bug
+    -- yang sebenarnya tentang data contohnya sendiri.
+    IF v_status = 'pending_transfer' THEN
+      INSERT INTO work_order_transfers
+        (work_order_id, requested_by, session_start, session_stop, session_hours, note)
+      VALUES (v_wo, v_mek[1],
+              now() - interval '5 hours', now() - interval '2 hours', 3.0,
+              'CONTOH baut roda kiri belum kencang, tinggal torsi ulang');
+    END IF;
+
     -- WO yang sudah approved perlu poin & snapshot supaya layar tidak berbohong
     IF v_status = 'approved' THEN
       UPDATE work_orders SET final_points = 17.6, approved_l2_by = v_l2,
@@ -131,6 +144,38 @@ BEGIN
        WHERE t.work_order_id = v_wo;
     END IF;
   END LOOP;
+
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- WO YANG SUDAH DIOPER — beserta pesan dari shift sebelumnya
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- Hasil AKHIR transfer, bukan permintaannya: WO kembali dikerjakan, jam shift
+  -- sebelumnya sudah masuk partial_hours, dan pesan mekanik pertama menempel di
+  -- kartu penerimanya. Tanpa baris ini, satu-satunya cara melihat bentuk itu
+  -- adalah menjalankan seluruh alur transfer dengan tangan.
+  INSERT INTO work_orders (
+    tenant_id, wo_number, section_id, job_id, unit_id, status, created_by,
+    work_condition, location, keterangan, partial_hours,
+    mtbf_redo_status, created_at)
+  VALUES (
+    v_tenant, next_wo_number(v_tenant, current_date), v_section, v_job, v_unit,
+    'pending_mechanic_work', v_l1, 'normal', 'Lapangan',
+    'Lanjutan shift malam', 3.0, 'first_time', now() - interval '14 hours')
+  RETURNING id INTO v_wo;
+
+  -- Penerimanya mekanik KEDUA; yang pertama tetap di tim dan tetap dibayar.
+  INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+  INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[2]);
+
+  INSERT INTO work_order_transfers
+    (work_order_id, requested_by, session_start, session_stop, session_hours,
+     note, decided_by, decided_at, decision)
+  VALUES (v_wo, v_mek[1],
+          now() - interval '13 hours', now() - interval '10 hours', 3.0,
+          'CONTOH baut roda kiri belum kencang, tinggal torsi ulang',
+          v_l1, now() - interval '9 hours', 'approve');
+
+  INSERT INTO work_order_transfer_recipients (transfer_id, mechanic_id)
+  VALUES ((SELECT id FROM work_order_transfers WHERE work_order_id = v_wo), v_mek[2]);
 
   -- Kartu insiden: approved TAPI safety_incident, sehingga poinnya nol. Kartunya
   -- bertepi merah dan statusnya berbunyi "⚠️ Insiden" — bentuk yang harus bisa

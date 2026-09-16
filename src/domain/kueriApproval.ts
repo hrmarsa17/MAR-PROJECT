@@ -194,7 +194,15 @@ export async function hitunganTab(aku: Identitas): Promise<HitunganTab> {
         count(*) FILTER (WHERE w.status::text = ${tahapSaya}) AS menunggu,
         count(*) FILTER (WHERE w.status IN ('pending_mechanic_work','in_progress')) AS aktif,
         count(*) FILTER (WHERE w.status = 'approved') AS approved,
-        count(*) FILTER (WHERE w.status = 'pending_transfer') AS transfer,
+        -- Predikat yang SAMA PERSIS dengan daftar kartunya (kueriTransfer.ts).
+        -- Tanpa syarat kedua, WO berstatus pending_transfer yang tak punya baris
+        -- permintaan menggantung tetap terhitung di tab — angkanya berbunyi "2"
+        -- di atas daftar kosong. Itu kelas kesalahan yang sama dengan hitungan
+        -- tab mekanik, dan sudah ketahuan sekali.
+        count(*) FILTER (WHERE w.status = 'pending_transfer'
+                           AND EXISTS (SELECT 1 FROM work_order_transfers tr
+                                        WHERE tr.work_order_id = w.id
+                                          AND tr.decision IS NULL)) AS transfer,
         count(*) FILTER (WHERE w.status IN ('rejected','cancelled')) AS ditolak
       FROM work_orders w
       JOIN sections s ON s.id = w.section_id

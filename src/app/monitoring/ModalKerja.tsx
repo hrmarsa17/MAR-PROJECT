@@ -73,6 +73,7 @@ export function ModalKerja({
   const [sibuk, setSibuk] = useState(false);
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const [ringkas, setRingkas] = useState<string | null>(null);
+  const [catatan, setCatatan] = useState('');
   /* Dinaikkan HANYA saat tombol timer ditekan — bukan tiap detik. Lihat
      catatan di PenghitungTimer: gambar ulang per detik membuat picker tanggal
      dan jam tidak bisa dibuka sama sekali. */
@@ -80,9 +81,14 @@ export function ModalKerja({
   const gambarUlang = () => setVersi((n) => n + 1);
   void versi;
 
-  // Lahir sekali per modal, bukan tiap gambar ulang.
+  /* Lahir sekali per modal, bukan tiap gambar ulang. Kirim dan Transfer punya
+     op_id SENDIRI-SENDIRI: keduanya aksi berbeda, dan memakai satu identitas
+     untuk dua maksud berarti yang kedua akan mengembalikan struk yang pertama
+     tanpa pernah dijalankan. */
   const opId = useRef<string>('');
   if (!opId.current) opId.current = crypto.randomUUID();
+  const opIdTransfer = useRef<string>('');
+  if (!opIdTransfer.current) opIdTransfer.current = crypto.randomUUID();
   const st = timerWo(wo.id);
 
   const sesiJam = (() => {
@@ -148,6 +154,76 @@ export function ModalKerja({
     setSelesai('');
     setRingkas(null);
     gambarUlang();
+  }
+
+  /**
+   * TRANSFER — oper pekerjaan ke shift berikutnya.
+   *
+   * Jam MULAI diambil dari picker yang sama dengan Kirim; jam berhentinya
+   * ditetapkan server. Konfirmasinya wajib menyebut bahwa jamnya baru dihitung
+   * kalau L1 menyetujui — kalau ditolak, sesi ini HANGUS. Mekanik yang tidak
+   * tahu itu akan menekan Transfer mengira jamnya sudah aman.
+   */
+  async function transfer() {
+    if (!mulai) {
+      setHasil({
+        baik: false,
+        teks: 'Isi Start Time dulu — jam itu dipakai menghitung sesi kerja Anda.',
+      });
+      return;
+    }
+    if (new Date(mulai).getTime() > Date.now()) {
+      setHasil({ baik: false, teks: 'Start Time tidak boleh melewati jam sekarang.' });
+      return;
+    }
+    if (!confirm(
+      `Oper ${wo.woNumber} ke shift berikutnya?\n\n`
+      + `Jam kerja Anda sejak ${mulai.replace('T', ' ')} dicatat, dan baru dihitung `
+      + 'kalau Planner/PIC Lapangan menyetujui transfernya.\n\n'
+      + 'Kalau transfernya DITOLAK, jam sesi ini hangus.',
+    )) return;
+
+    setSibuk(true);
+    setHasil(null);
+    try {
+      const r = await fetch('/api/perintah', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aksi: 'minta_transfer',
+          op_id: opIdTransfer.current,
+          data: {
+            woId: wo.id,
+            sessionStart: new Date(mulai).toISOString(),
+            ...(catatan.trim() ? { note: catatan.trim() } : {}),
+          },
+        }),
+      });
+      const j = await r.json();
+      if (j.ok) {
+        const h = j.data?.hasil;
+        setHasil({
+          baik: true,
+          teks: h?.sudahDiminta
+            ? `${wo.woNumber}: permintaan transfer sudah tercatat sebelumnya — masih menunggu keputusan.`
+            : `Permintaan transfer terkirim. ${wo.woNumber} · sesi ${durasiJam(h?.sessionHours)}. `
+              + 'Menunggu keputusan Planner/PIC Lapangan.',
+        });
+        router.refresh();
+        return;
+      }
+      setHasil({ baik: false, teks: j.pesan ?? 'Gagal' });
+      if (j.kode === 'KONFLIK_KEADAAN') router.refresh();
+    } catch {
+      setHasil({
+        baik: false,
+        teks: '⚠️ Sambungan terputus sebelum jawaban server sampai. Tindakan Anda '
+          + 'MUNGKIN sudah tersimpan. JANGAN diulangi buta — muat ulang dulu dan '
+          + 'lihat keadaan sebenarnya.',
+      });
+    } finally {
+      setSibuk(false);
+    }
   }
 
   async function kirim() {
@@ -236,6 +312,12 @@ export function ModalKerja({
                   </div>
                 )}
               </div>
+              {wo.catatanTransfer && (
+                <div className="tr-catatan" style={{ marginBottom: 0 }}>
+                  <b>🔁 Pesan dari {wo.catatanTransfer.dari}:</b>{' '}
+                  {wo.catatanTransfer.teks}
+                </div>
+              )}
             </div>
 
             {bolehIsi && (
@@ -301,6 +383,42 @@ export function ModalKerja({
                     sudah tercatat dan ikut dijumlahkan.
                   </p>
                 )}
+
+                {/* TRANSFER WO: catatan untuk mekanik shift berikutnya.
+                    Jam MULAI diambil dari picker di atas; jam berhentinya
+                    ditetapkan server saat permintaan masuk, karena menekan
+                    Transfer berarti berhenti bekerja sekarang. */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor={`catatan-${wo.id}`}>
+                    Catatan bila WO dioper ke shift berikutnya{' '}
+                    <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>
+                      (opsional)
+                    </span>
+                  </label>
+                  <textarea
+                    id={`catatan-${wo.id}`} rows={2} value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)}
+                    placeholder="cth: baut roda kiri belum kencang, tinggal torsi ulang"
+                  />
+                </div>
+
+                {/* TRANSFER WO: catatan untuk mekanik shift berikutnya.
+                    Jam MULAI diambil dari picker di atas — jam berhentinya
+                    ditetapkan server saat permintaan masuk, karena menekan
+                    Transfer artinya berhenti kerja sekarang. */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor={`catatan-${wo.id}`}>
+                    Catatan bila WO dioper ke shift berikutnya{' '}
+                    <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>
+                      (opsional)
+                    </span>
+                  </label>
+                  <textarea
+                    id={`catatan-${wo.id}`} rows={2} value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)}
+                    placeholder="cth: baut roda kiri belum kencang, tinggal torsi ulang"
+                  />
+                </div>
               </div>
             )}
 
@@ -320,9 +438,17 @@ export function ModalKerja({
               {hasil?.baik ? 'Tutup' : 'Cancel'}
             </button>
             {bolehIsi && !hasil?.baik && (
-              <button className="btn-primary" disabled={sibuk || !waktuSah} onClick={kirim}>
-                {sibuk ? 'Mengirim…' : '📮 Kirim'}
-              </button>
+              <>
+                {/* Garis luar, bukan oranye pekat. Sumbernya menulis alasannya:
+                    tombol sekunder ini tidak boleh terlihat lebih menonjol
+                    daripada yang primer (`MechanicDashboard.html:675-678`). */}
+                <button className="btn-transfer" disabled={sibuk} onClick={transfer}>
+                  🔁 Transfer ke Shift Berikutnya
+                </button>
+                <button className="btn-primary" disabled={sibuk || !waktuSah} onClick={kirim}>
+                  {sibuk ? 'Mengirim…' : '📮 Kirim'}
+                </button>
+              </>
             )}
           </div>
         </div>

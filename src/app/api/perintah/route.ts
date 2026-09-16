@@ -4,6 +4,7 @@ import { masukanTidakSah } from '../../../lib/errors.js';
 import { buatWorkOrder } from '../../../domain/workOrder.js';
 import { simpanOverride } from '../../../domain/override.js';
 import { kirimKerja } from '../../../domain/kirimKerja.js';
+import { mintaTransfer, setujuiTransfer, tolakTransfer } from '../../../domain/transfer.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -112,12 +113,31 @@ const SKEMA = {
     endTime: z.string().min(1),
     partCategory: z.enum(['baru', 'repair', 'kanibal']).optional(),
   }),
+  /**
+   * Jam mulai sesi WAJIB — dialah yang menentukan berapa jam akan ditambahkan
+   * ke `partial_hours` bila L1 menyetujui. Tanpa itu permintaan transfer tidak
+   * berarti apa pun bagi uang siapa pun.
+   */
+  minta_transfer: z.object({
+    woId: z.number().int().positive(),
+    sessionStart: z.string().min(1),
+    note: z.string().max(1000).optional(),
+  }),
+  setujui_transfer: z.object({
+    woId: z.number().int().positive(),
+    penerima: z.array(z.number().int().positive()).min(1).max(20),
+  }),
+  tolak_transfer: z.object({
+    woId: z.number().int().positive(),
+    alasan: z.string().min(5).max(1000),
+  }),
 } as const;
 
 const Amplop = z.object({
   aksi: z.enum([
     'buat_wo', 'approve_l1', 'approve_l2', 'batal_wo', 'reject', 'kembalikan',
     'save_override', 'kirim_kerja',
+    'minta_transfer', 'setujui_transfer', 'tolak_transfer',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -179,6 +199,18 @@ export async function POST(req: Request): Promise<Response> {
       case 'kirim_kerja': {
         const d = isi.data as z.infer<typeof SKEMA.kirim_kerja>;
         return jawab(await kirimKerja({ ...umum, ...d }));
+      }
+      case 'minta_transfer': {
+        const d = isi.data as z.infer<typeof SKEMA.minta_transfer>;
+        return jawab(await mintaTransfer({ ...umum, ...d }));
+      }
+      case 'setujui_transfer': {
+        const d = isi.data as z.infer<typeof SKEMA.setujui_transfer>;
+        return jawab(await setujuiTransfer({ ...umum, ...d }));
+      }
+      case 'tolak_transfer': {
+        const d = isi.data as z.infer<typeof SKEMA.tolak_transfer>;
+        return jawab(await tolakTransfer({ ...umum, ...d }));
       }
     }
   } catch (e) {

@@ -53,6 +53,16 @@ export interface KartuWoMekanik {
   tim: AnggotaTim[];
   /** WO yang menunggu keputusan transfer tidak boleh dikirim. Lihat §catatan. */
   bolehKirim: boolean;
+  /**
+   * Pesan dari mekanik shift sebelumnya, dari transfer yang SUDAH DISETUJUI.
+   *
+   * Inilah seluruh guna medan catatan itu: "baut roda kiri belum kencang,
+   * tinggal torsi ulang". Kalau ia hanya terbaca approver dan tidak pernah
+   * sampai ke orang yang melanjutkan pekerjaannya, fiturnya ada tapi tidak
+   * melakukan apa-apa. KMB V2 menjaganya dengan sengaja TIDAK membersihkan
+   * kolom transfer_note saat approve (`ApprovalService.js:1826-1827`).
+   */
+  catatanTransfer: { teks: string; dari: string } | null;
 }
 
 export interface HitunganTabMekanik {
@@ -155,6 +165,8 @@ interface BarisMentah {
   grup_total: string | null;
   grup_selesai: string | null;
   tim: { mechanic_id: number; nama: string }[] | null;
+  catatan_transfer: string | null;
+  catatan_dari: string | null;
 }
 
 export async function woMekanik(
@@ -229,7 +241,13 @@ export async function woMekanik(
       b.grup_total,
       b.grup_selesai,
 
-      tim.daftar AS tim
+      tim.daftar AS tim,
+      -- Pesan dari shift sebelumnya, hanya dari transfer yang SUDAH disetujui.
+      -- Permintaan yang masih menggantung belum tentu jadi, dan yang ditolak
+      -- tidak pernah jadi — menampilkan keduanya berarti menyuruh mekanik
+      -- meneruskan pekerjaan yang belum diserahkan kepadanya.
+      pesan.note AS catatan_transfer,
+      pesan.nama AS catatan_dari
 
     FROM bergrup b
     LEFT JOIN jobs j                ON j.id  = b.job_id
@@ -243,6 +261,16 @@ export async function woMekanik(
         JOIN mechanics m ON m.id = t2.mechanic_id
        WHERE t2.work_order_id = b.id
     ) tim ON true
+    LEFT JOIN LATERAL (
+      SELECT tr.note, m.name AS nama
+        FROM work_order_transfers tr
+        JOIN mechanics m ON m.id = tr.requested_by
+       WHERE tr.work_order_id = b.id
+         AND tr.decision = 'approve'
+         AND tr.note IS NOT NULL
+       ORDER BY tr.decided_at DESC
+       LIMIT 1
+    ) pesan ON true
 
     WHERE b.status_group = ${tab}
     ORDER BY b.created_at DESC
@@ -289,6 +317,9 @@ export async function woMekanik(
          tombol itu dijamin gagal. Tombol yang pasti gagal lebih buruk daripada
          tombol yang mati dengan keterangan. */
       bolehKirim: r.status === 'pending_mechanic_work' || r.status === 'in_progress',
+      catatanTransfer: r.catatan_transfer
+        ? { teks: r.catatan_transfer, dari: r.catatan_dari ?? '—' }
+        : null,
     };
   });
 }

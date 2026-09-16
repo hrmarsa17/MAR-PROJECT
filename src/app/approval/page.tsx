@@ -4,6 +4,8 @@ import {
   hitunganTab, kartuApproval, type TabApproval,
 } from '../../domain/kueriApproval.js';
 import { KartuApprovalTampil } from './KartuApprovalTampil.js';
+import { calonPenerima, kartuTransfer } from '../../domain/kueriTransfer.js';
+import { KartuTransferTampil } from './KartuTransferTampil.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,13 +43,19 @@ export default async function Approval({
   const tab = (TAB.find((t) => t.kunci === sp.tab)?.kunci ?? 'menunggu') as TabApproval;
   const semua = sp.semua === '1';
 
-  const [hitung, kartu] = await Promise.all([
+  /* Tab Transfer punya bacaan SENDIRI, bukan kartu approval biasa. Yang
+     dibutuhkan approver untuk memutuskan transfer — jam sesi, jam tercatat
+     sekarang, catatan mekanik, dan daftar calon penerima — tak satu pun ada di
+     kartu approval, dan tanpa angka-angka itu tombolnya cuma tebakan. */
+  const [hitung, kartu, transfer, penerima] = await Promise.all([
     hitunganTab(aku),
-    kartuApproval(aku, tab, semua ? 500 : BATAS_KARTU),
+    tab === 'transfer' ? Promise.resolve([]) : kartuApproval(aku, tab, semua ? 500 : BATAS_KARTU),
+    tab === 'transfer' ? kartuTransfer(aku) : Promise.resolve([]),
+    tab === 'transfer' ? calonPenerima(aku) : Promise.resolve([]),
   ]);
 
   const total = hitung[tab];
-  const adaSisa = !semua && total > kartu.length;
+  const adaSisa = tab !== 'transfer' && !semua && total > kartu.length;
 
   return (
     <div className="container">
@@ -93,7 +101,19 @@ export default async function Approval({
         </div>
       )}
 
-      {kartu.length === 0 ? (
+      {tab === 'transfer' ? (
+        transfer.length === 0 ? (
+          <div className="kosong">
+            ✅ Tidak ada permintaan transfer yang menunggu keputusan.
+          </div>
+        ) : (
+          <div className="wo-grid">
+            {transfer.map((t) => (
+              <KartuTransferTampil key={t.transferId} kartu={t} mekanik={penerima} />
+            ))}
+          </div>
+        )
+      ) : kartu.length === 0 ? (
         <div className="kosong">
           {tab === 'menunggu' ? 'Antrean bersih — tidak ada yang menunggu.' : 'Tidak ada data.'}
         </div>

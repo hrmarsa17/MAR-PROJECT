@@ -235,6 +235,15 @@ function Kartu({
         </div>
       )}
 
+      {/* Pesan dari mekanik shift sebelumnya. Di KARTU, bukan hanya di modal:
+          mekanik yang menekan "📮 Kirim" langsung tidak pernah membuka modal,
+          dan pesan yang cuma ada di sana tidak akan pernah ia baca. */}
+      {wo.catatanTransfer && (
+        <div className="tr-pesan">
+          🔁 <b>{wo.catatanTransfer.dari}</b>: {wo.catatanTransfer.teks}
+        </div>
+      )}
+
       <div className="wo-component">{wo.jobNama ?? 'Unknown Component'}</div>
 
       <div className="wo-details">
