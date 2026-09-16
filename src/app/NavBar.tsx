@@ -45,9 +45,26 @@ const LENCANA: Record<string, { teks: string; kelas: string } | null> = {
   superintendent: { teks: 'MANAGER', kelas: 'badge badge-purple' },
 };
 
+/**
+ * ── DUA PINTU MASUK, SATU APLIKASI ──────────────────────────────────────────
+ *
+ * `/lapangan` adalah pintu kedua: manifest-nya sendiri, ikon sendiri di layar
+ * depan HP, dan navbar yang hanya berisi pekerjaan operasional. Dipasang dari
+ * sana, HP mendapat aplikasi yang terasa terpisah — persis bentuk yang dikenal
+ * orang lapangan dari KMB V2, yang memang punya dua alamat.
+ *
+ * Bedanya dengan V2: di sana kedua pintu itu DUA KODE. Layar Create WO ditulis
+ * sekali di `WorkOrder.html` dan sekali lagi di PWA-nya, dan tiap perbaikan
+ * harus dikerjakan dua kali — yang satu selalu tertinggal. Di sini yang berbeda
+ * hanya navbar dan alamatnya; layarnya komponen yang sama persis.
+ */
+const DI_LAPANGAN = (path: string) => path === '/lapangan' || path.startsWith('/lapangan/');
+
 export function NavBar({ aku }: { aku: AksesMenu }) {
   const path = usePathname();
   const approver = aku.peran === 'supervisor' || aku.peran === 'superintendent';
+
+  if (DI_LAPANGAN(path)) return <NavLapangan aku={aku} path={path} approver={approver} />;
 
   /**
    * ── TIGA PERGESERAN DARI URUTAN V2, ATAS PERMINTAAN GABRIEL 16 SEP 2026 ────
@@ -95,6 +112,57 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
                 {m.label}
               </Link>
             ))}
+        </div>
+
+        <div className="nav-user">
+          {LENCANA[aku.peran] && (
+            <span className={LENCANA[aku.peran]!.kelas}>{LENCANA[aku.peran]!.teks}</span>
+          )}
+          <span className="user-email">{aku.nama}</span>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/**
+ * NAVBAR LAPANGAN — hanya yang dikerjakan di lapangan.
+ *
+ * Empat menu, dan tidak lebih. Reports, kedua dashboard, dan Admin sengaja
+ * tidak ada di sini: tak satu pun bisa dikerjakan sambil berdiri di sebelah
+ * unit, dan tiap menu tambahan adalah satu kemungkinan lagi untuk salah tekan
+ * dengan tangan yang kotor oli di layar yang kena matahari.
+ *
+ * "Antrean" berdiri sebagai menu SENDIRI, bukan disembunyikan di dalam sesuatu.
+ * Di mode luring ia jawaban atas satu-satunya pertanyaan yang paling sering
+ * ditanyakan orang lapangan — "kiriman saya sudah masuk atau belum?" — dan di
+ * KMB V2 pertanyaan itu dijawab dengan menelepon kantor.
+ */
+function NavLapangan({ aku, path, approver }: {
+  aku: AksesMenu; path: string; approver: boolean;
+}) {
+  const menu: { href: string; label: string; tampil: boolean }[] = [
+    { href: '/lapangan/wo/baru', label: 'Buat WO', tampil: true },
+    { href: '/lapangan/monitoring', label: 'Kerja Saya', tampil: true },
+    { href: '/lapangan/approval', label: 'Approval', tampil: approver },
+    { href: '/lapangan/antrean', label: 'Antrean', tampil: true },
+  ];
+
+  return (
+    <nav className="navbar navbar-lapangan">
+      <div className="navbar-inner">
+        <span className="nav-brand">⚙️ MAR Lapangan</span>
+
+        <div className="nav-links">
+          {menu.filter((m) => m.tampil).map((m) => (
+            <Link
+              key={m.href}
+              href={m.href}
+              className={`nav-link${path === m.href || path.startsWith(m.href + '/') ? ' active' : ''}`}
+            >
+              {m.label}
+            </Link>
+          ))}
         </div>
 
         <div className="nav-user">

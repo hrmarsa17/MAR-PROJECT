@@ -50,7 +50,12 @@ const DISIMPAN = new Set(['assigned', 'pending_approval']);
 
 type Simpanan = Record<string, Muatan>;
 
-export function LayarMekanik({ as, tab }: { as: number | null; tab: string }) {
+export function LayarMekanik({ as, tab, dasar = '' }: {
+  as: number | null;
+  tab: string;
+  /** Awalan rute. '' untuk pintu utama, '/lapangan' untuk pintu lapangan. */
+  dasar?: string;
+}) {
   const [data, setData] = useState<Muatan | null>(null);
   const [dariSimpanan, setDariSimpanan] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
@@ -118,8 +123,12 @@ export function LayarMekanik({ as, tab }: { as: number | null; tab: string }) {
   }
   if (!data) return <div className="kosong">Memuat…</div>;
 
+  /* Tautan HARUS membawa awalannya. Tanpa ini, menekan tab dari dalam aplikasi
+     lapangan yang terpasang akan keluar dari `scope` manifest-nya — dan
+     peramban membuka halaman berikutnya di tab browser biasa, lengkap dengan
+     bilah alamat. Terbaca seperti aplikasinya "keluar sendiri". */
   const tautan = (t: string) =>
-    data.sendiri ? `/monitoring?tab=${t}` : `/monitoring?as=${data.sebagai}&tab=${t}`;
+    data.sendiri ? `${dasar}/monitoring?tab=${t}` : `${dasar}/monitoring?as=${data.sebagai}&tab=${t}`;
 
   return (
     <div className="container layar-mekanik">
@@ -132,7 +141,7 @@ export function LayarMekanik({ as, tab }: { as: number | null; tab: string }) {
               <p>{data.orang?.nama}</p>
             </div>
           </div>
-          <Link href="/monitoring" className="btn-back-to-self">
+          <Link href={`${dasar}/monitoring`} className="btn-back-to-self">
             ← Kembali ke Monitoring
           </Link>
         </div>

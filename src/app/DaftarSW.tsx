@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useDaring } from '../pwa/useDaring.js';
 
 /**
@@ -29,6 +30,13 @@ export function DaftarSW() {
 
 function BarisKeadaan() {
   const { daring, antre, umurHari, dorong, sibuk } = useDaring();
+  const path = usePathname();
+
+  /* Tautan Antrean harus tetap DI DALAM pintu yang sedang dipakai. Dari
+     aplikasi lapangan yang terpasang, `/antrean` berada di luar `scope`
+     manifest-nya — peramban akan membukanya di tab biasa lengkap dengan bilah
+     alamat, dan itu terbaca seperti aplikasinya keluar sendiri. */
+  const keAntrean = path.startsWith('/lapangan') ? '/lapangan/antrean' : '/antrean';
 
   // Semua beres dan tidak ada yang menunggu: jangan tambahi layar orang.
   if (daring && antre === 0) return null;
@@ -52,7 +60,7 @@ function BarisKeadaan() {
               — tertua {Math.floor(umurHari)} hari. Cari sinyal, jangan tunggu lagi.
             </strong>
           )}
-          <Link href="/antrean" className="pita-luring-tautan">Lihat antrean</Link>
+          <Link href={keAntrean} className="pita-luring-tautan">Lihat antrean</Link>
           {daring && (
             <button type="button" className="pita-luring-tombol" disabled={sibuk} onClick={() => void dorong()}>
               {sibuk ? 'Mengirim…' : 'Kirim sekarang'}

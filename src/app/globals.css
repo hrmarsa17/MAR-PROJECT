@@ -2225,3 +2225,32 @@ select, textarea {
 .antrean-waktu { font-size: 0.75rem; color: var(--redup, #64748B); }
 .antrean-galat { font-size: 0.8rem; color: #991B1B; margin-top: 0.35rem; }
 .antrean-beda { font-size: 0.8rem; color: #92400E; margin-top: 0.35rem; }
+
+/* ── BERANDA LAPANGAN ──────────────────────────────────────────────────────
+   Tombol besar, bukan daftar menu. Ini layar yang dibuka dengan satu tangan,
+   sering sambil memegang sesuatu, di bawah matahari, dengan sarung tangan yang
+   belum sempat dilepas. Sasaran sentuh minimal 64px tingginya — bukan selera,
+   melainkan ukuran ujung jempol orang dewasa. */
+.lapangan-beranda { padding-top: var(--spacing-lg); }
+.lapangan-tombol { display: grid; gap: 0.75rem; }
+.lapangan-kartu {
+  display: grid; grid-template-columns: 2.5rem 1fr; gap: 0.15rem 0.85rem;
+  align-items: center; min-height: 72px;
+  padding: 0.9rem 1rem; border: 1px solid var(--divider); border-radius: 12px;
+  background: var(--card); color: inherit; text-decoration: none;
+}
+.lapangan-kartu:active { background: #F1F5F9; }
+/* Kerja Saya ditonjolkan: dari empat menu, itu yang dibuka paling sering. */
+.lapangan-kartu.utama { border-color: #DC2626; border-width: 2px; }
+.lapangan-ikon { grid-row: span 2; font-size: 1.9rem; text-align: center; }
+.lapangan-judul { font-weight: 700; font-size: 1.02rem; }
+.lapangan-ket { font-size: 0.78rem; color: var(--text-secondary, #64748B); }
+.lapangan-keluar {
+  margin-top: var(--spacing-lg); font-size: 0.78rem;
+  color: var(--text-secondary, #64748B); text-align: center;
+}
+
+/* Navbar lapangan: merah, supaya yang memegangnya tahu ia sedang di aplikasi
+   lapangan dan bukan di tampilan lengkap — dua ikon di layar depan yang
+   membuka layar yang mirip adalah cara paling mudah tersesat. */
+.navbar-lapangan { border-bottom: 3px solid #DC2626; }

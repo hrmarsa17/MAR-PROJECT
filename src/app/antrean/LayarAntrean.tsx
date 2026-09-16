@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   type ItemOutbox, adaIndexedDb, hapusItem, semuaItem,
 } from '../../pwa/simpanan.js';
@@ -40,6 +42,11 @@ function usia(iso: string): string {
 
 export function LayarAntrean() {
   const { daring, dorong, sibuk } = useDaring();
+  const path = usePathname();
+  /* Pintu mana yang sedang dipakai. Dari aplikasi lapangan, tautan ke luar
+     `/lapangan` keluar dari scope manifest-nya dan dibuka peramban sebagai tab
+     biasa — terbaca seperti aplikasinya keluar sendiri. */
+  const dasar = path.startsWith('/lapangan') ? '/lapangan' : '';
   const [item, setItem] = useState<ItemOutbox[] | null>(null);
 
   const muat = useCallback(async () => {
@@ -57,6 +64,18 @@ export function LayarAntrean() {
 
   return (
     <div className="container">
+      {/* JALAN KEMBALI, di dalam layar itu sendiri.
+          Halaman ini statis supaya bisa dibuka tanpa sinyal — dan karena statis,
+          layout tidak punya sesi untuk merender navbar. Tanpa tautan ini, orang
+          yang membukanya dari aplikasi lapangan terjebak: tidak ada menu, tidak
+          ada tombol kembali, dan di aplikasi terpasang tidak ada bilah alamat
+          untuk mengetik apa pun. */}
+      <p style={{ margin: '0 0 0.75rem' }}>
+        <Link href={dasar || '/'} className="pita-luring-tautan">
+          ← Kembali
+        </Link>
+      </p>
+
       <div className="page-header">
         <h1>Antrean kiriman</h1>
         <p className="form-hint">

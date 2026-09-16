@@ -44,7 +44,12 @@ const TAB: { kunci: TabApproval; label: string; ikon: string }[] = [
   { kunci: 'ditolak', label: 'Ditolak', ikon: '❌' },
 ];
 
-export function LayarApproval({ tab, semua }: { tab: string; semua: boolean }) {
+export function LayarApproval({ tab, semua, dasar = '' }: {
+  tab: string;
+  semua: boolean;
+  /** Awalan rute. '' untuk pintu utama, '/lapangan' untuk pintu lapangan. */
+  dasar?: string;
+}) {
   const [data, setData] = useState<Muatan | null>(null);
   const [dariSimpanan, setDariSimpanan] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
@@ -126,7 +131,7 @@ export function LayarApproval({ tab, semua }: { tab: string; semua: boolean }) {
         {TAB.map((t) => (
           <a
             key={t.kunci}
-            href={`/approval?tab=${t.kunci}`}
+            href={`${dasar}/approval?tab=${t.kunci}`}
             className={`sub-nav-tab${t.kunci === data.tab ? ' active' : ''}`}
           >
             {t.ikon} {t.label}
@@ -147,7 +152,7 @@ export function LayarApproval({ tab, semua }: { tab: string; semua: boolean }) {
         <div className="kabar kabar-awas">
           Menampilkan <b>{data.kartu.length}</b> dari <b>{data.total}</b> WO.
           Sisanya naik dengan sendirinya begitu yang di atas selesai.{' '}
-          <a href={`/approval?tab=${data.tab}&semua=1`}>
+          <a href={`${dasar}/approval?tab=${data.tab}&semua=1`}>
             <b>Tampilkan semua {data.total}</b>
           </a>{' '}
           — memuatnya butuh waktu lebih lama.

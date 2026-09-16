@@ -26,7 +26,14 @@ var CACHE = 'kmb-v1';
 
 /* Hanya yang benar-benar statis dan bukan milik siapa-siapa. Halaman TIDAK
    ikut: isinya bergantung siapa yang masuk. */
-var ASET = ['./manifest.json', './luring.html', './icon-192.png', './icon-512.png'];
+/* DUA manifest, karena ada dua pintu masuk: `/` (tampilan lengkap) dan
+   `/lapangan` (aplikasi lapangan, ikon sendiri di layar depan HP). Keduanya
+   harus ikut tersimpan — manifest yang gagal dimuat membuat aplikasi yang sudah
+   terpasang kehilangan nama dan ikonnya. */
+var ASET = [
+  './manifest.json', './lapangan.webmanifest',
+  './luring.html', './icon-192.png', './icon-512.png',
+];
 
 self.addEventListener('install', function (e) {
   /* cache:'reload' — WAJIB, dan ini pelajaran mahal dari V2: `addAll()` memakai
