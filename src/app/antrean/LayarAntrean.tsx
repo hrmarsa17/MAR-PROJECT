@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   type ItemOutbox, adaIndexedDb, hapusItem, semuaItem,
 } from '../../pwa/simpanan.js';
 import { bedaPratinjau } from '../../pwa/bandingPratinjau.js';
-import { useDaring } from '../../pwa/useDaring.js';
+import { useDaring, usePintu } from '../../pwa/useDaring.js';
 
 /**
  * Apa yang belum sampai ke server, dan apa yang ditolaknya.
@@ -42,11 +41,10 @@ function usia(iso: string): string {
 
 export function LayarAntrean() {
   const { daring, dorong, sibuk } = useDaring();
-  const path = usePathname();
-  /* Pintu mana yang sedang dipakai. Dari aplikasi lapangan, tautan ke luar
-     `/lapangan` keluar dari scope manifest-nya dan dibuka peramban sebagai tab
-     biasa — terbaca seperti aplikasinya keluar sendiri. */
-  const dasar = path.startsWith('/lapangan') ? '/lapangan' : '';
+  /* Dari aplikasi lapangan, tautan ke luar `/lapangan` keluar dari scope
+     manifest-nya dan dibuka peramban sebagai tab biasa — terbaca seperti
+     aplikasinya keluar sendiri. */
+  const dasar = usePintu();
   const [item, setItem] = useState<ItemOutbox[] | null>(null);
 
   const muat = useCallback(async () => {

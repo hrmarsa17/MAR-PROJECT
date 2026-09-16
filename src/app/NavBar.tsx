@@ -141,11 +141,31 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
 function NavLapangan({ aku, path, approver }: {
   aku: AksesMenu; path: string; approver: boolean;
 }) {
+  /* LABEL, IKON, DAN URUTAN DIAMBIL APA ADANYA DARI PWA KMB V2
+     (`mar-offline/index.html:276-281`), yang berbunyi:
+
+         📋 WO Saya   ➕ Buat WO   ✅ Approval   👥 Monitoring
+
+     Dua hal yang sempat saya karang sendiri, dan keduanya salah:
+
+     1. "Kerja Saya" — tidak ada nama itu di mana pun. Yang dikenal orang
+        lapangan adalah "WO Saya" untuk pekerjaannya sendiri, dan "Monitoring"
+        untuk melihat pekerjaan orang lain. Keduanya nama yang berbeda karena
+        isinya memang berbeda, dan approver memakai keduanya.
+     2. Ikonnya saya buang. Di navbar tampilan lengkap itu memang benar —
+        delapan menu tanpa ikon, konsisten. Tapi PWA V2 memakai ikon, dan di
+        layar HP yang kena matahari bentuk lebih cepat dikenali daripada kata.
+
+     Urutannya pun tidak digeser: tangan orang lapangan hafal posisinya. */
   const menu: { href: string; label: string; tampil: boolean }[] = [
-    { href: '/lapangan/wo/baru', label: 'Buat WO', tampil: true },
-    { href: '/lapangan/monitoring', label: 'Kerja Saya', tampil: true },
-    { href: '/lapangan/approval', label: 'Approval', tampil: approver },
-    { href: '/lapangan/antrean', label: 'Antrean', tampil: true },
+    { href: '/lapangan/monitoring', label: '📋 WO Saya', tampil: true },
+    { href: '/lapangan/wo/baru', label: '➕ Buat WO', tampil: true },
+    { href: '/lapangan/approval', label: '✅ Approval', tampil: approver },
+    // Pengganti "👥 Monitoring" milik V2: di sana ia melihat WO orang lain,
+    // dan itu pekerjaan kantor yang tinggal di tampilan lengkap. Yang
+    // menggantikannya di sini adalah satu-satunya hal yang V2 tidak punya —
+    // daftar apa yang belum sampai ke server.
+    { href: '/lapangan/antrean', label: '📤 Antrean', tampil: true },
   ];
 
   return (

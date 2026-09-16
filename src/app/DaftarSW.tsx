@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useDaring } from '../pwa/useDaring.js';
+import { useDaring, usePintu } from '../pwa/useDaring.js';
 
 /**
  * Mendaftarkan service worker, dan menampilkan satu baris keadaan.
@@ -30,13 +29,11 @@ export function DaftarSW() {
 
 function BarisKeadaan() {
   const { daring, antre, umurHari, dorong, sibuk } = useDaring();
-  const path = usePathname();
-
   /* Tautan Antrean harus tetap DI DALAM pintu yang sedang dipakai. Dari
      aplikasi lapangan yang terpasang, `/antrean` berada di luar `scope`
      manifest-nya — peramban akan membukanya di tab biasa lengkap dengan bilah
      alamat, dan itu terbaca seperti aplikasinya keluar sendiri. */
-  const keAntrean = path.startsWith('/lapangan') ? '/lapangan/antrean' : '/antrean';
+  const keAntrean = `${usePintu()}/antrean`;
 
   // Semua beres dan tidak ada yang menunggu: jangan tambahi layar orang.
   if (daring && antre === 0) return null;

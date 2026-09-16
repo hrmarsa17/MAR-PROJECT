@@ -1,6 +1,33 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+/**
+ * Pintu mana yang sedang dipakai — '' untuk tampilan lengkap, '/lapangan' untuk
+ * aplikasi lapangan.
+ *
+ * ── `usePathname()` BISA MENGEMBALIKAN null ─────────────────────────────────
+ * Tipenya `string`, tapi pada halaman yang dirender statis ia bisa null saat
+ * hidrasi. Dan `null.startsWith(...)` melempar TypeError SAAT RENDER — bukan
+ * di dalam effect, jadi tidak ada try/catch yang menangkapnya dan React
+ * merobohkan seluruh pohon.
+ *
+ * Yang terlihat orang: "Application error: a client-side exception has
+ * occurred", layar putih, di SETIAP halaman — karena pemanggilnya ada di
+ * layout. Itu yang terjadi di produksi 16 Sep 2026, beberapa menit sesudah
+ * pita luring dipasang.
+ *
+ * Dipusatkan di sini supaya hanya ada SATU tempat yang perlu benar.
+ */
+export function pintu(path: string | null): '' | '/lapangan' {
+  return path?.startsWith('/lapangan') ? '/lapangan' : '';
+}
+
+/** Hook pembungkusnya, untuk komponen yang butuh awalan rute. */
+export function usePintu(): '' | '/lapangan' {
+  return pintu(usePathname());
+}
 import { adaIndexedDb, antrean, umurAntreanHari } from './simpanan.js';
 import { kosongkanAntrean } from './kirim.js';
 

@@ -41,8 +41,8 @@ export default async function Lapangan() {
       <div className="lapangan-tombol">
         <Link href="/lapangan/monitoring" className="lapangan-kartu utama">
           <span className="lapangan-ikon">📋</span>
-          <span className="lapangan-judul">Kerja Saya</span>
-          <span className="lapangan-ket">WO yang ditugaskan, dan kirim jam kerjanya</span>
+          <span className="lapangan-judul">WO Saya</span>
+          <span className="lapangan-ket">WO yang ditugaskan ke Anda, dan kirim jam kerjanya</span>
         </Link>
 
         <Link href="/lapangan/wo/baru" className="lapangan-kartu">
