@@ -6,6 +6,7 @@ import { simpanOverride } from '../../../domain/override.js';
 import { kirimKerja } from '../../../domain/kirimKerja.js';
 import { mintaTransfer, setujuiTransfer, tolakTransfer } from '../../../domain/transfer.js';
 import { simpanDetail } from '../../../domain/detailForm.js';
+import { gantiPanelMeter, koreksiMeterWo } from '../../../domain/meter.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -145,6 +146,26 @@ const SKEMA = {
     woId: z.number().int().positive(),
     nilai: z.record(z.string(), z.record(z.string(), z.string().max(500))),
   }),
+  /**
+   * `nilaiBaru: null` berarti DIKOSONGKAN, dan itu pilihan yang sah:
+   * "lebih baik hilang daripada salah". Bedakan dari `undefined` — yang di sini
+   * tidak diterima sama sekali, supaya tak ada koreksi yang lupa menyebut
+   * angkanya lalu diam-diam tidak mengubah apa pun.
+   */
+  koreksi_meter: z.object({
+    woId: z.number().int().positive(),
+    jenis: z.enum(['HM', 'KM']),
+    nilaiBaru: z.number().nullable(),
+    alasan: z.string().min(5).max(1000),
+  }),
+  ganti_panel_meter: z.object({
+    unitId: z.number().int().positive(),
+    jenis: z.enum(['HM', 'KM']),
+    // `0` diperbolehkan — panel baru memang mulai dari nol.
+    nilaiBaru: z.number().nonnegative(),
+    berlakuAt: z.string().min(1),
+    alasan: z.string().min(5).max(1000),
+  }),
 } as const;
 
 const Amplop = z.object({
@@ -152,6 +173,7 @@ const Amplop = z.object({
     'buat_wo', 'approve_l1', 'approve_l2', 'batal_wo', 'reject', 'kembalikan',
     'save_override', 'kirim_kerja',
     'minta_transfer', 'setujui_transfer', 'tolak_transfer', 'simpan_detail',
+    'koreksi_meter', 'ganti_panel_meter',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -229,6 +251,14 @@ export async function POST(req: Request): Promise<Response> {
       case 'simpan_detail': {
         const d = isi.data as z.infer<typeof SKEMA.simpan_detail>;
         return jawab(await simpanDetail({ ...umum, ...d }));
+      }
+      case 'koreksi_meter': {
+        const d = isi.data as z.infer<typeof SKEMA.koreksi_meter>;
+        return jawab(await koreksiMeterWo({ ...umum, ...d }));
+      }
+      case 'ganti_panel_meter': {
+        const d = isi.data as z.infer<typeof SKEMA.ganti_panel_meter>;
+        return jawab(await gantiPanelMeter({ ...umum, ...d }));
       }
     }
   } catch (e) {

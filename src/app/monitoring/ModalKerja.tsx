@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Portal } from '../Portal.js';
-import { PilihWaktu24 } from './PilihWaktu24.js';
+import { PilihWaktu24 } from '../PilihWaktu24.js';
 import { durasiJam } from '../../lib/format.js';
 import type { KartuWoMekanik } from '../../domain/kueriWoMekanik.js';
 import type { BekalForm, DetailWo } from '../../domain/kueriDetailForm.js';

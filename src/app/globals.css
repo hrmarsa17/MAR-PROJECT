@@ -1794,6 +1794,58 @@ select, textarea {
 .tyre-tambah { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .tyre-tambah select { max-width: 170px; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   KOREKSI HM / KM — angka dari `Hm.html` bagian <style>
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.koreksi-sub { max-width: 70ch; line-height: 1.6; }
+
+.layar-koreksi .kartu {
+  background: var(--card); border: 1px solid var(--border); border-radius: 13px;
+  padding: 1.1rem 1.2rem; margin-bottom: 1rem;
+}
+.kartu-judul {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px;
+  font-weight: 700; color: var(--text-secondary); margin-bottom: 0.8rem;
+}
+.kartu-ket {
+  font-size: 0.85rem; color: var(--text-secondary);
+  margin: 0 0 0.8rem; line-height: 1.55;
+}
+
+/* Kotak acuan: biru tenang. Ia kabar, bukan peringatan. */
+.acuan {
+  background: #F0F9FF; border: 1px solid #BAE6FD; color: #075985;
+  border-radius: 10px; padding: 0.8rem 0.9rem; line-height: 1.55;
+}
+.acuan-kecil { font-size: 0.8rem; }
+.panel-riwayat { margin-top: 0.9rem; font-size: 0.82rem; color: var(--text-secondary); }
+
+/* Kotak MELOMPAT: amber, dan letaknya DI ATAS tabel. Yang perlu diperiksa
+   harus terbaca sebelum matanya turun ke deretan angka. */
+.catatan {
+  background: #FFFBEB; border: 1px solid #FDE68A; color: #78350F;
+  border-radius: 10px; padding: 0.75rem 0.9rem; margin-bottom: 0.9rem;
+  font-size: 0.85rem; line-height: 1.55;
+}
+.hampa { text-align: center; padding: 2.2rem 1rem; color: #94A3B8; }
+
+.tabel-meter { font-size: 0.84rem; min-width: 640px; }
+.tabel-meter .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabel-meter td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--divider); }
+/* Dua tanah berbeda untuk dua bentuk kesalahan yang berbeda beratnya:
+   `mundur` ketahuan langsung dan ditolak pagar; `melompat` LOLOS pagar justru
+   karena lebih besar, lalu meracuni setiap bacaan sesudahnya. */
+.tabel-meter tr.mundur td { background: #FFFBEB; }
+.tabel-meter tr.melompat td { background: #FEF2F2; }
+.tag {
+  display: inline-block; font-size: 0.66rem; font-weight: 800;
+  padding: 1px 6px; border-radius: 999px; text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.tag-mundur { background: #FDE68A; color: #78350F; }
+.tag-melompat { background: #FECACA; color: #7F1D1D; }
+
 @media (max-width: 768px) {
   .layar-mekanik .wo-grid, .grup-body { grid-template-columns: minmax(0, 1fr); }
   .wo-details, .info-grid { grid-template-columns: minmax(0, 1fr); }

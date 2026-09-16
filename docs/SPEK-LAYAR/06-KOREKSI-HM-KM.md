@@ -405,17 +405,19 @@ Di KMB Project: penyaring periode/scope milik layar Performa dan Reports.
 
 ## 8. Daftar periksa selesai
 
-- [ ] Dua rute, **satu** modul `meter.ts` — jangan dua berkas kembar
-- [ ] `OTHERS` / `WORKSHOP` tidak muncul di pemilih unit
-- [ ] Acuan = nilai **terbesar sesudah panel terakhir**, bukan yang terbaru
-- [ ] Panel baru bernilai `0` diterima; tanggal masa depan ditolak (toleransi 1 jam)
-- [ ] Kosong **tidak** ditolak `periksaMasuk`; hanya yang mustahil
-- [ ] Penanda `mundur` & `melompat`, ambang dari `settings` bukan kode
-- [ ] Kotak peringatan MELOMPAT muncul di atas tabel
-- [ ] Alasan minimal 5 huruf — dipagari aplikasi **dan** `CHECK` basis data
-- [ ] Koreksi menulis ke `work_orders`, bukan ke tabel jejak
-- [ ] Jejak mencatat nilai lama **dan** baru + siapa + kenapa
-- [ ] Audit log KM tidak berlabel `KOREKSI_HM`
-- [ ] Teks KM tidak menyebut “jam mesin” / “panel jam”
-- [ ] `meter.ts` tidak memakai penyaring periode mana pun
-- [ ] `meterTerakhirPerUnit` memberi makan catatan kaki di Create WO
+Dicentang 16 Sep 2026.
+
+- [x] Dua rute, **satu** modul `meter.ts` — jangan dua berkas kembar
+- [x] `OTHERS` / `WORKSHOP` tidak muncul di pemilih unit
+- [x] Acuan = nilai **terbesar sesudah panel terakhir**, bukan yang terbaru
+- [x] Panel baru bernilai `0` diterima; tanggal masa depan ditolak (toleransi 1 jam)
+- [x] Kosong **tidak** ditolak `periksaMasuk`; hanya yang mustahil
+- [x] Penanda `mundur` & `melompat`, ambang dari `settings` bukan kode
+- [x] Kotak peringatan MELOMPAT muncul di atas tabel
+- [x] Alasan minimal 5 huruf — dipagari aplikasi **dan** `CHECK` basis data
+- [x] Koreksi menulis ke `work_orders`, bukan ke tabel jejak
+- [x] Jejak mencatat nilai lama **dan** baru + siapa + kenapa
+- [x] Audit log KM tidak berlabel `KOREKSI_HM`
+- [x] Teks KM tidak menyebut “jam mesin” / “panel jam”
+- [x] `meter.ts` tidak memakai penyaring periode mana pun
+- [x] `meterTerakhirPerUnit` memberi makan catatan kaki di Create WO

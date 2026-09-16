@@ -259,6 +259,36 @@ BEGIN
     END IF;
   END IF;
 
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- BACAAN HM — beserta satu angka RACUN, supaya layar Koreksi HM ada isinya
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- Empat bacaan naik wajar, lalu SATU yang kelewat besar. Yang terakhir itulah
+  -- bentuk yang paling perlu terlihat: ia lolos pagar justru karena lebih besar,
+  -- jadi acuan, dan sejak itu setiap bacaan sah berikutnya ikut tertolak.
+  -- Tanpa baris seperti ini di data contoh, tanda MELOMPAT tidak pernah muncul
+  -- dan seluruh alasan layar itu ada jadi tak terlihat.
+  --
+  -- `meter_readings` ikut diisi karena ia TURUNAN dari kolom WO, bukan sumber
+  -- kedua — data contoh yang mengisi salah satunya saja akan melahirkan laporan
+  -- bug tentang data contohnya sendiri.
+  IF v_unit_ban IS NOT NULL THEN
+    FOR i IN 1..5 LOOP
+      INSERT INTO work_orders (tenant_id, wo_number, section_id, job_id, unit_id,
+        status, created_by, work_condition, location,
+        hour_meter, mtbf_redo_status, created_at)
+      VALUES (v_tenant, next_wo_number(v_tenant, current_date - (6 - i)),
+              v_sec_ban, v_job_ban, v_unit_ban, 'approved', v_l1, 'normal', 'Lapangan',
+              CASE WHEN i = 5 THEN 999999 ELSE 1000 + i * 120 END,
+              'first_time', now() - make_interval(days => 6 - i))
+      RETURNING id INTO v_wo;
+
+      INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+      INSERT INTO meter_readings (unit_id, kind, value, work_order_id, recorded_by)
+      VALUES (v_unit_ban, 'HM',
+              CASE WHEN i = 5 THEN 999999 ELSE 1000 + i * 120 END, v_wo, v_l1);
+    END LOOP;
+  END IF;
+
   -- WO yang transfernya DITOLAK: jam sesinya hangus, dan mekanik membaca
   -- alasannya di kartunya sendiri. partial_hours sengaja TETAP 0 — itulah
   -- seluruh maksud penolakan, dan data contoh yang menaruh angka di situ akan

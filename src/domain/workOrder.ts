@@ -1,6 +1,7 @@
 import { angka, type Tx } from '../lib/db.js';
 import { aturanBisnis, tidakBerhak, tidakDitemukan } from '../lib/errors.js';
 import { jalankanPerintah, type HasilPerintah } from './runCommand.js';
+import { periksaMasuk } from './meter.js';
 
 /**
  * PEMBUATAN WORK ORDER.
@@ -291,23 +292,22 @@ async function catatMeter(
   for (const [kind, nilai] of [['HM', hm], ['KM', km]] as const) {
     if (nilai === undefined || nilai === null) continue;
 
-    const terakhir = (
-      await tx<{ value: string }[]>`
-        SELECT r.value FROM meter_readings r
-         WHERE r.unit_id = ${unitId} AND r.kind = ${kind}::odometer_type
-           AND r.recorded_at > coalesce(
-                 (SELECT max(changed_at) FROM meter_panel_changes
-                   WHERE unit_id = ${unitId} AND kind = ${kind}::odometer_type),
-                 '-infinity'::timestamptz)
-         ORDER BY r.recorded_at DESC LIMIT 1
-      `
-    )[0];
+    /* Acuannya dihitung di SATU tempat, bersama layar Koreksi HM/KM.
+       Sampai 16 Sep 2026 pagar ini punya kueri sendiri dengan dua cacat:
 
-    if (terakhir && angka(nilai) < angka(terakhir.value)) {
+       1. mengambil bacaan TERBARU alih-alih TERBESAR — sehingga WO yang dibuat
+          menyusul untuk pekerjaan kemarin menarik acuannya mundur, dan pagar
+          naik-saja ini bisa dilewati hanya dengan urutan pembuatan;
+       2. tidak menghitung NILAI PANEL BARU sebagai lantai — tepat sesudah
+          panel diganti ke 12.500, bacaan 100 lolos begitu saja.
+
+       Keduanya ketahuan saat membaca `_Meter.js` untuk layar koreksi, bukan
+       dari laporan siapa pun. */
+    const periksa = await periksaMasuk(unitId, angka(nilai), kind, tx);
+    if (!periksa.ok) {
       throw aturanBisnis(
-        `${kind} ${nilai} lebih kecil dari catatan terakhir ${terakhir.value}. ` +
-        `Bila panel diganti, catat penggantian panelnya lebih dulu.`,
-        { kind, nilai, terakhir: terakhir.value },
+        `${periksa.pesan} Bila panel diganti, catat penggantian panelnya lebih dulu.`,
+        { kind, nilai, acuan: periksa.acuan?.nilai ?? null },
       );
     }
 

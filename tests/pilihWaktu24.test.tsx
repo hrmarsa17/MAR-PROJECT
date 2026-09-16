@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { PilihWaktu24 } from '../src/app/monitoring/PilihWaktu24.js';
+import { PilihWaktu24 } from '../src/app/PilihWaktu24.js';
 
 /**
  * PICKER 24 JAM — uji pertama di proyek ini yang benar-benar menggambar
