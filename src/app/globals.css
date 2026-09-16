@@ -1955,8 +1955,22 @@ select, textarea {
 .tabel-admin tr.nonaktif td { opacity: 0.55; }
 .tabel-admin .badge { margin-left: 0.3rem; }
 
-.akses-sel { display: flex; flex-wrap: wrap; gap: 0.2rem; }
-.aksi-sel { display: flex; gap: 0.3rem; white-space: nowrap; }
+/* ── SEL TABEL TIDAK BOLEH DIBERI display:flex ──────────────────────────────
+   Sampai 16 Sep 2026 kedua baris di bawah berbunyi `display: flex` — dipasang
+   langsung pada <td>. Sebuah sel yang diberi display:flex berhenti menjadi sel
+   tabel: ia keluar dari algoritma baris/kolom, tingginya tidak lagi mengikuti
+   tinggi baris, dan `border-bottom` miliknya digambar pada ketinggiannya
+   sendiri alih-alih sejajar dengan sel-sel lain.
+
+   Yang terlihat di layar Admin → Unit adalah garis pemisah yang patah dan
+   melompat di dua kolom, sepanjang 103 baris. Bukan kesalahan data, dan tidak
+   bisa diperbaiki dari sisi markup.
+
+   Deretannya tetap didapat tanpa flex: badge dan tombol sudah inline-block,
+   jadi ia berderet sendiri dan membungkus sendiri saat sempit. */
+.akses-sel > .badge:first-child { margin-left: 0; }
+.aksi-sel { white-space: nowrap; }
+.aksi-sel > * + * { margin-left: 0.3rem; }
 .token-sel { display: inline-flex; align-items: center; gap: 0.35rem; }
 .token-sel code {
   font-size: 0.7rem; background: var(--bg-secondary);
