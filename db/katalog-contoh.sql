@@ -98,7 +98,7 @@ BEGIN
     (v_tenant, 'CONTOH-J003', v_field, v_hauler, v_sub_head,  'CONTOH Adjust Valve Clearance',         3.00,  7.500, v_tier),
     (v_tenant, 'CONTOH-J004', v_field, v_dozer,  v_sub_head,  'CONTOH Remove & Install Cylinder Head', 9.00, 24.000, v_tier),
     (v_tenant, 'CONTOH-J005', v_field, v_dozer,  v_sub_track, 'CONTOH Ganti Track Link',               6.00, 15.000, v_tier)
-  ON CONFLICT (tenant_id, job_code) DO NOTHING;
+  ON CONFLICT (tenant_id, section_id, job_code) DO NOTHING;
 
   -- ── job tyreman (datar, tanpa cascade) ───────────────────────────────────
   INSERT INTO jobs (tenant_id, job_code, section_id, unit_model_id, sub_component_id,
@@ -106,7 +106,7 @@ BEGIN
   VALUES
     (v_tenant, 'CONTOH-T001', v_tyre, NULL, NULL, 'CONTOH Inspeksi Tekanan Ban', 1.00, 2.500, v_tier),
     (v_tenant, 'CONTOH-T002', v_tyre, NULL, NULL, 'CONTOH Remove & Instal Ban',  2.50, 6.000, v_tier)
-  ON CONFLICT (tenant_id, job_code) DO NOTHING;
+  ON CONFLICT (tenant_id, section_id, job_code) DO NOTHING;
 
   RAISE NOTICE 'Katalog contoh terpasang.';
 END $$;

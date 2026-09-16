@@ -208,7 +208,13 @@ CREATE TABLE jobs (
   is_active         boolean NOT NULL DEFAULT true,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, job_code),
+  -- Unik PER SECTION, bukan per tenant. Ketahuan saat memindahkan katalog KMB
+  -- yang sesungguhnya (16 Sep 2026): 162 kode dipakai DI DUA SECTION dengan
+  -- arti yang berbeda — field JOB-1210 'Bus/Engine Assy/Overhaul' 300 poin vs
+  -- workshop JOB-1210 'Comp Engine Rebuild/Washing' 16 poin. Di KMB V2 section
+  -- sebuah job adalah SHEET ASALNYA, jadi kodenya memang tak pernah dimaksudkan
+  -- unik secara global. Lihat db/migrasi/007-kode-job-per-section.sql.
+  CONSTRAINT jobs_tenant_section_kode_key UNIQUE (tenant_id, section_id, job_code),
   CONSTRAINT bentuk_cascade CHECK (
     (unit_model_id IS NOT NULL AND sub_component_id IS NOT NULL)  -- cascade
     OR (unit_model_id IS NULL AND sub_component_id IS NULL)       -- flat

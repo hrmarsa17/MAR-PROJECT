@@ -137,7 +137,11 @@ export async function siapkanBekal(): Promise<Bekal> {
                           sub_component_id, job_description, plan_hours, base_points)
         VALUES (${tenantId}, 'UJI-JOB-1', ${sectionFieldId}, ${unitModelId},
                 ${subId}, 'remove and install', ${jobPlanHours}, ${jobBasePoints})
-        ON CONFLICT (tenant_id, job_code) DO UPDATE SET base_points = EXCLUDED.base_points
+        /* Identitas job adalah (tenant, SECTION, kode) sejak db/migrasi/007 —
+           kode yang sama dipakai di field dan workshop untuk pekerjaan yang
+           berbeda. */
+        ON CONFLICT (tenant_id, section_id, job_code)
+          DO UPDATE SET base_points = EXCLUDED.base_points
         RETURNING id
       `
     )[0]!.id,

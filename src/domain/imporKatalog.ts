@@ -1,8 +1,9 @@
 import ExcelJS from 'exceljs';
-import { sql, type Tx } from '../lib/db.js';
+import { sql } from '../lib/db.js';
 import { aturanBisnis, tidakDitemukan } from '../lib/errors.js';
 import { jalankanPerintah, type HasilPerintah } from './runCommand.js';
 import { pastikanAdmin } from './admin.js';
+import { pastikanKomponen, pastikanModel, pastikanSub } from './katalogInduk.js';
 
 /**
  * IMPOR & EKSPOR KATALOG — lewat Excel, seperti yang sudah dikerjakan Gabriel.
@@ -68,9 +69,35 @@ export interface Pratinjau {
   baris: (BarisJob | BarisUnit)[];
 }
 
-const teks = (v: unknown) => String(v ?? '').trim();
+/**
+ * Membuka isi satu sel Excel.
+ *
+ * `cell.value` TIDAK selalu nilai yang terlihat. Sel berumus mengembalikan
+ * `{formula, result}`, teks berformat mengembalikan `{richText: [...]}`, tautan
+ * mengembalikan `{text, hyperlink}`. Membacanya dengan `String(v)` menghasilkan
+ * `"[object Object]"` — yang lalu ditolak sebagai angka tidak sah.
+ *
+ * Ini bukan kemungkinan teoretis: katalog KMB yang sesungguhnya menyimpan
+ * `plan_hours` dan `base_point` sebagai RUMUS, jadi tanpa ini hampir seluruh
+ * 2.239 barisnya tertolak dan yang mengimpor akan mengira berkasnya rusak.
+ */
+function nilaiSel(v: unknown): unknown {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    if ('result' in o) return nilaiSel(o['result']);          // sel rumus
+    if ('text' in o) return o['text'];                        // tautan
+    if (Array.isArray(o['richText'])) {
+      return (o['richText'] as { text: string }[]).map((r) => r.text).join('');
+    }
+    if (v instanceof Date) return v;
+  }
+  return v;
+}
+
+const teks = (v: unknown) => String(nilaiSel(v) ?? '').trim();
 const angka = (v: unknown) => {
-  const n = Number(String(v ?? '').trim().replace(',', '.'));
+  const n = Number(String(nilaiSel(v) ?? '').trim().replace(',', '.'));
   return Number.isFinite(n) ? n : NaN;
 };
 /* "FALSE", "tidak", "0", dan kosong semuanya berarti tidak aktif. Spreadsheet
@@ -156,7 +183,8 @@ export async function bacaUntukPratinjau(
   const ws = wb.worksheets[0];
   if (!ws) throw aturanBisnis('Berkas tidak punya satu pun lembar kerja');
 
-  const kepala = (ws.getRow(1).values as unknown[]).slice(1).map((v) => teks(v).toLowerCase());
+  const kepala = (ws.getRow(1).values as unknown[]).slice(1)
+    .map((v) => teks(v).toLowerCase());
   const wajib = jenis === 'job' ? KOLOM_JOB : KOLOM_UNIT;
   const hilang = wajib.filter((k) => !kepala.includes(k));
   /* Kolom yang hilang ditolak di pintu, bukan diisi nilai bawaan diam-diam.
@@ -261,7 +289,9 @@ async function bandingkan(
         SELECT j.job_code::text AS kode, j.job_description AS desc_,
                j.plan_hours, j.base_points, j.is_active,
                coalesce(j.job_type::text,'') AS job_type
-          FROM jobs j WHERE j.tenant_id = ${tenantId}
+          FROM jobs j JOIN sections s ON s.id = j.section_id
+         WHERE j.tenant_id = ${tenantId}
+           AND (${sectionCode}::text IS NULL OR s.code::text = ${sectionCode})
       `).map((r) => [String(r['kode']).toLowerCase(), r]),
     );
     const modelAda = new Set((await sql<{ code: string }[]>`
@@ -398,7 +428,7 @@ export async function terapkanImpor(
             VALUES (${m.tenantId}, ${b.job_id}, ${sec.id}, ${modelId}, ${subId},
                     ${b.job_description}, ${b.plan_hours}, ${b.base_point},
                     ${b.job_type || null}, ${b.is_active})
-            ON CONFLICT (tenant_id, job_code) DO UPDATE SET
+            ON CONFLICT (tenant_id, section_id, job_code) DO UPDATE SET
               section_id = EXCLUDED.section_id,
               unit_model_id = EXCLUDED.unit_model_id,
               sub_component_id = EXCLUDED.sub_component_id,
@@ -466,61 +496,5 @@ export async function terapkanImpor(
   });
 }
 
-async function pastikanModel(
-  tx: Tx, tenantId: number, sectionId: number, kode: string, saatBaru: () => void,
-): Promise<number> {
-  const ada = (
-    await tx<{ id: number }[]>`
-      SELECT id FROM unit_models
-       WHERE tenant_id = ${tenantId} AND code = ${kode} AND section_id = ${sectionId}
-    `
-  )[0];
-  if (ada) return Number(ada.id);
-  saatBaru();
-  const r = (
-    await tx<{ id: number }[]>`
-      INSERT INTO unit_models (tenant_id, code, name, section_id)
-      VALUES (${tenantId}, ${kode}, ${kode}, ${sectionId})
-      RETURNING id
-    `
-  )[0]!;
-  return Number(r.id);
-}
-
-async function pastikanKomponen(
-  tx: Tx, sectionId: number, nama: string, saatBaru: () => void,
-): Promise<number> {
-  const ada = (
-    await tx<{ id: number }[]>`
-      SELECT id FROM job_components WHERE section_id = ${sectionId} AND name = ${nama}
-    `
-  )[0];
-  if (ada) return Number(ada.id);
-  saatBaru();
-  const r = (
-    await tx<{ id: number }[]>`
-      INSERT INTO job_components (section_id, name) VALUES (${sectionId}, ${nama})
-      RETURNING id
-    `
-  )[0]!;
-  return Number(r.id);
-}
-
-async function pastikanSub(
-  tx: Tx, componentId: number, nama: string, saatBaru: () => void,
-): Promise<number> {
-  const ada = (
-    await tx<{ id: number }[]>`
-      SELECT id FROM job_sub_components WHERE component_id = ${componentId} AND name = ${nama}
-    `
-  )[0];
-  if (ada) return Number(ada.id);
-  saatBaru();
-  const r = (
-    await tx<{ id: number }[]>`
-      INSERT INTO job_sub_components (component_id, name)
-      VALUES (${componentId}, ${nama}) RETURNING id
-    `
-  )[0]!;
-  return Number(r.id);
-}
+/* pastikanModel / pastikanKomponen / pastikanSub tinggal di domain/katalogInduk.ts
+   — dipakai bersama tombol "+ Tambah job" di menu Admin. */

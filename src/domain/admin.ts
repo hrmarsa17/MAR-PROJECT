@@ -3,6 +3,7 @@ import { sql } from '../lib/db.js';
 import { aturanBisnis, tidakBerhak, tidakDitemukan } from '../lib/errors.js';
 import { buatToken } from '../lib/auth.js';
 import { jalankanPerintah, type HasilPerintah } from './runCommand.js';
+import { pastikanKomponen, pastikanModel, pastikanSub } from './katalogInduk.js';
 
 /**
  * MENU ADMIN.
@@ -261,15 +262,45 @@ export interface MasukanJob {
   opId: string;
   tenantId: number;
   actorId: number;
-  jobId: number;
+  /** Ada = sunting job yang sudah ada, tidak ada = job baru. */
+  jobId?: number;
+  /** Wajib saat membuat job baru. Tidak dipakai saat menyunting. */
+  sectionCode?: string;
+  kode?: string;
+  /** Nama pekerjaan. Boleh diubah kapan saja — lihat catatan di bawah. */
+  nama?: string;
+  /** Penempatan cascade. Wajib untuk section ber-picker `cascade` saat baru. */
+  unitModel?: string | null;
+  komponen?: string | null;
+  subKomponen?: string | null;
   basePoints: number;
   planHours: number;
   aktif: boolean;
 }
 
+/**
+ * Menyimpan SATU job — baru maupun suntingan.
+ *
+ * ── KENAPA MENGGANTI NAMA PEKERJAAN AMAN ────────────────────────────────────
+ * WO menyimpan `job_id`, bukan tulisan namanya (`db/schema.sql:281`). Tidak ada
+ * satu kolom pun di `work_orders` yang menyalin `job_description`, dan
+ * `scoring_snapshots` hanya menyimpan ANGKA. Jadi mengganti nama sebuah job akan
+ * terbaca di seluruh WO lama — termasuk yang sudah disetujui — tanpa menggeser
+ * poin atau rupiah siapa pun, dan tanpa satu pun WO kehilangan jobnya.
+ *
+ * ── PENEMPATAN CASCADE TIDAK IKUT DIUBAH SAAT MENYUNTING ────────────────────
+ * Layar buat-WO menyaring joblist dengan model → komponen → sub-komponen
+ * (`BlokJoblist.tsx:61-75`). Memindahkan job yang sudah dipakai ke cabang lain
+ * membuatnya menghilang dari tempat orang biasa mencarinya. Pindah cabang
+ * dilakukan lewat impor Excel, tempat perpindahannya terlihat satu per satu di
+ * pratinjau sebelum diterapkan.
+ */
 export async function simpanJob(
   m: MasukanJob,
-): Promise<HasilPerintah<{ jobId: number; lama: { basePoints: number; planHours: number } }>> {
+): Promise<HasilPerintah<{
+  jobId: number; baru: boolean; kode: string;
+  lama: { basePoints: number; planHours: number; nama: string } | null;
+}>> {
   return jalankanPerintah({
     opId: m.opId, tenantId: m.tenantId, actorId: m.actorId, action: 'admin_job',
     jalankan: async ({ tx }) => {
@@ -277,34 +308,124 @@ export async function simpanJob(
       if (m.basePoints <= 0) throw aturanBisnis('Base point harus lebih dari 0');
       if (m.planHours <= 0) throw aturanBisnis('Jam rencana harus lebih dari 0');
 
-      const lama = (
-        await tx<{ base_points: string; plan_hours: string; kode: string }[]>`
-          SELECT base_points, plan_hours, job_code::text AS kode
-            FROM jobs WHERE id = ${m.jobId} AND tenant_id = ${m.tenantId}
+      // ── SUNTING ────────────────────────────────────────────────────────────
+      if (m.jobId) {
+        const lama = (
+          await tx<{
+            base_points: string; plan_hours: string; kode: string; nama: string;
+          }[]>`
+            SELECT base_points, plan_hours, job_code::text AS kode,
+                   job_description AS nama
+              FROM jobs WHERE id = ${m.jobId} AND tenant_id = ${m.tenantId}
+          `
+        )[0];
+        if (!lama) throw tidakDitemukan('Job', m.jobId);
+
+        const nama = (m.nama ?? lama.nama).trim();
+        if (nama.length < 3) throw aturanBisnis('Nama pekerjaan minimal 3 huruf');
+
+        await tx`
+          UPDATE jobs SET base_points = ${m.basePoints}, plan_hours = ${m.planHours},
+                          job_description = ${nama}, is_active = ${m.aktif},
+                          updated_at = now()
+           WHERE id = ${m.jobId}
+        `;
+
+        /* WO yang SUDAH disetujui tidak ikut berubah — angkanya dibekukan
+           `scoring_snapshots` saat approve. Yang berubah hanya WO yang dibuat
+           SESUDAH ini. Untuk membawanya mundur ada perintah TERPISAH:
+           domain/terapkanSurut.ts. */
+        await catat(tx, m.tenantId, m.actorId, 'admin_job_ubah', 'job', String(m.jobId), {
+          kode: lama.kode,
+          nama: { lama: lama.nama, baru: nama },
+          base_points: { lama: Number(lama.base_points), baru: m.basePoints },
+          plan_hours: { lama: Number(lama.plan_hours), baru: m.planHours },
+          aktif: m.aktif,
+        });
+
+        return {
+          jobId: m.jobId, baru: false, kode: lama.kode,
+          lama: {
+            basePoints: Number(lama.base_points),
+            planHours: Number(lama.plan_hours),
+            nama: lama.nama,
+          },
+        };
+      }
+
+      // ── BARU ───────────────────────────────────────────────────────────────
+      const kode = (m.kode ?? '').trim();
+      const nama = (m.nama ?? '').trim();
+      if (kode.length < 2) throw aturanBisnis('Kode job minimal 2 huruf');
+      if (nama.length < 3) throw aturanBisnis('Nama pekerjaan minimal 3 huruf');
+      if (!m.sectionCode) throw aturanBisnis('Section wajib dipilih');
+
+      const sec = (
+        await tx<{ id: number; picker: string }[]>`
+          SELECT id, picker_style::text AS picker FROM sections
+           WHERE tenant_id = ${m.tenantId} AND code = ${m.sectionCode}
         `
       )[0];
-      if (!lama) throw tidakDitemukan('Job', m.jobId);
+      if (!sec) throw tidakDitemukan('Section', m.sectionCode);
 
-      await tx`
-        UPDATE jobs SET base_points = ${m.basePoints}, plan_hours = ${m.planHours},
-                        is_active = ${m.aktif}
-         WHERE id = ${m.jobId}
-      `;
+      let modelId: number | null = null;
+      let subId: number | null = null;
+      let indukBaru = 0;
 
-      /* WO yang SUDAH disetujui tidak ikut berubah — angkanya dibekukan
-         `scoring_snapshots` saat approve. Yang berubah hanya WO yang dibuat
-         SESUDAH ini. Itu yang membuat layar ini aman dipakai. */
-      await catat(tx, m.tenantId, m.actorId, 'admin_job_ubah', 'job', String(m.jobId), {
-        kode: lama.kode,
-        base_points: { lama: Number(lama.base_points), baru: m.basePoints },
-        plan_hours: { lama: Number(lama.plan_hours), baru: m.planHours },
-        aktif: m.aktif,
+      if (sec.picker === 'cascade') {
+        const model = (m.unitModel ?? '').trim();
+        const komp = (m.komponen ?? '').trim();
+        const sub = (m.subKomponen ?? '').trim();
+        /* Ditolak, bukan dibiarkan kosong. Section cascade menyaring joblist
+           dengan model → komponen → sub-komponen; job tanpa ketiganya tersimpan
+           dengan rapi lalu TIDAK PERNAH MUNCUL di layar buat WO — data mati yang
+           tak memberi satu pun tanda bahwa ia mati. */
+        if (!model || !komp || !sub) {
+          throw aturanBisnis(
+            `Section ${m.sectionCode} memilih job lewat Model → Komponen → `
+            + 'Sub-komponen. Ketiganya wajib diisi, kalau tidak job ini tidak akan '
+            + 'pernah muncul di layar buat WO.',
+          );
+        }
+        modelId = await pastikanModel(tx, m.tenantId, sec.id, model, () => { indukBaru++; });
+        const kompId = await pastikanKomponen(tx, sec.id, komp, () => { indukBaru++; });
+        subId = await pastikanSub(tx, kompId, sub, () => { indukBaru++; });
+      }
+
+      /* Kode job unik PER SECTION, bukan per tenant: 162 kode dipakai di field
+         DAN workshop untuk pekerjaan yang berbeda (db/migrasi/007). */
+      const bentrok = (
+        await tx<{ id: number }[]>`
+          SELECT id FROM jobs
+           WHERE tenant_id = ${m.tenantId} AND section_id = ${sec.id} AND job_code = ${kode}
+        `
+      )[0];
+      if (bentrok) {
+        throw aturanBisnis(
+          `Kode ${kode} sudah dipakai di section ${m.sectionCode}. `
+          + 'Pakai kode lain, atau sunting job yang sudah ada.',
+        );
+      }
+
+      const r = (
+        await tx<{ id: number }[]>`
+          INSERT INTO jobs (tenant_id, job_code, section_id, unit_model_id,
+                            sub_component_id, job_description, plan_hours,
+                            base_points, is_active)
+          VALUES (${m.tenantId}, ${kode}, ${sec.id}, ${modelId}, ${subId},
+                  ${nama}, ${m.planHours}, ${m.basePoints}, ${m.aktif})
+          RETURNING id
+        `
+      )[0]!;
+
+      await catat(tx, m.tenantId, m.actorId, 'admin_job_baru', 'job', String(r.id), {
+        kode, nama, section: m.sectionCode,
+        base_points: m.basePoints, plan_hours: m.planHours,
+        unit_model: m.unitModel ?? null, komponen: m.komponen ?? null,
+        sub_komponen: m.subKomponen ?? null, induk_baru: indukBaru,
       });
 
-      return {
-        jobId: m.jobId,
-        lama: { basePoints: Number(lama.base_points), planHours: Number(lama.plan_hours) },
-      };
+      return { jobId: Number(r.id), baru: true, kode, lama: null };
     },
   });
 }
@@ -436,14 +557,21 @@ export interface BekalAdmin {
   faktor: { id: number; jenis: string; kunci: string; nilai: number; deskripsi: string | null }[];
   setelan: { kunci: string; nilai: string | null; keterangan: string | null }[];
   section: string[];
+  /** Bentuk picker tiap section — `cascade` menuntut model/komponen/sub. */
+  bentukSection: { code: string; picker: string }[];
   job: {
     id: number; kode: string; nama: string; section: string;
     basePoints: number; planHours: number; aktif: boolean;
+    unitModel: string | null; komponen: string | null; subKomponen: string | null;
+    /** WO berstatus approved yang memakai job ini — dasar tombol "terapkan surut". */
+    woApproved: number;
   }[];
+  /** Pilihan cascade yang SUDAH ADA, supaya job baru menempel di cabang yang benar. */
+  cabang: { section: string; model: string; komponen: string; subKomponen: string }[];
 }
 
 export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
-  const [orang, tarif, faktor, setelan, section, job] = await Promise.all([
+  const [orang, tarif, faktor, setelan, section, job, cabang] = await Promise.all([
     sql<Record<string, never>[]>`
       SELECT m.id, m.mechanic_code::text AS kode, m.name AS nama, m.email::text AS email,
              m.role::text AS peran, m.pay_rate_id, m.grade, m.is_active AS aktif,
@@ -481,15 +609,42 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
       SELECT setting_key::text AS kunci, setting_value AS nilai, description AS keterangan
         FROM settings WHERE tenant_id = ${tenantId} ORDER BY setting_key
     `,
-    sql<{ code: string }[]>`
-      SELECT code::text FROM sections WHERE tenant_id = ${tenantId} ORDER BY code
+    sql<{ code: string; picker: string }[]>`
+      SELECT code::text, picker_style::text AS picker
+        FROM sections WHERE tenant_id = ${tenantId} ORDER BY sort_order, code
     `,
     sql<Record<string, never>[]>`
       SELECT j.id, j.job_code::text AS kode, j.job_description AS nama,
-             s.code::text AS section, j.base_points, j.plan_hours, j.is_active AS aktif
-        FROM jobs j JOIN sections s ON s.id = j.section_id
+             s.code::text AS section, j.base_points, j.plan_hours, j.is_active AS aktif,
+             um.code::text  AS unit_model,
+             c.name::text   AS komponen,
+             sc.name::text  AS sub_komponen,
+             coalesce(wo.n, 0) AS wo_approved
+        FROM jobs j
+        JOIN sections s ON s.id = j.section_id
+        LEFT JOIN unit_models        um ON um.id = j.unit_model_id
+        LEFT JOIN job_sub_components sc ON sc.id = j.sub_component_id
+        LEFT JOIN job_components     c  ON c.id  = sc.component_id
+        LEFT JOIN LATERAL (
+          SELECT count(*)::int AS n FROM work_orders w
+           WHERE w.job_id = j.id AND w.status = 'approved'
+        ) wo ON true
        WHERE j.tenant_id = ${tenantId}
        ORDER BY s.code, j.job_code
+    `,
+    /* Cabang cascade yang SUDAH terpakai. Dikirim utuh, seperti katalog layar
+       buat-WO, karena formulir "+ Tambah job" harus menawarkan nama yang persis
+       sama — sub-komponen yang salah eja melahirkan cabang kembar. */
+    sql<Record<string, never>[]>`
+      SELECT DISTINCT s.code::text AS section, um.code::text AS model,
+             c.name::text AS komponen, sc.name::text AS sub_komponen
+        FROM jobs j
+        JOIN sections s ON s.id = j.section_id
+        JOIN unit_models        um ON um.id = j.unit_model_id
+        JOIN job_sub_components sc ON sc.id = j.sub_component_id
+        JOIN job_components     c  ON c.id  = sc.component_id
+       WHERE j.tenant_id = ${tenantId}
+       ORDER BY 1, 2, 3, 4
     `,
   ]);
 
@@ -519,10 +674,19 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
       keterangan: (s['keterangan'] as string) ?? null,
     })),
     section: section.map((s) => s.code),
+    bentukSection: section.map((s) => ({ code: s.code, picker: s.picker })),
     job: (job as unknown as Record<string, unknown>[]).map((j) => ({
       id: n(j['id']), kode: String(j['kode']), nama: String(j['nama']),
       section: String(j['section']), basePoints: n(j['base_points']),
       planHours: n(j['plan_hours']), aktif: Boolean(j['aktif']),
+      unitModel: (j['unit_model'] as string) ?? null,
+      komponen: (j['komponen'] as string) ?? null,
+      subKomponen: (j['sub_komponen'] as string) ?? null,
+      woApproved: n(j['wo_approved']),
+    })),
+    cabang: (cabang as unknown as Record<string, unknown>[]).map((c) => ({
+      section: String(c['section']), model: String(c['model']),
+      komponen: String(c['komponen']), subKomponen: String(c['sub_komponen']),
     })),
   };
 }

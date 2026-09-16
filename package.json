@@ -30,7 +30,8 @@
     "uji:teknis": "tsx scripts/uji-teknis-tyre.ts",
     "uji:admin": "tsx scripts/uji-admin.ts",
     "admin:nyalakan": "tsx scripts/nyalakan-admin.ts",
-    "uji:impor": "tsx scripts/uji-impor.ts"
+    "uji:impor": "tsx scripts/uji-impor.ts",
+    "uji:surut": "tsx scripts/uji-surut.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

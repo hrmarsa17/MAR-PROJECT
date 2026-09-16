@@ -12,6 +12,7 @@ import {
   terbitkanToken,
 } from '../../../domain/admin.js';
 import { terapkanImpor } from '../../../domain/imporKatalog.js';
+import { terapkanSurut } from '../../../domain/terapkanSurut.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -195,11 +196,32 @@ const SKEMA = {
     ganti: z.boolean().optional(),
   }),
   admin_token_cabut: z.object({ mechanicId: z.number().int().positive() }),
+  /** `jobId` kosong = job baru; ada = sunting. Section/kode hanya dipakai saat baru. */
   admin_job: z.object({
-    jobId: z.number().int().positive(),
+    jobId: z.number().int().positive().optional(),
+    sectionCode: z.string().min(1).max(50).optional(),
+    kode: z.string().min(2).max(50).optional(),
+    nama: z.string().min(3).max(500).optional(),
+    unitModel: z.string().max(100).nullable().optional(),
+    komponen: z.string().max(200).nullable().optional(),
+    subKomponen: z.string().max(200).nullable().optional(),
     basePoints: z.number().positive(),
     planHours: z.number().positive(),
     aktif: z.boolean(),
+  }),
+  /**
+   * TERAPKAN SURUT — satu-satunya aksi yang menggeser uang yang sudah dibayar.
+   *
+   * `rupiahSesudahDilihat` bukan pelengkap: domain menghitung ulang pratinjaunya
+   * di dalam transaksi dan MENOLAK bila angkanya tidak sama persis. Tanpa itu,
+   * WO yang disetujui di antara "lihat pratinjau" dan "tekan tombol" akan ikut
+   * terbawa tanpa pernah dilihat siapa pun.
+   */
+  terapkan_surut: z.object({
+    jobId: z.number().int().positive(),
+    basePointBaru: z.number().positive(),
+    planHoursBaru: z.number().positive(),
+    rupiahSesudahDilihat: z.number().nonnegative(),
   }),
   admin_faktor: z.object({
     id: z.number().int().positive(),
@@ -236,6 +258,7 @@ const Amplop = z.object({
     'koreksi_meter', 'ganti_panel_meter',
     'admin_orang', 'admin_token', 'admin_token_cabut',
     'admin_job', 'admin_faktor', 'admin_tarif', 'admin_setelan', 'impor_katalog',
+    'terapkan_surut',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -356,6 +379,10 @@ export async function POST(req: Request): Promise<Response> {
           ...umum, jenis: d.jenis, sectionCode: d.sectionCode,
           baris: d.baris as never,
         }));
+      }
+      case 'terapkan_surut': {
+        const d = isi.data as z.infer<typeof SKEMA.terapkan_surut>;
+        return jawab(await terapkanSurut({ ...umum, ...d }));
       }
     }
   } catch (e) {

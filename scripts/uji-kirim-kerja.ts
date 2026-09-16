@@ -64,13 +64,22 @@ async function perintah(t: string, aksi: string, data: unknown, opId = crypto.ra
 
 const dibuat: number[] = [];
 async function buatWo(jumlah: number, grup = false) {
-  const job = (await sql<{ id: number }[]>`
+  /* Job yang BERBEDA untuk tiap baris. Grup mode 'unit' berarti satu unit
+     dengan banyak pekerjaan, jadi job kembar di dalamnya memang ditolak — dua
+     baris identik adalah dua WO yang akan dibayar dua kali untuk pekerjaan yang
+     sama. Sebelum katalog sungguhan diimpor, kueri ini tidak menemukan job apa
+     pun dan seluruh blok jatuh ke jalur manual, sehingga aturan itu tak pernah
+     tersentuh — dan ia baru menggigit begitu katalognya terisi. */
+  const job = await sql<{ id: number }[]>`
     SELECT j.id FROM jobs j JOIN sections s ON s.id = j.section_id
-     WHERE s.code = 'workshop' AND j.is_active ORDER BY j.id LIMIT 1
-  `)[0];
-  const blok = Array.from({ length: jumlah }, () => ({
-    ...(job ? { jobId: Number(job.id) } : {
-      manual: { description: 'CONTOH kirim kerja', basePoints: 2, targetHours: 3, unitFactor: 1 },
+     WHERE s.code = 'workshop' AND j.is_active ORDER BY j.id LIMIT ${jumlah}
+  `;
+  const blok = Array.from({ length: jumlah }, (_, i) => ({
+    ...(job[i] ? { jobId: Number(job[i]!.id) } : {
+      manual: {
+        description: `CONTOH kirim kerja ${i + 1}`,
+        basePoints: 2, targetHours: 3, unitFactor: 1,
+      },
     }),
     workCondition: 'normal', location: 'workshop', teamMechanicIds: [mek.id],
   }));

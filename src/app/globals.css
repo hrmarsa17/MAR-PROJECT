@@ -2014,6 +2014,63 @@ select, textarea {
 }
 .daftar-masalah { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.78rem; }
 
+/* ── Tabel job: sunting nama di tempat, dua tombol per baris ─────────────── */
+.admin-kepala-aksi { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+/* Nama pekerjaan boleh disunting, jadi ia kotak isian — tapi harus tetap
+   terbaca sebagai TEKS TABEL, bukan formulir. Karena itu lebar penuh dan
+   garisnya redup sampai disentuh. */
+.sel-teks {
+  width: 100%; min-width: 220px; min-height: 0;
+  padding: 0.3rem 0.4rem; font-size: 0.8rem;
+  border-color: transparent; background: transparent;
+}
+.sel-teks:hover { border-color: var(--input-border); background: var(--card); }
+.sel-teks:focus { border-color: var(--primary); background: var(--card); }
+
+.kode-sel { white-space: nowrap; }
+/* Cabang cascade ditulis kecil di bawah kodenya. Tanpa ini, dua job bernama
+   sama dari model berbeda tak bisa dibedakan sama sekali di layar ini. */
+.cabang-ket {
+  display: block; font-size: 0.68rem; color: var(--text-secondary);
+  font-weight: 400; margin-top: 0.1rem; max-width: 220px; white-space: normal;
+}
+.aksi-sel { flex-wrap: wrap; }
+.form-hint.salah { color: var(--reject); }
+
+/* ── Terapkan ke semua WO ────────────────────────────────────────────────── */
+.surut-judul { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
+.surut-angka {
+  display: flex; gap: 1.2rem; flex-wrap: wrap;
+  font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem;
+}
+
+/* Angka rupiahnya yang jadi pusat layar, bukan tombolnya. Ia dibingkai supaya
+   mata jatuh ke situ lebih dulu — itu satu-satunya hal yang perlu dibaca
+   sebelum menekan. */
+.surut-uang {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.7rem 0.9rem; margin: 0.9rem 0;
+  background: var(--bg-secondary); font-variant-numeric: tabular-nums;
+}
+.surut-uang-baris {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 1rem; font-size: 0.85rem; padding: 0.15rem 0;
+}
+.surut-uang-baris.selisih {
+  border-top: 1px solid var(--border); margin-top: 0.35rem;
+  padding-top: 0.45rem; font-size: 1rem;
+}
+.surut-uang.naik .surut-uang-baris.selisih b { color: #047857; }
+.surut-uang.turun .surut-uang-baris.selisih b { color: var(--reject); }
+
+.surut-paham {
+  margin-top: 0.9rem; align-items: flex-start;
+  border: 1px solid var(--reject); border-radius: 8px;
+  padding: 0.6rem 0.7rem; font-size: 0.82rem; line-height: 1.5;
+}
+.surut-paham input { margin-top: 0.15rem; }
+
 /* ── Kesehatan sistem ───────────────────────────────────────────────────── */
 .sehat-baris {
   display: flex; align-items: flex-start; gap: 0.6rem;

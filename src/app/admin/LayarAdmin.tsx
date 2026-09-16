@@ -88,10 +88,17 @@ export function LayarAdmin({
         </p>
       </div>
 
+      {/* Kalimat ini pernah berbunyi "tidak mengubah WO yang sudah disetujui"
+          tanpa syarat. Sejak ada tombol "Terapkan ke semua WO" di Katalog, itu
+          jadi setengah benar — dan jaminan yang setengah benar lebih berbahaya
+          daripada tidak ada jaminan sama sekali. */}
       <div className="kabar kabar-info">
-        <b>Mengubah base point atau tarif TIDAK mengubah WO yang sudah disetujui.</b>{' '}
+        <b>Menyimpan perubahan di sini TIDAK mengubah WO yang sudah disetujui.</b>{' '}
         Angkanya sudah dibekukan saat approve, jadi laporan gaji yang sudah terbit
-        tidak akan bergeser. Yang berubah hanya WO yang dibuat sesudah ini.
+        tidak akan bergeser. Yang berubah hanya WO yang dibuat sesudah ini.{' '}
+        <b>Satu-satunya pengecualian</b> ada di tab Katalog Job: tombol{' '}
+        <i>Terapkan ke semua WO</i>, yang memang dibuat untuk menghitung ulang WO
+        lama — dan selalu menyebutkan rupiahnya lebih dulu.
       </div>
 
       <div className="tabs">
