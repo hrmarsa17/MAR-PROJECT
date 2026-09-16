@@ -7,6 +7,7 @@ import { rupiah } from '../../lib/format.js';
 import type { BekalAdmin } from '../../domain/admin.js';
 import { Katalog } from './Katalog.js';
 import { ModalDampak } from './ModalDampak.js';
+import { Audit } from './Audit.js';
 
 /**
  * MENU ADMIN.
@@ -21,7 +22,7 @@ import { ModalDampak } from './ModalDampak.js';
  * hilang dari dropdown dan payroll, riwayatnya tetap bisa dijelaskan.
  */
 
-type Tab = 'orang' | 'katalog' | 'faktor' | 'tarif' | 'setelan' | 'sehat';
+type Tab = 'orang' | 'katalog' | 'faktor' | 'tarif' | 'setelan' | 'riwayat' | 'sehat';
 
 const TAB: { kunci: Tab; label: string }[] = [
   { kunci: 'orang', label: '👷 Orang & Token' },
@@ -29,6 +30,7 @@ const TAB: { kunci: Tab; label: string }[] = [
   { kunci: 'faktor', label: '⚙️ Faktor' },
   { kunci: 'tarif', label: '💰 Tarif' },
   { kunci: 'setelan', label: '🔧 Setelan' },
+  { kunci: 'riwayat', label: '🕘 Riwayat Perubahan' },
   { kunci: 'sehat', label: '🩺 Kesehatan Sistem' },
 ];
 
@@ -121,6 +123,7 @@ export function LayarAdmin({
       {tab === 'faktor' && <TabFaktor {...bersama} />}
       {tab === 'tarif' && <TabTarif {...bersama} />}
       {tab === 'setelan' && <TabSetelan {...bersama} />}
+      {tab === 'riwayat' && <Audit akuId={akuId} />}
       {tab === 'sehat' && kesehatan}
     </div>
   );

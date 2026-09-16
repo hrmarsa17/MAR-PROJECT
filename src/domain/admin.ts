@@ -52,6 +52,35 @@ async function catat(
   `;
 }
 
+/**
+ * Medan mana yang BERUBAH, beserta nilai lama dan barunya.
+ *
+ * Sampai 16 Sep 2026 `admin_orang_ubah` dan `admin_unit_ubah` mencatat SELURUH
+ * baris lama apa adanya dan tidak pernah mencatat nilai barunya sama sekali.
+ * Akibatnya pertanyaan yang justru paling sering diajukan ke audit log — "apa
+ * yang berubah?" — tidak bisa dijawab untuk orang dan unit, dua entitas yang
+ * paling sering disunting sesudah job. Yang tersimpan cuma potret sebelum,
+ * lengkap dengan email dan kolom yang tak seorang pun menyentuhnya.
+ *
+ * Bentuk keluarannya sama dengan `admin_job_ubah` — `{ medan: {lama, baru} }` —
+ * supaya layar riwayat cukup tahu SATU pola.
+ */
+function bedanya(
+  lama: Record<string, unknown>,
+  baru: Record<string, unknown>,
+): Record<string, { lama: unknown; baru: unknown }> {
+  const out: Record<string, { lama: unknown; baru: unknown }> = {};
+  for (const [k, v] of Object.entries(baru)) {
+    const sebelum = lama[k];
+    // Dibandingkan sebagai teks: `numeric` tiba sebagai string dari Postgres,
+    // dan larik section perlu dibandingkan isinya, bukan alamatnya.
+    const a = Array.isArray(sebelum) ? [...sebelum].sort().join(',') : String(sebelum ?? '');
+    const b = Array.isArray(v) ? [...v].sort().join(',') : String(v ?? '');
+    if (a !== b) out[k] = { lama: sebelum ?? null, baru: v ?? null };
+  }
+  return out;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // ORANG
 // ────────────────────────────────────────────────────────────────────────────
@@ -134,8 +163,38 @@ export async function simpanOrang(
             updated_at = now()
           WHERE id = ${m.id}
         `;
+        /* Section dibaca SEBELUM diganti — daftarnya ditulis ulang utuh di
+           bawah, jadi kalau dibaca sesudahnya yang tercatat nilai barunya dua
+           kali dan perubahannya hilang dari riwayat. */
+        const sectionLama = (
+          await tx<{ section: string }[]>`
+            SELECT section::text FROM mechanic_sections WHERE mechanic_id = ${m.id}
+          `
+        ).map((s) => s.section);
+
         await catat(tx, m.tenantId, m.actorId, 'admin_orang_ubah', 'mechanic',
-          String(m.id), { kode, nama, peran: m.peran, aktif: m.aktif, lama });
+          String(m.id), {
+            kode,
+            ...bedanya(
+              {
+                nama: lama['name'], email: lama['email'], peran: lama['role'],
+                pay_rate_id: lama['pay_rate_id'], grade: lama['grade'],
+                aktif: lama['is_active'], akun_uji: lama['is_test_account'],
+                boleh_performa: lama['may_view_performance'],
+                boleh_teknis: lama['may_view_technical'],
+                boleh_report: lama['may_view_report'],
+                may_admin: lama['may_admin'], kode_mekanik: lama['mechanic_code'],
+                section: sectionLama,
+              },
+              {
+                nama, email, peran: m.peran, pay_rate_id: m.payRateId,
+                grade: m.grade?.trim() || null, aktif: m.aktif, akun_uji: m.akunUji,
+                boleh_performa: m.bolehPerforma, boleh_teknis: m.bolehTeknis,
+                boleh_report: m.bolehReport, may_admin: m.bolehAdmin,
+                kode_mekanik: kode, section: m.section ?? [],
+              },
+            ),
+          });
       } else {
         const r = (
           await tx<{ id: number }[]>`
@@ -555,8 +614,42 @@ export async function simpanUnit(
             is_active = ${m.aktif}
           WHERE id = ${m.unitId}
         `;
+        // Section dibaca sebelum diganti — lihat catatan yang sama di simpanOrang.
+        const sectionLama = (
+          await tx<{ code: string }[]>`
+            SELECT s.code::text FROM unit_sections us JOIN sections s ON s.id = us.section_id
+             WHERE us.unit_id = ${m.unitId}
+          `
+        ).map((s) => s.code);
+        const idModelLama = lama['unit_model_id'] === null
+          || lama['unit_model_id'] === undefined
+          ? null : Number(lama['unit_model_id']);
+        const modelLama = idModelLama === null ? null : (
+          await tx<{ code: string }[]>`
+            SELECT code::text FROM unit_models WHERE id = ${idModelLama}
+          `
+        )[0]?.code ?? null;
+
         await catat(tx, m.tenantId, m.actorId, 'admin_unit_ubah', 'unit',
-          String(m.unitId), { kode, nama, section: m.section, global: m.global, lama });
+          String(m.unitId), {
+            kode,
+            ...bedanya(
+              {
+                nama: lama['unit_name'], unit_model: modelLama, section: sectionLama,
+                global: lama['is_global'], unit_factor: lama['unit_factor'],
+                odometer: lama['odometer'], brand: lama['brand'],
+                model_type: lama['model_type'], mtbf_eligible: lama['mtbf_eligible'],
+                aktif: lama['is_active'],
+              },
+              {
+                nama, unit_model: m.unitModel?.trim() || null, section: m.section,
+                global: m.global, unit_factor: m.unitFactor,
+                odometer: m.odometer ?? null, brand: m.brand?.trim() || null,
+                model_type: m.modelType?.trim() || null, mtbf_eligible: m.mtbfEligible,
+                aktif: m.aktif,
+              },
+            ),
+          });
       } else {
         if (kode.length < 2) throw aturanBisnis('Kode unit minimal 2 huruf');
         const bentrok = (

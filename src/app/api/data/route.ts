@@ -7,6 +7,7 @@ import { bekalOverride } from '../../../domain/kueriApproval.js';
 import { pratinjauSurut } from '../../../domain/terapkanSurut.js';
 import { pratinjauFaktorSurut } from '../../../domain/surutFaktor.js';
 import { pratinjauTarifSurut } from '../../../domain/surutTarif.js';
+import { riwayatAudit, type KategoriAudit } from '../../../domain/kueriAudit.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,24 @@ export async function GET(req: Request): Promise<Response> {
         if (!Number.isInteger(id) || id <= 0) throw masukanTidakSah('Parameter id tidak sah');
         if (!(nilai > 0)) throw masukanTidakSah('Parameter nilai harus lebih dari 0');
         return jawab(await pratinjauTarifSurut(aku.tenantId, id, nilai));
+      }
+      /**
+       * Riwayat perubahan. Isinya menyebut siapa mengubah apa jadi berapa —
+       * termasuk nilai lama orang dan tarif — jadi gerbangnya menu Admin.
+       */
+      case 'audit': {
+        if (!aku.bolehAdmin) throw tidakBerhak('Riwayat perubahan hanya untuk admin.');
+        const k = url.searchParams.get('kategori');
+        const aktor = url.searchParams.get('aktor');
+        const sebelum = url.searchParams.get('sebelum');
+        return jawab(await riwayatAudit(aku.tenantId, {
+          kategori: (k as KategoriAudit | null) ?? 'semua',
+          hanyaUang: url.searchParams.get('uang') === '1',
+          aktorId: aktor && /^\d+$/.test(aktor) ? Number(aktor) : null,
+          cari: url.searchParams.get('cari') ?? '',
+          sebelum: sebelum && /^\d+$/.test(sebelum) ? Number(sebelum) : null,
+          limit: Number(url.searchParams.get('limit') ?? 40),
+        }));
       }
       case 'kiriman': {
         // Aman ditekan berkali-kali — itulah gunanya. Tidak menulis apa pun.

@@ -33,7 +33,8 @@
     "uji:impor": "tsx scripts/uji-impor.ts",
     "uji:surut": "tsx scripts/uji-surut.ts",
     "uji:unit": "tsx scripts/uji-unit.ts",
-    "uji:surut2": "tsx scripts/uji-surut-faktor-tarif.ts"
+    "uji:surut2": "tsx scripts/uji-surut-faktor-tarif.ts",
+    "uji:audit": "tsx scripts/uji-audit.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

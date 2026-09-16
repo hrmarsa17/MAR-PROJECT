@@ -2093,6 +2093,65 @@ select, textarea {
 }
 .surut-paham input { margin-top: 0.15rem; }
 
+/* ── Riwayat perubahan ──────────────────────────────────────────────────────
+   Daftar, bukan tabel. Tiap baris memuat jumlah perubahan yang berbeda-beda —
+   satu job bisa berubah tiga medan sekaligus, satu token tak berubah apa pun —
+   dan tabel berkolom tetap memaksa semuanya jadi satu bentuk yang tidak muat. */
+.audit-saring { margin-bottom: 0.9rem; }
+.tabs-rapat { margin-bottom: 0.6rem; }
+.audit-saring-baris {
+  display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;
+}
+.audit-cari { display: flex; gap: 0.4rem; align-items: center; margin-left: auto; }
+.audit-cari input { max-width: 280px; }
+
+.audit-daftar { display: flex; flex-direction: column; }
+.audit-baris {
+  display: flex; gap: 0.9rem; padding: 0.7rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+.audit-baris:last-child { border-bottom: none; }
+/* Yang menggeser rupiah yang sudah dibayar diberi garis merah di tepinya —
+   ia harus bisa ditemukan sekilas di antara ratusan baris biasa. */
+.audit-baris.uang {
+  border-left: 3px solid var(--reject); padding-left: 0.7rem;
+  background: #FEF2F2;
+}
+.audit-waktu {
+  flex: 0 0 116px; font-size: 0.72rem; color: var(--text-secondary);
+  line-height: 1.5; font-variant-numeric: tabular-nums;
+}
+.audit-isi { flex: 1; min-width: 0; }
+.audit-kepala {
+  display: flex; gap: 0.45rem; align-items: baseline; flex-wrap: wrap;
+}
+.audit-aksi { font-weight: 600; font-size: 0.84rem; }
+.audit-judul { font-size: 0.82rem; color: var(--text-secondary); }
+
+.audit-ubah { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.15rem; }
+.audit-ubah-baris {
+  display: flex; gap: 0.45rem; align-items: baseline; flex-wrap: wrap;
+  font-size: 0.82rem; font-variant-numeric: tabular-nums;
+}
+.audit-medan { min-width: 108px; color: var(--text-secondary); font-size: 0.75rem; }
+.audit-panah { color: var(--text-secondary); }
+
+.audit-konteks {
+  margin-top: 0.3rem; display: flex; gap: 0.7rem; flex-wrap: wrap;
+  font-size: 0.72rem; color: var(--text-secondary);
+}
+.audit-oleh { margin-top: 0.3rem; font-size: 0.72rem; color: var(--text-secondary); }
+.audit-tautan {
+  background: none; border: none; padding: 0 0 0 0.45rem; cursor: pointer;
+  color: var(--primary); font-size: 0.72rem; text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .audit-baris { flex-direction: column; gap: 0.2rem; }
+  .audit-waktu { flex: none; }
+  .audit-cari { margin-left: 0; width: 100%; }
+}
+
 /* ── Kesehatan sistem ───────────────────────────────────────────────────── */
 .sehat-baris {
   display: flex; align-items: flex-start; gap: 0.6rem;
