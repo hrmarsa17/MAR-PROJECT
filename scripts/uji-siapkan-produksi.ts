@@ -59,19 +59,37 @@ psql(induk, 'DROP DATABASE IF EXISTS kmb_uji_prod');
 psql(induk, 'CREATE DATABASE kmb_uji_prod');
 
 try {
-  console.log('\n─── 1. alamat POOLER ditolak ───');
+  console.log('\n─── 1. pooler MODE TRANSAKSI (6543) ditolak ───');
   {
-    /* Dibuat-buat supaya terlihat seperti alamat pooler Supabase. Kalau
-       pemeriksaan ini lolos, skema besar dipasang lewat sambungan yang bisa
-       memindahkan transaksi antar koneksi di tengah jalan. */
+    /* Kalau pemeriksaan ini lolos, skema besar dipasang lewat sambungan yang
+       bisa memindahkan transaksi antar koneksi di tengah jalan. */
     const p = uji.replace(':5433/', ':6543/');
     const h = siapkan(p);
     periksa('berhenti', h.berhenti, 'justru diteruskan');
-    periksa('menyebut kata POOLER', /POOLER/i.test(h.keluar), h.keluar.slice(-120));
-    periksa('memberi tahu di mana mengambil alamat yang benar',
-      /Connection string/i.test(h.keluar));
+    periksa('menyebut mode transaksi', /MODE TRANSAKSI/i.test(h.keluar), h.keluar.slice(-120));
+    periksa('menawarkan DUA alamat pengganti, bukan satu',
+      /Direct connection/.test(h.keluar) && /Session pooler/.test(h.keluar));
+    periksa('menyebut bahwa direct butuh IPv6', /IPv6/.test(h.keluar));
     periksa('dan TIDAK menyentuh basis data',
       psql(uji, "SELECT to_regclass('public.work_orders') IS NULL") === 't');
+  }
+
+  console.log('\n─── 1b. session pooler (5432) TIDAK ditolak ───');
+  {
+    /* Session pooler adalah satu-satunya jalan bagi jaringan yang hanya punya
+       IPv4 — sambungan langsung Supabase IPv6 saja sejak Januari 2024. Pagar
+       yang menolaknya berarti menyuruh orang memakai alamat yang tidak bisa
+       ia jangkau.
+
+       Diperiksa lewat pesan galatnya: alamat palsu ini memang tidak bisa
+       disambung, tapi yang penting ia ditolak karena SAMBUNGAN, bukan karena
+       dianggap alamat yang salah jenis. */
+    const s = 'postgresql://postgres.abc:sandi@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
+    const h = siapkan(s);
+    periksa('tidak ditolak sebagai alamat yang salah jenis',
+      !/MODE TRANSAKSI/i.test(h.keluar), h.keluar.slice(-120));
+    periksa('gagal karena tidak bisa menyambung, bukan karena pagar jenis alamat',
+      /Tidak bisa menyambung/.test(h.keluar), h.keluar.slice(-120));
   }
 
   console.log('\n─── 2. jalur berhasil: dari nol sampai bisa masuk ───');

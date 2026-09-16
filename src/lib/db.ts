@@ -57,23 +57,33 @@ if (!alamat) {
  * Karena itu di sana kolamnya 1, dan penyambungannya lewat POOLER Supabase
  * (porta 6543), yang memang dibuat untuk pola ini.
  *
- * `prepare: false` WAJIB saat lewat pooler mode-transaksi: pernyataan yang
- * sudah disiapkan terikat pada satu koneksi, sementara pooler memindahkan
- * transaksi antar koneksi. Tanpa ini, galatnya muncul belakangan, sesekali,
- * dan berbunyi seperti masalah lain sama sekali.
+ * `prepare: false` WAJIB saat lewat pooler MODE TRANSAKSI: pernyataan yang
+ * sudah disiapkan terikat pada satu koneksi, sementara mode transaksi
+ * memindahkan transaksi antar koneksi. Tanpa ini, galatnya muncul belakangan,
+ * sesekali, dan berbunyi seperti masalah lain sama sekali.
  *
- * Dideteksi dari alamatnya sendiri, bukan dari sebuah flag yang bisa lupa
- * diisi: porta 6543 dan nama host pooler Supabase sudah cukup memberi tahu.
+ * ── YANG MENENTUKAN ADALAH PORTA, BUKAN NAMA HOST ───────────────────────────
+ * Supabase memberi TIGA alamat, dan dua di antaranya ber-host pooler:
+ *
+ *   db.xxx.supabase.co:5432            langsung. IPv6 saja sejak Jan 2024.
+ *   ...pooler.supabase.com:5432        mode SESI. IPv4. Koneksi dipegang utuh,
+ *                                      prepared statement jalan seperti biasa.
+ *   ...pooler.supabase.com:6543        mode TRANSAKSI. IPv4. Yang butuh
+ *                                      prepare:false dan kolam kecil.
+ *
+ * Baris ini sempat memperlakukan SEMUA host pooler sebagai mode transaksi —
+ * dan itu keliru: session pooler adalah satu-satunya jalan bagi jaringan yang
+ * hanya punya IPv4, tapi ia tidak menuntut pembatasan apa pun.
  */
-const lewatPooler = /:6543\//.test(alamat) || /pooler\.supabase\.com/.test(alamat);
-const tanpaServer = process.env['VERCEL'] === '1' || lewatPooler;
+const modeTransaksi = /:6543\//.test(alamat);
+const tanpaServer = process.env['VERCEL'] === '1' || modeTransaksi;
 
 export const sql = postgres(
   alamat,
   {
     max: Number(process.env['DB_POOL_MAX'] ?? (tanpaServer ? 1 : 10)),
     idle_timeout: 20,
-    prepare: !lewatPooler,
+    prepare: !modeTransaksi,
     onnotice: () => {},
     types: {
       /**

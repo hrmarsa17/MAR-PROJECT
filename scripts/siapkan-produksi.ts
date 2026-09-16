@@ -67,17 +67,37 @@ console.log(`  ${samar}\n`);
 // ── 1. Periksa dulu, sentuh belakangan ─────────────────────────────────────
 console.log('─── memeriksa ───');
 
-if (/:6543\//.test(db) || /pooler\.supabase\.com/.test(db)) {
+/* Yang menentukan boleh-tidaknya adalah MODE, dan mode ditentukan PORTA —
+   bukan nama hostnya.
+
+     6543  mode transaksi  — memindahkan transaksi antar koneksi. DDL besar
+                             lewat sini bisa putus di tengah dan meninggalkan
+                             skema separuh jadi. DITOLAK.
+     5432  langsung ATAU mode sesi — koneksinya dipegang utuh selama sesi,
+                             prepared statement jalan. Keduanya aman.
+
+   Pagar ini sempat menolak SELURUH alamat ber-host pooler, termasuk session
+   pooler porta 5432 — padahal justru itu satu-satunya jalan bagi jaringan yang
+   hanya punya IPv4, karena sambungan langsung Supabase IPv6 saja sejak
+   Januari 2024. Menolaknya berarti menyuruh orang memakai alamat yang tidak
+   bisa ia jangkau. */
+if (/:6543\//.test(db)) {
   console.error(`
-  ❌ Ini alamat POOLER (porta 6543).
+  ❌ Ini alamat pooler MODE TRANSAKSI (porta 6543).
 
-     Pooler bagus untuk aplikasi, tapi buruk untuk memasang skema: DDL besar
-     lewat pooler bisa putus di tengah dan meninggalkan skema separuh jadi.
+     Mode transaksi memindahkan transaksi antar koneksi. DDL besar lewat sana
+     bisa putus di tengah dan meninggalkan skema separuh jadi.
 
-     Ambil sambungan LANGSUNG (porta 5432) di Supabase:
-       Project Settings -> Database -> Connection string -> URI
+     Pakai salah satu dari dua ini (keduanya porta 5432):
 
-     Alamat pooler tetap dipakai nanti — untuk Vercel, bukan untuk ini.
+       Direct connection   db.xxxx.supabase.co:5432
+                           — hanya jalan kalau jaringan Anda punya IPv6
+
+       Session pooler      aws-0-....pooler.supabase.com:5432
+                           — IPv4, jalan di mana saja
+
+     Keduanya ada di Project Settings -> Database -> Connection string.
+     Alamat 6543 tetap dipakai nanti — untuk Vercel, bukan untuk ini.
 `);
   process.exit(1);
 }
@@ -89,8 +109,33 @@ let versi = '';
 try {
   versi = (await sql<{ v: string }[]>`SELECT version() AS v`)[0]!.v;
 } catch (e) {
-  console.error(`\n  ❌ Tidak bisa menyambung.\n     ${(e as Error).message}\n`);
-  console.error('     Periksa: kata sandi benar? Alamatnya disalin utuh?\n');
+  const pesan = (e as Error).message;
+  console.error(`\n  ❌ Tidak bisa menyambung.\n     ${pesan}\n`);
+
+  /* Kegagalan yang paling sering, dan yang pesannya paling tidak membantu.
+     Sambungan LANGSUNG Supabase hanya IPv6 sejak Januari 2024; jaringan yang
+     cuma punya IPv4 akan gagal menjangkaunya dengan galat jaringan biasa yang
+     tidak menyebut IPv6 sama sekali. Tanpa petunjuk ini, orang akan mengira
+     kata sandinya salah dan mengatur ulang berkali-kali. */
+  if (/ENETUNREACH|EHOSTUNREACH|ENOTFOUND|ETIMEDOUT/i.test(pesan)
+      && /db\.[a-z0-9]+\.supabase\.co/.test(db)) {
+    console.error(`     Alamat ini sambungan LANGSUNG, dan sejak Januari 2024
+     sambungan langsung Supabase hanya bisa dijangkau lewat IPv6.
+     Kalau jaringan Anda cuma IPv4 — dan kebanyakan memang begitu —
+     ia tidak akan pernah tersambung, berapa kali pun dicoba.
+
+     Pakai SESSION POOLER, porta 5432 juga, tapi IPv4:
+
+       Project Settings -> Database -> Connection string
+       -> pilih "Session pooler"
+
+     Bentuknya kira-kira:
+       postgresql://postgres.pdlev...:SANDI@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+`);
+  } else {
+    console.error('     Periksa: kata sandi benar? Alamatnya disalin utuh?');
+    console.error('     Kata sandi yang memuat tanda khusus perlu di-encode URL.\n');
+  }
   process.exit(1);
 }
 const angkaVersi = Number(/PostgreSQL (\d+)/.exec(versi)?.[1] ?? 0);
