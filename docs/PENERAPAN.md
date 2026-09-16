@@ -122,7 +122,40 @@ Jalankan dulu **tanpa** `--terapkan` untuk melihat apa yang akan terjadi.
 > `migrasi.ts` biasanya melewati migrasi yang sudah tercatat — menyebut nama
 > berkasnya secara langsung memaksanya jalan lagi. Migrasi ini aman diulang.
 
-### 4. Orang dan pemeriksaan
+### 4. Buktikan isinya, dari laptop
+
+Skrip pemindah melaporkan apa yang **ia** lakukan. Yang berdiri di basis data
+bisa berbeda — transaksi yang putus, migrasi yang lupa diulang, atau
+`DATABASE_URL` yang ternyata menunjuk ke tempat lain sejak tiga perintah yang
+lalu. Yang membuktikan cuma membaca ulang:
+
+```bash
+DATABASE_URL="<PROD>" npm run periksa
+```
+
+Ia hanya membaca — transaksinya `READ ONLY`, jadi Postgres sendiri yang menolak
+tulisan apa pun. Aman dijalankan kapan saja, termasuk saat sistem sedang
+dipakai.
+
+Yang harus terlihat sesudah impor pertama:
+
+| | |
+|---|---|
+| migrasi | 10 |
+| job field · workshop · tyreman | 1.535 · 242 · 7 |
+| unit | 103 |
+| form ban | 5 dari 7 job terpetakan |
+| tarif · faktor | > 0 · ≥ 10 |
+| work order · poin mekanik | **0 · 0** |
+
+Dua angka nol terakhir itu yang paling penting hari ini: kalau bukan nol,
+`DATABASE_URL` menunjuk ke basis data yang salah — dan itu jauh lebih baik
+diketahui sekarang daripada sesudah sesuatu ditulis ke sana.
+
+Jalankan lagi setiap sesudah impor besar, dan sekali lagi sebelum hari WO
+sungguhan yang pertama.
+
+### 5. Orang dan pemeriksaan
 
 Masuk dengan token tadi, lalu dari dalam aplikasi:
 

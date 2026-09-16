@@ -49,7 +49,8 @@
     "uji:db-baru": "tsx scripts/uji-db-baru.ts",
     "uji:cadangan": "tsx scripts/uji-cadangan.ts",
     "db:bersih": "tsx scripts/bersihkan-dummy.ts",
-    "ws:matriks": "tsx scripts/pindah-matriks-workshop.ts"
+    "ws:matriks": "tsx scripts/pindah-matriks-workshop.ts",
+    "periksa": "tsx scripts/periksa-produksi.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
