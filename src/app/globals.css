@@ -1846,6 +1846,95 @@ select, textarea {
 .tag-mundur { background: #FDE68A; color: #78350F; }
 .tag-melompat { background: #FECACA; color: #7F1D1D; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   DASHBOARD TEKNIS — angka dari `Teknis.html:25-122`
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.baris-dunia { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.dunia {
+  padding: 0.5rem 1.1rem; border-radius: 9px; font-weight: 700; font-size: 0.875rem;
+  background: var(--card); border: 1px solid var(--border); color: var(--text-secondary);
+}
+.dunia.on { background: #1F2937; color: #fff; border-color: #1F2937; }
+.dunia.mati { opacity: 0.55; cursor: not-allowed; }
+
+.stat-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem; margin-bottom: 1.2rem;
+}
+.layar-teknis .stat {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.9rem 1rem;
+}
+.stat-num { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+.layar-teknis .stat-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem; }
+
+.tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tab {
+  padding: 0.6rem 1.1rem; border-radius: 9px; font-weight: 600; font-size: 0.85rem;
+  background: var(--card); border: 1px solid var(--border); color: var(--text-secondary);
+  cursor: pointer;
+}
+.tab:hover { background: var(--bg-secondary); }
+.tab.active { background: #1F2937; color: #fff; border-color: #1F2937; }
+
+.panel, .panel-tren {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1rem;
+}
+.panel-judul { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem; }
+.panel-sub { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem; line-height: 1.5; }
+
+.tabel-teknis { font-size: 0.82rem; min-width: 560px; }
+.tabel-teknis td { padding: 0.45rem 0.55rem; border-bottom: 1px solid var(--divider); }
+.tabel-teknis .num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Baris kritis: tanahnya merah muda, angkanya merah tua dan tebal. Yang perlu
+   ditindak harus terbaca dari seberang meja. */
+.tabel-teknis tr.kritis td { background: #FEF2F2; }
+.tabel-teknis tr.kritis .rtd { color: #991B1B; font-weight: 800; }
+.tabel-teknis tr.life-baik td { background: #F0FDF4; }
+.ro-kosong { color: var(--text-disabled); font-style: italic; font-size: 0.75rem; }
+.ro-kecil { font-size: 0.6875rem; color: var(--text-secondary); }
+.lewat { color: #991B1B; font-weight: 700; }
+
+.catatan-rumus {
+  margin-top: 0.9rem; font-size: 0.78rem; color: var(--text-secondary);
+  line-height: 1.6; border-top: 1px solid var(--divider); padding-top: 0.7rem;
+}
+
+/* Batang + angka. Angka di sebelah batang SELALU lebih terbaca daripada batang
+   tanpa angka (`Teknis.html:59-65`). */
+.bar-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
+.bar-row {
+  display: grid; grid-template-columns: minmax(120px, 1fr) 3fr 44px;
+  gap: 0.6rem; align-items: center; font-size: 0.8rem;
+}
+.bar-label { overflow-wrap: anywhere; }
+.bar-track { background: var(--bg-secondary); border-radius: 5px; height: 16px; }
+.bar-isi { display: block; height: 16px; border-radius: 5px; background: var(--primary); }
+.bar-num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+.tren-svg { width: 100%; height: auto; }
+.tren-sumbu { font-size: 10px; fill: #94A3B8; }
+.tren-legenda {
+  display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem;
+  color: var(--text-secondary); margin-top: 0.4rem;
+}
+.tren-legenda i {
+  display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+  margin-right: 0.3rem; vertical-align: middle;
+}
+.jejak-rtd { display: block; }
+
+.layar-teknis .hampa { background: var(--card); border: 1px solid var(--border); border-radius: 14px; }
+.hampa-ket { font-size: 0.82rem; margin-top: 0.4rem; color: var(--text-secondary); }
+.hampa-kecil { color: var(--text-disabled); font-size: 0.82rem; padding: 0.8rem 0; }
+
+@media (max-width: 640px) {
+  .layar-teknis .page-title { font-size: 1.5rem; }
+  .bar-row { grid-template-columns: minmax(90px, 1fr) 2fr 40px; }
+}
+
 @media (max-width: 768px) {
   .layar-mekanik .wo-grid, .grup-body { grid-template-columns: minmax(0, 1fr); }
   .wo-details, .info-grid { grid-template-columns: minmax(0, 1fr); }

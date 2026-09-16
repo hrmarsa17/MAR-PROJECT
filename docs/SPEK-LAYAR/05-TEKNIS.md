@@ -448,15 +448,43 @@ penyelesaian saat implementasi; sesi spek tidak mengubah bisnis/DB.
 - Satu `work_orders` menggantikan sheet aktif+arsip. Cut-off tampilan payroll
   tidak ditempel ke pembaca universal (`_PeriodePayroll.js:419-427`).
 
+## 7b. Keadaan 16 Sep 2026 — Tyre dibangun, Field DITAHAN
+
+**Dunia Tyre sudah dibangun**: `src/domain/kueriTeknisTyre.ts`,
+`src/app/teknis/DuniaTyre.tsx`, enam tab, tren mingguan, uji
+`npm run uji:teknis` (26 pemeriksaan).
+
+**Dunia Field DITAHAN, dan ini alasannya.** `unit_down_at` dan `unit_rfu_at`
+muncul **dua kali di seluruh repo sumber**, keduanya DIBACA
+(`_DashboardField.js:123,146`). Tak ada satu pun kode yang menulisnya, dan
+`:140` melewati WO yang kolomnya kosong. Artinya kedua angka itu diketik
+tangan di spreadsheet, dan di KMB Project belum ada tempatnya sama sekali.
+
+Tiga jalan, dan ketiganya keputusan Gabriel — bukan sesuatu yang boleh ditebak:
+
+1. **Tambahkan ke Create WO.** Planner yang membuat WO breakdown mengisi "unit
+   turun jam berapa"; "siap pakai" diisi saat approve. Paling dekat dengan
+   kenyataan, tapi menambah dua isian di layar yang dipakai tiap hari.
+2. **Layar sendiri untuk status unit.** Turun/siap dicatat per unit, lepas dari
+   WO. Lebih bersih secara data, satu layar lagi untuk dijaga.
+3. **Jangan dibangun.** PA/MTTR/MTBF tetap dihitung di luar sistem.
+
+Yang TIDAK boleh: menganggap `down = start_time`. Itu menghapus UB1 — masa
+unit rusak menunggu mekanik — padahal justru itu yang diukur PA.
+
+**Mode demo sengaja TIDAK diport.** Spek ini sendiri mencatat bawaannya
+bertentangan dengan kalimat bannernya (§6 baris pertama). Layar yang setengah
+contoh setengah nyata lebih berbahaya daripada layar kosong.
+
 ## 8. Daftar periksa selesai saat membangun
 
-- [ ] Hak per-orang diperiksa di halaman dan semua GET, tenant tidak bocor.
+- [x] Hak per-orang diperiksa di halaman dan semua GET, tenant tidak bocor.
 - [ ] Dua dunia, posisi saklar, enam tab, tabel, angka, tooltip dan keadaan kosong identik kontrak.
 - [ ] Mode demo eksplisit, banner selalu sesuai respons, kedua cache invalid, pergantian cepat tidak mencampur data; tidak ada penulisan DB.
 - [ ] Mapping equipment, down/rfu, seluruh field detail termasuk remarks, dan sumber KM efektif tersedia.
-- [ ] Tyre: RTD After/null/0/ambang, sisa_km DTO, terlambat dari HP, remove-only, SN beda case, dan ketiadaan target teruji.
-- [ ] Life: pasang→rotasi lintas unit→repair→pasang→buang menjumlah semua potongan, tanpa menghitung rotasi sebagai umur final.
-- [ ] Grafik tujuh-hari bergulir, batas `(mulai,akhir]`, jumlah baris per posisi, sumbu Y nol.
+- [x] Tyre: RTD After/null/0/ambang, sisa_km DTO, terlambat dari HP, remove-only, SN beda case, dan ketiadaan target teruji.
+- [x] Life: pasang→rotasi lintas unit→repair→pasang→buang menjumlah semua potongan, tanpa menghitung rotasi sebagai umur final.
+- [x] Grafik tujuh-hari bergulir, batas `(mulai,akhir]`, jumlah baris per posisi, sumbu Y nol.
 - [ ] Bulan 28/29/30/31 hari, lintas tahun dan zona waktu eksplisit; tidak memakai periode gaji 16–15.
 - [ ] Shift 06/18, pemisah tengah malam sumber, ujung pecahan, WO overlap, preventive, kejadian terbuka/lintas bulan, dan pagar kejadian panjang punya hasil terjelaskan.
 - [ ] WH: bacaan sebelum/sesudah bulan, satu bacaan, nol, mundur, liputan 59,9%/60%, equality batas, serta reset panel.
