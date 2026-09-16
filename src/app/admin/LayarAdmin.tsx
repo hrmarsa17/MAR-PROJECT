@@ -50,6 +50,21 @@ export function LayarAdmin({
   const [sibuk, setSibuk] = useState(false);
   const router = useRouter();
 
+  /**
+   * SENGAJA TIDAK lewat `src/pwa/kirim.ts`, dan ini bukan yang terlewat.
+   *
+   * Seluruh layar lapangan sudah memakai antrean luring. Admin tidak, karena
+   * yang dikerjakan di sini mengubah ATURAN, bukan melaporkan pekerjaan:
+   * tarif, faktor, katalog job, hak orang.
+   *
+   * Aturan yang "tersimpan di antrean" adalah aturan yang belum berlaku —
+   * sementara admin yang menutup layarnya sudah menganggap ia berlaku, dan
+   * setiap WO yang disetujui sejak saat itu membeku dengan angka yang lama.
+   * Selisihnya baru ketahuan saat payroll, dan saat itu uangnya sudah dibayar.
+   *
+   * Pekerjaan admin juga tidak pernah terjadi di pit tanpa sinyal. Gagal
+   * dengan nyaring di sini jauh lebih murah daripada berhasil dengan diam.
+   */
   async function kirim(aksi: string, data: unknown, sukses: string) {
     setSibuk(true);
     setKabar(null);

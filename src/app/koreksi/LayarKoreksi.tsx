@@ -1,5 +1,6 @@
 'use client';
 
+import { kirimPerintah } from '../../pwa/kirim.js';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Portal } from '../Portal.js';
@@ -77,26 +78,31 @@ export function LayarKoreksi({
     setSibuk(true);
     setKabar(null);
     try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aksi, op_id: crypto.randomUUID(), data }),
-      });
-      const j = await r.json();
-      if (j.ok) {
+      /* `h`, bukan `k` — di luar fungsi ini `k` sudah dipakai untuk KATA[jenis],
+         dan menaunginya di sini membuat kata-kata meternya mendadak tak
+         terjangkau bagi siapa pun yang kelak menambah baris di dalam sini. */
+      const h = await kirimPerintah(aksi, data, { ringkas: sukses });
+
+      /* Koreksi meter justru dikerjakan saat seseorang berdiri di sebelah
+         unitnya membaca panel — tempat sinyal paling buruk di seluruh alur. */
+      if (h.keadaan === 'antre') {
+        setKabar({
+          baik: true,
+          teks: '📴 Tersimpan! Koreksi akan terkirim saat ada sinyal. '
+            + 'Jangan dikoreksi ulang — lihat menu Antrean.',
+        });
+        setPerbaiki(null);
+        return true;
+      }
+
+      if (h.keadaan === 'berhasil') {
         setKabar({ baik: true, teks: sukses });
         setPerbaiki(null);
         router.refresh();
         return true;
       }
-      setKabar({ baik: false, teks: j.pesan ?? 'Gagal' });
-      return false;
-    } catch {
-      setKabar({
-        baik: false,
-        teks: '⚠️ Sambungan terputus sebelum jawaban server sampai. Muat ulang dulu '
-          + 'dan lihat keadaan sebenarnya.',
-      });
+
+      setKabar({ baik: false, teks: h.pesan ?? 'Gagal' });
       return false;
     } finally {
       setSibuk(false);

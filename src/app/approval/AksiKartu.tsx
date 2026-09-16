@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { kirimPerintah } from '../../pwa/kirim.js';
 import { ModalOverride } from './ModalOverride.js';
 import { Portal } from '../Portal.js';
 
@@ -27,11 +28,13 @@ const JUDUL: Record<Aksi, string> = {
 };
 
 export function AksiKartu({
-  woId, nomor, peran,
+  woId, nomor, peran, terlihat,
 }: {
   woId: number;
   nomor: string;
   peran: 'supervisor' | 'superintendent';
+  /** Angka yang sedang tampil di kartu saat tombol ditekan. */
+  terlihat?: Record<string, number | null>;
 }) {
   const router = useRouter();
   const [minta, setMinta] = useState<Aksi | null>(null);
@@ -59,25 +62,43 @@ export function AksiKartu({
         : aksi === 'batal' ? 'batal_wo' : aksi;
 
     try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: nama,
-          op_id: opId,
-          data: BUTUH_ALASAN[aksi] ? { woId, alasan: alasan.trim() } : { woId },
-        }),
-      });
-      const j = await r.json();
+      const k = await kirimPerintah(
+        nama,
+        BUTUH_ALASAN[aksi] ? { woId, alasan: alasan.trim() } : { woId },
+        {
+          opId,
+          ringkas: nomor,
+          /* Hanya untuk PERSETUJUAN, dan hanya karena persetujuan membekukan
+             uang. Pembatalan dan penolakan tidak menghasilkan angka, jadi tidak
+             ada yang bisa berbeda dan tidak ada yang perlu dibandingkan. */
+          ...(aksi === 'approve' && terlihat ? { pratinjau: terlihat } : {}),
+        },
+      );
 
-      if (j.ok) {
-        const poin = j.data?.hasil?.finalPoints;
+      /* Persetujuan yang masuk antrean BELUM membekukan uang — pembekuan
+         terjadi di server saat ia akhirnya terkirim. Kalimatnya menyebut itu
+         apa adanya, bukan "disetujui", supaya approver tidak mengira angkanya
+         sudah final. Kalau ternyata berbeda, layar Antrean menyebutkannya. */
+      if (k.keadaan === 'antre') {
+        setHasil({
+          baik: true,
+          teks: `📴 Tersimpan! Keputusan untuk ${nomor} akan terkirim saat ada sinyal. `
+            + 'Poinnya dihitung server saat itu — lihat menu Antrean.',
+        });
+        setMinta(null);
+        return;
+      }
+
+      if (k.keadaan === 'berhasil') {
+        const isi = (k.hasil?.hasil ?? {}) as {
+          finalPoints?: number; dibayar?: unknown[];
+        };
         setHasil({
           baik: true,
           teks:
-            aksi === 'approve' && poin !== undefined
-              ? `${nomor} disetujui — ${Number(poin).toFixed(2)} poin untuk `
-                + `${j.data.hasil.dibayar.length} mekanik. Kartunya pindah ke tab WO Approved.`
+            aksi === 'approve' && isi.finalPoints !== undefined
+              ? `${nomor} disetujui — ${Number(isi.finalPoints).toFixed(2)} poin untuk `
+                + `${isi.dibayar?.length ?? 0} mekanik. Kartunya pindah ke tab WO Approved.`
               : `${nomor}: ${JUDUL[aksi].toLowerCase()} berhasil`,
         });
         setMinta(null);
@@ -85,13 +106,8 @@ export function AksiKartu({
         return;
       }
 
-      setHasil({ baik: false, teks: j.pesan ?? 'Gagal' });
-      if (j.kode === 'KONFLIK_KEADAAN') router.refresh();
-    } catch {
-      setHasil({
-        baik: false,
-        teks: 'Sambungan terputus. Keputusan Anda belum tentu gagal — muat ulang dulu sebelum menekan lagi.',
-      });
+      setHasil({ baik: false, teks: k.pesan ?? 'Gagal' });
+      router.refresh();
     } finally {
       setSibuk(false);
     }

@@ -119,7 +119,18 @@ export function KartuApprovalTampil({
       )}
 
       {bisaAksi && (
-        <AksiKartu woId={wo.id} nomor={wo.wo_number} peran={peran} />
+        /* Angka yang SEDANG DILIHAT approver ikut turun. Persetujuan yang
+           menunggu di antrean luring dibekukan server belakangan, dengan faktor
+           yang berlaku saat itu — kalau berbeda dari yang di layar ini, layar
+           Antrean menyebutkannya. Lihat src/pwa/bandingPratinjau.ts. */
+        <AksiKartu
+          woId={wo.id} nomor={wo.wo_number} peran={peran}
+          terlihat={{
+            base_points: wo.base_points === null ? null : Number(wo.base_points),
+            unit_factor: wo.unit_factor === null ? null : Number(wo.unit_factor),
+            actual_hours: wo.actual_hours === null ? null : Number(wo.actual_hours),
+          }}
+        />
       )}
     </article>
   );

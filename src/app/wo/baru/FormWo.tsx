@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { kirimPerintah } from '../../../pwa/kirim.js';
 import { BlokJoblist } from './BlokJoblist.js';
 import { Portal } from '../../Portal.js';
 import {
@@ -177,57 +178,61 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
     } catch { /* abaikan */ }
 
     setSibuk(true);
-    try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: 'buat_wo',
-          op_id: opId,
-          data: {
-            sectionCode: acuan.section,
-            ...(grupMode === '' ? {} : { grup: { mode: grupMode } }),
-            blok: blok.map(muatanBlok),
-          },
-        }),
-      });
-      const j = await r.json();
-      setSibuk(false);
+    const k = await kirimPerintah(
+      'buat_wo',
+      {
+        sectionCode: acuan.section,
+        ...(grupMode === '' ? {} : { grup: { mode: grupMode } }),
+        blok: blok.map(muatanBlok),
+      },
+      { opId, ringkas: `${blok.length} baris · ${acuan.section}` },
+    );
+    setSibuk(false);
 
-      if (!j.ok) {
-        // Ditolak server dengan alasan yang jelas: TIDAK ada WO yang terbit,
-        // jadi nomor kirimannya boleh dibuang dan formulirnya aman diperbaiki.
-        try { localStorage.removeItem(KUNCI_KIRIMAN); } catch { /* abaikan */ }
-        setKabar(j.pesan ?? 'Gagal membuat Work Order');
-        return;
-      }
-
+    if (k.keadaan === 'ditolak') {
+      // Ditolak server dengan alasan yang jelas: TIDAK ada WO yang terbit,
+      // jadi nomor kirimannya boleh dibuang dan formulirnya aman diperbaiki.
       try { localStorage.removeItem(KUNCI_KIRIMAN); } catch { /* abaikan */ }
-      setSpanduk(null);
-      const dibuat: { id: number; woNumber: string }[] = j.data.hasil.dibuat ?? [];
-      const diulang = j.data.diulang === true;
-      setStruk({
-        judul: `✅ ${dibuat.length} WO berhasil dibuat`,
-        sub: diulang
-          ? 'Kiriman ini sudah pernah masuk sebelumnya. Tidak ada WO yang dibuat dua kali.'
-          : 'Semua nomor di bawah sudah tersimpan di sistem.',
-        baris: dibuat.map((w, i) => ({
-          ok: true, no: w.woNumber, sub: ringkasBlok(blok[i], kat!),
-        })),
-      });
-    } catch {
-      setSibuk(false);
-      /* BUKAN "gagal". Sambungan putus bisa terjadi saat permintaan BERANGKAT
-         (server tak pernah menerima) atau saat jawaban PULANG (server sudah
-         menulis SEMUANYA) — dari sini keduanya terlihat persis sama. Mengaku
-         tahu di sini membuat orang membuat ulang WO yang sebenarnya sudah
-         terbit. */
+      setKabar(k.pesan ?? 'Gagal membuat Work Order');
+      return;
+    }
+
+    /* MASUK ANTREAN — dulu ini jalur "sambungan terputus" yang menyuruh orang
+       menekan Cek status sendiri. Sekarang antrean yang mengurusnya, dan
+       kalimatnya berubah dari peringatan jadi kepastian.
+
+       Yang TIDAK berubah: larangan mengisi formulir baru. Sambungan putus bisa
+       terjadi saat permintaan BERANGKAT (server tak pernah menerima) atau saat
+       jawaban PULANG (server sudah menulis semuanya) — dari sini keduanya
+       terlihat persis sama, dan `op_id` yang sama itulah yang membuat
+       pengiriman ulang tidak melahirkan WO kedua.
+
+       Nomor kirimannya SENGAJA dibiarkan di localStorage: kalau antreannya
+       ternyata hilang (iPhone membuang penyimpanan situs), "Cek status" masih
+       punya nomor untuk ditanyakan ke server. */
+    if (k.keadaan === 'antre') {
       setSpanduk({
         opId,
-        pesan: 'Sambungan terputus sebelum jawaban server sampai. WO Anda MUNGKIN ' +
-               'sudah terbuat. JANGAN isi formulir baru — tekan Cek status di bawah.',
+        pesan: `📴 Tersimpan! ${blok.length} WO akan terkirim saat ada sinyal. `
+          + 'JANGAN isi formulir baru — nomornya terbit setelah terkirim. '
+          + 'Bisa dilihat di menu Antrean.',
       });
+      return;
     }
+
+    try { localStorage.removeItem(KUNCI_KIRIMAN); } catch { /* abaikan */ }
+    setSpanduk(null);
+    const isi = (k.hasil?.hasil ?? {}) as { dibuat?: { id: number; woNumber: string }[] };
+    const dibuat = isi.dibuat ?? [];
+    setStruk({
+      judul: `✅ ${dibuat.length} WO berhasil dibuat`,
+      sub: k.hasil?.diulang === true
+        ? 'Kiriman ini sudah pernah masuk sebelumnya. Tidak ada WO yang dibuat dua kali.'
+        : 'Semua nomor di bawah sudah tersimpan di sistem.',
+      baris: dibuat.map((w, i) => ({
+        ok: true, no: w.woNumber, sub: ringkasBlok(blok[i], kat!),
+      })),
+    });
   }
 
   /** READ-ONLY. Tidak membuat apa pun. Aman ditekan berkali-kali. */

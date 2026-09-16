@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { kirimPerintah } from '../../pwa/kirim.js';
 import { ModalKerja } from './ModalKerja.js';
 import { durasiJam } from '../../lib/format.js';
 import type { KartuWoMekanik } from '../../domain/kueriWoMekanik.js';
@@ -103,31 +104,35 @@ export function DaftarWoMekanik({
     if (!opId.current.has(wo.id)) opId.current.set(wo.id, crypto.randomUUID());
     setSibuk(wo.id);
     try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: 'kirim_kerja',
-          op_id: opId.current.get(wo.id),
-          data: { woId: wo.id, startTime: awal.toISOString(), endTime: kini.toISOString() },
-        }),
-      });
-      const j = await r.json();
-      if (j.ok) {
+      const k = await kirimPerintah(
+        'kirim_kerja',
+        { woId: wo.id, startTime: awal.toISOString(), endTime: kini.toISOString() },
+        { opId: opId.current.get(wo.id)!, ringkas: wo.woNumber },
+      );
+
+      /* Tombol ini dipakai justru di tempat yang sinyalnya paling buruk: ia
+         jalan pintas untuk melapor cepat dari daftar, tanpa membuka modal.
+         "Tersimpan", bukan "gagal" — timer dibersihkan karena pekerjaannya
+         memang sudah diserahkan. */
+      if (k.keadaan === 'antre') {
+        bersihkanTimer(wo.id);
+        alert(`📴 Tersimpan!\n\n${wo.woNumber} akan terkirim saat ada sinyal.\n`
+          + 'Jangan dikirim ulang — lihat menu Antrean.');
+        return;
+      }
+
+      if (k.keadaan === 'berhasil') {
         bersihkanTimer(wo.id);   // baru dibersihkan setelah benar-benar terkirim
-        const h = j.data?.hasil;
-        alert(h?.sudahTerkirim
+        const h = (k.hasil?.hasil ?? {}) as { sudahTerkirim?: boolean; actualHours?: number };
+        alert(h.sudahTerkirim
           ? `${wo.woNumber}: laporan ini sudah terkirim sebelumnya.`
-          : `✅ Laporan terkirim!\nWO: ${wo.woNumber}\nDurasi: ${durasiJam(h?.actualHours)}`);
+          : `✅ Laporan terkirim!\nWO: ${wo.woNumber}\nDurasi: ${durasiJam(h.actualHours)}`);
         router.refresh();
         return;
       }
-      alert(`❌ Gagal: ${j.pesan ?? 'Tidak diketahui'}`);
-      if (j.kode === 'KONFLIK_KEADAAN') router.refresh();
-    } catch {
-      alert('⚠️ Sambungan terputus sebelum jawaban server sampai.\n\n'
-        + 'Tindakan Anda MUNGKIN sudah tersimpan. JANGAN diulangi buta — '
-        + 'muat ulang dulu dan lihat keadaan sebenarnya.');
+
+      alert(`❌ Gagal: ${k.pesan ?? 'Tidak diketahui'}`);
+      router.refresh();
     } finally {
       setSibuk(null);
     }

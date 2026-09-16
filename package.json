@@ -10,6 +10,7 @@
   "scripts": {
     "siapkan:produksi": "tsx scripts/siapkan-produksi.ts",
     "dev": "next dev",
+    "prebuild": "node scripts/bersihkan-next.mjs",
     "build": "next build",
     "start": "next start",
     "token": "tsx scripts/buat-token.ts",

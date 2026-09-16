@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Portal } from '../Portal.js';
 import { PilihWaktu24 } from '../PilihWaktu24.js';
 import { durasiJam } from '../../lib/format.js';
+import { kirimPerintah } from '../../pwa/kirim.js';
 import type { KartuWoMekanik } from '../../domain/kueriWoMekanik.js';
 import type { BekalForm, DetailWo } from '../../domain/kueriDetailForm.js';
 import { DetailTyre, type NilaiDetail } from './DetailTyre.js';
@@ -193,41 +194,40 @@ export function ModalKerja({
     setSibuk(true);
     setHasil(null);
     try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: 'minta_transfer',
-          op_id: opIdTransfer.current,
-          data: {
-            woId: wo.id,
-            sessionStart: new Date(mulai).toISOString(),
-            ...(catatan.trim() ? { note: catatan.trim() } : {}),
-          },
-        }),
-      });
-      const j = await r.json();
-      if (j.ok) {
-        const h = j.data?.hasil;
+      const k = await kirimPerintah(
+        'minta_transfer',
+        {
+          woId: wo.id,
+          sessionStart: new Date(mulai).toISOString(),
+          ...(catatan.trim() ? { note: catatan.trim() } : {}),
+        },
+        { opId: opIdTransfer.current, ringkas: `Transfer ${wo.woNumber}` },
+      );
+
+      if (k.keadaan === 'antre') {
         setHasil({
           baik: true,
-          teks: h?.sudahDiminta
+          teks: `📴 Tersimpan! Permintaan transfer ${wo.woNumber} akan terkirim `
+            + 'saat ada sinyal. Jangan diminta ulang — lihat menu Antrean.',
+        });
+        return;
+      }
+
+      if (k.keadaan === 'berhasil') {
+        const h = (k.hasil?.hasil ?? {}) as { sudahDiminta?: boolean; sessionHours?: number };
+        setHasil({
+          baik: true,
+          teks: h.sudahDiminta
             ? `${wo.woNumber}: permintaan transfer sudah tercatat sebelumnya — masih menunggu keputusan.`
-            : `Permintaan transfer terkirim. ${wo.woNumber} · sesi ${durasiJam(h?.sessionHours)}. `
+            : `Permintaan transfer terkirim. ${wo.woNumber} · sesi ${durasiJam(h.sessionHours)}. `
               + 'Menunggu keputusan Planner/PIC Lapangan.',
         });
         router.refresh();
         return;
       }
-      setHasil({ baik: false, teks: j.pesan ?? 'Gagal' });
-      if (j.kode === 'KONFLIK_KEADAAN') router.refresh();
-    } catch {
-      setHasil({
-        baik: false,
-        teks: '⚠️ Sambungan terputus sebelum jawaban server sampai. Tindakan Anda '
-          + 'MUNGKIN sudah tersimpan. JANGAN diulangi buta — muat ulang dulu dan '
-          + 'lihat keadaan sebenarnya.',
-      });
+
+      setHasil({ baik: false, teks: k.pesan ?? 'Gagal' });
+      router.refresh();
     } finally {
       setSibuk(false);
     }
@@ -243,27 +243,26 @@ export function ModalKerja({
    */
   async function kirimDetail(): Promise<string> {
     if (!bekal || Object.keys(nilaiDetail).length === 0) return '';
-    try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: 'simpan_detail',
-          op_id: opIdDetail.current,
-          data: { woId: wo.id, nilai: nilaiDetail },
-        }),
-      });
-      const j = await r.json();
-      if (j.ok) {
-        const n = Number(j.data?.hasil?.ditulis ?? 0);
-        return n > 0 ? ` Detail tyre tersimpan (${n} isian).` : '';
-      }
-      return ` ⚠️ Jam kerja TERSIMPAN, tapi detail tyre gagal: ${j.pesan ?? 'tidak diketahui'}.`
-        + ' Buka lagi WO ini dan simpan detailnya — jamnya tidak perlu dikirim ulang.';
-    } catch {
-      return ' ⚠️ Jam kerja TERSIMPAN, tapi detail tyre belum sempat terkirim.'
-        + ' Buka lagi WO ini dan simpan detailnya — jamnya tidak perlu dikirim ulang.';
+
+    const k = await kirimPerintah(
+      'simpan_detail',
+      { woId: wo.id, nilai: nilaiDetail },
+      { opId: opIdDetail.current, ringkas: `Detail ban ${wo.woNumber}` },
+    );
+
+    /* Luring: TIDAK ada peringatan sama sekali. Detailnya ikut antre di
+       belakang jamnya, dan keduanya akan terkirim berurutan — tidak ada yang
+       perlu diketik ulang, jadi tidak ada yang perlu dikhawatirkan. Peringatan
+       di sini hanya akan membuat mekanik membuka lagi WO yang sudah beres. */
+    if (k.keadaan === 'antre') return ' Detail tyre ikut tersimpan di antrean.';
+
+    if (k.keadaan === 'berhasil') {
+      const n = Number((k.hasil?.hasil as { ditulis?: number } | undefined)?.ditulis ?? 0);
+      return n > 0 ? ` Detail tyre tersimpan (${n} isian).` : '';
     }
+
+    return ` ⚠️ Jam kerja TERSIMPAN, tapi detail tyre ditolak: ${k.pesan ?? 'tidak diketahui'}.`
+      + ' Buka lagi WO ini dan simpan detailnya — jamnya tidak perlu dikirim ulang.';
   }
 
   async function kirim() {
@@ -271,22 +270,43 @@ export function ModalKerja({
     setSibuk(true);
     setHasil(null);
     try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: 'kirim_kerja',
+      const k = await kirimPerintah(
+        'kirim_kerja',
+        {
+          woId: wo.id,
+          startTime: new Date(mulai).toISOString(),
+          endTime: new Date(selesai).toISOString(),
+        },
+        {
           // op_id lahir sekali per modal. Kalau jawabannya hilang di jalan dan
           // tombol ditekan lagi, server mengenali permintaan yang sama.
-          op_id: opId.current,
-          data: { woId: wo.id, startTime: new Date(mulai).toISOString(),
-                  endTime: new Date(selesai).toISOString() },
-        }),
-      });
-      const j = await r.json();
-      if (j.ok) {
+          opId: opId.current,
+          ringkas: wo.woNumber,
+        },
+      );
+
+      /* LURING BUKAN GAGAL — dan ini kalimat terpenting di layar mekanik.
+         Jamnya sudah tersimpan di HP dan akan terkirim sendiri. Kalau di sini
+         tertulis "gagal", ia akan mengisi ulang jam yang sebenarnya sudah
+         aman, lalu bertanya-tanya kenapa laporannya jadi dua. Kalimatnya
+         sengaja sama dengan yang sudah dibaca orang di PWA KMB V2.
+
+         Timer dibersihkan juga di sini: pekerjaannya sudah diserahkan, dan
+         timer yang tetap berjalan membuat mekanik mengira ia belum melapor. */
+      if (k.keadaan === 'antre') {
+        bersihkanTimer(wo.id);
+        const kabarDetail = await kirimDetail();
+        setHasil({
+          baik: true,
+          teks: `📴 Tersimpan! ${wo.woNumber} akan terkirim saat ada sinyal. `
+            + 'Jangan dikirim ulang — lihat menu Antrean.' + kabarDetail,
+        });
+        return;
+      }
+
+      if (k.keadaan === 'berhasil') {
         bersihkanTimer(wo.id);   // baru dibersihkan setelah benar-benar terkirim
-        const h = j.data?.hasil;
+        const h = (k.hasil?.hasil ?? {}) as { sudahTerkirim?: boolean; actualHours?: number };
         /* Jam sudah COMMITTED di sini, berikut struknya. Detail teknis
            dikirim SESUDAHNYA sebagai perintah tersendiri: kegagalannya tidak
            boleh menyentuh jam yang sudah diakui, dan jawabannya tidak boleh
@@ -294,23 +314,17 @@ export function ModalKerja({
         const kabarDetail = await kirimDetail();
         setHasil({
           baik: true,
-          teks: (h?.sudahTerkirim
+          teks: (h.sudahTerkirim
             ? `${wo.woNumber}: laporan ini sudah terkirim sebelumnya — tidak ada yang tercatat dua kali.`
-            : `Laporan terkirim! ${wo.woNumber} · ${durasiJam(h?.actualHours)}. `
+            : `Laporan terkirim! ${wo.woNumber} · ${durasiJam(h.actualHours)}. `
               + 'WO pindah ke tab Pending.') + kabarDetail,
         });
         router.refresh();
         return;
       }
-      setHasil({ baik: false, teks: j.pesan ?? 'Gagal' });
-      if (j.kode === 'KONFLIK_KEADAAN') router.refresh();
-    } catch {
-      setHasil({
-        baik: false,
-        teks: '⚠️ Sambungan terputus sebelum jawaban server sampai. Tindakan Anda '
-          + 'MUNGKIN sudah tersimpan. JANGAN diulangi buta — muat ulang dulu dan '
-          + 'lihat keadaan sebenarnya.',
-      });
+
+      setHasil({ baik: false, teks: k.pesan ?? 'Gagal' });
+      router.refresh();
     } finally {
       setSibuk(false);
     }

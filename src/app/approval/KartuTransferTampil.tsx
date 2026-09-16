@@ -1,5 +1,6 @@
 'use client';
 
+import { kirimPerintah } from '../../pwa/kirim.js';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Portal } from '../Portal.js';
@@ -43,43 +44,48 @@ export function KartuTransferTampil({
     setSibuk(true);
     setHasil(null);
     try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi,
-          op_id: aksi === 'setujui_transfer' ? opId.setuju : opId.tolak,
-          data: aksi === 'setujui_transfer'
-            ? { woId: kartu.woId, penerima: pilih }
-            : { woId: kartu.woId, alasan: alasan.trim() },
-        }),
-      });
-      const j = await r.json();
-      if (j.ok) {
-        const h = j.data?.hasil;
+      const k = await kirimPerintah(
+        aksi,
+        aksi === 'setujui_transfer'
+          ? { woId: kartu.woId, penerima: pilih }
+          : { woId: kartu.woId, alasan: alasan.trim() },
+        {
+          opId: aksi === 'setujui_transfer' ? opId.setuju : opId.tolak,
+          ringkas: `Transfer ${kartu.woNumber}`,
+        },
+      );
+
+      if (k.keadaan === 'antre') {
         setMintaAlasan(false);
         setHasil({
           baik: true,
-          teks: h?.sudahDiputuskan
+          teks: `📴 Tersimpan! Keputusan transfer ${kartu.woNumber} akan terkirim `
+            + 'saat ada sinyal. Jangan diputuskan ulang — lihat menu Antrean.',
+        });
+        return;
+      }
+
+      if (k.keadaan === 'berhasil') {
+        const h = (k.hasil?.hasil ?? {}) as {
+          sudahDiputuskan?: boolean; partialHoursSesudah?: number; sessionHours?: number;
+        };
+        setMintaAlasan(false);
+        setHasil({
+          baik: true,
+          teks: h.sudahDiputuskan
             ? `${kartu.woNumber}: transfer ini sudah diputuskan sebelumnya.`
             : aksi === 'setujui_transfer'
               ? `Transfer ${kartu.woNumber} disetujui. Jam tercatat sekarang `
-                + `${durasiJam(h?.partialHoursSesudah)}. WO kembali dikerjakan.`
-              : `Transfer ${kartu.woNumber} ditolak — sesi ${durasiJam(h?.sessionHours)} `
+                + `${durasiJam(h.partialHoursSesudah)}. WO kembali dikerjakan.`
+              : `Transfer ${kartu.woNumber} ditolak — sesi ${durasiJam(h.sessionHours)} `
                 + 'hangus, WO kembali ke tim semula.',
         });
         router.refresh();
         return;
       }
-      setHasil({ baik: false, teks: j.pesan ?? 'Gagal' });
-      if (j.kode === 'KONFLIK_KEADAAN') router.refresh();
-    } catch {
-      setHasil({
-        baik: false,
-        teks: '⚠️ Sambungan terputus sebelum jawaban server sampai. Keputusan Anda '
-          + 'MUNGKIN sudah tersimpan. JANGAN diulangi buta — muat ulang dulu dan '
-          + 'lihat keadaan sebenarnya.',
-      });
+
+      setHasil({ baik: false, teks: k.pesan ?? 'Gagal' });
+      router.refresh();
     } finally {
       setSibuk(false);
     }

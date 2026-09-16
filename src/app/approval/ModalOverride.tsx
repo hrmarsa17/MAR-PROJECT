@@ -1,5 +1,6 @@
 'use client';
 
+import { kirimPerintah } from '../../pwa/kirim.js';
 import { useEffect, useMemo, useState } from 'react';
 import { Portal } from '../Portal.js';
 import type { BekalOverride } from '../../domain/kueriApproval.js';
@@ -169,24 +170,24 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
     }
 
     setSibuk(true);
-    try {
-      const r = await fetch('/api/perintah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aksi: 'save_override', op_id: crypto.randomUUID(), data: muatan,
-        }),
-      });
-      const j = await r.json();
-      setSibuk(false);
-      if (!j.ok) { setGalat(j.pesan ?? 'Gagal menyimpan'); return; }
-      onSimpan();
-    } catch {
-      setSibuk(false);
-      setGalat('Sambungan terputus sebelum jawaban server sampai. Koreksi Anda '
-             + 'MUNGKIN sudah tersimpan — tutup, muat ulang, dan lihat keadaannya '
-             + 'sebelum mengulang.');
+    const k = await kirimPerintah('save_override', muatan, {
+      ringkas: `Override WO #${woId}`,
+    });
+    setSibuk(false);
+
+    /* Override MENGGESER UANG, dan luring ia baru berlaku saat terkirim. Karena
+       itu kalimatnya tidak berbunyi "tersimpan" begitu saja — approver yang
+       mengira koreksinya sudah berlaku bisa menyetujui WO-nya dengan angka
+       lama, dan yang membeku adalah angka lama itu. */
+    if (k.keadaan === 'antre') {
+      setGalat('📴 Tersimpan di antrean — koreksi ini BELUM berlaku sampai ada '
+             + 'sinyal. Jangan setujui WO-nya dulu: poin yang dibekukan masih '
+             + 'angka yang lama. Lihat menu Antrean.');
+      return;
     }
+
+    if (k.keadaan === 'ditolak') { setGalat(k.pesan ?? 'Gagal menyimpan'); return; }
+    onSimpan();
   }
 
   return (
