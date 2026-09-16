@@ -1,0 +1,68 @@
+name: Pantau kesehatan
+
+# Menembak /api/sehat dan GAGAL kalau ia tidak menjawab 200. Workflow yang
+# gagal mengirim surel ke pemilik repo — itulah pemberitahuannya, tanpa perlu
+# mendaftar layanan apa pun.
+#
+# ── KENAPA TIAP JAM, BUKAN TIAP 5 MENIT ────────────────────────────────────
+# Repo ini privat, dan menit Actions di paket Free dibatasi 2.000 per bulan.
+# Tiap kali jalan ditagih dibulatkan ke atas jadi 1 menit, jadi:
+#
+#     tiap 5 menit  -> 8.640 menit/bulan   jauh melewati jatah
+#     tiap 30 menit -> 1.440 menit/bulan   72% jatah, tidak menyisakan apa pun
+#     tiap jam      ->   720 menit/bulan   36% jatah  <- yang dipakai
+#
+# Tiap jam cukup untuk dua hal yang paling penting sekarang: menangkap mati
+# yang berkepanjangan, dan menjaga proyek Supabase Free tidak ditidurkan karena
+# dianggap menganggur.
+#
+# Untuk pemeriksaan tiap 5 menit beserta statistik uptime yang sesungguhnya,
+# pemantau luar gratis (UptimeRobot dan sejenisnya) lebih baik dan tidak
+# memakan jatah ini sama sekali. Kalau itu sudah dipasang, berkas ini boleh
+# dihapus.
+
+on:
+  schedule:
+    # Menit 23, bukan 0. Menit bulat adalah tempat setiap cron di dunia
+    # berkumpul, dan jadwal GitHub memang tergeser saat sedang ramai.
+    - cron: '23 * * * *'
+  workflow_dispatch:        # supaya bisa dicoba sekarang, tanpa menunggu
+
+permissions:
+  contents: read
+
+jobs:
+  sehat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Periksa /api/sehat
+        env:
+          ALAMAT: https://kmb-project.vercel.app/api/sehat
+        run: |
+          # Tiga percobaan, jeda 20 detik. Satu kegagalan sesaat bukan alasan
+          # membangunkan orang; tiga kegagalan berturut-turut adalah.
+          # Pemantau yang sering berteriak palsu akan berhenti dipercaya, dan
+          # teriakan yang sungguhan ikut terabaikan bersamanya.
+          for percobaan in 1 2 3; do
+            kode=$(curl -sS -o jawaban.json -w '%{http_code}' --max-time 20 "$ALAMAT" || echo 000)
+            isi=$(cat jawaban.json 2>/dev/null || true)
+            echo "percobaan $percobaan: HTTP $kode  $isi"
+
+            if [ "$kode" = "200" ] && printf '%s' "$isi" | grep -q '"ok":true'; then
+              echo "✅ sehat"
+              exit 0
+            fi
+            [ "$percobaan" -lt 3 ] && sleep 20
+          done
+
+          echo ""
+          echo "❌ /api/sehat tidak sehat setelah 3 percobaan."
+          echo "   HTTP terakhir: $kode"
+          echo "   Jawaban terakhir: $isi"
+          echo ""
+          echo "   503  = aplikasi hidup, basis data tidak terjangkau."
+          echo "          Periksa Supabase: proyeknya tertidur, atau sandinya diganti"
+          echo "          tanpa memperbarui DATABASE_URL di Vercel."
+          echo "   000  = tidak terjangkau sama sekali. Periksa deploy di Vercel."
+          exit 1

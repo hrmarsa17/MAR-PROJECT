@@ -30,7 +30,19 @@ const ambil = (nama: string) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 
-const DIR = resolve(process.cwd(), ambil('--ke') ?? 'cadangan');
+/* `--ke` yang ada tapi KOSONG bukan "pakai bawaan".
+   Sebuah berkas .cmd yang memanggil `--ke "%TUJUAN%"` dengan TUJUAN tak
+   tersetel mengirim string kosong, dan `resolve(cwd, '')` adalah direktori
+   kerja — yaitu akar proyek. Hasilnya: dump berisi SELURUH basis data mendarat
+   di dalam repo, tanpa satu pun peringatan. Sudah terjadi sekali, 16 Sep 2026,
+   saat sebuah templat .cmd rusak karena karakter non-ASCII. */
+const keArg = ambil('--ke');
+if (keArg !== undefined && keArg.trim() === '') {
+  console.error('\n❌ --ke diberikan tapi kosong. Sebutkan direktorinya, atau '
+    + 'hilangkan --ke sama sekali untuk memakai ./cadangan.\n');
+  process.exit(1);
+}
+const DIR = resolve(process.cwd(), keArg ?? 'cadangan');
 const SIMPAN_HARI = Number(ambil('--simpan') ?? 14);
 
 const PG_DUMP = process.env['PG_DUMP_BIN']
