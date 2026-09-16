@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef, useState } from 'react';
+
 /**
  * PICKER TANGGAL & JAM, SELALU 24 JAM. Port dari `DateTime24.html`.
  *
@@ -13,7 +15,24 @@
  * sendiri. Bagian TANGGAL tetap `<input type="date">` — di sana tidak ada
  * urusan AM/PM.
  *
- * Nilai keluar-masuk dalam bentuk `YYYY-MM-DDTHH:MM`, sama persis dengan
+ * ── TIGA BAGIAN MENYIMPAN ISINYA SENDIRI, DAN ITU WAJIB ─────────────────────
+ * Sampai 16 Sep 2026 ketiga kontrol di sini DITURUNKAN dari satu nilai
+ * gabungan: `tgl = nilai.slice(0,10)`, dan `susun()` mengirim string KOSONG ke
+ * atas selama ketiganya belum lengkap.
+ *
+ * Akibatnya picker ini tidak bisa diisi sama sekali. Pilih tanggal → yang naik
+ * ke induk masih `''` karena jam belum diisi → `tgl` dihitung ulang jadi `''`
+ * → kotaknya kosong lagi seketika. Pilih jam → hal yang sama. Ketiganya saling
+ * menghapus, dan karena tak satu pun bisa terisi lebih dulu, gabungannya tak
+ * akan pernah lengkap. Yang terlihat di layar: kalender terbuka, tanggal
+ * dipilih, lalu tidak terjadi apa-apa — persis seperti kontrol yang mati.
+ *
+ * `DateTime24.html` tidak punya penyakit ini karena di sana ketiga kontrol
+ * adalah elemen DOM biasa yang memegang nilainya sendiri; yang gabungan cuma
+ * ditulis ke sebuah `input hidden`. Bentuk itu yang ditiru di sini: state
+ * lokal untuk tiap bagian, dan gabungannya baru naik ke induk.
+ *
+ * Nilai keluar-masuk tetap `YYYY-MM-DDTHH:MM`, sama persis dengan
  * `datetime-local`, sehingga yang membacanya tidak perlu tahu bedanya.
  */
 
@@ -29,26 +48,43 @@ export function PilihWaktu24({
   onUbah: (baru: string) => void;
   mati?: boolean;
 }) {
-  const tgl = nilai.slice(0, 10);
-  const jam = nilai.slice(11, 13);
-  const mnt = nilai.slice(14, 16);
+  const [tgl, setTgl] = useState(() => nilai.slice(0, 10));
+  const [jam, setJam] = useState(() => nilai.slice(11, 13));
+  const [mnt, setMnt] = useState(() => nilai.slice(14, 16));
 
-  // Belum lengkap = kosong. Separuh terisi tidak boleh jadi waktu tebakan —
-  // lebih baik ditolak validasi daripada tersimpan sebagai jam ngawur.
-  const susun = (t: string, j: string, m: string) =>
-    onUbah(t && j !== '' && m !== '' ? `${t}T${j}:${m}` : '');
+  /* Ikut berubah saat INDUK yang menulis — tombol "Finish & Isi Jam" mengisi
+     kedua picker, "Reset" mengosongkannya. Dibandingkan dengan nilai yang
+     terakhir kali diketahui, bukan dipasang tiap gambar ulang: kalau tiap
+     gambar ulang, isian yang baru terisi sebagian akan terhapus lagi — dan
+     itulah bug yang baru saja diperbaiki. */
+  const terakhir = useRef(nilai);
+  if (nilai !== terakhir.current) {
+    terakhir.current = nilai;
+    setTgl(nilai.slice(0, 10));
+    setJam(nilai.slice(11, 13));
+    setMnt(nilai.slice(14, 16));
+  }
+
+  // Belum lengkap = kosong KE ATAS, tapi yang sudah dipilih tetap terlihat di
+  // layar. Separuh terisi tidak boleh jadi waktu tebakan; validasi tombol
+  // Kirim yang menolaknya, bukan kotaknya yang mengosongkan diri.
+  function susun(t: string, j: string, m: string) {
+    const gabung = t && j !== '' && m !== '' ? `${t}T${j}:${m}` : '';
+    terakhir.current = gabung;
+    onUbah(gabung);
+  }
 
   return (
     <div className="dt24">
       <input
         type="date" className="form-control dtTgl" aria-label="Tanggal"
         id={id} value={tgl} disabled={mati}
-        onChange={(e) => susun(e.target.value, jam, mnt)}
+        onChange={(e) => { setTgl(e.target.value); susun(e.target.value, jam, mnt); }}
       />
       <select
         className="form-control dtJam" aria-label="Jam"
         value={jam} disabled={mati}
-        onChange={(e) => susun(tgl, e.target.value, mnt)}
+        onChange={(e) => { setJam(e.target.value); susun(tgl, e.target.value, mnt); }}
       >
         <option value="">--</option>
         {JAM.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -57,7 +93,7 @@ export function PilihWaktu24({
       <select
         className="form-control dtMnt" aria-label="Menit"
         value={mnt} disabled={mati}
-        onChange={(e) => susun(tgl, jam, e.target.value)}
+        onChange={(e) => { setMnt(e.target.value); susun(tgl, jam, e.target.value); }}
       >
         <option value="">--</option>
         {MENIT.map((m) => <option key={m} value={m}>{m}</option>)}
