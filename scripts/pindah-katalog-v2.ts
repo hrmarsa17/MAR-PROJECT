@@ -126,6 +126,20 @@ async function pindahJob(lembar: string, kodeSection: string): Promise<Hitung> {
   const secId = section.get(kodeSection);
   if (!secId) { h.masalah.push(`Section ${kodeSection} tidak ada di basis data`); return h; }
 
+  /* Pratinjau memuat SELURUH kode yang sudah ada dalam SATU kueri, bukan satu
+     kueri per baris.
+
+     Sebelumnya tiap baris menanyakan "kode ini sudah ada?" sendiri-sendiri.
+     Di basis data lokal itu tak terasa; ke Supabase di Singapura, 1.535 baris
+     berarti 1.535 perjalanan bolak-balik — sekitar satu sampai dua menit TANPA
+     mengeluarkan sebaris pun, yang terbaca persis seperti skrip yang mati. */
+  const sudahAda = terapkan ? null : new Set(
+    (await sql<{ kode: string }[]>`
+      SELECT job_code::text AS kode FROM jobs
+       WHERE tenant_id = ${TENANT} AND section_id = ${secId}`
+    ).map((x) => x.kode.toLowerCase()),
+  );
+
   for (const r of baris(lembar)) {
     const kode = teks(r['job_id']);
     if (!kode) { h.lewat++; continue; }
@@ -146,9 +160,7 @@ async function pindahJob(lembar: string, kodeSection: string): Promise<Hitung> {
     }
 
     if (!terapkan) {
-      const ada = await sql`SELECT 1 FROM jobs
-        WHERE tenant_id=${TENANT} AND section_id=${secId} AND job_code=${kode}`;
-      if (ada.length) h.ubah++; else h.baru++;
+      if (sudahAda!.has(kode.toLowerCase())) h.ubah++; else h.baru++;
       continue;
     }
 
@@ -199,6 +211,14 @@ async function pindahTyreman(): Promise<Hitung> {
   const h = kosong();
   const secId = section.get('tyreman');
   if (!secId) { h.masalah.push('Section tyreman tidak ada'); return h; }
+
+  // Sama seperti pindahJob: satu kueri, bukan satu per baris.
+  const sudahAda = terapkan ? null : new Set(
+    (await sql<{ kode: string }[]>`
+      SELECT job_code::text AS kode FROM jobs
+       WHERE tenant_id = ${TENANT} AND section_id = ${secId}`
+    ).map((x) => x.kode.toLowerCase()),
+  );
 
   for (const r of baris('Config_Components')) {
     const kode = teks(r['component_no']);
@@ -332,19 +352,32 @@ const hanya = (process.argv.find((a) => a.startsWith('--hanya='))?.split('=')[1]
 const pakai = (nama: string) => hanya.length === 0 || hanya.includes(nama);
 if (hanya.length > 0) console.log(`   hanya lembar: ${hanya.join(', ')}\n`);
 
+/* Tiap lembar diumumkan SEBELUM dikerjakan, bukan sesudah.
+   Penerapan menjalankan beberapa kueri per baris; ke basis data yang jauh, satu
+   lembar berisi 1.535 baris bisa memakan menit-menitan. Kalau ringkasannya baru
+   muncul di akhir, layar diam total sejak baris pertama — dan yang
+   menjalankannya wajar mengira skripnya mati lalu menekan Ctrl-C di tengah
+   impor. Itu justru saat yang paling tidak boleh diinterupsi. */
 const hasil: [string, Hitung][] = [];
+async function kerjakan(nama: string, f: () => Promise<Hitung>) {
+  process.stdout.write(`  ${nama} … `);
+  const mulai = Date.now();
+  const h = await f();
+  console.log(`selesai (${((Date.now() - mulai) / 1000).toFixed(1)} dtk)`);
+  hasil.push([nama, h]);
+}
+
 if (pakai('field')) {
-  hasil.push(['Job — field (Config_Jobs_Field)',
-    await pindahJob('Config_Jobs_Field', 'field')]);
+  await kerjakan('Job — field (Config_Jobs_Field)',
+    () => pindahJob('Config_Jobs_Field', 'field'));
 }
 if (pakai('workshop')) {
-  hasil.push(['Job — workshop (Config_Jobs_Workshop)',
-    await pindahJob('Config_Jobs_Workshop', 'workshop')]);
+  await kerjakan('Job — workshop (Config_Jobs_Workshop)',
+    () => pindahJob('Config_Jobs_Workshop', 'workshop'));
 }
-if (pakai('tyreman')) {
-  hasil.push(['Job — tyreman (Config_Components)', await pindahTyreman()]);
-}
-if (pakai('unit')) hasil.push(['Unit (Config_Units)', await pindahUnit()]);
+if (pakai('tyreman')) await kerjakan('Job — tyreman (Config_Components)', pindahTyreman);
+if (pakai('unit')) await kerjakan('Unit (Config_Units)', pindahUnit);
+console.log('');
 
 let totalMasalah = 0;
 for (const [nama, h] of hasil) {
