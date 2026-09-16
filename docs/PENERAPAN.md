@@ -133,6 +133,11 @@ lalu. Yang membuktikan cuma membaca ulang:
 DATABASE_URL="<PROD>" npm run periksa
 ```
 
+`<PROD>` di sini dan di seluruh dokumen ini adalah **tempat isian** — ganti
+dengan connection string yang sesungguhnya, jangan diketik apa adanya.
+(Kalau terlanjur, ia berhenti dengan kalimat yang menyebutkannya, bukan dengan
+jejak tumpukan.)
+
 Ia hanya membaca — transaksinya `READ ONLY`, jadi Postgres sendiri yang menolak
 tulisan apa pun. Aman dijalankan kapan saja, termasuk saat sistem sedang
 dipakai.

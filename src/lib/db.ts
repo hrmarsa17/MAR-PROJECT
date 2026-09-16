@@ -39,6 +39,35 @@ if (!alamat) {
 }
 
 /**
+ * ── ALAMAT YANG ADA TAPI BUKAN ALAMAT ───────────────────────────────────────
+ *
+ * `postgres()` melempar `TypeError: Invalid URL` beserta sebelas baris jejak ke
+ * dalam node_modules. Yang membacanya sedang menjalankan sebuah perintah, bukan
+ * sedang memperbaiki postgres.js, dan tidak ada satu kata pun di sana yang
+ * menyebut DATABASE_URL.
+ *
+ * Yang paling sering: tempat isian yang ikut terketik apa adanya — `<PROD>`,
+ * `<connection string>`, `$DATABASE_URL` yang tidak pernah terisi. Itu terjadi
+ * persis pada perintah yang ditempel dari dokumen, yaitu perintah yang paling
+ * jarang dijalankan dan paling tidak dihafal.
+ *
+ * Alamatnya DISAMARKAN sebelum dicetak. Ia biasanya masih berisi kata sandi
+ * produksi, dan galat cenderung berakhir tersalin ke tempat lain.
+ */
+try {
+  new URL(alamat);
+} catch {
+  const samar = alamat.replace(/:\/\/([^:@/]*):[^@/]*@/, '://$1:***@');
+  throw new Error(
+    `DATABASE_URL bukan alamat yang sah: "${samar}"\n` +
+    '  • Kalau itu terlihat seperti tempat isian (<PROD>, <connection string>),\n' +
+    '    ia memang belum diganti dengan alamat yang sesungguhnya.\n' +
+    '  • Bentuknya: postgresql://pengguna:sandi@host:porta/nama_basis_data\n' +
+    '  • Kata sandi bersimbol harus di-URL-encode (@ jadi %40, ! jadi %21).',
+  );
+}
+
+/**
  * ── SATU PROSES YANG HIDUP TERUS, ATAU BANYAK YANG SEKEJAP ──────────────────
  *
  * Kolam koneksi disetel berbeda tergantung di mana ia berjalan, dan selisihnya
