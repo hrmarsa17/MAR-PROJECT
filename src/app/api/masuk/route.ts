@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { identitasDariToken } from '../../../lib/auth.js';
-import { NAMA_COOKIE, jawab, jawabGalat } from '../_bantu.js';
+import { NAMA_COOKIE, jawab, jawabGalat, pasangCookieSesi } from '../_bantu.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
 
 export const runtime = 'nodejs';
@@ -19,13 +19,7 @@ export async function POST(req: Request): Promise<Response> {
     // httpOnly: JavaScript halaman tidak bisa membaca token. Ini menutup satu
     // kelas kebocoran yang di KMB V2 malah dibuka lebar — tab Monitoring
     // menampilkan token setiap mekanik ke layar approver.
-    (await cookies()).set(NAMA_COOKIE, isi.data.token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env['NODE_ENV'] === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 90,
-    });
+    await pasangCookieSesi(isi.data.token);
 
     return jawab(aku);
   } catch (e) {

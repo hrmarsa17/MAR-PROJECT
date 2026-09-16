@@ -181,6 +181,61 @@ console.log('\n─── 6. cabut token juga meninggalkan jejaknya ───');
     b.orang.find((x) => x.id === orangId)?.token === null);
 }
 
+console.log('\n─── 7. mengganti token SENDIRI tidak mengusir yang melakukannya ───');
+{
+  /* Ini yang terjadi pada pemasangan produksi 16 Sep 2026. docs/PENERAPAN.md
+     menyuruh mengganti token bootstrap sebagai hal PERTAMA di dalam aplikasi,
+     oleh satu-satunya admin yang ada. Cookie sesinya berisi token yang barusan
+     ia cabut sendiri — layar berikutnya menolaknya, dan token baru yang belum
+     sempat terbaca tinggal di basis data.
+
+     Dipanggil lewat HTTP, bukan lewat domain, karena yang diuji justru cookie
+     di jawabannya — dan cookie itu hanya ada di lapisan rute. */
+  const r = await fetch(`${ALAMAT}/api/perintah`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${tokAdmin}` },
+    body: JSON.stringify({
+      aksi: 'admin_token', op_id: crypto.randomUUID(),
+      data: { mechanicId: Number(l2.id), ganti: true },
+    }),
+  });
+  const j = await r.json() as { ok: boolean; data?: { hasil: { token: string } } };
+  periksa('penggantian lolos', j.ok === true);
+
+  const baru = j.data?.hasil.token ?? '';
+  periksa('token lama benar-benar mati', baru !== tokAdmin && baru.length === 20);
+
+  /* Jawabannya harus MEMBAWA sesi itu pindah ke token baru. Tanpa baris ini
+     yang menekan tombolnya terlempar ke layar masuk. */
+  const kirimanCookie = r.headers.get('set-cookie') ?? '';
+  periksa('jawabannya memasang ulang cookie sesi',
+    kirimanCookie.includes(`kmb_token=${baru}`), kirimanCookie.slice(0, 60));
+  periksa('cookie barunya tetap httpOnly', /httponly/i.test(kirimanCookie));
+
+  /* Dan buktikan cookie itu memang bisa dipakai — bukan sekadar terkirim.
+     Cookie yang benar bentuknya tapi berisi token mati akan lolos dua
+     pemeriksaan di atas dan tetap meninggalkan orangnya di luar. */
+  const pakaiBaru = await fetch(`${ALAMAT}/api/data?jenis=aku`, {
+    headers: { Cookie: `kmb_token=${baru}` },
+  });
+  periksa('cookie baru langsung bisa dipakai', pakaiBaru.status === 200,
+    `HTTP ${pakaiBaru.status}`);
+
+  const pakaiLama = await fetch(`${ALAMAT}/api/data?jenis=aku`, {
+    headers: { Cookie: `kmb_token=${tokAdmin}` },
+  });
+  periksa('token lama ditolak sesudahnya', pakaiLama.status === 403,
+    `HTTP ${pakaiLama.status}`);
+
+  /* Kembalikan supaya blok pembersihan di bawah tetap menemukan sasarannya.
+     DIHIDUPKAN LAGI, bukan disisipkan: kolom `token` unik untuk seluruh tabel,
+     dan baris lama yang sudah dicabut masih memegang nilai itu. */
+  await sql`UPDATE api_tokens SET is_active = false, revoked_at = now()
+             WHERE mechanic_id = ${l2.id} AND is_active AND revoked_at IS NULL`;
+  await sql`UPDATE api_tokens SET is_active = true, revoked_at = NULL
+             WHERE mechanic_id = ${l2.id} AND token = ${tokAdmin}`;
+}
+
 // ── Bersihkan ───────────────────────────────────────────────────────────────
 await sql`DELETE FROM api_tokens WHERE mechanic_id = ${orangId}`;
 await sql`DELETE FROM mechanic_sections WHERE mechanic_id = ${orangId}`;

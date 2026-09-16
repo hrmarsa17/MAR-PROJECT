@@ -21,6 +21,25 @@ export async function akuDari(req: Request): Promise<Identitas> {
   return identitasDariToken(token);
 }
 
+/**
+ * Memasang cookie sesi. SATU tempat, dipakai saat masuk maupun saat seseorang
+ * mengganti tokennya sendiri.
+ *
+ * Sebelumnya pilihan-pilihan ini hanya ada di rute /api/masuk. Begitu ada
+ * tempat kedua yang perlu memasang cookie yang sama, menyalinnya berarti
+ * `maxAge` atau `secure` bisa berubah di satu tempat saja — dan yang kedua
+ * diam-diam jadi sesi dengan aturan berbeda.
+ */
+export async function pasangCookieSesi(token: string): Promise<void> {
+  (await cookies()).set(NAMA_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env['NODE_ENV'] === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 90,
+  });
+}
+
 /** Satu bentuk amplop untuk semua jawaban. Klien tidak perlu menebak. */
 export function jawab(data: unknown, status = 200): Response {
   return Response.json({ ok: true, data }, { status });

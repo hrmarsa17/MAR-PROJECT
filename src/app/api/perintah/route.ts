@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { akuDari, jawab, jawabGalat } from '../_bantu.js';
+import { akuDari, jawab, jawabGalat, pasangCookieSesi } from '../_bantu.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
 import { buatWorkOrder } from '../../../domain/workOrder.js';
 import { simpanOverride } from '../../../domain/override.js';
@@ -390,7 +390,28 @@ export async function POST(req: Request): Promise<Response> {
       }
       case 'admin_token': {
         const d = isi.data as z.infer<typeof SKEMA.admin_token>;
-        return jawab(await terbitkanToken({ ...umum, ...d }));
+        const h = await terbitkanToken({ ...umum, ...d });
+
+        /* MENGGANTI TOKEN SENDIRI TIDAK BOLEH MENGUSIR YANG MELAKUKANNYA.
+           Cookie sesi ini BERISI token yang barusan dicabut, jadi permintaan
+           berikutnya — termasuk pemuatan ulang layar yang seharusnya
+           menampilkan token barunya — ditolak. Yang menekan tombolnya
+           terlempar ke layar masuk tanpa sempat membaca token yang baru saja
+           ia terbitkan.
+
+           Itu bukan kemungkinan di pinggiran: docs/PENERAPAN.md menyuruh
+           mengganti token bootstrap sebagai hal PERTAMA yang dikerjakan di
+           dalam aplikasi, oleh satu-satunya admin yang ada. Pada pemasangan
+           produksi 16 Sep 2026 itu benar-benar terjadi.
+
+           `cabutToken` sudah lama menolak pencabutan diri sendiri dengan
+           alasan yang sama ("Anda akan terkunci di luar") — jalur GANTI
+           luput, padahal ia juga mencabut. Di sini larangan bukan jawabannya:
+           mengganti token sendiri justru yang paling dianjurkan. Yang benar
+           adalah membawa sesinya ikut pindah. */
+        if (d.mechanicId === aku.mechanicId) await pasangCookieSesi(h.hasil.token);
+
+        return jawab(h);
       }
       case 'admin_token_cabut': {
         const d = isi.data as z.infer<typeof SKEMA.admin_token_cabut>;
