@@ -29,6 +29,9 @@ const l2 = (
 if (!l2) { console.error('Tidak ada akun L2 di basis data dev.'); process.exit(1); }
 
 const token = buatToken();
+// Satu token berlaku per orang (db/migrasi/009) — cabut dulu yang lama.
+await sql`UPDATE api_tokens SET is_active = false, revoked_at = now()
+           WHERE mechanic_id = ${l2.id} AND is_active AND revoked_at IS NULL`;
 const tokenBaris = (
   await sql<{ id: number }[]>`
     INSERT INTO api_tokens (tenant_id, mechanic_id, token)

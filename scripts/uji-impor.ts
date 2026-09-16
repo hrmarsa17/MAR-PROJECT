@@ -36,6 +36,8 @@ const l2 = (
 const TENANT = Number(l2.tenant_id);
 await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 const tok = buatToken();
+await sql`UPDATE api_tokens SET is_active = false, revoked_at = now()
+           WHERE mechanic_id = ${l2.id} AND is_active AND revoked_at IS NULL`;
 await sql`INSERT INTO api_tokens (tenant_id, mechanic_id, token)
           VALUES (${TENANT}, ${l2.id}, ${tok})`;
 

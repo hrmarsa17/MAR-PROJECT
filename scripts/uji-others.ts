@@ -37,6 +37,8 @@ async function tokenUntuk(peran: string) {
     `
   )[0]!;
   const t = buatToken();
+  await sql`UPDATE api_tokens SET is_active = false, revoked_at = now()
+             WHERE mechanic_id = ${m.id} AND is_active AND revoked_at IS NULL`;
   await sql`INSERT INTO api_tokens (tenant_id, mechanic_id, token)
             VALUES (${m.tenant_id}, ${m.id}, ${t})`;
   tokenDibuat.push(t);

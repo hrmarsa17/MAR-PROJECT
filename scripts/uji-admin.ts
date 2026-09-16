@@ -31,6 +31,8 @@ function periksa(nama: string, ok: boolean, catatan = '') {
 const tokenDibuat: string[] = [];
 async function tokenUntuk(id: number, tenant: number) {
   const t = buatToken();
+  await sql`UPDATE api_tokens SET is_active = false, revoked_at = now()
+             WHERE mechanic_id = ${id} AND is_active AND revoked_at IS NULL`;
   await sql`INSERT INTO api_tokens (tenant_id, mechanic_id, token) VALUES (${tenant}, ${id}, ${t})`;
   tokenDibuat.push(t);
   return t;
@@ -126,8 +128,21 @@ let orangId = 0;
   const t3 = await perintah(tokAdmin, 'admin_token', { mechanicId: orangId, ganti: true });
   periksa('ganti token menghasilkan yang BERBEDA',
     String(t3.data?.hasil['token']) !== token1);
-  const n = await sql`SELECT 1 FROM api_tokens WHERE mechanic_id = ${orangId}`;
-  periksa('token lamanya benar-benar dicabut, tidak menumpuk', n.length === 1, `${n.length}`);
+  /* Sampai 16 Sep 2026 baris ini menuntut TEPAT SATU baris — karena mengganti
+     token dulu MENGHAPUS yang lama. Itu membuat tabelnya rapi, dan sekaligus
+     menghapus satu-satunya catatan siapa memegang token apa sampai kapan —
+     justru catatan yang dibutuhkan saat ada yang bertanya "kenapa token saya
+     berhenti bekerja". Yang dijaga sekarang: satu yang BERLAKU, sisanya
+     tersimpan sebagai riwayat. */
+  const berlaku = await sql`
+    SELECT 1 FROM api_tokens
+     WHERE mechanic_id = ${orangId} AND is_active AND revoked_at IS NULL`;
+  periksa('hanya SATU token yang berlaku', berlaku.length === 1, `${berlaku.length}`);
+  const riwayat = await sql`
+    SELECT 1 FROM api_tokens
+     WHERE mechanic_id = ${orangId} AND revoked_at IS NOT NULL`;
+  periksa('token lamanya dicabut dan DISIMPAN sebagai riwayat, bukan dihapus',
+    riwayat.length >= 1, `${riwayat.length} baris tercabut`);
 
   const audit = await sql<{ details: Record<string, unknown> }[]>`
     SELECT details FROM audit_logs

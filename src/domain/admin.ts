@@ -261,8 +261,16 @@ export async function terbitkanToken(
         throw aturanBisnis(`${orang.nama} sudah nonaktif — aktifkan dulu sebelum diberi token.`);
       }
 
+      /* Hanya token yang BERLAKU yang dihitung "sudah punya".
+         Sampai 16 Sep 2026 baris ini membaca sembarang baris api_tokens, jadi
+         seseorang yang tokennya pernah dicabut akan "sudah punya token" — dan
+         yang dikembalikan ke layar adalah kunci mati. Yang menekan tombolnya
+         mengira ia baru saja menerbitkan token; mekaniknya ditolak. */
       const punya = await tx<{ token: string }[]>`
-        SELECT token FROM api_tokens WHERE mechanic_id = ${m.mechanicId}
+        SELECT token FROM api_tokens
+         WHERE mechanic_id = ${m.mechanicId} AND is_active AND revoked_at IS NULL
+           AND (expires_at IS NULL OR expires_at > now())
+         ORDER BY created_at DESC
       `;
 
       /* Sudah punya token dan tidak diminta ganti → kembalikan yang ADA.
@@ -272,8 +280,16 @@ export async function terbitkanToken(
         return { mechanicId: m.mechanicId, token: punya[0]!.token, menggantiLama: false };
       }
 
+      /* DICABUT, bukan dihapus.
+         Sebelumnya baris ini `DELETE FROM api_tokens` — dan bersamanya lenyap
+         satu-satunya catatan siapa memegang token apa sampai kapan. Justru
+         catatan itulah yang dibutuhkan saat ada yang bertanya "kenapa token
+         saya tiba-tiba tidak bisa dipakai". */
       if (punya.length > 0) {
-        await tx`DELETE FROM api_tokens WHERE mechanic_id = ${m.mechanicId}`;
+        await tx`
+          UPDATE api_tokens SET is_active = false, revoked_at = now()
+           WHERE mechanic_id = ${m.mechanicId} AND is_active AND revoked_at IS NULL
+        `;
       }
       const token = buatToken();
       await tx`
@@ -303,9 +319,12 @@ export async function cabutToken(
       if (m.mechanicId === m.actorId) {
         throw aturanBisnis('Anda tidak bisa mencabut token Anda sendiri — Anda akan terkunci di luar.');
       }
+      // Dicabut, bukan dihapus — riwayatnya tetap bisa dijelaskan nanti.
       const r = await tx`
-        DELETE FROM api_tokens WHERE mechanic_id = ${m.mechanicId}
-           AND tenant_id = ${m.tenantId} RETURNING id
+        UPDATE api_tokens SET is_active = false, revoked_at = now()
+         WHERE mechanic_id = ${m.mechanicId} AND tenant_id = ${m.tenantId}
+           AND is_active AND revoked_at IS NULL
+        RETURNING id
       `;
       await catat(tx, m.tenantId, m.actorId, 'admin_token_cabut', 'mechanic',
         String(m.mechanicId), { dicabut: r.length });
@@ -968,8 +987,23 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
           SELECT array_agg(s.section::text ORDER BY s.section) AS daftar
             FROM mechanic_sections s WHERE s.mechanic_id = m.id
         ) sec ON true
+        /* Token yang BERLAKU, bukan sembarang baris.
+
+           Sampai 16 Sep 2026 baris ini hanya mencocokkan mechanic_id lalu
+           LIMIT 1 — tanpa saringan, tanpa urutan. Dengan riwayat token yang
+           menumpuk, yang terambil bisa token yang SUDAH DICABUT; di basis data
+           pengembangan ia menampilkan token yang salah untuk 5 dari 9 orang,
+           salah satunya berbunyi harfiah "DICABUT-MIGRASI-001-2".
+
+           Dari lapangan, kekeliruan ini terbaca persis seperti token yang
+           berubah sendiri: L1 membacakan apa yang tertulis di layar Admin,
+           mekanik memasukkannya, dan ia ditolak. Kueri ini kini sama persis
+           dengan yang dipakai auth dan layar Monitoring. */
         LEFT JOIN LATERAL (
-          SELECT t.token FROM api_tokens t WHERE t.mechanic_id = m.id LIMIT 1
+          SELECT t.token FROM api_tokens t
+           WHERE t.mechanic_id = m.id AND t.is_active AND t.revoked_at IS NULL
+             AND (t.expires_at IS NULL OR t.expires_at > now())
+           ORDER BY t.created_at DESC LIMIT 1
         ) tok ON true
         LEFT JOIN LATERAL (
           SELECT count(*) AS n FROM work_order_team wt WHERE wt.mechanic_id = m.id

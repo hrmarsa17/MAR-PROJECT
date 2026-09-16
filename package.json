@@ -35,6 +35,8 @@
     "uji:unit": "tsx scripts/uji-unit.ts",
     "uji:surut2": "tsx scripts/uji-surut-faktor-tarif.ts",
     "uji:audit": "tsx scripts/uji-audit.ts",
+    "uji:token": "tsx scripts/uji-token.ts",
+    "token:pulihkan": "tsx scripts/pulihkan-token.ts",
     "db:bersih": "tsx scripts/bersihkan-dummy.ts",
     "ws:matriks": "tsx scripts/pindah-matriks-workshop.ts"
   },
