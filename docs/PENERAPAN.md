@@ -141,7 +141,7 @@ Yang harus terlihat sesudah impor pertama:
 
 | | |
 |---|---|
-| migrasi | 10 |
+| migrasi | 9 — mengulang 004 tidak menambah barisnya, hanya memperbarui sidiknya |
 | job field · workshop · tyreman | 1.535 · 242 · 7 |
 | unit | 103 |
 | form ban | 5 dari 7 job terpetakan |
