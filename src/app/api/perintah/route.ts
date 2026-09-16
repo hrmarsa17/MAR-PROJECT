@@ -11,6 +11,7 @@ import {
   cabutToken, simpanFaktor, simpanJob, simpanOrang, simpanSetelan, simpanTarif,
   terbitkanToken,
 } from '../../../domain/admin.js';
+import { terapkanImpor } from '../../../domain/imporKatalog.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -215,6 +216,16 @@ const SKEMA = {
     kunci: z.string().min(1).max(100),
     nilai: z.string().max(500),
   }),
+  /**
+   * Muatannya dikirim balik dari PRATINJAU, bukan dari berkas mentah. Server
+   * tetap memvalidasi seluruhnya — pratinjau itu untuk mata manusia, bukan
+   * pengganti pemeriksaan.
+   */
+  impor_katalog: z.object({
+    jenis: z.enum(['job', 'unit']),
+    sectionCode: z.string().max(50).nullable(),
+    baris: z.array(z.record(z.string(), z.unknown())).min(1).max(5000),
+  }),
 } as const;
 
 const Amplop = z.object({
@@ -224,7 +235,7 @@ const Amplop = z.object({
     'minta_transfer', 'setujui_transfer', 'tolak_transfer', 'simpan_detail',
     'koreksi_meter', 'ganti_panel_meter',
     'admin_orang', 'admin_token', 'admin_token_cabut',
-    'admin_job', 'admin_faktor', 'admin_tarif', 'admin_setelan',
+    'admin_job', 'admin_faktor', 'admin_tarif', 'admin_setelan', 'impor_katalog',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -338,6 +349,13 @@ export async function POST(req: Request): Promise<Response> {
       case 'admin_setelan': {
         const d = isi.data as z.infer<typeof SKEMA.admin_setelan>;
         return jawab(await simpanSetelan({ ...umum, ...d }));
+      }
+      case 'impor_katalog': {
+        const d = isi.data as z.infer<typeof SKEMA.impor_katalog>;
+        return jawab(await terapkanImpor({
+          ...umum, jenis: d.jenis, sectionCode: d.sectionCode,
+          baris: d.baris as never,
+        }));
       }
     }
   } catch (e) {

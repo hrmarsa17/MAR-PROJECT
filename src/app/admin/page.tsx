@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
 import { bekalAdmin } from '../../domain/admin.js';
 import { LayarAdmin } from './LayarAdmin.js';
+import { Kesehatan } from './Kesehatan.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,5 +36,11 @@ export default async function Admin() {
   }
 
   const bekal = await bekalAdmin(aku.tenantId);
-  return <LayarAdmin bekal={bekal} akuId={aku.mechanicId} />;
+  return (
+    <LayarAdmin
+      bekal={bekal}
+      akuId={aku.mechanicId}
+      kesehatan={<Kesehatan tenantId={aku.tenantId} />}
+    />
+  );
 }

@@ -29,7 +29,8 @@
     "uji:meter": "tsx scripts/uji-meter.ts",
     "uji:teknis": "tsx scripts/uji-teknis-tyre.ts",
     "uji:admin": "tsx scripts/uji-admin.ts",
-    "admin:nyalakan": "tsx scripts/nyalakan-admin.ts"
+    "admin:nyalakan": "tsx scripts/nyalakan-admin.ts",
+    "uji:impor": "tsx scripts/uji-impor.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

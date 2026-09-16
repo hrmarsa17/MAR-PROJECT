@@ -1984,6 +1984,49 @@ select, textarea {
 .pilih-baris input { width: auto; min-height: 0; margin: 0; }
 .pilih-baris input:disabled + span { opacity: 0.55; }
 
+/* ── Katalog dibagi per LEMBAR, seperti sheet di spreadsheet ─────────────── */
+.lembar-baris {
+  display: flex; gap: 0.25rem; flex-wrap: wrap;
+  border-bottom: 2px solid var(--border); margin-bottom: 1rem;
+}
+/* Sengaja bergaya map sheet: bersambung ke isinya, bukan pil yang melayang. */
+.lembar {
+  padding: 0.45rem 0.9rem; font-size: 0.8rem; font-weight: 600;
+  background: var(--bg-secondary); color: var(--text-secondary);
+  border: 1px solid var(--border); border-bottom: none;
+  border-radius: 8px 8px 0 0; cursor: pointer; margin-bottom: -2px;
+}
+.lembar:hover { color: var(--text); }
+.lembar.aktif {
+  background: var(--card); color: var(--primary);
+  border-bottom: 2px solid var(--card);
+}
+
+.impor-kotak {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.8rem 0.9rem; margin-bottom: 1rem;
+}
+.impor-baris { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.impor-pilih { cursor: pointer; }
+.impor-ket { font-size: 0.8rem; color: var(--text-secondary); }
+.pratinjau-impor {
+  margin-top: 0.9rem; border-top: 1px solid var(--border); padding-top: 0.9rem;
+}
+.daftar-masalah { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.78rem; }
+
+/* ── Kesehatan sistem ───────────────────────────────────────────────────── */
+.sehat-baris {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  padding: 0.6rem 0; border-bottom: 1px solid var(--divider);
+}
+.sehat-baris:last-child { border-bottom: none; }
+.sehat-tanda { font-size: 1rem; line-height: 1.4; }
+.sehat-isi { flex: 1; min-width: 0; }
+.sehat-judul { font-weight: 600; font-size: 0.875rem; }
+.sehat-ket { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+.sehat-baris.awas .sehat-judul { color: #92400E; }
+.sehat-baris.salah .sehat-judul { color: #991B1B; }
+
 @media (max-width: 768px) {
   .layar-mekanik .wo-grid, .grup-body { grid-template-columns: minmax(0, 1fr); }
   .wo-details, .info-grid { grid-template-columns: minmax(0, 1fr); }

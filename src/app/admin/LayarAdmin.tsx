@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Portal } from '../Portal.js';
 import { rupiah } from '../../lib/format.js';
 import type { BekalAdmin } from '../../domain/admin.js';
+import { Katalog } from './Katalog.js';
 
 /**
  * MENU ADMIN.
@@ -19,7 +20,7 @@ import type { BekalAdmin } from '../../domain/admin.js';
  * hilang dari dropdown dan payroll, riwayatnya tetap bisa dijelaskan.
  */
 
-type Tab = 'orang' | 'katalog' | 'faktor' | 'tarif' | 'setelan';
+type Tab = 'orang' | 'katalog' | 'faktor' | 'tarif' | 'setelan' | 'sehat';
 
 const TAB: { kunci: Tab; label: string }[] = [
   { kunci: 'orang', label: '👷 Orang & Token' },
@@ -27,11 +28,20 @@ const TAB: { kunci: Tab; label: string }[] = [
   { kunci: 'faktor', label: '⚙️ Faktor' },
   { kunci: 'tarif', label: '💰 Tarif' },
   { kunci: 'setelan', label: '🔧 Setelan' },
+  { kunci: 'sehat', label: '🩺 Kesehatan Sistem' },
 ];
 
 type Kabar = { baik: boolean; teks: string } | null;
 
-export function LayarAdmin({ bekal, akuId }: { bekal: BekalAdmin; akuId: number }) {
+export function LayarAdmin({
+  bekal, akuId, kesehatan,
+}: {
+  bekal: BekalAdmin;
+  akuId: number;
+  /* Dihitung di server dan dikirim sebagai children — layar klien tidak boleh
+     menyentuh basis data, dan pemeriksaannya memang tidak perlu interaktif. */
+  kesehatan: React.ReactNode;
+}) {
   const [tab, setTab] = useState<Tab>('orang');
   const [kabar, setKabar] = useState<Kabar>(null);
   const [sibuk, setSibuk] = useState(false);
@@ -99,10 +109,11 @@ export function LayarAdmin({ bekal, akuId }: { bekal: BekalAdmin; akuId: number 
       )}
 
       {tab === 'orang' && <TabOrang {...bersama} />}
-      {tab === 'katalog' && <TabKatalog {...bersama} />}
+      {tab === 'katalog' && <Katalog bekal={bekal} kirim={kirim} sibuk={sibuk} />}
       {tab === 'faktor' && <TabFaktor {...bersama} />}
       {tab === 'tarif' && <TabTarif {...bersama} />}
       {tab === 'setelan' && <TabSetelan {...bersama} />}
+      {tab === 'sehat' && kesehatan}
     </div>
   );
 }
@@ -363,88 +374,6 @@ function Centang({
              onChange={(e) => onUbah(e.target.checked)} />
       <span>{label}</span>
     </label>
-  );
-}
-
-/* ── KATALOG JOB ─────────────────────────────────────────────────────────── */
-
-function TabKatalog({ kirim, sibuk, bekal }: Bersama) {
-  const [cari, setCari] = useState('');
-  const [ubah, setUbah] = useState<Record<number, { bp: string; ph: string }>>({});
-
-  const hasil = bekal.job.filter((j) =>
-    !cari.trim()
-    || j.kode.toLowerCase().includes(cari.toLowerCase())
-    || j.nama.toLowerCase().includes(cari.toLowerCase()));
-
-  if (bekal.job.length === 0) {
-    return (
-      <div className="hampa">
-        <b>Katalog job masih kosong</b>
-        <div className="hampa-ket">
-          Katalog KMB V2 berisi ribuan baris — mengetiknya satu per satu di sini
-          mustahil. Impor Excel belum dibangun; itu pekerjaan berikutnya.
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="panel">
-      <div className="admin-kepala">
-        <div className="panel-judul">{bekal.job.length} job</div>
-        <input className="form-control" style={{ maxWidth: 260 }} value={cari}
-               onChange={(e) => setCari(e.target.value)} placeholder="🔍 Cari kode / nama job…" />
-      </div>
-      <div className="tabel-gulir">
-        <table className="table tabel-admin">
-          <thead>
-            <tr>
-              <th>Kode</th><th>Pekerjaan</th><th>Section</th>
-              <th className="num">Base point</th><th className="num">Jam rencana</th>
-              <th>Aktif</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {hasil.slice(0, 200).map((j) => {
-              const d = ubah[j.id] ?? { bp: String(j.basePoints), ph: String(j.planHours) };
-              const berubah = Number(d.bp) !== j.basePoints || Number(d.ph) !== j.planHours;
-              return (
-                <tr key={j.id} className={j.aktif ? '' : 'nonaktif'}>
-                  <td>{j.kode}</td>
-                  <td>{j.nama}</td>
-                  <td>{j.section}</td>
-                  <td className="num">
-                    <input className="sel-angka" type="number" step="any" value={d.bp}
-                           onChange={(e) => setUbah({ ...ubah, [j.id]: { ...d, bp: e.target.value } })} />
-                  </td>
-                  <td className="num">
-                    <input className="sel-angka" type="number" step="any" value={d.ph}
-                           onChange={(e) => setUbah({ ...ubah, [j.id]: { ...d, ph: e.target.value } })} />
-                  </td>
-                  <td>{j.aktif ? 'ya' : 'tidak'}</td>
-                  <td>
-                    <button
-                      className="btn-primary btn-sm"
-                      disabled={sibuk || !berubah || Number(d.bp) <= 0 || Number(d.ph) <= 0}
-                      onClick={() => void kirim('admin_job', {
-                        jobId: j.id, basePoints: Number(d.bp), planHours: Number(d.ph),
-                        aktif: j.aktif,
-                      }, `${j.kode}: ${j.basePoints} → ${d.bp} poin tersimpan.`)}
-                    >Simpan</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {hasil.length > 200 && (
-        <p className="form-hint">
-          Menampilkan 200 dari {hasil.length}. Persempit pencariannya.
-        </p>
-      )}
-    </div>
   );
 }
 
