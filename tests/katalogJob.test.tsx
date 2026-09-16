@@ -69,7 +69,7 @@ const UNIT_SEMUA: BekalAdmin['unit'][number] = {
 };
 
 const BEKAL: BekalAdmin = {
-  orang: [], tarif: [], faktor: [], setelan: [],
+  orang: [], tarif: [], faktor: [], setelan: [], setelanDampak: [],
   section: ['field', 'tyreman'],
   bentukSection: [
     { code: 'field', picker: 'cascade' },

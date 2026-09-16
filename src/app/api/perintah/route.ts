@@ -13,6 +13,8 @@ import {
 } from '../../../domain/admin.js';
 import { terapkanImpor } from '../../../domain/imporKatalog.js';
 import { terapkanSurut } from '../../../domain/terapkanSurut.js';
+import { terapkanFaktorSurut } from '../../../domain/surutFaktor.js';
+import { terapkanTarifSurut } from '../../../domain/surutTarif.js';
 import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
@@ -247,6 +249,18 @@ const SKEMA = {
     planHoursBaru: z.number().positive(),
     rupiahSesudahDilihat: z.number().nonnegative(),
   }),
+  /** Faktor: LINTAS SECTION. Satu baris menyentuh field, workshop, dan tyreman. */
+  terapkan_faktor_surut: z.object({
+    faktorId: z.number().int().positive(),
+    nilaiBaru: z.number().nonnegative(),
+    rupiahSesudahDilihat: z.number().nonnegative(),
+  }),
+  /** Tarif: tidak menyentuh poin sama sekali, hanya harga per poinnya. */
+  terapkan_tarif_surut: z.object({
+    tarifId: z.number().int().positive(),
+    idrBaru: z.number().positive(),
+    rupiahSesudahDilihat: z.number().nonnegative(),
+  }),
   admin_faktor: z.object({
     id: z.number().int().positive(),
     nilai: z.number().nonnegative(),
@@ -283,7 +297,7 @@ const Amplop = z.object({
     'admin_orang', 'admin_token', 'admin_token_cabut',
     'admin_job', 'admin_unit', 'admin_hapus_job', 'admin_hapus_unit',
     'admin_faktor', 'admin_tarif', 'admin_setelan', 'impor_katalog',
-    'terapkan_surut',
+    'terapkan_surut', 'terapkan_faktor_surut', 'terapkan_tarif_surut',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -420,6 +434,14 @@ export async function POST(req: Request): Promise<Response> {
       case 'terapkan_surut': {
         const d = isi.data as z.infer<typeof SKEMA.terapkan_surut>;
         return jawab(await terapkanSurut({ ...umum, ...d }));
+      }
+      case 'terapkan_faktor_surut': {
+        const d = isi.data as z.infer<typeof SKEMA.terapkan_faktor_surut>;
+        return jawab(await terapkanFaktorSurut({ ...umum, ...d }));
+      }
+      case 'terapkan_tarif_surut': {
+        const d = isi.data as z.infer<typeof SKEMA.terapkan_tarif_surut>;
+        return jawab(await terapkanTarifSurut({ ...umum, ...d }));
       }
     }
   } catch (e) {

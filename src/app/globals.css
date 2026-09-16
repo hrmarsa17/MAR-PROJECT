@@ -2075,6 +2075,17 @@ select, textarea {
 .surut-uang.naik .surut-uang-baris.selisih b { color: #047857; }
 .surut-uang.turun .surut-uang-baris.selisih b { color: var(--reject); }
 
+/* Kolom "dampak kalau diubah" di tab Setelan. Keterangannya panjang dengan
+   sengaja — ia satu-satunya tempat yang memberi tahu bahwa setelan berlaku
+   surut seketika, dan bahwa sebagian kunci tidak dibaca kode mana pun. */
+.sel-dampak { max-width: 460px; white-space: normal; }
+.dampak-ket {
+  font-size: 0.75rem; color: var(--text-secondary);
+  line-height: 1.5; margin-top: 0.25rem;
+}
+.dampak-pembaca { font-size: 0.68rem; color: var(--text-secondary); margin-top: 0.2rem; }
+.dampak-pembaca code { font-size: 0.66rem; }
+
 .surut-paham {
   margin-top: 0.9rem; align-items: flex-start;
   border: 1px solid var(--reject); border-radius: 8px;

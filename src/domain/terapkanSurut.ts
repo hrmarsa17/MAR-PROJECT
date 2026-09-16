@@ -6,6 +6,9 @@ import { periodeSaatIni } from './periode.js';
 import {
   bulatkan, rupiahUntukPoin, statusKetepatanWaktu, type TimelinessStatus,
 } from './scoring.js';
+import {
+  pastikanPratinjauMasihBerlaku, rangkumDampak, type DampakSurut,
+} from './surutBersama.js';
 
 /**
  * TERAPKAN SURUT — mengubah angka sebuah job dan MEMBAWANYA MUNDUR ke seluruh
@@ -70,7 +73,12 @@ export interface BarisSurut {
   orang: number;
 }
 
-export interface PratinjauSurut {
+/**
+ * Bentuk laporannya SAMA dengan surut faktor dan tarif (`DampakSurut`), supaya
+ * layar menampilkan ketiganya dengan satu komponen. Yang ditambahkan di sini
+ * hanya yang benar-benar khas job.
+ */
+export interface PratinjauSurut extends DampakSurut {
   jobId: number;
   kode: string;
   nama: string;
@@ -79,18 +87,8 @@ export interface PratinjauSurut {
   basePointBaru: number;
   planHoursLama: number;
   planHoursBaru: number;
-  /** WO approved yang akan dihitung ulang. */
-  terpengaruh: number;
-  /** WO yang dilewati karena approver pernah mengubah angkanya sendiri. */
-  dilewatiOverride: number;
   /** Di antara yang terpengaruh: berapa yang status ketepatan waktunya bergeser. */
   statusBergeser: number;
-  rupiahSekarang: number;
-  rupiahSesudah: number;
-  /** Berapa (WO × orang) baris pembayaran yang ikut bergerak. */
-  orang: number;
-  /** Periode gaji yang ikut bergeser — yang sudah dibayar ada di sini. */
-  periode: { kunci: string; label: string; wo: number; rupiahSekarang: number; rupiahSesudah: number }[];
   baris: BarisSurut[];
 }
 
@@ -228,21 +226,43 @@ async function hitungSurut(
     };
   });
 
-  const perPeriode = new Map<string, { wo: number; lama: number; baru: number }>();
-  for (const b of baris) {
-    const p = perPeriode.get(b.periodeKunci) ?? { wo: 0, lama: 0, baru: 0 };
-    p.wo += 1;
-    p.lama += b.rupiahLama;
-    p.baru += b.rupiahBaru;
-    perPeriode.set(b.periodeKunci, p);
-  }
-  const labelPeriode = new Map<string, string>();
-  for (const m of mentah) {
-    const p = periodeSaatIni(m.disetujui ?? new Date());
-    labelPeriode.set(p.kunci, p.label);
+  const statusBergeser = baris.filter((b) => b.statusBaru !== b.statusLama).length;
+  const catatan: string[] = [];
+  if (statusBergeser > 0) {
+    catatan.push(
+      `Jam rencana yang baru menggeser status ketepatan waktu ${statusBergeser} WO `
+      + '(mis. on time → late). Faktor untuk status barunya diambil dari tabel '
+      + 'Faktor HARI INI, karena snapshot hanya membekukan faktor untuk status '
+      + 'yang dulu berlaku.',
+    );
   }
 
+  const waktu = new Map(mentah.map((m) => [m.wo_id, m.disetujui ?? new Date()]));
+  const dampak = rangkumDampak(
+    baris.map((b) => ({
+      woId: b.woId,
+      disetujui: waktu.get(b.woId) ?? new Date(),
+      poinLama: b.finalLama, poinBaru: b.finalBaru,
+      rupiahLama: b.rupiahLama, rupiahBaru: b.rupiahBaru, orang: b.orang,
+    })),
+    {
+      judul: `${job.kode} — ${job.nama}`,
+      perubahan: [
+        { label: 'Base point', lama: String(Number(job.base_points)), baru: String(basePointBaru) },
+        { label: 'Jam rencana', lama: String(Number(job.plan_hours)), baru: String(planHoursBaru) },
+      ],
+      dilewati,
+      alasanDilewati: dilewati > 0
+        ? 'approver pernah menyentuh base point atau jam rencananya sendiri — itu '
+          + 'penilaian orang yang melihat pekerjaannya langsung, dan angka katalog '
+          + 'tidak menimpanya'
+        : null,
+      catatan,
+    },
+  );
+
   return {
+    ...dampak,
     jobId,
     kode: job.kode,
     nama: job.nama,
@@ -251,18 +271,7 @@ async function hitungSurut(
     basePointBaru,
     planHoursLama: Number(job.plan_hours),
     planHoursBaru,
-    terpengaruh: baris.length,
-    dilewatiOverride: dilewati,
-    statusBergeser: baris.filter((b) => b.statusBaru !== b.statusLama).length,
-    rupiahSekarang: baris.reduce((a, b) => a + b.rupiahLama, 0),
-    rupiahSesudah: baris.reduce((a, b) => a + b.rupiahBaru, 0),
-    orang: baris.reduce((a, b) => a + b.orang, 0),
-    periode: [...perPeriode.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([kunci, v]) => ({
-        kunci, label: labelPeriode.get(kunci) ?? kunci,
-        wo: v.wo, rupiahSekarang: v.lama, rupiahSesudah: v.baru,
-      })),
+    statusBergeser,
     baris,
   };
 }
@@ -293,7 +302,7 @@ export interface HasilSurut {
   jobId: number;
   kode: string;
   woDihitungUlang: number;
-  dilewatiOverride: number;
+  dilewati: number;
   statusBergeser: number;
   rupiahSebelum: number;
   rupiahSesudah: number;
@@ -312,12 +321,7 @@ export async function terapkanSurut(m: MasukanSurut): Promise<HasilPerintah<Hasi
          "terapkan", angkanya berubah — dan yang menekan tombol menyetujui angka
          yang sudah tidak berlaku. Ia harus melihat lagi. */
       const p = await hitungSurut(tx, m.tenantId, m.jobId, m.basePointBaru, m.planHoursBaru);
-      if (Math.round(p.rupiahSesudah) !== Math.round(m.rupiahSesudahDilihat)) {
-        throw aturanBisnis(
-          'Angkanya berubah sejak Anda melihat pratinjaunya — kemungkinan ada WO '
-          + 'yang baru disetujui. Tutup lalu lihat pratinjaunya sekali lagi.',
-        );
-      }
+      pastikanPratinjauMasihBerlaku(p.rupiahSesudah, m.rupiahSesudahDilihat);
 
       await tx`
         UPDATE jobs SET base_points = ${m.basePointBaru}, plan_hours = ${m.planHoursBaru},
@@ -373,7 +377,7 @@ export async function terapkanSurut(m: MasukanSurut): Promise<HasilPerintah<Hasi
                   section: p.section,
                   base_points: { lama: p.basePointLama, baru: m.basePointBaru },
                   plan_hours: { lama: p.planHoursLama, baru: m.planHoursBaru },
-                  dilewati_override: p.dilewatiOverride,
+                  dilewati_override: p.dilewati,
                   status_bergeser: p.statusBergeser,
                   rupiah: { sebelum: p.rupiahSekarang, sesudah: p.rupiahSesudah },
                   periode: p.periode,
@@ -390,7 +394,7 @@ export async function terapkanSurut(m: MasukanSurut): Promise<HasilPerintah<Hasi
         jobId: m.jobId,
         kode: p.kode,
         woDihitungUlang: p.baris.length,
-        dilewatiOverride: p.dilewatiOverride,
+        dilewati: p.dilewati,
         statusBergeser: p.statusBergeser,
         rupiahSebelum: p.rupiahSekarang,
         rupiahSesudah: p.rupiahSesudah,

@@ -18,13 +18,13 @@ import type { JenisMeter, RiwayatMeter } from '../../domain/meter.js';
  */
 
 interface Kata {
-  judul: string; label: string; panjang: string; menu: string;
+  label: string; panjang: string;
   paragraf: string; panelJudul: string; panelLabel: string;
 }
 
 const KATA: Record<JenisMeter, Kata> = {
   HM: {
-    judul: 'Koreksi HM', label: 'HM', panjang: 'jam mesin', menu: 'Koreksi HM',
+    label: 'HM', panjang: 'jam mesin',
     paragraf: 'Jam mesin tidak pernah mundur, jadi angka yang mundur ditolak saat WO '
       + 'dibuat. Halaman ini untuk dua hal yang tidak tertangkap pagar itu: angka '
       + 'yang salah ketik ke atas — yang justru lolos karena lebih besar — dan '
@@ -32,7 +32,7 @@ const KATA: Record<JenisMeter, Kata> = {
     panelJudul: 'Panel jam diganti', panelLabel: 'HM panel baru',
   },
   KM: {
-    judul: 'Koreksi KM', label: 'KM', panjang: 'kilometer', menu: 'Koreksi KM',
+    label: 'KM', panjang: 'kilometer',
     /* Sumbernya menulis "Jam mesin tidak pernah mundur" DI HALAMAN KM
        (`Km.html:95`) — salinan dari halaman HM yang lupa diganti. Begitu juga
        judul kartu "Panel jam diganti" (`:194`). Keduanya diperbaiki di sini;
@@ -55,7 +55,12 @@ export function LayarKoreksi({
 }) {
   const router = useRouter();
   const k = KATA[jenis];
-  const rute = jenis === 'HM' ? '/koreksi/hm' : '/koreksi/km';
+  /* Unit yang dipilih IKUT saat berpindah jenis meter. Sebuah unit punya HM dan
+     KM sekaligus, dan orang yang sedang memeriksa XTN01 hampir pasti ingin
+     memeriksa XTN01 juga di tab sebelah — memaksanya memilih ulang dari 109
+     nama adalah biaya yang tidak perlu. */
+  const rute = (j: JenisMeter, unit: number | null) =>
+    `/koreksi?jenis=${j}${unit ? `&unit=${unit}` : ''}`;
 
   const [perbaiki, setPerbaiki] = useState<
     { woId: number; woNumber: string; lama: number } | null>(null);
@@ -101,16 +106,32 @@ export function LayarKoreksi({
   return (
     <div className="container-sempit layar-koreksi">
       <div className="page-header">
-        <h1 className="page-title">{k.judul}</h1>
-        <p className="page-subtitle koreksi-sub">{k.paragraf}</p>
+        <h1 className="page-title">Koreksi Meter</h1>
       </div>
+
+      {/* Dua jenis meter, satu layar. Tabnya memakai gaya `.tabs` yang sama
+          dengan Admin dan Monitoring — bukan gaya baru, supaya tak ada yang
+          perlu belajar bentuk kontrol yang lain lagi. */}
+      <div className="tabs">
+        {(['HM', 'KM'] as const).map((j) => (
+          <button
+            key={j} type="button"
+            className={`tab${jenis === j ? ' active' : ''}`}
+            onClick={() => router.push(rute(j, unitTerpilih))}
+          >
+            {j === 'HM' ? '⏱ Hour Meter' : '🛞 Kilometer'}
+          </button>
+        ))}
+      </div>
+
+      <p className="page-subtitle koreksi-sub">{k.paragraf}</p>
 
       <div className="kartu">
         <label className="form-label" htmlFor="pilih-unit">No lambung</label>
         <select
           id="pilih-unit" className="form-control"
           value={unitTerpilih ?? ''}
-          onChange={(e) => router.push(e.target.value ? `${rute}?unit=${e.target.value}` : rute)}
+          onChange={(e) => router.push(rute(jenis, e.target.value ? Number(e.target.value) : null))}
         >
           {/* Unit SEMU tidak ada di daftar ini — di KMB V2 yang dilewati
               bernama OTHERS dan WORKSHOP; keduanya bukan unit sungguhan dan

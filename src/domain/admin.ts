@@ -4,6 +4,7 @@ import { aturanBisnis, tidakBerhak, tidakDitemukan } from '../lib/errors.js';
 import { buatToken } from '../lib/auth.js';
 import { jalankanPerintah, type HasilPerintah } from './runCommand.js';
 import { pastikanKomponen, pastikanModel, pastikanSub } from './katalogInduk.js';
+import { setelanBerdampak, type SetelanBerdampak } from './dampakSetelan.js';
 
 /**
  * MENU ADMIN.
@@ -820,6 +821,13 @@ export interface BekalAdmin {
   tarif: { id: number; posisi: string; label: string; idrPerPoint: number; aktif: boolean }[];
   faktor: { id: number; jenis: string; kunci: string; nilai: number; deskripsi: string | null }[];
   setelan: { kunci: string; nilai: string | null; keterangan: string | null }[];
+  /**
+   * Setelan BESERTA dampaknya. Tab Setelan tidak punya tombol "terapkan ke
+   * semua" karena setelan tidak pernah dibekukan — ia berlaku surut seketika.
+   * Yang dibutuhkan keterangan per kunci, dan sebagian kunci ternyata tidak
+   * dibaca kode mana pun. Lihat domain/dampakSetelan.ts.
+   */
+  setelanDampak: SetelanBerdampak[];
   section: string[];
   /** Bentuk picker tiap section — `cascade` menuntut model/komponen/sub. */
   bentukSection: { code: string; picker: string }[];
@@ -851,7 +859,7 @@ export interface BekalAdmin {
 }
 
 export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
-  const [orang, tarif, faktor, setelan, section, job, cabang, unit, model] =
+  const [orang, tarif, faktor, setelan, section, job, cabang, unit, model, dampak] =
     await Promise.all([
     sql<Record<string, never>[]>`
       SELECT m.id, m.mechanic_code::text AS kode, m.name AS nama, m.email::text AS email,
@@ -961,6 +969,7 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
        WHERE um.tenant_id = ${tenantId} AND um.is_active
        ORDER BY s.code, um.code
     `,
+    setelanBerdampak(tenantId),
   ]);
 
   const n = (v: unknown) => Number(v);
@@ -988,6 +997,7 @@ export async function bekalAdmin(tenantId: number): Promise<BekalAdmin> {
       kunci: String(s['kunci']), nilai: (s['nilai'] as string) ?? null,
       keterangan: (s['keterangan'] as string) ?? null,
     })),
+    setelanDampak: dampak as SetelanBerdampak[],
     section: section.map((s) => s.code),
     bentukSection: section.map((s) => ({ code: s.code, picker: s.picker })),
     job: (job as unknown as Record<string, unknown>[]).map((j) => ({

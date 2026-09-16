@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Portal } from '../Portal.js';
 import { rupiah } from '../../lib/format.js';
+import { ModalDampak } from './ModalDampak.js';
 import type { BekalAdmin } from '../../domain/admin.js';
 import type { Pratinjau } from '../../domain/imporKatalog.js';
-import type { PratinjauSurut } from '../../domain/terapkanSurut.js';
 
 /**
  * KATALOG — DIBAGI SEPERTI SHEET DI SPREADSHEET.
@@ -285,8 +285,10 @@ function TabelJob({
         />
       )}
       {surut && (
-        <ModalSurut
-          job={surut.job} bp={surut.bp} ph={surut.ph} sibuk={sibuk}
+        <ModalDampak
+          alamat={`/api/data?jenis=pratinjau_surut&job_id=${surut.job.id}`
+            + `&base_points=${surut.bp}&plan_hours=${surut.ph}`}
+          labelTerapkan="Terapkan" sibuk={sibuk}
           onTutup={() => setSurut(null)}
           onTerapkan={async (p) => {
             const h = await kirim('terapkan_surut', {
@@ -609,200 +611,6 @@ function PilihAtauKetik({
 
 function beda(v: string[]): string[] {
   return [...new Set(v.filter(Boolean))].sort((a, b) => a.localeCompare(b));
-}
-
-/* ── Terapkan ke semua WO ─────────────────────────────────────────────────── */
-
-/**
- * Yang membuat layar ini layak ada bukan tombolnya, melainkan ANGKA DI ATASNYA.
- *
- * "127 WO akan dihitung ulang" tidak memberi tahu siapa pun apa yang akan
- * terjadi. Yang perlu dibaca sebelum menekan adalah: berapa rupiah sekarang,
- * jadi berapa, selisihnya berapa, dan periode gaji MANA saja yang bergeser —
- * karena sebagian dari periode itu slipnya sudah keluar.
- *
- * Pratinjau diambil dari server, bukan dihitung di sini. Kalau layar punya
- * rumusnya sendiri, suatu hari ia akan menjanjikan satu angka dan basis data
- * menuliskan angka lain.
- */
-function ModalSurut({
-  job, bp, ph, sibuk, onTutup, onTerapkan,
-}: {
-  job: Job; bp: number; ph: number; sibuk: boolean;
-  onTutup: () => void; onTerapkan: (p: PratinjauSurut) => void;
-}) {
-  const [p, setP] = useState<PratinjauSurut | null>(null);
-  const [galat, setGalat] = useState<string | null>(null);
-  const [paham, setPaham] = useState(false);
-
-  useEffect(() => {
-    let hidup = true;
-    void (async () => {
-      try {
-        const r = await fetch(
-          `/api/data?jenis=pratinjau_surut&job_id=${job.id}`
-          + `&base_points=${bp}&plan_hours=${ph}`,
-        );
-        const j = await r.json();
-        if (!hidup) return;
-        if (j.ok) setP(j.data as PratinjauSurut);
-        else setGalat(j.pesan ?? 'Gagal menghitung pratinjau');
-      } catch {
-        if (hidup) setGalat('Sambungan terputus saat menghitung pratinjau.');
-      }
-    })();
-    return () => { hidup = false; };
-  }, [job.id, bp, ph]);
-
-  const selisih = p ? p.rupiahSesudah - p.rupiahSekarang : 0;
-  const naik = selisih > 0;
-  /* Yang menentukan "ada yang berubah" adalah POINnya, bukan rupiahnya.
-     Perubahan base point yang sangat kecil bisa menghasilkan rupiah yang sama
-     setelah dibulatkan ke rupiah penuh — dan snapshot tetap perlu ditulis
-     supaya angka di katalog dan di WO tidak berselisih diam-diam. */
-  const adaGeser = !!p && p.baris.some((b) => b.finalBaru !== b.finalLama);
-
-  return (
-    <Portal>
-      <div className="modal-tirai">
-        <div className="modal modal-lebar">
-          <div className="modal-header">
-            <h3>Terapkan ke semua WO — {job.kode}</h3>
-            <button className="modal-tutup" onClick={onTutup}>✕</button>
-          </div>
-          <div className="modal-body">
-            <div className="surut-judul">{job.nama}</div>
-            <div className="surut-angka">
-              <span>Base point <b>{job.basePoints}</b> → <b>{bp}</b></span>
-              <span>Jam rencana <b>{job.planHours}</b> → <b>{ph}</b></span>
-            </div>
-
-            {galat && <div className="kabar kabar-salah">{galat}</div>}
-            {!p && !galat && <div className="hampa">Menghitung dampaknya…</div>}
-
-            {p && (
-              <>
-                <div className="stat-row">
-                  <div className="stat"><div className="stat-num">{p.terpengaruh}</div>
-                    <div className="stat-label">WO dihitung ulang</div></div>
-                  <div className="stat"><div className="stat-num">{p.orang}</div>
-                    <div className="stat-label">baris bayaran</div></div>
-                  <div className="stat"><div className="stat-num">{p.dilewatiOverride}</div>
-                    <div className="stat-label">dilewati (override)</div></div>
-                  <div className="stat"><div className="stat-num">{p.statusBergeser}</div>
-                    <div className="stat-label">ketepatan bergeser</div></div>
-                </div>
-
-                <div className={`surut-uang ${naik ? 'naik' : 'turun'}`}>
-                  <div className="surut-uang-baris">
-                    <span>Sekarang terbayar</span><b>{rupiah(p.rupiahSekarang)}</b>
-                  </div>
-                  <div className="surut-uang-baris">
-                    <span>Sesudah diterapkan</span><b>{rupiah(p.rupiahSesudah)}</b>
-                  </div>
-                  <div className="surut-uang-baris selisih">
-                    <span>Selisih</span>
-                    <b>{naik ? '+' : ''}{rupiah(selisih)}</b>
-                  </div>
-                </div>
-
-                {p.dilewatiOverride > 0 && (
-                  <div className="kabar kabar-info">
-                    <b>{p.dilewatiOverride} WO tidak disentuh</b> karena approver
-                    pernah menyentuh base point atau jam rencananya sendiri. Itu
-                    penilaian orang yang melihat pekerjaannya langsung — angka
-                    katalog tidak menimpanya.
-                  </div>
-                )}
-
-                {p.statusBergeser > 0 && (
-                  <div className="kabar kabar-awas">
-                    Jam rencana yang baru menggeser status ketepatan waktu{' '}
-                    <b>{p.statusBergeser} WO</b> (mis. on time → late). Faktor untuk
-                    status barunya diambil dari tabel Faktor <b>hari ini</b>, karena
-                    snapshot hanya membekukan faktor untuk status yang dulu berlaku.
-                  </div>
-                )}
-
-                {p.periode.length > 0 && (
-                  <>
-                    <div className="panel-judul" style={{ marginTop: '0.8rem' }}>
-                      Periode gaji yang ikut bergeser
-                    </div>
-                    <div className="tabel-gulir">
-                      <table className="table tabel-admin">
-                        <thead>
-                          <tr>
-                            <th>Periode</th><th className="num">WO</th>
-                            <th className="num">Sekarang</th><th className="num">Jadi</th>
-                            <th className="num">Selisih</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {p.periode.map((x) => {
-                            const d = x.rupiahSesudah - x.rupiahSekarang;
-                            return (
-                              <tr key={x.kunci}>
-                                <td>{x.label}</td>
-                                <td className="num">{x.wo}</td>
-                                <td className="num riwayat-lama">{rupiah(x.rupiahSekarang)}</td>
-                                <td className="num riwayat-baru">{rupiah(x.rupiahSesudah)}</td>
-                                <td className={`num ${d >= 0 ? 'riwayat-baru' : 'riwayat-lama'}`}>
-                                  {d > 0 ? '+' : ''}{rupiah(d)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-
-                {p.terpengaruh === 0 && (
-                  <div className="kabar kabar-info">
-                    Tidak ada WO yang bisa dihitung ulang
-                    {p.dilewatiOverride > 0
-                      ? ' — semuanya angkanya pernah ditetapkan approver sendiri.'
-                      : '.'}{' '}
-                    Simpan saja lewat tombol biasa; ia berlaku untuk WO berikutnya.
-                  </div>
-                )}
-
-                {p.terpengaruh > 0 && !adaGeser && (
-                  <div className="kabar kabar-info">
-                    <b>Tidak ada yang bergeser.</b> WO lama memang sudah dihitung
-                    dengan angka ini. Tidak ada yang perlu diterapkan.
-                  </div>
-                )}
-
-                {p.terpengaruh > 0 && adaGeser && (
-                  <label className="pilih-baris surut-paham">
-                    <input type="checkbox" checked={paham}
-                           onChange={(e) => setPaham(e.target.checked)} />
-                    <span>
-                      Saya mengerti ini mengubah gaji periode yang <b>slipnya sudah
-                      keluar</b>, sebesar {naik ? '+' : ''}{rupiah(selisih)}.
-                    </span>
-                  </label>
-                )}
-              </>
-            )}
-          </div>
-          <div className="modal-footer">
-            <button className="btn-cancel" onClick={onTutup} disabled={sibuk}>Batal</button>
-            <button
-              className="btn-danger"
-              disabled={sibuk || !p || !paham || p.terpengaruh === 0 || !adaGeser}
-              onClick={() => p && onTerapkan(p)}
-            >
-              {sibuk ? 'Menerapkan…' : `Terapkan ke ${p?.terpengaruh ?? 0} WO`}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Portal>
-  );
 }
 
 /* ── Tabel unit ───────────────────────────────────────────────────────────── */

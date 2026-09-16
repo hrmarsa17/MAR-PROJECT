@@ -6,6 +6,7 @@ import { Portal } from '../Portal.js';
 import { rupiah } from '../../lib/format.js';
 import type { BekalAdmin } from '../../domain/admin.js';
 import { Katalog } from './Katalog.js';
+import { ModalDampak } from './ModalDampak.js';
 
 /**
  * MENU ADMIN.
@@ -388,11 +389,15 @@ function Centang({
 
 function TabFaktor({ kirim, sibuk, bekal }: Bersama) {
   const [ubah, setUbah] = useState<Record<number, string>>({});
+  const [surut, setSurut] = useState<{ id: number; kunci: string; nilai: number } | null>(null);
+
   return (
     <div className="panel">
       <div className="kabar kabar-awas">
-        Faktor adalah <b>pengali poin</b>. Mengubahnya mengubah poin semua WO yang
-        dibuat sesudah ini — yang sudah disetujui tidak ikut bergerak.
+        Faktor adalah <b>pengali poin</b>, dan ia berlaku <b>lintas section</b> —
+        satu baris menyentuh field, workshop, dan tyreman sekaligus. <b>Simpan</b>{' '}
+        hanya berlaku untuk WO yang dibuat sesudah ini; untuk membawanya mundur ke
+        WO yang sudah disetujui, pakai tombol merah di sebelahnya.
       </div>
       <table className="table tabel-admin">
         <thead>
@@ -401,6 +406,7 @@ function TabFaktor({ kirim, sibuk, bekal }: Bersama) {
         <tbody>
           {bekal.faktor.map((f) => {
             const v = ubah[f.id] ?? String(f.nilai);
+            const sah = Number(v) >= 0 && v.trim() !== '';
             return (
               <tr key={f.id}>
                 <td>{f.jenis}</td>
@@ -410,19 +416,48 @@ function TabFaktor({ kirim, sibuk, bekal }: Bersama) {
                   <input className="sel-angka" type="number" step="0.01" value={v}
                          onChange={(e) => setUbah({ ...ubah, [f.id]: e.target.value })} />
                 </td>
-                <td>
+                <td className="aksi-sel">
                   <button className="btn-primary btn-sm"
-                          disabled={sibuk || Number(v) === f.nilai || Number(v) < 0}
-                          onClick={() => void kirim('admin_faktor',
-                            { id: f.id, nilai: Number(v) },
-                            `${f.kunci}: ${f.nilai} → ${v} tersimpan.`)}
+                          disabled={sibuk || !sah || Number(v) === f.nilai}
+                          onClick={async () => {
+                            const h = await kirim('admin_faktor',
+                              { id: f.id, nilai: Number(v) },
+                              `${f.kunci}: ${f.nilai} → ${v} tersimpan — berlaku untuk WO baru.`);
+                            if (h) setUbah((s) => { const t = { ...s }; delete t[f.id]; return t; });
+                          }}
                   >Simpan</button>
+                  {/* Sama seperti di Katalog Job: TIDAK disyaratkan ada suntingan
+                      yang belum disimpan. Yang dibandingkan snapshot WO dengan
+                      nilai yang diketik, bukan kotak isian dengan tabel. */}
+                  <button className="btn-danger btn-sm" disabled={sibuk || !sah}
+                          title={`Hitung ulang semua WO approved yang memakai ${f.kunci}`}
+                          onClick={() => setSurut({ id: f.id, kunci: f.kunci, nilai: Number(v) })}
+                  >Terapkan ke semua WO</button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {surut && (
+        <ModalDampak
+          alamat={`/api/data?jenis=pratinjau_faktor&id=${surut.id}&nilai=${surut.nilai}`}
+          labelTerapkan="Terapkan" sibuk={sibuk}
+          onTutup={() => setSurut(null)}
+          onTerapkan={async (d) => {
+            const h = await kirim('terapkan_faktor_surut', {
+              faktorId: surut.id, nilaiBaru: surut.nilai,
+              rupiahSesudahDilihat: d.rupiahSesudah,
+            }, `${surut.kunci}: ${d.terpengaruh} WO dihitung ulang — `
+             + `${rupiah(d.rupiahSekarang)} → ${rupiah(d.rupiahSesudah)}.`);
+            if (h) {
+              setSurut(null);
+              setUbah((s) => { const t = { ...s }; delete t[surut.id]; return t; });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -431,12 +466,17 @@ function TabFaktor({ kirim, sibuk, bekal }: Bersama) {
 
 function TabTarif({ kirim, sibuk, bekal }: Bersama) {
   const [ubah, setUbah] = useState<Record<number, string>>({});
+  const [surut, setSurut] = useState<{ id: number; label: string; nilai: number } | null>(null);
+
   return (
     <div className="panel">
       <div className="kabar kabar-awas">
-        <b>Poin yang sudah terbit tidak ikut berubah.</b> Rupiahnya dibekukan saat
-        poin diterbitkan. Di KMB V2 tarif dibaca ulang saat laporan disusun, dan
-        itulah sebabnya perubahan tarif pernah menggeser gaji yang sudah dibayar.
+        <b>Simpan tidak menggeser poin yang sudah terbit</b> — rupiahnya dibekukan
+        saat poin diterbitkan. Di KMB V2 tarif dibaca ulang setiap kali laporan
+        disusun, dan itulah sebabnya satu penyuntingan tarif pernah menggeser gaji
+        yang sudah dibayar sebesar <b>−Rp 17,6 juta</b> tanpa ada yang memintanya.{' '}
+        Kalau memang itu yang Anda maksud, tombol merah melakukannya — dengan
+        menyebutkan rupiah dan namanya lebih dulu.
       </div>
       <table className="table tabel-admin">
         <thead>
@@ -445,6 +485,7 @@ function TabTarif({ kirim, sibuk, bekal }: Bersama) {
         <tbody>
           {bekal.tarif.map((t) => {
             const v = ubah[t.id] ?? String(t.idrPerPoint);
+            const sah = Number(v) > 0;
             return (
               <tr key={t.id} className={t.aktif ? '' : 'nonaktif'}>
                 <td><code>{t.posisi}</code></td>
@@ -454,50 +495,140 @@ function TabTarif({ kirim, sibuk, bekal }: Bersama) {
                          onChange={(e) => setUbah({ ...ubah, [t.id]: e.target.value })} />
                 </td>
                 <td>{t.aktif ? 'ya' : 'tidak'}</td>
-                <td>
+                <td className="aksi-sel">
                   <button className="btn-primary btn-sm"
-                          disabled={sibuk || Number(v) === t.idrPerPoint || Number(v) <= 0}
-                          onClick={() => void kirim('admin_tarif',
-                            { id: t.id, idrPerPoint: Number(v), aktif: t.aktif },
-                            `${t.label}: ${rupiah(t.idrPerPoint)} → ${rupiah(Number(v))} tersimpan.`)}
+                          disabled={sibuk || !sah || Number(v) === t.idrPerPoint}
+                          onClick={async () => {
+                            const h = await kirim('admin_tarif',
+                              { id: t.id, idrPerPoint: Number(v), aktif: t.aktif },
+                              `${t.label}: ${rupiah(t.idrPerPoint)} → ${rupiah(Number(v))} `
+                              + 'tersimpan — berlaku untuk poin yang terbit sesudah ini.');
+                            if (h) setUbah((s) => { const u = { ...s }; delete u[t.id]; return u; });
+                          }}
                   >Simpan</button>
+                  <button className="btn-danger btn-sm" disabled={sibuk || !sah}
+                          title={`Hargai ulang semua poin ${t.label} yang sudah terbit`}
+                          onClick={() => setSurut({ id: t.id, label: t.label, nilai: Number(v) })}
+                  >Terapkan ke semua WO</button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {surut && (
+        <ModalDampak
+          alamat={`/api/data?jenis=pratinjau_tarif&id=${surut.id}&nilai=${surut.nilai}`}
+          labelTerapkan="Hargai ulang" sibuk={sibuk}
+          onTutup={() => setSurut(null)}
+          onTerapkan={async (d) => {
+            const h = await kirim('terapkan_tarif_surut', {
+              tarifId: surut.id, idrBaru: surut.nilai,
+              rupiahSesudahDilihat: d.rupiahSesudah,
+            }, `${surut.label}: ${d.terpengaruh} WO dihargai ulang — `
+             + `${rupiah(d.rupiahSekarang)} → ${rupiah(d.rupiahSesudah)}.`);
+            if (h) {
+              setSurut(null);
+              setUbah((s) => { const u = { ...s }; delete u[surut.id]; return u; });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
 
 /* ── SETELAN ─────────────────────────────────────────────────────────────── */
 
+/**
+ * SETELAN — satu-satunya tab yang SENGAJA tidak punya "Terapkan ke semua WO".
+ *
+ * Base point, faktor, dan tarif dibekukan saat approve; itu sebabnya ketiganya
+ * butuh perintah terpisah untuk dibawa mundur. Setelan tidak dibekukan di mana
+ * pun — ia dibaca langsung setiap kali layar disusun. Artinya mengubahnya SUDAH
+ * berlaku surut, seketika, untuk seluruh riwayat.
+ *
+ * Memasang tombolnya di sini justru berbahaya: ia menyiratkan bahwa tanpa
+ * menekannya, perubahan itu aman. Yang dibutuhkan keterangan, bukan tombol —
+ * dan keterangannya per kunci, karena tidak semua kunci sama.
+ */
 function TabSetelan({ kirim, sibuk, bekal }: Bersama) {
   const [ubah, setUbah] = useState<Record<string, string>>({});
+  const mati = bekal.setelanDampak.filter((s) => s.sifat === 'belum_dipakai').length;
+  const hilang = bekal.setelanDampak.filter((s) => !s.adaBarisnya);
+
   return (
     <div className="panel">
+      <div className="kabar kabar-awas">
+        <b>Setelan tidak punya tombol &ldquo;Terapkan ke semua WO&rdquo;, dan itu
+        disengaja.</b>{' '}
+        Tidak seperti base point, faktor, dan tarif, nilainya <b>tidak pernah
+        dibekukan</b> ke dalam WO — ia dibaca langsung setiap kali layar disusun.
+        Jadi menyimpannya <b>sudah</b> berlaku surut untuk seluruh riwayat,
+        seketika. Tombol tambahan hanya akan menyiratkan bahwa tanpa menekannya
+        perubahan ini aman.
+      </div>
+
+      {mati > 0 && (
+        <div className="kabar kabar-salah">
+          <b>{mati} setelan di bawah ini belum dibaca kode mana pun.</b> Nilainya
+          bisa disunting dan layar menjawab &ldquo;tersimpan&rdquo;, tapi tidak ada
+          apa pun yang berubah. Baris yang begitu ditandai <b>tidak berdampak</b>.
+        </div>
+      )}
+
+      {hilang.length > 0 && (
+        <div className="kabar kabar-info">
+          {hilang.length} setelan dibaca kode tapi <b>belum punya barisnya</b> di
+          sini, jadi ia memakai nilai bawaan yang tak seorang pun pernah memilihnya:{' '}
+          {hilang.map((h) => <code key={h.kunci}>{h.kunci}</code>)
+            .reduce<React.ReactNode[]>((a, e, i) => (i ? [...a, ', ', e] : [e]), [])}.
+        </div>
+      )}
+
       <table className="table tabel-admin">
         <thead>
-          <tr><th>Kunci</th><th>Keterangan</th><th>Nilai</th><th></th></tr>
+          <tr>
+            <th>Kunci</th><th>Dampak kalau diubah</th><th>Nilai</th><th></th>
+          </tr>
         </thead>
         <tbody>
-          {bekal.setelan.map((s) => {
+          {bekal.setelanDampak.map((s) => {
             const v = ubah[s.kunci] ?? (s.nilai ?? '');
+            const berdampak = s.sifat === 'langsung';
             return (
-              <tr key={s.kunci}>
-                <td><code>{s.kunci}</code></td>
-                <td>{s.keterangan ?? '–'}</td>
+              <tr key={s.kunci} className={berdampak ? '' : 'nonaktif'}>
+                <td className="kode-sel">
+                  <code>{s.kunci}</code>
+                  {!s.adaBarisnya && <span className="badge badge-grey">belum ada baris</span>}
+                </td>
+                <td className="sel-dampak">
+                  <span className={`badge ${berdampak ? 'badge-warning' : 'badge-grey'}`}>
+                    {berdampak ? 'berlaku seketika' : 'tidak berdampak'}
+                  </span>
+                  <div className="dampak-ket">{s.dampak}</div>
+                  {s.pembaca && <div className="dampak-pembaca">dibaca: <code>{s.pembaca}</code></div>}
+                </td>
                 <td>
-                  <input className="sel-angka lebar" value={v}
+                  <input className="sel-angka lebar" value={v} disabled={!s.adaBarisnya}
                          onChange={(e) => setUbah({ ...ubah, [s.kunci]: e.target.value })} />
                 </td>
                 <td>
                   <button className="btn-primary btn-sm"
-                          disabled={sibuk || v === (s.nilai ?? '')}
-                          onClick={() => void kirim('admin_setelan',
-                            { kunci: s.kunci, nilai: v },
-                            `${s.kunci}: ${s.nilai} → ${v} tersimpan.`)}
+                          disabled={sibuk || !s.adaBarisnya || v === (s.nilai ?? '')}
+                          onClick={async () => {
+                            if (berdampak && !confirm(
+                              `Ubah ${s.kunci} dari "${s.nilai}" jadi "${v}"?\n\n`
+                              + `${s.dampak}\n\n`
+                              + 'Setelan dibaca langsung — perubahan ini berlaku untuk '
+                              + 'SELURUH riwayat begitu disimpan, tanpa tombol lain.',
+                            )) return;
+                            const h = await kirim('admin_setelan',
+                              { kunci: s.kunci, nilai: v },
+                              `${s.kunci}: ${s.nilai} → ${v} tersimpan.`);
+                            if (h) setUbah((x) => { const y = { ...x }; delete y[s.kunci]; return y; });
+                          }}
                   >Simpan</button>
                 </td>
               </tr>

@@ -49,14 +49,30 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
   const path = usePathname();
   const approver = aku.peran === 'supervisor' || aku.peran === 'superintendent';
 
+  /**
+   * ── TIGA PERGESERAN DARI URUTAN V2, ATAS PERMINTAAN GABRIEL 16 SEP 2026 ────
+   *
+   * 1. Teknis naik menyusul Performa, sehingga KEDUA dashboard berdampingan.
+   *    Keduanya tetap DUA menu terpisah — isinya memang berbeda: Performa
+   *    tentang kinerja orang, Teknis tentang keadaan alat.
+   * 2. Keduanya diberi awalan "Dashboard", supaya apa yang dibuka jelas
+   *    sebelum diklik.
+   * 3. Koreksi HM dan Koreksi KM disatukan jadi SATU menu. Di V2 keduanya dua
+   *    halaman yang isinya identik kecuali kata meternya — dan di sini pun
+   *    sudah satu komponen (`LayarKoreksi`), jadi dua menu untuk satu layar
+   *    hanya menambah lebar navbar tanpa menambah apa pun.
+   *
+   * Urutan sisanya TIDAK diacak. Tangan orang lapangan hafal posisinya.
+   */
   const menu: { href: string; label: string; tampil: boolean }[] = [
-    { href: '/performa', label: 'Performa', tampil: aku.bolehLihat.performa },
+    // Tanpa ikon: lima menu lainnya pun tanpa ikon, dan dua yang berbeda
+    // sendiri justru menarik mata ke tempat yang tidak menuntut perhatian.
+    { href: '/performa', label: 'Dashboard Performa', tampil: aku.bolehLihat.performa },
+    { href: '/teknis', label: 'Dashboard Teknis', tampil: aku.bolehLihat.teknis },
     { href: '/wo/baru', label: 'Create WO', tampil: true },
     { href: '/monitoring', label: 'Monitoring', tampil: true },
     { href: '/approval', label: 'Approvals', tampil: approver },
-    { href: '/teknis', label: 'Teknis', tampil: aku.bolehLihat.teknis },
-    { href: '/koreksi/hm', label: 'Koreksi HM', tampil: approver },
-    { href: '/koreksi/km', label: 'Koreksi KM', tampil: approver },
+    { href: '/koreksi', label: 'Koreksi Meter', tampil: approver },
     { href: '/reports', label: 'Reports', tampil: aku.bolehLihat.report },
     // Paling kanan, sesudah semua menu kerja: Admin bukan pekerjaan harian.
     { href: '/admin', label: 'Admin', tampil: aku.bolehAdmin === true },

@@ -1,11 +1,13 @@
-import { HalamanKoreksi } from '../halaman.js';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function KoreksiKm({
+/** Rute lama, dipertahankan sebagai pengalih. Lihat catatan di `hm/page.tsx`. */
+export default async function KoreksiKmLama({
   searchParams,
 }: {
   searchParams: Promise<{ unit?: string }>;
 }) {
-  return HalamanKoreksi({ jenis: 'KM', searchParams });
+  const sp = await searchParams;
+  redirect(`/koreksi?jenis=KM${sp.unit ? `&unit=${encodeURIComponent(sp.unit)}` : ''}`);
 }

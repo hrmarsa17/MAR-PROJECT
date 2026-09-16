@@ -5,6 +5,8 @@ import {
 } from '../../../domain/kueri.js';
 import { bekalOverride } from '../../../domain/kueriApproval.js';
 import { pratinjauSurut } from '../../../domain/terapkanSurut.js';
+import { pratinjauFaktorSurut } from '../../../domain/surutFaktor.js';
+import { pratinjauTarifSurut } from '../../../domain/surutTarif.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,6 +60,29 @@ export async function GET(req: Request): Promise<Response> {
           throw masukanTidakSah('base_points dan plan_hours wajib lebih dari 0');
         }
         return jawab(await pratinjauSurut(aku.tenantId, jobId, bp, ph));
+      }
+      /**
+       * Pratinjau dampak untuk FAKTOR dan TARIF — bentuk jawabannya sama dengan
+       * `pratinjau_surut` supaya layar memakai satu komponen. Gerbangnya juga
+       * sama: yang dibacanya rupiah yang sudah dibayar.
+       */
+      case 'pratinjau_faktor': {
+        if (!aku.bolehAdmin) throw tidakBerhak('Pratinjau ini hanya untuk admin.');
+        const id = Number(url.searchParams.get('id'));
+        const nilai = Number(url.searchParams.get('nilai'));
+        if (!Number.isInteger(id) || id <= 0) throw masukanTidakSah('Parameter id tidak sah');
+        if (!Number.isFinite(nilai) || nilai < 0) {
+          throw masukanTidakSah('Parameter nilai tidak sah');
+        }
+        return jawab(await pratinjauFaktorSurut(aku.tenantId, id, nilai));
+      }
+      case 'pratinjau_tarif': {
+        if (!aku.bolehAdmin) throw tidakBerhak('Pratinjau ini hanya untuk admin.');
+        const id = Number(url.searchParams.get('id'));
+        const nilai = Number(url.searchParams.get('nilai'));
+        if (!Number.isInteger(id) || id <= 0) throw masukanTidakSah('Parameter id tidak sah');
+        if (!(nilai > 0)) throw masukanTidakSah('Parameter nilai harus lebih dari 0');
+        return jawab(await pratinjauTarifSurut(aku.tenantId, id, nilai));
       }
       case 'kiriman': {
         // Aman ditekan berkali-kali — itulah gunanya. Tidak menulis apa pun.

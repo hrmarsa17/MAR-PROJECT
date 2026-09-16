@@ -249,7 +249,9 @@ let pratinjau: Awaited<ReturnType<typeof pratinjauSurut>>;
   periksa('hanya dua WO yang dihitung ulang', pratinjau.terpengaruh === 2,
     String(pratinjau.terpengaruh));
   periksa('satu WO dilewati karena approver pernah menetapkan angkanya',
-    pratinjau.dilewatiOverride === 1, String(pratinjau.dilewatiOverride));
+    pratinjau.dilewati === 1, String(pratinjau.dilewati));
+  periksa('dan alasan dilewatinya ikut disebut, bukan cuma jumlahnya',
+    /approver/i.test(pratinjau.alasanDilewati ?? ''), pratinjau.alasanDilewati ?? '(kosong)');
   periksa('empat baris bayaran ikut bergerak (2 WO × 2 mekanik)',
     pratinjau.orang === 4, String(pratinjau.orang));
   periksa('jam rencana tidak diubah, jadi tidak ada ketepatan yang bergeser',
