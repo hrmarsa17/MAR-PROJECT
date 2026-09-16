@@ -39,7 +39,7 @@ cd "C:\Users\gabri\OneDrive\1\Resurgam\KMBProject"
 Start-Process 'C:\Program Files\PostgreSQL\18\bin\postgres.exe' `
   -ArgumentList '-D','C:\Users\gabri\AppData\Local\kmbproject-pg','-p','5433' -WindowStyle Hidden
 
-npm run dev            # http://localhost:3210 dipakai selama ini
+npm run dev            # http://localhost:3000
 npm run orang          # daftar akun + TOKEN untuk masuk
 npm test               # 56 uji unit & integrasi
 

@@ -13,7 +13,7 @@ if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
   console.error('DITOLAK: uji ini menulis. DATABASE_URL harus port 5433.');
   process.exit(1);
 }
-const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3210';
+const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3000';
 
 const ExcelJS = (await import('exceljs')).default;
 const { sql } = await import('../src/lib/db.js');

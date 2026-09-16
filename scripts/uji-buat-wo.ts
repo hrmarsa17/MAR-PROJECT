@@ -11,7 +11,7 @@ import './muat-env.js';
  *
  * Menulis ke basis data PENGEMBANGAN. Menolak jalan di tempat lain.
  */
-const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3210';
+const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3000';
 if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
   console.error('DITOLAK: uji ini menulis WO. DATABASE_URL harus port 5433.');
   process.exit(1);

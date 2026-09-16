@@ -62,7 +62,7 @@ for (const r of rows) {
   );
 }
 console.log('');
-console.log('  Masuk lewat http://localhost:3210/masuk — tempel tokennya di sana.');
+console.log('  Masuk lewat http://localhost:3000/masuk — tempel tokennya di sana.');
 console.log('  Menu Performa hanya terbuka untuk L2 dan siapa pun yang penanda');
 console.log('  may_view_performance-nya menyala.');
 console.log('');

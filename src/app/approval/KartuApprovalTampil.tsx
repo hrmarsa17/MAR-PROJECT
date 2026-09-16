@@ -42,7 +42,25 @@ export function KartuApprovalTampil({
       <div className="wo-card-head">
         <span className="wo-nomor">{wo.wo_number}</span>
         <div className="wo-lencana">
-          {wo.dibuat_mekanik && <span className="badge badge-warning">🔒 Dibuat Mekanik</span>}
+          {/* PENANDA TELAAH, BUKAN STATUS — 1:1 dengan `Approval.html:273-274`.
+              WO yang dibuat mekanik untuk dirinya sendiri perlu diperiksa lebih
+              teliti: job, unit, dan susunan timnya dipilih oleh orang yang akan
+              dibayar olehnya.
+
+              Dua hal diperbaiki di sini, 16 Sep 2026. Ikonnya 🔒 — gembok
+              berarti "terkunci", arti yang sama sekali berbeda dan menyesatkan
+              approver yang membacanya sekilas; sumbernya memakai 👷. Dan
+              warnanya amber, yang di layar ini sudah dipakai peringatan
+              ketepatan waktu; sumbernya ungu, warna yang tidak berbicara soal
+              baik-buruk. Keterangannya juga tidak ada sama sekali. */}
+          {wo.dibuat_mekanik && (
+            <span
+              className="badge badge-ungu-telaah"
+              title="Dibuat sendiri oleh mekanik — periksa job, unit, dan susunan tim lebih teliti"
+            >
+              👷 Dibuat Mekanik
+            </span>
+          )}
           <span className="badge badge-purple">{wo.tahap}</span>
           {tepat && <span className={`badge ${tepat.kelas}`}>{tepat.teks}</span>}
           {wo.putaran > 1 && (

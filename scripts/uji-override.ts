@@ -12,7 +12,7 @@ import './muat-env.js';
  *   - judgment kosong menghapus, bukan diabaikan
  *   - nilai efektif ikut berubah, jadi poin yang dihitung ikut berubah
  */
-const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3210';
+const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3000';
 if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
   console.error('DITOLAK: uji ini menulis override. DATABASE_URL harus port 5433.');
   process.exit(1);

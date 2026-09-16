@@ -8,7 +8,7 @@ import './muat-env.js';
  * SAMBUNGANNYA: apakah koreksi benar-benar dipakai menghitung uang, dan apakah
  * WO-nya muncul di tab yang benar sesudahnya.
  */
-const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3210';
+const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3000';
 if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
   console.error('DITOLAK: uji ini menulis. DATABASE_URL harus port 5433.');
   process.exit(1);

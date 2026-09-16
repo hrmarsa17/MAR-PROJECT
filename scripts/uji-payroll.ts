@@ -9,7 +9,7 @@ import './muat-env.js';
  * bergeser surut). Ujinya menaikkan tarif SETELAH poin terbit lalu memastikan
  * angka laporannya tidak bergerak sedikit pun.
  */
-const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3210';
+const ALAMAT = process.env['UJI_URL'] ?? 'http://localhost:3000';
 if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
   console.error('DITOLAK: uji ini menulis. DATABASE_URL harus port 5433.');
   process.exit(1);

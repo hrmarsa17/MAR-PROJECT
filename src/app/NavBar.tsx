@@ -158,13 +158,20 @@ function NavLapangan({ aku, path, approver }: {
 
      Urutannya pun tidak digeser: tangan orang lapangan hafal posisinya. */
   const menu: { href: string; label: string; tampil: boolean }[] = [
-    { href: '/lapangan/monitoring', label: '📋 WO Saya', tampil: true },
+    // "WO Saya" HANYA untuk mekanik — `app.js:2583`:
+    //     tabWos.style.display = isApprover ? 'none' : '';
+    // Approver tidak punya WO sendiri untuk dikerjakan; ia memutuskan WO orang
+    // lain. Menampilkannya berarti memberi L1 dan L2 satu menu yang selalu
+    // kosong, dan menyiratkan bahwa mereka punya pekerjaan yang belum dikirim.
+    { href: '/lapangan/monitoring', label: '📋 WO Saya', tampil: !approver },
     { href: '/lapangan/wo/baru', label: '➕ Buat WO', tampil: true },
+    // "Approval" HANYA untuk approver — `app.js:2590`.
     { href: '/lapangan/approval', label: '✅ Approval', tampil: approver },
-    // Pengganti "👥 Monitoring" milik V2: di sana ia melihat WO orang lain,
-    // dan itu pekerjaan kantor yang tinggal di tampilan lengkap. Yang
-    // menggantikannya di sini adalah satu-satunya hal yang V2 tidak punya —
-    // daftar apa yang belum sampai ke server.
+    /* Antrean tidak ada di V2 sebagai tab; di sana ia baris yang bisa diklik
+       dan hanya muncul saat ada yang mengantre (`app.js:2594-2611`). Di sini ia
+       menu tetap, atas permintaan Gabriel 16 Sep 2026 — dan alasannya masuk
+       akal: baris yang menghilang saat antrean kosong juga menghilangkan satu-
+       satunya tempat melihat kiriman yang DITOLAK server. */
     { href: '/lapangan/antrean', label: '📤 Antrean', tampil: true },
   ];
 
