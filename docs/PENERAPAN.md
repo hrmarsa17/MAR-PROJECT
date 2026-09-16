@@ -186,8 +186,29 @@ Urutannya memang begitu: skema harus siap sebelum kode baru menyentuhnya.
 
 ### Cadangan
 
-Supabase mencadangkan otomatis setiap hari. Tapi tetap ambil salinan sendiri
-sebelum tiap perubahan besar:
+> #### ⚠️ Paket Free TIDAK dicadangkan otomatis
+>
+> Cadangan harian otomatis hanya ada di paket **Pro, Team, dan Enterprise**.
+> Di paket Free, Supabase sendiri menyuruh pemakainya mengekspor data secara
+> berkala dan menyimpan salinannya di luar. Kalau proyeknya hilang atau rusak
+> di paket Free, **tidak ada yang bisa dipulihkan**.
+>
+> Dokumen ini sempat menulis "Supabase mencadangkan otomatis setiap hari" —
+> keliru, dan keliru ke arah yang paling berbahaya: ia membuat orang merasa
+> terlindungi justru saat tidak ada yang melindungi.
+>
+> Dua jalan keluarnya, pilih salah satu sebelum WO sungguhan yang pertama:
+>
+> 1. **Naik ke paket Pro** — cadangan harian otomatis jadi ada.
+> 2. **Jadwalkan `scripts/cadangkan.ts` di laptop atau mesin mana pun yang
+>    menyala tiap hari**, dan simpan hasilnya di luar mesin itu.
+>
+> Yang tidak boleh: menganggap sudah aman tanpa melakukan keduanya.
+>
+> Sumber: [Database Backups](https://supabase.com/docs/guides/platform/backups),
+> [Pricing](https://supabase.com/pricing)
+
+Ambil salinan sendiri sebelum tiap perubahan besar, apa pun paketnya:
 
 ```bash
 DATABASE_URL="<koneksi langsung, porta 5432>" npx tsx scripts/cadangkan.ts
