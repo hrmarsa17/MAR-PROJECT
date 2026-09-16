@@ -21,8 +21,24 @@ export interface Bekal {
   superintendent: number;
 }
 
-/** Menghapus SELURUH data transaksi, membiarkan master data utuh. */
+/**
+ * Menghapus SELURUH data transaksi, membiarkan master data utuh.
+ *
+ * ⚠️ Ini MENGOSONGKAN work_orders — termasuk data contoh yang sedang dipakai
+ * memeriksa layar dengan tangan. Setelah `npm test`, daftar WO di layar akan
+ * kosong sampai `npm run db:contoh` dijalankan lagi. Itu bukan bug layar; 16
+ * Sep 2026 saya sempat mengira begitu dan mencari sebabnya di tempat yang
+ * salah.
+ *
+ * Pagar port ada di `tests/muat-env.ts`, dijalankan sebelum modul mana pun
+ * dimuat. Diulang di sini karena fungsi ini bisa dipanggil dari mana saja, dan
+ * jarak antara pemanggil dan pagarnya adalah tempat kecelakaan berikutnya
+ * lahir.
+ */
 export async function bersihkanTransaksi(): Promise<void> {
+  if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')) {
+    throw new Error('DITOLAK: TRUNCATE hanya boleh di basis data pengembangan (port 5433).');
+  }
   await sql`
     TRUNCATE work_orders, processed_ops, audit_logs,
              meter_readings, meter_panel_changes, wo_number_counters

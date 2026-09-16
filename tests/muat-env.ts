@@ -18,3 +18,23 @@ if (existsSync(berkas)) {
     if (process.env[kunci] === undefined) process.env[kunci] = nilai;
   }
 }
+
+/**
+ * PAGAR BASIS DATA — dipasang 16 Sep 2026, sesudah kejadian.
+ *
+ * Uji integrasi memanggil `bersihkanTransaksi()`, yang menjalankan
+ * `TRUNCATE work_orders ... CASCADE`. Setiap skrip uji lain di repo ini punya
+ * pagar `:5433`; justru satu-satunya tempat yang MENGHAPUS tidak punya. Salah
+ * satu isi DATABASE_URL, dan `npm test` mengosongkan basis data yang keliru
+ * tanpa satu pun pertanyaan.
+ *
+ * Diperiksa di sini, sebelum modul mana pun sempat dimuat.
+ */
+const alamat = process.env['DATABASE_URL'] ?? '';
+if (!/:5433\//.test(alamat)) {
+  throw new Error(
+    'DITOLAK: uji integrasi menjalankan TRUNCATE. DATABASE_URL harus menunjuk '
+    + 'basis data pengembangan di port 5433, bukan '
+    + (alamat ? alamat.replace(/:\/\/[^@]*@/, '://***@') : '(kosong)'),
+  );
+}

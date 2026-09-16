@@ -12,6 +12,7 @@ DECLARE
   v_mek     integer[];
   v_wo      bigint;
   v_status  wo_status;
+  v_grup    uuid;
   i         integer;
 BEGIN
   SELECT id INTO v_tenant FROM tenants WHERE code = 'KMB';
@@ -76,6 +77,90 @@ BEGIN
        WHERE t.work_order_id = v_wo;
     END IF;
   END LOOP;
+
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- BORONGAN + KARTU INSIDEN
+  -- ══════════════════════════════════════════════════════════════════════════
+  -- Dua bentuk paling rumit di layar mekanik, dan sampai 16 Sep 2026 tak satu
+  -- pun punya data contoh — jadi keduanya tidak pernah bisa dilihat dengan mata
+  -- tanpa membuat WO sendiri satu per satu.
+  --
+  -- Sengaja disebar ke dua tab: dua baris tinggal di Assigned (muncul sebagai
+  -- KOTAK GRUP), satu baris sudah approved (muncul sendirian di tab Done
+  -- sebagai LENCANA borongan). Itu justru keadaan yang dulu salah dihitung —
+  -- "Selesai 0 dari 1" — sehingga ia harus ada di data contoh.
+  v_grup := gen_random_uuid();
+  FOR i IN 1..3 LOOP
+    v_status := CASE WHEN i = 3 THEN 'approved' ELSE 'pending_mechanic_work' END::wo_status;
+
+    INSERT INTO work_orders (
+      tenant_id, wo_number, section_id, job_id, unit_id, status, created_by,
+      work_condition, location, keterangan,
+      wo_group_id, wo_group_mode,
+      session_hours, start_time, end_time, submitted_at,
+      approved_l1_by, approved_l1_at, mtbf_redo_status, created_at)
+    VALUES (
+      v_tenant, next_wo_number(v_tenant, current_date), v_section, v_job, v_unit,
+      v_status, v_l1, 'normal', 'Workshop',
+      CASE WHEN i = 1 THEN 'Satu unit, tiga pekerjaan — dikerjakan berurutan' END,
+      v_grup, 'unit',
+      CASE WHEN v_status = 'approved' THEN 8.0 END,
+      CASE WHEN v_status = 'approved' THEN now() - interval '10 hours' END,
+      CASE WHEN v_status = 'approved' THEN now() - interval '2 hours' END,
+      CASE WHEN v_status = 'approved' THEN now() - interval '2 hours' END,
+      CASE WHEN v_status = 'approved' THEN v_l1 END,
+      CASE WHEN v_status = 'approved' THEN now() - interval '1 hour' END,
+      'first_time', now() - interval '12 hours')
+    RETURNING id INTO v_wo;
+
+    INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+    INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[2]);
+
+    IF v_status = 'approved' THEN
+      UPDATE work_orders SET final_points = 17.6, approved_l2_by = v_l2,
+             approved_l2_at = now() - interval '1 hour' WHERE id = v_wo;
+      INSERT INTO scoring_snapshots (work_order_id, base_points, target_hours,
+        actual_hours, unit_factor, work_condition_factor, timeliness_factor,
+        timeliness_status, safety_factor, mtbf_factor, final_points)
+      VALUES (v_wo, 16, 8, 8, 1.0, 1.0, 1.0, 'on_time', 1.0, 1.1, 17.6);
+      INSERT INTO mechanic_points (work_order_id, mechanic_id, section_id, points, idr_per_point)
+      SELECT v_wo, t.mechanic_id, v_section, 17.6, p.idr_per_point
+        FROM work_order_team t
+        JOIN mechanics m ON m.id = t.mechanic_id
+        JOIN pay_rates p ON p.id = m.pay_rate_id
+       WHERE t.work_order_id = v_wo;
+    END IF;
+  END LOOP;
+
+  -- Kartu insiden: approved TAPI safety_incident, sehingga poinnya nol. Kartunya
+  -- bertepi merah dan statusnya berbunyi "⚠️ Insiden" — bentuk yang harus bisa
+  -- dilihat tanpa perlu menimbulkan insiden sungguhan.
+  INSERT INTO work_orders (
+    tenant_id, wo_number, section_id, job_id, unit_id, status, created_by,
+    work_condition, location, keterangan, safety_incident,
+    session_hours, start_time, end_time, submitted_at,
+    approved_l1_by, approved_l1_at, approved_l2_by, approved_l2_at,
+    mtbf_redo_status, final_points, created_at)
+  VALUES (
+    v_tenant, next_wo_number(v_tenant, current_date), v_section, v_job, v_unit,
+    'approved', v_l1, 'normal', 'Lapangan',
+    'Tangan terjepit saat melepas hose — dirujuk ke klinik', true,
+    9.0, now() - interval '11 hours', now() - interval '2 hours',
+    now() - interval '2 hours', v_l1, now() - interval '90 minutes',
+    v_l2, now() - interval '1 hour', 'first_time', 0, now() - interval '13 hours')
+  RETURNING id INTO v_wo;
+
+  INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+  INSERT INTO scoring_snapshots (work_order_id, base_points, target_hours,
+    actual_hours, unit_factor, work_condition_factor, timeliness_factor,
+    timeliness_status, safety_factor, mtbf_factor, final_points)
+  VALUES (v_wo, 16, 8, 9, 1.0, 1.0, 0.8, 'late', 0, 1.0, 0);
+  INSERT INTO mechanic_points (work_order_id, mechanic_id, section_id, points, idr_per_point)
+  SELECT v_wo, t.mechanic_id, v_section, 0, p.idr_per_point
+    FROM work_order_team t
+    JOIN mechanics m ON m.id = t.mechanic_id
+    JOIN pay_rates p ON p.id = m.pay_rate_id
+   WHERE t.work_order_id = v_wo;
 
   RAISE NOTICE 'Data contoh dibuat.';
 END $$;

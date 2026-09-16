@@ -21,7 +21,9 @@
     "uji:alur-override": "tsx scripts/uji-override-approve.ts",
     "uji:payroll": "tsx scripts/uji-payroll.ts",
     "uji:others": "tsx scripts/uji-others.ts",
-    "uji:kirim": "tsx scripts/uji-kirim-kerja.ts"
+    "uji:kirim": "tsx scripts/uji-kirim-kerja.ts",
+    "siap": "npm run db:contoh && npm run orang",
+    "wo:siapa": "tsx scripts/lihat-wo-mekanik.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
