@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { akuServer } from '../../lib/sesi.js';
@@ -24,12 +23,6 @@ import { akuServer } from '../../lib/sesi.js';
  * dilihat orang. Tombol besar bernama jelas lebih baik daripada daftar yang
  * masih memuat — terutama di HP yang sinyalnya belum tentu ada saat dibuka.
  */
-
-export const metadata: Metadata = {
-  title: 'MAR Lapangan',
-  manifest: '/lapangan.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'MAR Lapangan' },
-};
 
 export const dynamic = 'force-dynamic';
 
