@@ -1,0 +1,34 @@
+@echo off
+REM ===========================================================================
+REM  CADANGAN HARIAN BASIS DATA PRODUKSI KMB
+REM ===========================================================================
+REM  Salin berkas ini jadi `cadangkan-produksi.cmd` (TANPA .contoh), lalu isi
+REM  sandinya. Yang terisi sudah diabaikan .gitignore dan tidak akan ikut git.
+REM
+REM      copy cadangkan-produksi.cmd.contoh cadangkan-produksi.cmd
+REM
+REM  Cara menjadwalkannya ada di docs/CADANGAN.md.
+REM ===========================================================================
+
+REM  PORTA 5432, BUKAN 6543.
+REM  6543 adalah pooler mode transaksi yang dipakai Vercel; pg_dump butuh satu
+REM  sesi utuh dan skripnya akan menolak alamat itu. Ambil "Session pooler"
+REM  dari Supabase -> Connect.
+set DATABASE_URL=postgresql://postgres.pdlevnrhrabfxxdlzebc:GANTI-SANDI@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+
+REM  Simpan DI LUAR proyek, dan di folder OneDrive supaya ia tersalin keluar
+REM  dari laptop ini sendiri. Cadangan yang hanya ada di satu mesin akan hilang
+REM  bersama mesin itu.
+set TUJUAN=C:\Users\gabri\OneDrive\cadangan-kmb
+
+REM  30 hari. Satu periode gaji penuh plus dua minggu — cukup untuk menyadari
+REM  ada yang salah pada periode sebelumnya dan masih bisa mundur ke sana.
+set SIMPAN=30
+
+cd /d "%~dp0"
+call npx tsx scripts/cadangkan.ts --ke "%TUJUAN%" --simpan %SIMPAN%
+
+REM  Status keluar diteruskan supaya Task Scheduler menandainya GAGAL kalau
+REM  gagal. Tugas terjadwal yang selalu tampak "berhasil" adalah cara paling
+REM  umum sebuah cadangan berhenti diam-diam selama berbulan-bulan.
+exit /b %ERRORLEVEL%

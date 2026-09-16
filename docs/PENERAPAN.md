@@ -217,6 +217,40 @@ DATABASE_URL="<koneksi langsung, porta 5432>" npx tsx scripts/cadangkan.ts
 > Cadangan yang tidak pernah diuji pulih bukan cadangan. Sekali sebulan:
 > `npm run uji:cadangan` di laptop, atau pulihkan ke proyek Supabase kedua.
 
+**Cara menjadwalkannya, langkah demi langkah: [CADANGAN.md](CADANGAN.md).**
+
+### 7. Pemantauan
+
+Tanpa ini, kalau sistemnya mati jam 2 pagi tidak ada yang tahu sampai ada
+mekanik yang gagal mengirim kerjanya — dan ia akan mengira dirinya yang salah.
+
+Pakai pemantau luar apa pun yang gratis (UptimeRobot, Better Stack, Pingdom).
+Yang diisi:
+
+| | |
+|---|---|
+| URL | `https://<nama>.vercel.app/api/sehat` |
+| Jenis | HTTP(s), periksa **kode status** |
+| Selang | 5 menit |
+| Anggap mati bila | status **bukan 200** |
+
+Kode statusnya memang sudah dibuat untuk ini: `/api/sehat` menjawab **200** saat
+kuerinya jalan dan **503** saat basis datanya tak terjangkau. Jadi pemantau
+biasa sudah cukup — tidak perlu yang bisa membaca isi JSON.
+
+> #### Dua hal yang ikut didapat
+>
+> **Angka, bukan perasaan.** Selama masa pembuktian, yang ingin Anda ketahui
+> justru berapa kali ia mati dan berapa lama. Tanpa pemantau, "andal" tidak
+> punya satuan.
+>
+> **Proyek Free tidak tertidur.** Supabase menidurkan proyek Free yang lama
+> tidak dipakai. Pemantau yang menembak tiap 5 menit menjalankan kueri
+> sungguhan, jadi proyeknya tidak pernah dianggap menganggur.
+
+Arahkan pemberitahuannya ke tempat yang benar-benar Anda lihat. Pemantau yang
+mengirim email ke kotak yang tidak pernah dibuka sama saja dengan tidak ada.
+
 ---
 
 ## Jalan B — server sendiri (Docker)
@@ -414,10 +448,10 @@ docker compose --env-file .env.produksi ps
 - **Dashboard Teknis dunia Field kosong.** PA/MTTR/MTBF berdiri di atas jam unit
   turun & jam siap pakai, dan belum diputuskan siapa yang mencatatnya. Lihat
   `docs/SPEK-LAYAR/05-TEKNIS.md` §7b.
-- **Tidak ada pemantauan otomatis.** Kalau server mati jam 2 pagi, tidak ada
-  yang memberi tahu. Sebelum benar-benar bergantung padanya, pasang pemantau
-  luar apa pun yang menembak `/api/sehat` dan mengabari kalau ia berhenti
-  menjawab.
+- **Pemantauan harus dipasang, bukan sekadar bisa.** Caranya ada di §7 di atas
+  dan `/api/sehat` sudah menjawab 503 saat basis datanya tak terjangkau — tapi
+  sampai ada yang benar-benar mendaftarkannya, kalau sistemnya mati jam 2 pagi
+  tetap tidak ada yang tahu.
 - **Satu server, satu basis data.** Kalau mesinnya hilang, yang tersisa cuma
   cadangan. Itu sebabnya cadangan harus keluar dari server itu.
 

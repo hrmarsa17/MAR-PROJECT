@@ -43,6 +43,28 @@ if (!alamat) {
   process.exit(1);
 }
 
+/* POOLER MODE TRANSAKSI TIDAK BISA DIPAKAI MENCADANGKAN.
+   `pg_dump` bekerja dalam SATU sesi: ia membuka transaksi repeatable-read lalu
+   membaca seluruh tabel di dalamnya, supaya potretnya konsisten pada satu
+   titik waktu. Pooler mode transaksi (porta 6543) justru memindahkan transaksi
+   antar koneksi — itu yang membuatnya hemat, dan itu pula yang membuatnya tidak
+   cocok di sini.
+
+   Alamat inilah yang paling mungkin tersalin ke tugas terjadwal, karena ia yang
+   dipakai Vercel dan karena itu yang paling sering ada di papan klip. Ditolak
+   dengan menyebut alamat penggantinya — bukan dibiarkan menghasilkan cadangan
+   yang mungkin tidak utuh dan baru ketahuan saat dibutuhkan. */
+if (/:6543\//.test(alamat)) {
+  console.error(
+    '\n❌ DITOLAK: alamat ini pooler MODE TRANSAKSI (porta 6543).\n\n'
+    + '   pg_dump butuh satu sesi utuh; mode transaksi tidak menyediakannya.\n'
+    + '   Pakai salah satu dari Supabase → Connect:\n'
+    + '     • Session pooler   porta 5432 (IPv4, paling aman dipakai di sini)\n'
+    + '     • Direct connection porta 5432 (IPv6 saja)\n',
+  );
+  process.exit(1);
+}
+
 mkdirSync(DIR, { recursive: true });
 
 /* Nama berkas memuat tanggal DAN jam sampai detik. Dua cadangan di hari yang
@@ -63,7 +85,34 @@ if (ukuran < 1024) {
     + 'cadangan yang sah. Periksa DATABASE_URL.');
   process.exit(1);
 }
-console.log(`✅ ${(ukuran / 1024 / 1024).toFixed(1)} MB`);
+/* UKURAN BUKAN BUKTI ISINYA ADA.
+   Pemeriksaan di atas hanya menangkap cadangan yang nyaris kosong. Sebuah dump
+   bisa berukuran wajar, berstatus 0, dan tetap kehilangan tabel yang justru
+   paling dibutuhkan — misalnya karena hak baca peran yang dipakai berbeda dari
+   yang dikira. Yang seperti itu baru ketahuan saat dipulihkan, dan saat itu
+   sudah terlambat menurut definisi.
+
+   Maka daftar isinya dibaca kembali dan tabel-tabel yang menyimpan UANG dan
+   IDENTITAS harus benar-benar ada di sana. */
+const WAJIB = [
+  'work_orders', 'mechanic_points', 'scoring_snapshots',
+  'jobs', 'units', 'mechanics', 'api_tokens', 'pay_rates', 'factors',
+];
+const PG_RESTORE = process.env['PG_RESTORE_BIN']
+  ?? PG_DUMP.replace(/pg_dump(\.exe)?$/, (s) => s.replace('pg_dump', 'pg_restore'));
+const daftar = execFileSync(PG_RESTORE, ['--list', berkas], { encoding: 'utf8' });
+const hilang = WAJIB.filter(
+  (t) => !new RegExp(`TABLE DATA public ${t}\\b`).test(daftar),
+);
+if (hilang.length > 0) {
+  console.error(`\n❌ Cadangan tidak memuat ${hilang.length} tabel yang wajib ada: `
+    + `${hilang.join(', ')}\n   Berkasnya TIDAK bisa diandalkan. Periksa hak baca `
+    + 'peran pada DATABASE_URL yang dipakai.\n');
+  process.exit(1);
+}
+
+console.log(`✅ ${(ukuran / 1024 / 1024).toFixed(1)} MB`
+  + `, ${WAJIB.length} tabel inti diperiksa ada`);
 
 // ── Pangkas yang lama ───────────────────────────────────────────────────────
 const batas = Date.now() - SIMPAN_HARI * 86_400_000;

@@ -20,3 +20,14 @@ next-env.d.ts
 # masuk git ia ada di riwayat selamanya, termasuk di salinan siapa pun yang
 # kelak meng-clone repo ini. Dibaca lewat `npx tsx scripts/baca-xlsx.ts`.
 *.xlsx
+
+# Cadangan basis data. Isinya SELURUH tabel produksi — nama, peran, token yang
+# disimpan terbaca, dan tiap rupiah yang pernah dibayarkan. Direktori bawaan
+# `scripts/cadangkan.ts` ada di dalam proyek, jadi tanpa baris ini satu
+# `git add -A` sudah cukup untuk mengirim seluruh basis data ke GitHub.
+cadangan/
+*.dump
+
+# Berkas penjadwal cadangan memuat alamat basis data produksi beserta sandinya.
+# Templatnya (.contoh) yang ikut repo, bukan yang terisi.
+cadangkan-produksi.cmd
