@@ -402,23 +402,6 @@ export function ModalKerja({
                   />
                 </div>
 
-                {/* TRANSFER WO: catatan untuk mekanik shift berikutnya.
-                    Jam MULAI diambil dari picker di atas — jam berhentinya
-                    ditetapkan server saat permintaan masuk, karena menekan
-                    Transfer artinya berhenti kerja sekarang. */}
-                <div className="form-group">
-                  <label className="form-label" htmlFor={`catatan-${wo.id}`}>
-                    Catatan bila WO dioper ke shift berikutnya{' '}
-                    <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>
-                      (opsional)
-                    </span>
-                  </label>
-                  <textarea
-                    id={`catatan-${wo.id}`} rows={2} value={catatan}
-                    onChange={(e) => setCatatan(e.target.value)}
-                    placeholder="cth: baut roda kiri belum kencang, tinggal torsi ulang"
-                  />
-                </div>
               </div>
             )}
 

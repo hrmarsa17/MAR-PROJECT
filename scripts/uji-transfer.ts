@@ -183,6 +183,29 @@ console.log('\n─── 6. DITOLAK ⇒ jam sesi HANGUS ───');
 
   const kartu = await kartuTransfer(await identitasDariToken(l1.token));
   periksa('hilang dari antrean keputusan', !kartu.some((x) => x.woId === woA));
+
+  /* Jam mekanik hangus karena keputusan ini. Kalau alasannya berhenti di audit
+     log, yang sampai ke lapangan cuma "jam saya tidak dihitung" tanpa sebab —
+     dan tak seorang pun bisa menjawabnya tanpa membuka basis data. */
+  const punyaMek = await woMekanik(TENANT, mek.id, 'assigned');
+  const k = punyaMek.find((w) => w.id === woA);
+  periksa('ALASAN penolakan sampai ke kartu mekanik',
+    k?.transferDitolak?.alasan.includes('shift berikutnya kosong') === true,
+    JSON.stringify(k?.transferDitolak));
+  periksa('menyebut berapa jam yang hangus',
+    k?.transferDitolak?.jamHangus === 3, String(k?.transferDitolak?.jamHangus));
+  periksa('menyebut siapa yang memutuskan',
+    k?.transferDitolak?.oleh === l1.name, k?.transferDitolak?.oleh ?? '(kosong)');
+
+  // Mekanik boleh mengajukan transfer LAGI setelah ditolak — penolakan bukan
+  // larangan permanen, dan shift berikutnya bisa saja terisi kemudian.
+  const ulang = await perintah(mek.token, 'minta_transfer',
+    { woId: woA, sessionStart: JAM_LALU(1) });
+  periksa('boleh mengajukan transfer lagi setelah ditolak', ulang.ok === true, ulang.pesan);
+  periksa('permintaan barunya BENAR-BENAR baru, bukan struk lama',
+    ulang.data?.hasil['sudahDiminta'] === false);
+  await perintah(l1.token, 'tolak_transfer',
+    { woId: woA, alasan: 'CONTOH bersihkan lagi untuk uji berikutnya' });
 }
 
 console.log('\n─── 7. DISETUJUI ⇒ jam masuk, tim diperluas ───');
@@ -290,6 +313,51 @@ console.log('\n─── 10. pagar permintaan ───');
   const c = await perintah(penerima.token, 'minta_transfer',
     { woId: woE, sessionStart: JAM_LALU(1) });
   periksa('orang di luar tim ditolak', c.ok === false, 'justru diterima');
+}
+
+console.log('\n─── 11. RANTAI PENUH: transfer → kirim → L1 → L2 → uang ───');
+{
+  /* Pertanyaan terakhir, dan satu-satunya yang benar-benar menentukan: setelah
+     semua ini, apakah KEDUANYA dibayar, dan apakah jam shift pertama ikut
+     dihitung? Semua uji di atas memeriksa potongannya; yang ini memeriksa
+     bahwa potongan-potongan itu tersambung sampai ke poin. */
+  const wo = await buatWo();
+  await perintah(mek.token, 'minta_transfer', { woId: wo, sessionStart: JAM_LALU(5) });
+  const s = await perintah(l1.token, 'setujui_transfer', { woId: wo, penerima: [penerima.id] });
+  periksa('transfer disetujui, 5 jam masuk', Number(s.data?.hasil['partialHoursSesudah']) === 5,
+    String(s.data?.hasil['partialHoursSesudah']));
+
+  // Mekanik penerima menyelesaikan sisanya: 2 jam.
+  const k = await perintah(penerima.token, 'kirim_kerja',
+    { woId: wo, startTime: JAM_LALU(2), endTime: JAM_LALU(0) });
+  periksa('penerima bisa mengirim kerjanya', k.ok === true, k.pesan);
+  periksa('jam total = 5 (shift 1) + 2 (shift 2)',
+    Number(k.data?.hasil['actualHours']) === 7, String(k.data?.hasil['actualHours']));
+
+  const a = await perintah(l1.token, 'approve_l1', { woId: wo });
+  periksa('L1 lolos', a.ok === true, a.pesan);
+  const b = await perintah(l2.token, 'approve_l2', { woId: wo });
+  periksa('L2 lolos', b.ok === true, b.pesan);
+
+  const poin = await sql<{ mechanic_id: number; points: string; idr_value: string }[]>`
+    SELECT mechanic_id, points, idr_value FROM mechanic_points WHERE work_order_id = ${wo}
+  `;
+  periksa('DUA orang dibayar, bukan satu', poin.length === 2, `${poin.length} baris`);
+  periksa('mekanik shift pertama dapat poin',
+    poin.some((p) => Number(p.mechanic_id) === mek.id && Number(p.points) > 0));
+  periksa('penerima transfer dapat poin PENUH yang sama',
+    poin.length === 2 && Number(poin[0]!.points) === Number(poin[1]!.points),
+    JSON.stringify(poin.map((p) => p.points)));
+  periksa('rupiahnya terbit untuk keduanya',
+    poin.every((p) => Number(p.idr_value) > 0), JSON.stringify(poin.map((p) => p.idr_value)));
+
+  const snap = (
+    await sql<{ actual_hours: string }[]>`
+      SELECT actual_hours FROM scoring_snapshots WHERE work_order_id = ${wo}
+    `
+  )[0];
+  periksa('snapshot membekukan jam TOTAL lintas shift, bukan sesi terakhir',
+    Number(snap?.actual_hours) === 7, String(snap?.actual_hours));
 }
 
 // Bersihkan jejak uji.

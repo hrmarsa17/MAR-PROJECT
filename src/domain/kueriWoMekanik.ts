@@ -63,6 +63,15 @@ export interface KartuWoMekanik {
    * kolom transfer_note saat approve (`ApprovalService.js:1826-1827`).
    */
   catatanTransfer: { teks: string; dari: string } | null;
+  /**
+   * Transfer yang DITOLAK, berikut alasannya dan berapa jam yang hangus.
+   *
+   * Keputusan itu membuat mekanik bekerja beberapa jam tanpa dibayar. Di KMB V2
+   * alasannya hanya masuk audit log, sehingga yang sampai ke lapangan cuma
+   * "jamnya tidak dihitung" tanpa sebab — dan itu persis pertanyaan yang tidak
+   * pernah bisa dijawab siapa pun. Ditampilkan sampai WO-nya dikirim.
+   */
+  transferDitolak: { alasan: string; jamHangus: number; oleh: string } | null;
 }
 
 export interface HitunganTabMekanik {
@@ -167,6 +176,9 @@ interface BarisMentah {
   tim: { mechanic_id: number; nama: string }[] | null;
   catatan_transfer: string | null;
   catatan_dari: string | null;
+  tolak_alasan: string | null;
+  tolak_jam: string | null;
+  tolak_oleh: string | null;
 }
 
 export async function woMekanik(
@@ -247,7 +259,12 @@ export async function woMekanik(
       -- tidak pernah jadi — menampilkan keduanya berarti menyuruh mekanik
       -- meneruskan pekerjaan yang belum diserahkan kepadanya.
       pesan.note AS catatan_transfer,
-      pesan.nama AS catatan_dari
+      pesan.nama AS catatan_dari,
+      -- Penolakan terakhir, selama WO-nya MASIH dikerjakan. Sesudah dikirim,
+      -- kabar itu tidak lagi menuntut tindakan apa pun dari mekanik.
+      tolak.decision_reason AS tolak_alasan,
+      tolak.session_hours   AS tolak_jam,
+      tolak.oleh            AS tolak_oleh
 
     FROM bergrup b
     LEFT JOIN jobs j                ON j.id  = b.job_id
@@ -271,6 +288,16 @@ export async function woMekanik(
        ORDER BY tr.decided_at DESC
        LIMIT 1
     ) pesan ON true
+    LEFT JOIN LATERAL (
+      SELECT tr.decision_reason, tr.session_hours, m.name AS oleh
+        FROM work_order_transfers tr
+        JOIN mechanics m ON m.id = tr.decided_by
+       WHERE tr.work_order_id = b.id
+         AND tr.decision = 'reject'
+         AND b.status_group = 'assigned'
+       ORDER BY tr.decided_at DESC
+       LIMIT 1
+    ) tolak ON true
 
     WHERE b.status_group = ${tab}
     ORDER BY b.created_at DESC
@@ -319,6 +346,13 @@ export async function woMekanik(
       bolehKirim: r.status === 'pending_mechanic_work' || r.status === 'in_progress',
       catatanTransfer: r.catatan_transfer
         ? { teks: r.catatan_transfer, dari: r.catatan_dari ?? '—' }
+        : null,
+      transferDitolak: r.tolak_alasan
+        ? {
+            alasan: r.tolak_alasan,
+            jamHangus: Number(r.tolak_jam ?? 0),
+            oleh: r.tolak_oleh ?? '—',
+          }
         : null,
     };
   });

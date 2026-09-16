@@ -177,6 +177,29 @@ BEGIN
   INSERT INTO work_order_transfer_recipients (transfer_id, mechanic_id)
   VALUES ((SELECT id FROM work_order_transfers WHERE work_order_id = v_wo), v_mek[2]);
 
+  -- WO yang transfernya DITOLAK: jam sesinya hangus, dan mekanik membaca
+  -- alasannya di kartunya sendiri. partial_hours sengaja TETAP 0 — itulah
+  -- seluruh maksud penolakan, dan data contoh yang menaruh angka di situ akan
+  -- menyembunyikan justru bagian yang paling perlu terlihat benar.
+  INSERT INTO work_orders (
+    tenant_id, wo_number, section_id, job_id, unit_id, status, created_by,
+    work_condition, location, keterangan, mtbf_redo_status, created_at)
+  VALUES (
+    v_tenant, next_wo_number(v_tenant, current_date), v_section, v_job, v_unit,
+    'pending_mechanic_work', v_l1, 'normal', 'Workshop',
+    'Selesaikan hari ini', 'first_time', now() - interval '8 hours')
+  RETURNING id INTO v_wo;
+
+  INSERT INTO work_order_team (work_order_id, mechanic_id) VALUES (v_wo, v_mek[1]);
+
+  INSERT INTO work_order_transfers
+    (work_order_id, requested_by, session_start, session_stop, session_hours,
+     note, decided_by, decided_at, decision, decision_reason)
+  VALUES (v_wo, v_mek[1],
+          now() - interval '7 hours', now() - interval '5 hours', 2.0,
+          'CONTOH tinggal pasang cover', v_l1, now() - interval '4 hours',
+          'reject', 'CONTOH shift berikutnya kosong, kerjakan sampai selesai');
+
   -- Kartu insiden: approved TAPI safety_incident, sehingga poinnya nol. Kartunya
   -- bertepi merah dan statusnya berbunyi "⚠️ Insiden" — bentuk yang harus bisa
   -- dilihat tanpa perlu menimbulkan insiden sungguhan.

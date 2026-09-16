@@ -244,6 +244,19 @@ function Kartu({
         </div>
       )}
 
+      {/* Transfer DITOLAK. Ini kabar buruk tentang uang — mekanik bekerja
+          beberapa jam dan jam itu tidak dibayar — jadi ia berwarna penolakan,
+          menyebut angkanya, dan menyebut siapa yang memutuskan. Diam soal ini
+          adalah persis yang melahirkan pertanyaan "kenapa jam saya hilang". */}
+      {wo.transferDitolak && (
+        <div className="tr-tolak">
+          🔁 <b>Transfer ditolak {wo.transferDitolak.oleh}</b> — sesi{' '}
+          {durasiJam(wo.transferDitolak.jamHangus)} tidak dihitung. Lanjutkan
+          pekerjaan ini sampai selesai.
+          <div className="tr-tolak-alasan">“{wo.transferDitolak.alasan}”</div>
+        </div>
+      )}
+
       <div className="wo-component">{wo.jobNama ?? 'Unknown Component'}</div>
 
       <div className="wo-details">

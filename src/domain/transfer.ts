@@ -391,7 +391,8 @@ export async function tolakTransfer(
          dihitung" punya jawaban yang bisa dibaca. */
       await tx`
         UPDATE work_order_transfers
-           SET decision = 'reject', decided_by = ${m.actorId}, decided_at = now()
+           SET decision = 'reject', decided_by = ${m.actorId}, decided_at = now(),
+               decision_reason = ${m.alasan.trim()}
          WHERE id = ${minta.id}
       `;
 

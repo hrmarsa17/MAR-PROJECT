@@ -421,10 +421,14 @@ CREATE TABLE work_order_transfers (
   session_start timestamptz,
   session_stop  timestamptz,
   session_hours numeric(8,2),                -- masuk ke partial_hours saat disetujui
-  note          text,
+  note          text,                       -- pesan untuk mekanik penerima
   decided_by    integer REFERENCES mechanics(id),
   decided_at    timestamptz,
-  decision      approval_decision
+  decision      approval_decision,
+  -- Alasan MENOLAK. Dibaca mekanik di kartu WO-nya: penolakan menghanguskan
+  -- jam sesinya, jadi ia berhak tahu sebabnya. Di KMB V2 alasan ini hanya
+  -- masuk audit log, dan tak seorang pun di lapangan pernah melihatnya.
+  decision_reason text
 );
 
 CREATE TABLE work_order_transfer_recipients (
