@@ -37,6 +37,12 @@
     "uji:audit": "tsx scripts/uji-audit.ts",
     "uji:token": "tsx scripts/uji-token.ts",
     "token:pulihkan": "tsx scripts/pulihkan-token.ts",
+    "db:migrasi": "tsx scripts/migrasi.ts",
+    "orang:pertama": "tsx scripts/orang-pertama.ts",
+    "db:cadangkan": "tsx scripts/cadangkan.ts",
+    "db:pulihkan": "tsx scripts/pulihkan.ts",
+    "uji:db-baru": "tsx scripts/uji-db-baru.ts",
+    "uji:cadangan": "tsx scripts/uji-cadangan.ts",
     "db:bersih": "tsx scripts/bersihkan-dummy.ts",
     "ws:matriks": "tsx scripts/pindah-matriks-workshop.ts"
   },

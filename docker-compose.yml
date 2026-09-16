@@ -1,0 +1,95 @@
+# ════════════════════════════════════════════════════════════════════════════
+# KMB — penerapan satu mesin
+# ════════════════════════════════════════════════════════════════════════════
+#   docker compose --env-file .env.produksi up -d --build
+#
+# Empat layanan, dan urutannya ditegakkan compose, bukan kebiasaan orang:
+#
+#   db        Postgres 18. TIDAK membuka porta ke luar mesin.
+#   migrasi   sekali jalan. App tidak dimulai sebelum ia SELESAI DENGAN SUKSES.
+#   app       Next standalone. Juga tidak membuka porta ke luar.
+#   caddy     satu-satunya yang menghadap internet. HTTPS otomatis.
+#
+# Kenapa `migrasi` layanan tersendiri: menjalankan migrasi di dalam app yang
+# baru menyala berarti dua wadah app yang menyala bersamaan akan bermigrasi
+# bersamaan. Sebagai layanan sekali-jalan, ia selesai dulu, lalu app menyala.
+# ════════════════════════════════════════════════════════════════════════════
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?wajib diisi di .env.produksi}
+      POSTGRES_USER: ${POSTGRES_USER:?wajib diisi di .env.produksi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?wajib diisi di .env.produksi}
+      # Postgres 18 memakai scram-sha-256. Disebut eksplisit supaya tidak
+      # berubah diam-diam kalau bawaannya suatu hari berbeda.
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - kmb-db:/var/lib/postgresql/data
+      # Cadangan menulis ke sini, dan direktorinya ikut di-mount ke `alat`.
+      - ./cadangan:/cadangan
+    # TIDAK ada `ports:`. Basis data hanya dijangkau dari jaringan compose.
+    # Membukanya ke internet adalah cara tercepat kehilangan seluruh payroll.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  migrasi:
+    build:
+      context: .
+      target: alat
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    # `--awal` aman dipanggil berulang: skema hanya dipasang kalau tabel
+    # work_orders memang belum ada. Jadi perintah yang sama dipakai untuk
+    # pemasangan pertama maupun pembaruan berikutnya.
+    command: ["npx", "tsx", "scripts/migrasi.ts", "--awal", "--terapkan", "--izinkan-luar"]
+
+  app:
+    build:
+      context: .
+      target: jalan
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrasi:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      NODE_ENV: production
+    # Juga tanpa `ports:` — hanya Caddy yang boleh menghadap keluar.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?wajib diisi — HTTPS tidak bisa tanpa nama domain}
+      EMAIL_TLS: ${EMAIL_TLS:?wajib diisi — dipakai Let's Encrypt}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Sertifikat disimpan supaya tidak diterbitkan ulang tiap kali menyala.
+      # Let's Encrypt punya batas laju; tanpa volume ini, beberapa kali
+      # menyalakan ulang cukup untuk menabraknya dan kehilangan HTTPS berjam-jam.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  kmb-db:
+  caddy-data:
+  caddy-config:

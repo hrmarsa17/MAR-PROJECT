@@ -1,0 +1,46 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Caddy — satu-satunya yang menghadap internet
+# ════════════════════════════════════════════════════════════════════════════
+# Dipilih karena HTTPS-nya otomatis: sertifikat diterbitkan dan diperpanjang
+# sendiri. Itu bukan kenyamanan belaka di sini —
+#
+#   cookie sesi KMB memakai `secure: true` di produksi
+#   (src/app/api/masuk/route.ts:25)
+#
+# artinya TANPA HTTPS tidak ada satu pun orang yang bisa masuk. Sertifikat yang
+# telanjur kedaluwarsa karena lupa diperpanjang bukan gangguan kecil; ia
+# mengunci dua puluh empat orang di luar sistem yang membayar mereka.
+# ════════════════════════════════════════════════════════════════════════════
+
+{
+	email {$EMAIL_TLS}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Titik periksa kesehatan tidak dicatat — ia dipanggil tiap 30 detik, dan
+	# log yang penuh olehnya menenggelamkan baris yang benar-benar perlu dibaca.
+	@sehat path /api/sehat
+	log {
+		output stdout
+		format console
+		exclude @sehat
+	}
+
+	reverse_proxy app:3000 {
+		health_uri /api/sehat
+		health_interval 30s
+		health_timeout 5s
+	}
+
+	header {
+		# HSTS: sekali dibuka lewat HTTPS, peramban menolak kembali ke HTTP.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		# Halaman ini tidak pernah layak ditanam di dalam bingkai situs lain.
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

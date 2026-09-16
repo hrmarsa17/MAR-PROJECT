@@ -1,0 +1,28 @@
+# Yang TIDAK boleh ikut ke dalam image.
+#
+# Yang paling penting di daftar ini adalah `.env` dan `*.xlsx`. Berkas .env
+# memuat kata sandi basis data; berkas .xlsx memuat nama dan gaji orang yang
+# benar-benar bekerja di KMB. Sekali ikut ke dalam lapisan image, keduanya ada
+# di sana selamanya — termasuk di salinan siapa pun yang menarik image itu.
+
+.env
+.env.*
+!.env.example
+*.xlsx
+
+node_modules
+.next
+.git
+.github
+cadangan
+cadangan-uji
+coverage
+.vitest
+*.log
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# Uji tidak dipakai saat membangun maupun menjalankan. Ia tetap ikut ke tahap
+# `alat` lewat COPY . . — memang disengaja: di situlah migrasi dijalankan, dan
+# uji basis data baru berguna untuk memeriksa pemasangan di server.
