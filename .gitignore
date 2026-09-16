@@ -2,7 +2,11 @@ node_modules/
 dist/
 .env
 .env.*
-!.env.example
+# Templat BOLEH ikut — isinya tempat isian, dan tanpanya `cp
+# .env.produksi.example .env.produksi` di PENERAPAN.md menyalin berkas yang
+# tidak ada. `!.env.example` saja tidak cukup: ia tidak mengenai
+# `.env.produksi.example`, yang karena itu tak pernah ikut ter-commit.
+!.env*.example
 *.log
 .DS_Store
 coverage/
