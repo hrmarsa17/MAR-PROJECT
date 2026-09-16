@@ -8,7 +8,7 @@ import { durasiJam } from '../../lib/format.js';
 import type { KartuWoMekanik } from '../../domain/kueriWoMekanik.js';
 import {
   bersihkanTimer, jedaLainnya, keWaktuLokal, msBerjalan, msKeHms, msKeJamMenit,
-  simpanTimer, timerWo,
+  simpanTimer, timerWo, type KeadaanTimer,
 } from './timer.js';
 
 /**
@@ -31,6 +31,34 @@ import {
 
 type Hasil = { baik: boolean; teks: string };
 
+/**
+ * PENGHITUNG BERDETAK — komponennya sendiri, dan itu bukan kerapian.
+ *
+ * Sampai 16 Sep 2026 detaknya tinggal di ModalKerja: satu `setInterval` menaikkan
+ * state modal tiap detik, sehingga SELURUH modal — termasuk picker tanggal dan
+ * kedua daftar jam — tergambar ulang enam puluh kali semenit.
+ *
+ * Akibatnya persis seperti yang dilaporkan Gabriel: tanggal maupun jamnya tidak
+ * bisa diklik. Bukan karena tombolnya mati, melainkan karena jendela pilihan
+ * bawaan peramban (kalender `input[type=date]` dan daftar `select`) ditutup
+ * kembali oleh peramban setiap kali React menetapkan ulang isi kontrolnya —
+ * dan itu terjadi setiap detik. Yang terlihat hanya kedipan, atau tidak
+ * terjadi apa-apa sama sekali.
+ *
+ * Maka detaknya dikurung di sini. Yang tergambar ulang cuma angka jamnya;
+ * picker di bawahnya tidak tersentuh sama sekali. Intervalnya pun hanya hidup
+ * saat timer benar-benar berjalan — saat diam, tidak ada gambar ulang apa pun.
+ */
+function PenghitungTimer({ st }: { st: KeadaanTimer }) {
+  const [, detak] = useState(0);
+  useEffect(() => {
+    if (st.state !== 'running') return;
+    const t = setInterval(() => detak((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [st.state, st.start_epoch]);
+  return <div className="timer-angka">{msKeHms(msBerjalan(st))}</div>;
+}
+
 export function ModalKerja({
   wo, onTutup,
 }: {
@@ -45,22 +73,17 @@ export function ModalKerja({
   const [sibuk, setSibuk] = useState(false);
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const [ringkas, setRingkas] = useState<string | null>(null);
-  const [detak, setDetak] = useState(0);        // memaksa gambar ulang tiap detik
+  /* Dinaikkan HANYA saat tombol timer ditekan — bukan tiap detik. Lihat
+     catatan di PenghitungTimer: gambar ulang per detik membuat picker tanggal
+     dan jam tidak bisa dibuka sama sekali. */
+  const [versi, setVersi] = useState(0);
+  const gambarUlang = () => setVersi((n) => n + 1);
+  void versi;
 
   // Lahir sekali per modal, bukan tiap gambar ulang.
   const opId = useRef<string>('');
   if (!opId.current) opId.current = crypto.randomUUID();
   const st = timerWo(wo.id);
-
-  // Ticker satu detik. Hanya hidup selama modal terbuka — timer yang berjalan
-  // tetap akurat walau tidak ditonton, karena nilainya dihitung dari epoch.
-  useEffect(() => {
-    const t = setInterval(() => setDetak((n) => n + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const berjalan = msBerjalan(st);
-  void detak;
 
   const sesiJam = (() => {
     if (!mulai || !selesai) return null;
@@ -75,7 +98,7 @@ export function ModalKerja({
     st.state = 'running';
     st.start_epoch = Date.now();
     simpanTimer();
-    setDetak((x) => x + 1);
+    gambarUlang();
     if (n) setRingkas(`⏸ ${n} WO lain otomatis dijeda (waktunya tersimpan).`);
   }
 
@@ -85,7 +108,7 @@ export function ModalKerja({
     st.state = 'paused';
     st.start_epoch = 0;
     simpanTimer();
-    setDetak((x) => x + 1);
+    gambarUlang();
   }
 
   /** Finish TIDAK menghapus waktu — baru dibersihkan setelah kiriman berhasil. */
@@ -106,7 +129,7 @@ export function ModalKerja({
       setRingkas(`✅ Total waktu pengerjaan: ${msKeJamMenit(total)} — `
         + `${keWaktuLokal(awal).replace('T', ' ')} → ${keWaktuLokal(kini).replace('T', ' ')}`);
     }
-    setDetak((x) => x + 1);
+    gambarUlang();
   }
 
   function resetTimer() {
@@ -124,7 +147,7 @@ export function ModalKerja({
     setMulai('');
     setSelesai('');
     setRingkas(null);
-    setDetak((x) => x + 1);
+    gambarUlang();
   }
 
   async function kirim() {
@@ -221,7 +244,7 @@ export function ModalKerja({
 
                 <div className="timer-pil">
                   <div className="timer-judul">⏱️ LIVE TIMER REKAM WAKTU</div>
-                  <div className="timer-angka">{msKeHms(berjalan)}</div>
+                  <PenghitungTimer st={st} />
                   <div className="timer-tombol">
                     {st.state !== 'running' && (
                       <button type="button" className="timer-btn t-start" onClick={mulaiTimer}>
