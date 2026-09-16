@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#DC2626">
+<title>Tidak ada sinyal — MAR KMB</title>
+<!--
+  Halaman terakhir, untuk layar yang BELUM pernah dibuka saat masih ada sinyal.
+  Ia sengaja tidak memuat apa pun dari jaringan: satu berkas, tanpa CSS luar,
+  tanpa font luar. Halaman "luring" yang sendirinya gagal dimuat adalah lelucon
+  yang tidak lucu bagi orang yang sedang berdiri di pit tanpa sinyal.
+
+  Yang paling penting di sini bukan tampilannya, melainkan satu kalimat:
+  pekerjaan yang sudah dikirim TIDAK hilang. Tanpa kalimat itu orang akan
+  mengira kiriman terakhirnya lenyap, lalu mengirim ulang dari layar lain.
+-->
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; background: #F8FAFC; color: #0F172A;
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px;
+  }
+  .kotak { max-width: 26rem; text-align: center; }
+  .lambang { font-size: 3.5rem; line-height: 1; margin-bottom: 12px; }
+  h1 { font-size: 1.25rem; margin: 0 0 8px; }
+  p { font-size: 0.95rem; line-height: 1.55; color: #334155; margin: 0 0 14px; }
+  .aman {
+    background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46;
+    border-radius: 10px; padding: 12px 14px; font-size: 0.9rem;
+    text-align: left; margin-bottom: 18px;
+  }
+  button {
+    background: #DC2626; color: #fff; border: 0; border-radius: 8px;
+    padding: 11px 20px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  }
+  .kecil { font-size: 0.8rem; color: #64748B; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <div class="kotak">
+    <div class="lambang">📴</div>
+    <h1>Layar ini belum tersimpan di HP</h1>
+    <p>
+      Anda sedang tanpa sinyal, dan layar ini belum pernah dibuka saat ada
+      sinyal — jadi belum ada salinannya di HP ini.
+    </p>
+
+    <div class="aman">
+      <strong>Pekerjaan Anda aman.</strong><br>
+      Semua yang sudah Anda kirim tersimpan di antrean HP ini dan akan terkirim
+      sendiri begitu ada sinyal. <strong>Jangan dikirim ulang</strong> — nanti
+      tercatat dua kali.
+    </div>
+
+    <button type="button" onclick="location.reload()">Coba lagi</button>
+
+    <p class="kecil">
+      Layar yang sudah pernah dibuka tetap bisa dipakai tanpa sinyal.
+    </p>
+  </div>
+</body>
+</html>
