@@ -1,7 +1,131 @@
-# Menerapkan KMB di server
+# Menerapkan KMB
 
-Dokumen ini untuk orang yang memegang servernya. Ia menganggap Anda bisa masuk
-SSH dan menjalankan perintah, tapi tidak menganggap Anda hafal Docker.
+Ada **dua jalan**, dan pilihannya menentukan berapa banyak hal yang harus Anda
+urus sendiri.
+
+| | Vercel + Supabase | Server sendiri (Docker) |
+|---|---|---|
+| Server | tidak ada | Anda yang punya & rawat |
+| Domain | dapat otomatis (`*.vercel.app`) | harus punya sendiri |
+| HTTPS | otomatis | Caddy, otomatis |
+| Cadangan | disediakan Supabase | Anda yang jalankan & simpan |
+| Menerapkan versi baru | `git push` | SSH + `docker compose up` |
+| Kalau server mati jam 2 pagi | bukan urusan Anda | urusan Anda |
+| Biaya awal | gratis | sewa VPS |
+
+**Saran: mulai dari Vercel + Supabase** — sama seperti ScannerFinance. Bagian
+yang paling mahal dari punya server sendiri bukan uang sewanya, melainkan
+bahwa ia harus ada yang menjaga. Pindah ke server sendiri selalu bisa
+belakangan; berkas Docker di repo ini tetap ada untuk itu.
+
+Lompat ke [Jalan B](#jalan-b--server-sendiri-docker) kalau memang mau server
+sendiri.
+
+---
+
+## Jalan A — Vercel + Supabase
+
+### 1. Basis data di Supabase
+
+1. Buat proyek di [supabase.com](https://supabase.com).
+2. **Region: Singapore.** Ini bukan selera — lihat kotak di bawah.
+3. Salin *connection string* dari **Project Settings → Database**. Ambil yang
+   **Transaction pooler** (porta **6543**), bukan yang koneksi langsung.
+
+> #### Kenapa region harus sama dengan Vercel
+>
+> Impor katalog lewat Excel menjalankan **sekitar 4 kueri per baris**. Untuk
+> katalog field KMB yang 1.535 baris, itu kira-kira **6.100 perjalanan
+> bolak-balik** ke basis data.
+>
+> | Jarak | Satu perjalanan | 6.100 perjalanan |
+> |---|---|---|
+> | Se-region | ~1 ms | ~6 detik — lewat |
+> | Beda benua | ~50 ms | ~5 menit — **putus di tengah** |
+>
+> Fungsi Vercel berhenti di 10 detik (paket gratis). Jadi region yang berjauhan
+> bukan "agak lambat" — ia membuat impor katalog besar mustahil.
+>
+> Untuk impor pertama yang besar, tetap lebih baik pakai skrip dari laptop
+> (`scripts/pindah-katalog-v2.ts`) — ia tidak punya batas waktu sama sekali.
+> Menu Admin memang untuk perubahan sehari-hari, bukan pemindahan ribuan baris.
+
+Pasang skema dan seluruh migrasi, dari laptop Anda:
+
+```bash
+DATABASE_URL="<connection string tadi>" \
+  npx tsx scripts/migrasi.ts --awal --terapkan --izinkan-luar
+```
+
+Lalu buat orang pertama:
+
+```bash
+DATABASE_URL="<connection string tadi>" \
+  npx tsx scripts/orang-pertama.ts --kode ADM-001 --nama "Gabriel" --izinkan-luar
+```
+
+Simpan token yang tercetak.
+
+### 2. Aplikasi di Vercel
+
+1. Hubungkan repo ini di [vercel.com](https://vercel.com).
+2. **Region: Singapore** (Project Settings → Functions).
+3. Tambah *environment variable*:
+
+| Nama | Isi |
+|---|---|
+| `DATABASE_URL` | connection string **pooler** (porta 6543) |
+
+Tidak perlu yang lain. `DB_POOL_MAX` diatur sendiri: `src/lib/db.ts` mengenali
+alamat pooler dan menyetel kolam ke 1 koneksi beserta `prepare: false`, yang
+memang dituntut pooler mode-transaksi.
+
+4. Deploy. Vercel memberi alamat `https://<nama>.vercel.app` lengkap dengan
+   HTTPS — dan HTTPS itu wajib, karena cookie sesi memakai `secure: true`.
+
+Periksa: `https://<nama>.vercel.app/api/sehat`
+
+### 3. Isi orang dan katalog
+
+Masuk dengan token tadi, lalu dari dalam aplikasi:
+
+1. **Admin → Orang & Token** — tambahkan mekanik, L1, L2.
+2. **Admin → Katalog Job** — unggah katalog lewat Excel. Untuk katalog awal yang
+   ribuan baris, pakai skrip dari laptop (lihat kotak region di atas).
+3. **Admin → Kesehatan Sistem** — pastikan tidak ada butir merah.
+
+### Memperbarui
+
+`git push` — Vercel membangun dan menerapkan sendiri.
+
+**Migrasi TIDAK ikut otomatis.** Kalau rilis itu membawa migrasi baru, jalankan
+dari laptop **sebelum** push:
+
+```bash
+DATABASE_URL="<pooler>" npx tsx scripts/migrasi.ts --terapkan --izinkan-luar
+```
+
+Urutannya memang begitu: skema harus siap sebelum kode baru menyentuhnya.
+
+### Cadangan
+
+Supabase mencadangkan otomatis setiap hari. Tapi tetap ambil salinan sendiri
+sebelum tiap perubahan besar:
+
+```bash
+DATABASE_URL="<koneksi langsung, porta 5432>" npx tsx scripts/cadangkan.ts
+```
+
+> Cadangan yang tidak pernah diuji pulih bukan cadangan. Sekali sebulan:
+> `npm run uji:cadangan` di laptop, atau pulihkan ke proyek Supabase kedua.
+
+---
+
+## Jalan B — server sendiri (Docker)
+
+Bagian sisa dokumen ini untuk orang yang memegang servernya. Ia menganggap Anda
+bisa masuk SSH dan menjalankan perintah, tapi tidak menganggap Anda hafal
+Docker.
 
 ---
 
@@ -210,8 +334,31 @@ Yang di sini sudah **diuji di mesin pengembangan**, bukan diasumsikan:
 - `npm run uji:cadangan` — 14 pemeriksaan. Cadangan dipulihkan ke basis data
   kosong, lalu isinya dibandingkan baris per baris, termasuk total rupiah.
 
-Yang **belum bisa diuji** di mesin pengembangan: `Dockerfile`, `docker-compose.yml`,
-dan `Caddyfile` — Docker tidak terpasang di sana. Keduanya ditulis dengan hati-hati
-dan mengikuti bentuk baku Next.js standalone, tapi jalannya baru terbukti saat
-dijalankan pertama kali di server. Sediakan waktu untuk itu, dan jangan
-melakukannya pada hari yang sama dengan WO pertama yang sungguhan.
+Yang **belum bisa diuji** di mesin pengembangan:
+
+- `Dockerfile`, `docker-compose.yml`, `Caddyfile` — Docker tidak terpasang di
+  sana. Ditulis mengikuti bentuk baku Next.js standalone, tapi jalannya baru
+  terbukti saat dijalankan pertama kali di server.
+- **Jalan A (Vercel + Supabase) belum pernah dijalankan sama sekali.** Yang
+  sudah diperiksa cuma kecocokannya: ekstensi yang dipakai (`citext`,
+  `pgcrypto`) tersedia di Supabase, tidak ada sintaks khusus Postgres 18, dan
+  `src/lib/db.ts` sudah mengenali pooler. Yang belum: menjalankannya.
+
+Sediakan waktu untuk penerapan pertama, dan jangan melakukannya pada hari yang
+sama dengan WO pertama yang sungguhan.
+
+---
+
+## Satu hal yang perlu diketahui tentang RLS
+
+`work_orders` dan `mechanic_points` punya Row Level Security beserta
+kebijakannya (`db/schema.sql:751`). **Saat ini kebijakan itu tidak menjaga apa
+pun**, karena aplikasi menyambung sebagai PEMILIK tabel, dan pemilik selalu
+melewati RLS. Begitu juga di Supabase kalau memakai peran `postgres`.
+
+Ini bukan penghalang untuk menerapkan — pagar yang sesungguhnya hari ini adalah
+gerbang peran di lapisan aplikasi, dan itu diuji. Tapi jangan menganggap RLS
+sedang menjaga sesuatu. Kalau kelak ia memang mau diandalkan, aplikasi harus
+menyambung sebagai peran non-pemilik, dan seluruh pembacaan di luar transaksi
+harus lebih dulu menetapkan `app.mechanic_id` — sekarang hanya jalur perintah
+yang menetapkannya.

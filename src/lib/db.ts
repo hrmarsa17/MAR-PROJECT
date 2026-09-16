@@ -38,11 +38,42 @@ if (!alamat) {
   );
 }
 
+/**
+ * ── SATU PROSES YANG HIDUP TERUS, ATAU BANYAK YANG SEKEJAP ──────────────────
+ *
+ * Kolam koneksi disetel berbeda tergantung di mana ia berjalan, dan selisihnya
+ * bukan penyetelan halus — ia menentukan apakah sistem masih bisa menyambung
+ * saat ramai.
+ *
+ * Di server sendiri (Docker, `npm start`, `npm run dev`): SATU proses melayani
+ * semua orang. Sepuluh koneksi dipakai bersama, dibuka sekali, hidup terus.
+ *
+ * Di Vercel: TIAP permintaan bisa membangunkan instans fungsinya sendiri, dan
+ * tiap instans membuka kolamnya sendiri. Sepuluh koneksi per instans dikali
+ * sekian instans menghabiskan jatah koneksi Postgres dalam hitungan menit —
+ * dan yang terjadi berikutnya bukan lambat, melainkan "too many clients" untuk
+ * semua orang sekaligus.
+ *
+ * Karena itu di sana kolamnya 1, dan penyambungannya lewat POOLER Supabase
+ * (porta 6543), yang memang dibuat untuk pola ini.
+ *
+ * `prepare: false` WAJIB saat lewat pooler mode-transaksi: pernyataan yang
+ * sudah disiapkan terikat pada satu koneksi, sementara pooler memindahkan
+ * transaksi antar koneksi. Tanpa ini, galatnya muncul belakangan, sesekali,
+ * dan berbunyi seperti masalah lain sama sekali.
+ *
+ * Dideteksi dari alamatnya sendiri, bukan dari sebuah flag yang bisa lupa
+ * diisi: porta 6543 dan nama host pooler Supabase sudah cukup memberi tahu.
+ */
+const lewatPooler = /:6543\//.test(alamat) || /pooler\.supabase\.com/.test(alamat);
+const tanpaServer = process.env['VERCEL'] === '1' || lewatPooler;
+
 export const sql = postgres(
   alamat,
   {
-    max: Number(process.env['DB_POOL_MAX'] ?? 10),
+    max: Number(process.env['DB_POOL_MAX'] ?? (tanpaServer ? 1 : 10)),
     idle_timeout: 20,
+    prepare: !lewatPooler,
     onnotice: () => {},
     types: {
       /**
