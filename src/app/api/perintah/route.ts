@@ -8,6 +8,10 @@ import { mintaTransfer, setujuiTransfer, tolakTransfer } from '../../../domain/t
 import { simpanDetail } from '../../../domain/detailForm.js';
 import { gantiPanelMeter, koreksiMeterWo } from '../../../domain/meter.js';
 import {
+  cabutToken, simpanFaktor, simpanJob, simpanOrang, simpanSetelan, simpanTarif,
+  terbitkanToken,
+} from '../../../domain/admin.js';
+import {
   approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
 } from '../../../domain/approval.js';
 
@@ -166,6 +170,51 @@ const SKEMA = {
     berlakuAt: z.string().min(1),
     alasan: z.string().min(5).max(1000),
   }),
+  /* ── ADMIN ──────────────────────────────────────────────────────────────
+     Gerbangnya `mechanics.may_admin`, diperiksa di lapisan domain supaya
+     berlaku untuk semua pemanggil — bukan cuma yang lewat rute ini. */
+  admin_orang: z.object({
+    id: z.number().int().positive().optional(),
+    kode: z.string().min(2).max(50),
+    nama: z.string().min(2).max(200),
+    email: z.string().max(200).nullable().optional(),
+    peran: z.enum(['mechanic', 'supervisor', 'superintendent']),
+    payRateId: z.number().int().positive(),
+    grade: z.string().max(100).nullable().optional(),
+    section: z.array(z.string().max(50)).max(20).optional(),
+    aktif: z.boolean(),
+    akunUji: z.boolean(),
+    bolehPerforma: z.boolean(),
+    bolehTeknis: z.boolean(),
+    bolehReport: z.boolean(),
+    bolehAdmin: z.boolean(),
+  }),
+  admin_token: z.object({
+    mechanicId: z.number().int().positive(),
+    ganti: z.boolean().optional(),
+  }),
+  admin_token_cabut: z.object({ mechanicId: z.number().int().positive() }),
+  admin_job: z.object({
+    jobId: z.number().int().positive(),
+    basePoints: z.number().positive(),
+    planHours: z.number().positive(),
+    aktif: z.boolean(),
+  }),
+  admin_faktor: z.object({
+    id: z.number().int().positive(),
+    nilai: z.number().nonnegative(),
+    deskripsi: z.string().max(200).nullable().optional(),
+  }),
+  admin_tarif: z.object({
+    id: z.number().int().positive(),
+    idrPerPoint: z.number().positive(),
+    label: z.string().max(100).optional(),
+    aktif: z.boolean(),
+  }),
+  admin_setelan: z.object({
+    kunci: z.string().min(1).max(100),
+    nilai: z.string().max(500),
+  }),
 } as const;
 
 const Amplop = z.object({
@@ -174,6 +223,8 @@ const Amplop = z.object({
     'save_override', 'kirim_kerja',
     'minta_transfer', 'setujui_transfer', 'tolak_transfer', 'simpan_detail',
     'koreksi_meter', 'ganti_panel_meter',
+    'admin_orang', 'admin_token', 'admin_token_cabut',
+    'admin_job', 'admin_faktor', 'admin_tarif', 'admin_setelan',
   ]),
   // op_id lahir di klien dan TIDAK PERNAH berubah, termasuk saat dicoba ulang.
   // Inilah yang membuat kiriman terulang tidak melahirkan WO kedua.
@@ -259,6 +310,34 @@ export async function POST(req: Request): Promise<Response> {
       case 'ganti_panel_meter': {
         const d = isi.data as z.infer<typeof SKEMA.ganti_panel_meter>;
         return jawab(await gantiPanelMeter({ ...umum, ...d }));
+      }
+      case 'admin_orang': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_orang>;
+        return jawab(await simpanOrang({ ...umum, ...d }));
+      }
+      case 'admin_token': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_token>;
+        return jawab(await terbitkanToken({ ...umum, ...d }));
+      }
+      case 'admin_token_cabut': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_token_cabut>;
+        return jawab(await cabutToken({ ...umum, ...d }));
+      }
+      case 'admin_job': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_job>;
+        return jawab(await simpanJob({ ...umum, ...d }));
+      }
+      case 'admin_faktor': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_faktor>;
+        return jawab(await simpanFaktor({ ...umum, ...d }));
+      }
+      case 'admin_tarif': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_tarif>;
+        return jawab(await simpanTarif({ ...umum, ...d }));
+      }
+      case 'admin_setelan': {
+        const d = isi.data as z.infer<typeof SKEMA.admin_setelan>;
+        return jawab(await simpanSetelan({ ...umum, ...d }));
       }
     }
   } catch (e) {

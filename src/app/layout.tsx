@@ -22,7 +22,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
       <body>
         {aku && (
           <NavBar
-            aku={{ peran: aku.peran, nama: aku.nama, bolehLihat: aku.bolehLihat }}
+            aku={{
+              peran: aku.peran, nama: aku.nama,
+              bolehLihat: aku.bolehLihat, bolehAdmin: aku.bolehAdmin,
+            }}
           />
         )}
         {children}

@@ -27,6 +27,7 @@ export interface AksesMenu {
   peran: 'mechanic' | 'supervisor' | 'superintendent';
   nama: string;
   bolehLihat: { performa: boolean; teknis: boolean; report: boolean };
+  bolehAdmin?: boolean;
 }
 
 /**
@@ -57,6 +58,8 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
     { href: '/koreksi/hm', label: 'Koreksi HM', tampil: approver },
     { href: '/koreksi/km', label: 'Koreksi KM', tampil: approver },
     { href: '/reports', label: 'Reports', tampil: aku.bolehLihat.report },
+    // Paling kanan, sesudah semua menu kerja: Admin bukan pekerjaan harian.
+    { href: '/admin', label: 'Admin', tampil: aku.bolehAdmin === true },
   ];
 
   return (

@@ -31,6 +31,12 @@ export interface Identitas {
    * belakangnya menerima L1 juga — gerbang layar bukan gerbang data.
    */
   bolehLihat: { performa: boolean; teknis: boolean; report: boolean };
+  /**
+   * Hak menu Admin. SENGAJA di luar `bolehLihat`, dan sengaja TIDAK otomatis
+   * menyala untuk L2: menyetujui WO dan mengubah tarif rupiah per poin adalah
+   * dua kewenangan berbeda, dan yang satu tidak seharusnya membawa yang lain.
+   */
+  bolehAdmin: boolean;
 }
 
 /** 20 huruf hex — panjang yang sama dengan token KMB V2 yang sudah dikenal. */
@@ -57,10 +63,12 @@ export async function identitasDariToken(
     {
       mechanic_id: number; tenant_id: number; name: string; role: string;
       may_view_performance: boolean; may_view_technical: boolean; may_view_report: boolean;
+      may_admin: boolean;
     }[]
   >`
     SELECT t.mechanic_id, t.tenant_id, m.name, m.role::text,
-           m.may_view_performance, m.may_view_technical, m.may_view_report
+           m.may_view_performance, m.may_view_technical, m.may_view_report,
+           m.may_admin
       FROM api_tokens t
       JOIN mechanics m ON m.id = t.mechanic_id
      WHERE t.token = ${token.trim()}
@@ -90,6 +98,7 @@ export async function identitasDariToken(
       teknis: l2 || r.may_view_technical === true,
       report: l2 || r.may_view_report === true,
     },
+    bolehAdmin: r.may_admin === true,
   };
 }
 
