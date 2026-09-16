@@ -175,9 +175,18 @@ function periksaPerubahan() {
       return fetch('/api/data?jenis=' + jenis, { credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (j) {
-          if (!j.ok || !j.data) return 0;
-          var daftar = approver ? (j.data.kartu || j.data.antrean || []) : (j.data.wo || j.data || []);
-          if (!Array.isArray(daftar)) return 0;
+          /* `antreanApproval` dan `woSaya` sama-sama mengembalikan ARRAY polos
+             (src/domain/kueri.ts:40,83), jadi `jawab()` membungkusnya jadi
+             `{ok, data: [...]}` — bukan objek berisi daftar.
+
+             Baris ini sempat berbunyi `j.data.kartu || j.data.antrean || []`
+             untuk approver. Pada array, keduanya undefined, jadi hasilnya
+             selalu daftar KOSONG: approver tidak akan pernah mendapat satu pun
+             kabar, dan tidak ada galat yang muncul di mana pun karena daftar
+             kosong adalah keadaan yang sah. Jalur mekanik kebetulan selamat
+             karena cadangan terakhirnya memang `j.data`. */
+          if (!j.ok || !Array.isArray(j.data)) return 0;
+          var daftar = j.data;
 
           var kini = {};
           daftar.forEach(function (w) {

@@ -52,7 +52,8 @@
     "uji:cadangan": "tsx scripts/uji-cadangan.ts",
     "db:bersih": "tsx scripts/bersihkan-dummy.ts",
     "ws:matriks": "tsx scripts/pindah-matriks-workshop.ts",
-    "periksa": "tsx scripts/periksa-produksi.ts"
+    "periksa": "tsx scripts/periksa-produksi.ts",
+    "uji:luring": "tsx scripts/uji-luring.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

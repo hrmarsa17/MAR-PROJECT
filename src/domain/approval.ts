@@ -111,6 +111,24 @@ export interface HasilApproveL2 {
   woNumber: string;
   finalPoints: number;
   dibayar: { mechanicId: number; points: number; idr: number }[];
+  /**
+   * ANGKA YANG DIPAKAI MENGHITUNG, disebutkan terang-terangan.
+   *
+   * Namanya sengaja sama dengan kolom yang tampil di kartu approval —
+   * `base_points`, `unit_factor`, `actual_hours`. Itulah yang membuat
+   * `src/pwa/bandingPratinjau.ts` bisa mencocokkan "yang DILIHAT approver saat
+   * menekan" dengan "yang AKHIRNYA dipakai server".
+   *
+   * Tanpa ini pengaman tersebut tidak berfungsi sama sekali: jawaban hanya
+   * memuat finalPoints, sementara yang dilihat approver adalah ketiga angka di
+   * atas — tak satu pun bisa dibandingkan, dan peringatannya tidak akan pernah
+   * menyala walau angkanya benar-benar bergeser.
+   *
+   * Berguna di luar mode luring juga. "Kenapa WO ini cuma segini?" selama ini
+   * dijawab dengan membuka scoring_snapshots; sekarang jawabannya ikut pulang
+   * bersama persetujuannya.
+   */
+  dipakai: { base_points: number; unit_factor: number; actual_hours: number };
 }
 
 export async function approveL2(m: MasukanApprove): Promise<HasilPerintah<HasilApproveL2>> {
@@ -212,6 +230,11 @@ export async function approveL2(m: MasukanApprove): Promise<HasilPerintah<HasilA
         woNumber: String(wo['wo_number']),
         finalPoints: skor.finalPoints,
         dibayar,
+        dipakai: {
+          base_points: skor.basePoints,
+          unit_factor: skor.unitFactor,
+          actual_hours: skor.actualHours,
+        },
       };
     },
   });
