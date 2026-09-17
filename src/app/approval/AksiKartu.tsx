@@ -82,7 +82,7 @@ export function AksiKartu({
       if (k.keadaan === 'antre') {
         setHasil({
           baik: true,
-          teks: `📴 Tersimpan! Keputusan untuk ${nomor} akan terkirim saat ada sinyal. `
+          teks: `📮 Tersimpan! Keputusan untuk ${nomor} akan terkirim saat ada sinyal. `
             + 'Poinnya dihitung server saat itu — lihat menu Antrean.',
         });
         setMinta(null);

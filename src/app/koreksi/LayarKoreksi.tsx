@@ -88,7 +88,7 @@ export function LayarKoreksi({
       if (h.keadaan === 'antre') {
         setKabar({
           baik: true,
-          teks: '📴 Tersimpan! Koreksi akan terkirim saat ada sinyal. '
+          teks: '📮 Tersimpan! Koreksi akan terkirim saat ada sinyal. '
             + 'Jangan dikoreksi ulang — lihat menu Antrean.',
         });
         setPerbaiki(null);

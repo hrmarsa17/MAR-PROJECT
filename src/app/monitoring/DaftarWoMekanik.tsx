@@ -116,7 +116,7 @@ export function DaftarWoMekanik({
          memang sudah diserahkan. */
       if (k.keadaan === 'antre') {
         bersihkanTimer(wo.id);
-        alert(`📴 Tersimpan!\n\n${wo.woNumber} akan terkirim saat ada sinyal.\n`
+        alert(`📮 Tersimpan!\n\n${wo.woNumber} akan terkirim saat ada sinyal.\n`
           + 'Jangan dikirim ulang — lihat menu Antrean.');
         return;
       }

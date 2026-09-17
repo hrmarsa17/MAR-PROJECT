@@ -207,7 +207,7 @@ export function ModalKerja({
       if (k.keadaan === 'antre') {
         setHasil({
           baik: true,
-          teks: `📴 Tersimpan! Permintaan transfer ${wo.woNumber} akan terkirim `
+          teks: `📮 Tersimpan! Permintaan transfer ${wo.woNumber} akan terkirim `
             + 'saat ada sinyal. Jangan diminta ulang — lihat menu Antrean.',
         });
         return;
@@ -298,7 +298,7 @@ export function ModalKerja({
         const kabarDetail = await kirimDetail();
         setHasil({
           baik: true,
-          teks: `📴 Tersimpan! ${wo.woNumber} akan terkirim saat ada sinyal. `
+          teks: `📮 Tersimpan! ${wo.woNumber} akan terkirim saat ada sinyal. `
             + 'Jangan dikirim ulang — lihat menu Antrean.' + kabarDetail,
         });
         return;

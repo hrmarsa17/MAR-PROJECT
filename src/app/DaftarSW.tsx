@@ -82,9 +82,13 @@ function BarisKeadaan() {
 
       {antre > 0 && (
         <>
-          <span>
-            {daring ? '📤' : '📴'} {antre} belum terkirim
-          </span>
+          {/* 📮 kotak pos, bukan 📴 tanpa-sinyal. Di PWA V2 pembedaan itu
+              dipegang teguh (`app.js:2600`): 📮 untuk isi antrean, 📴 untuk
+              keadaan tanpa sinyal. Antrean bisa penuh SAAT SINYAL BAIK — sejak
+              server boleh menjawab "sedang sibuk" — dan menandainya dengan
+              lambang tanpa-sinyal membuat orang mencari sinyal yang sebenarnya
+              sudah ada. */}
+          <span>📮 {antre} belum terkirim</span>
           {menua && (
             <strong>
               — tertua {Math.floor(umurHari)} hari. Cari sinyal, jangan tunggu lagi.
@@ -101,7 +105,7 @@ function BarisKeadaan() {
 
       {!daring && antre === 0 && (
         <span className="pita-luring-samar">
-          Pekerjaan yang Anda kirim akan tersimpan dan terkirim sendiri.
+          Data aman di antrean, terkirim otomatis saat ada sinyal.
         </span>
       )}
     </div>

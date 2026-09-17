@@ -310,6 +310,29 @@ self.addEventListener('message', function (e) {
   }
 });
 
+/**
+ * Menahan cache aset supaya tidak tumbuh selamanya.
+ *
+ * `caches.keys()` mengembalikan permintaan menurut URUTAN MASUK, jadi yang
+ * paling depan adalah yang paling lama tersimpan. Yang dibuang hanya aset
+ * `/_next/static/` — halaman yang tersimpan TIDAK PERNAH disentuh, karena
+ * justru itulah yang membuat layar bisa dibuka tanpa sinyal.
+ *
+ * 150 cukup untuk beberapa penerapan sekaligus; lebih dari itu berarti potongan
+ * dari versi yang tak seorang pun pakai lagi.
+ */
+var BATAS_ASET = 150;
+function pangkasAset(c) {
+  return c.keys().then(function (semua) {
+    var aset = semua.filter(function (r) {
+      return new URL(r.url).pathname.indexOf('/_next/static/') === 0;
+    });
+    var lebih = aset.length - BATAS_ASET;
+    if (lebih <= 0) return;
+    return Promise.all(aset.slice(0, lebih).map(function (r) { return c.delete(r); }));
+  }).catch(function () { /* pemangkasan gagal bukan alasan menggagalkan permintaan */ });
+}
+
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
@@ -324,13 +347,27 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/api/') === 0) return;
 
   /* Berkas Next ber-hash isi: namanya berubah setiap isinya berubah, jadi yang
-     tersimpan tidak akan pernah basi. */
+     tersimpan tidak pernah basi -- TAPI ia juga tidak pernah berhenti bertambah.
+     Tiap penerapan baru melahirkan nama baru, dan yang lama tetap duduk di cache
+     sampai nama CACHE-nya sendiri berganti.
+
+     KMB V2 menghindarinya dengan menaikkan nomor tiap rilis (`mar-v88`), lalu
+     `activate` membuang yang lama. Di sini nomornya TETAP, jadi tanpa
+     pemangkasan potongan JS dari setiap versi yang pernah dibuka menumpuk
+     selamanya.
+
+     Itu bukan sekadar boros. Cache Storage dan IndexedDB berbagi kuota origin
+     yang SAMA, dan saat peramban kehabisan ruang ia membuang seluruh penyimpanan
+     origin itu -- termasuk OUTBOX. Jam kerja yang belum terkirim bisa hilang
+     karena potongan JS dari sepuluh penerapan lalu tidak pernah dibuang. */
   if (url.pathname.indexOf('/_next/static/') === 0) {
     e.respondWith(
       caches.match(req).then(function (hit) {
         return hit || fetch(req).then(function (r) {
           var salinan = r.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, salinan); });
+          caches.open(CACHE).then(function (c) {
+            return c.put(req, salinan).then(function () { return pangkasAset(c); });
+          });
           return r;
         });
       }),

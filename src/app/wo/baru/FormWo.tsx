@@ -266,7 +266,7 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
     if (k.keadaan === 'antre') {
       setSpanduk({
         opId,
-        pesan: `📴 Tersimpan! ${blok.length} WO akan terkirim saat ada sinyal. `
+        pesan: `📮 Tersimpan! ${blok.length} WO akan terkirim saat ada sinyal. `
           + 'JANGAN isi formulir baru — nomornya terbit setelah terkirim. '
           + 'Bisa dilihat di menu Antrean.',
       });

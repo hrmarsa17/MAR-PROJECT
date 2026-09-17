@@ -180,7 +180,7 @@ export function ModalOverride({ woId, onTutup, onSimpan }: Props) {
        mengira koreksinya sudah berlaku bisa menyetujui WO-nya dengan angka
        lama, dan yang membeku adalah angka lama itu. */
     if (k.keadaan === 'antre') {
-      setGalat('📴 Tersimpan di antrean — koreksi ini BELUM berlaku sampai ada '
+      setGalat('📮 Tersimpan di antrean — koreksi ini BELUM berlaku sampai ada '
              + 'sinyal. Jangan setujui WO-nya dulu: poin yang dibekukan masih '
              + 'angka yang lama. Lihat menu Antrean.');
       return;

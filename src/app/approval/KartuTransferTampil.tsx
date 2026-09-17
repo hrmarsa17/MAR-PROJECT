@@ -59,7 +59,7 @@ export function KartuTransferTampil({
         setMintaAlasan(false);
         setHasil({
           baik: true,
-          teks: `📴 Tersimpan! Keputusan transfer ${kartu.woNumber} akan terkirim `
+          teks: `📮 Tersimpan! Keputusan transfer ${kartu.woNumber} akan terkirim `
             + 'saat ada sinyal. Jangan diputuskan ulang — lihat menu Antrean.',
         });
         return;
