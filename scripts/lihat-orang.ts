@@ -9,6 +9,12 @@ import './muat-env.js';
  * Gabriel 15 Sep 2026; alasannya di db/schema.sql pada tabel api_tokens.
  * Layar Monitoring menampilkan hal yang sama untuk mekanik.
  */
+/* Skrip ini read-only, jadi ia BOLEH diarahkan ke produksi — memang begitu cara
+   membaca token sendiri saat lupa. Tapi kalau tidak diberi tahu, layarnya sama
+   persis dengan layar dev, dan yang terbaca di situ adalah token orang
+   sungguhan. Maka mana basis datanya disebut terang-terangan. */
+const DEV = /:5433\//.test(process.env['DATABASE_URL'] ?? '');
+
 const { sql } = await import('../src/lib/db.js');
 
 const rows = await sql<{
@@ -45,6 +51,9 @@ const PERAN: Record<string, string> = {
 };
 
 console.log('');
+console.log(DEV
+  ? '  basis data: PENGEMBANGAN (porta 5433)'
+  : '  ⚠️  basis data: PRODUKSI — ini token orang sungguhan, jangan disalin ke mana-mana.');
 console.log('  KODE          NAMA                      PERAN           SECTION    TOKEN');
 console.log('  ' + '─'.repeat(94));
 let peranTerakhir = '';
@@ -62,7 +71,9 @@ for (const r of rows) {
   );
 }
 console.log('');
-console.log('  Masuk lewat http://localhost:3000/masuk — tempel tokennya di sana.');
+console.log(DEV
+  ? '  Masuk lewat http://localhost:3000/masuk — tempel tokennya di sana.'
+  : '  Masuk lewat https://marproject.vercel.app/masuk — tempel tokennya di sana.');
 console.log('  Menu Performa hanya terbuka untuk L2 dan siapa pun yang penanda');
 console.log('  may_view_performance-nya menyala.');
 console.log('');
