@@ -59,6 +59,36 @@ describe('skrip yang bisa menulis ke basis data selalu berpenjaga', () => {
   }
 });
 
+describe('semua skrip memakai pemuat .env yang sama', () => {
+  /* ── KENAPA INI DIUJI ──────────────────────────────────────────────────────
+     `--jauh` (di scripts/muat-env.ts) mengarahkan skrip ke basis data hidup
+     tanpa menempelkan sandi ke baris perintah. Ia bekerja HANYA bila skripnya
+     memakai pemuat bersama itu.
+
+     Pada 17 Sep 2026 `buat-token.ts` masih menyalin pemuat .env-nya sendiri —
+     sisa dari sebelum muat-env.ts ada. `--jauh` diterima tanpa keluhan di sana
+     dan tidak mengubah apa pun: benderanya TAMPAK bekerja. Kalau penjaga :5433
+     tidak lebih dulu dipasang hari itu juga, perintahnya akan mengenai basis
+     data dev sementara yang mengetik mengira sedang mengurus produksi.
+
+     Itu bentuk kegagalan yang sama dengan empat bug sebelumnya di proyek ini:
+     ditulis, tidak pernah dipanggil, tidak pernah bersuara. */
+  const pakaiDb = berkas.filter((b) => /DATABASE_URL|db\.js/.test(b.isi) && b.nama !== 'muat-env.ts');
+
+  it('ada skrip yang menyentuh basis data untuk diperiksa', () => {
+    expect(pakaiDb.length).toBeGreaterThan(30);
+  });
+
+  for (const b of pakaiDb) {
+    it(`${b.nama} memuat .env lewat muat-env.js, bukan salinan sendiri`, () => {
+      expect(/muat-env/.test(b.isi), `${b.nama} tidak mengimpor './muat-env.js'. `
+        + 'Bendera --jauh tidak akan berpengaruh di sini, dan ia akan diam saja '
+        + 'alih-alih mengeluh — skrip berjalan pada basis data yang BUKAN dimaksud '
+        + 'oleh yang mengetiknya.').toBe(true);
+    });
+  }
+});
+
 describe('mengganti token orang selalu meninggalkan jejak', () => {
   /* Satu-satunya jalan yang boleh dipakai di produksi adalah lewat
      `terbitkanToken()` di src/domain/admin.ts, yang berjalan di dalam

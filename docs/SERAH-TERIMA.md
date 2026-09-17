@@ -130,6 +130,26 @@ berkala, dan menekan "Terbitkan token" dua kali mengembalikan token yang SAMA �
 `terbitkanToken()` hanya mencabut yang lama bila diminta tegas dengan
 `ganti: true`. Dijaga oleh `scripts/uji-token.ts` dan `tests/penjagaSkrip.test.ts`.
 
+### Membaca basis data hidup dari laptop — `--jauh`
+
+Lupa token sendiri, atau ingin memeriksa keadaan produksi:
+
+```bash
+copy .env.jauh.example .env.jauh   # SEKALI saja
+notepad .env.jauh                  # isi DATABASE_URL dari Vercel
+
+npm run orang   -- --jauh          # daftar orang + token (read-only)
+npm run periksa -- --jauh          # periksa keadaan (read-only)
+```
+
+Jangan menempelkan alamat berisi sandi ke baris perintah. PowerShell menyimpan
+tiap barisnya di `%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt`,
+berkas teks biasa yang tidak pernah kedaluwarsa. `.env.jauh` tidak ikut git.
+
+`--jauh` **tidak** membuka kunci apa pun: penjaga memeriksa isi `DATABASE_URL`,
+bukan dari mana ia datang. `buat-token.ts --jauh` tetap ditolak — ia masih
+menuntut `--izinkan-luar` juga.
+
 ---
 
 ## 4. JEBAKAN YANG SUDAH MEMAKAN WAKTU

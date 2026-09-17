@@ -8,22 +8,12 @@
  * jangan pakai skrip ini: bukakan layar Monitoring dan salin token yang sudah
  * ada. Itu memang gunanya layar itu.
  */
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const env = resolve(process.cwd(), '.env');
-if (existsSync(env)) {
-  for (const baris of readFileSync(env, 'utf8').split('\n')) {
-    const b = baris.trim();
-    if (!b || b.startsWith('#')) continue;
-    const i = b.indexOf('=');
-    if (i < 0) continue;
-    const k = b.slice(0, i).trim();
-    if (process.env[k] === undefined) {
-      process.env[k] = b.slice(i + 1).trim().replace(/^["']|["']$/g, '');
-    }
-  }
-}
+/* Satu-satunya skrip yang sampai 17 Sep 2026 masih menyalin pemuat .env-nya
+   sendiri, sisa dari sebelum `muat-env.ts` ada. Akibatnya `--jauh` diam saja di
+   sini: bendera yang tampak bekerja padahal tidak menyentuh apa pun — bentuk
+   kegagalan yang persis sama dengan empat bug yang sudah menggigit proyek ini.
+   Sekarang memakai pemuat bersama seperti 38 skrip lainnya. */
+import './muat-env.js';
 
 /* ════════════════════════════════════════════════════════════════════════════
    SKRIP INI MENGGANTI TOKEN ORANG — DAN TIDAK MENINGGALKAN JEJAK
