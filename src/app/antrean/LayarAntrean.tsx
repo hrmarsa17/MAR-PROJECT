@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import {
   type ItemOutbox, adaIndexedDb, hapusItem, semuaItem,
 } from '../../pwa/simpanan.js';
@@ -64,14 +63,13 @@ export function LayarAntrean() {
     <div className="container">
       {/* JALAN KEMBALI, di dalam layar itu sendiri.
           Halaman ini statis supaya bisa dibuka tanpa sinyal — dan karena statis,
-          layout tidak punya sesi untuk merender navbar. Tanpa tautan ini, orang
-          yang membukanya dari aplikasi lapangan terjebak: tidak ada menu, tidak
-          ada tombol kembali, dan di aplikasi terpasang tidak ada bilah alamat
-          untuk mengetik apa pun. */}
+          layout tidak punya sesi untuk merender navbar. Tautan ini memakai <a>
+          (bukan <Link>) supaya peramban melakukan navigasi bersih ke halaman tujuan,
+          mengambil sesi server, dan merender navbar kembali. */}
       <p style={{ margin: '0 0 0.75rem' }}>
-        <Link href={dasar || '/'} className="pita-luring-tautan">
+        <a href={dasar || '/'} className="pita-luring-tautan">
           ← Kembali
-        </Link>
+        </a>
       </p>
 
       <div className="page-header">
