@@ -995,6 +995,24 @@ textarea { min-height: 64px; resize: vertical; }
 .struk-baris:last-child { border-bottom: none; }
 .struk-baris.buruk { background: #FEF2F2; }
 
+/* Tombol Submit Create Work Order — warna biru */
+.wo-aksi .btn-primary,
+.btn-create-wo {
+  background: #2563EB;
+  border-color: #2563EB;
+  color: #FFFFFF;
+}
+.wo-aksi .btn-primary:hover:not(:disabled),
+.btn-create-wo:hover:not(:disabled) {
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+}
+.wo-aksi .btn-primary:active:not(:disabled),
+.btn-create-wo:active:not(:disabled) {
+  background: #1E40AF;
+  border-color: #1E40AF;
+}
+
 @media (max-width: 640px) {
   .pratinjau-kisi { grid-template-columns: 1fr; }
 }
