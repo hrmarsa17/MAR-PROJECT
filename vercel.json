@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["sin1"],
-  "ignoreCommand": "[ \"$VERCEL_ENV\" = production ] && exit 1 || exit 0"
+  "ignoreCommand": "[ \"$VERCEL_ENV\" = preview ] && exit 0 || exit 1"
 }
