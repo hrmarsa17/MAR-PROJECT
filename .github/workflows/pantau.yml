@@ -41,14 +41,15 @@ jobs:
       # domain tidak menuntut mengubah kode. Cadangannya alamat yang BENAR-BENAR
       # menjawab hari ini.
       #
-      # 17 Sep 2026 baris ini sempat langsung menunjuk mar-project.vercel.app
-      # begitu proyeknya diganti nama -- padahal domain itu belum diklaim, dan
+      # 17 Sep 2026 baris ini sempat menunjuk mar-project.vercel.app (pakai tanda
+      # hubung) begitu proyeknya diganti nama -- padahal nama yang sesungguhnya
+      # marproject.vercel.app, tanpa hubung, dan domain itu belum diklaim. Maka
       # pemantau yang menembak alamat mati mengirim surel kegagalan tiap jam.
       # Pemantau yang berteriak palsu berhenti dipercaya, dan teriakan yang
       # sungguhan ikut terabaikan bersamanya.
       - name: Periksa /api/sehat
         env:
-          ALAMAT: ${{ vars.ALAMAT_SEHAT || 'https://kmb-project.vercel.app/api/sehat' }}
+          ALAMAT: ${{ vars.ALAMAT_SEHAT || 'https://marproject.vercel.app/api/sehat' }}
         run: |
           # Tiga percobaan, jeda 20 detik. Satu kegagalan sesaat bukan alasan
           # membangunkan orang; tiga kegagalan berturut-turut adalah.
