@@ -56,7 +56,7 @@ await sql`INSERT INTO api_tokens (tenant_id, mechanic_id, token)
 async function perintah(aksi: string, data: unknown) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${tokAdmin}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${tokAdmin}` },
     body: JSON.stringify({ aksi, op_id: crypto.randomUUID(), data }),
   });
   return r.json() as Promise<{
@@ -193,7 +193,7 @@ console.log('\n─── 7. mengganti token SENDIRI tidak mengusir yang melakuka
      di jawabannya — dan cookie itu hanya ada di lapisan rute. */
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${tokAdmin}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${tokAdmin}` },
     body: JSON.stringify({
       aksi: 'admin_token', op_id: crypto.randomUUID(),
       data: { mechanicId: Number(l2.id), ganti: true },
@@ -209,20 +209,20 @@ console.log('\n─── 7. mengganti token SENDIRI tidak mengusir yang melakuka
      yang menekan tombolnya terlempar ke layar masuk. */
   const kirimanCookie = r.headers.get('set-cookie') ?? '';
   periksa('jawabannya memasang ulang cookie sesi',
-    kirimanCookie.includes(`kmb_token=${baru}`), kirimanCookie.slice(0, 60));
+    kirimanCookie.includes(`mar_token=${baru}`), kirimanCookie.slice(0, 60));
   periksa('cookie barunya tetap httpOnly', /httponly/i.test(kirimanCookie));
 
   /* Dan buktikan cookie itu memang bisa dipakai — bukan sekadar terkirim.
      Cookie yang benar bentuknya tapi berisi token mati akan lolos dua
      pemeriksaan di atas dan tetap meninggalkan orangnya di luar. */
   const pakaiBaru = await fetch(`${ALAMAT}/api/data?jenis=aku`, {
-    headers: { Cookie: `kmb_token=${baru}` },
+    headers: { Cookie: `mar_token=${baru}` },
   });
   periksa('cookie baru langsung bisa dipakai', pakaiBaru.status === 200,
     `HTTP ${pakaiBaru.status}`);
 
   const pakaiLama = await fetch(`${ALAMAT}/api/data?jenis=aku`, {
-    headers: { Cookie: `kmb_token=${tokAdmin}` },
+    headers: { Cookie: `mar_token=${tokAdmin}` },
   });
   periksa('token lama ditolak sesudahnya', pakaiLama.status === 403,
     `HTTP ${pakaiLama.status}`);

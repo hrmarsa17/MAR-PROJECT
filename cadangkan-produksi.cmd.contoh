@@ -25,7 +25,7 @@ set DATABASE_URL=postgresql://postgres.pdlevnrhrabfxxdlzebc:GANTI-SANDI@aws-0-ap
 REM  Simpan DI LUAR proyek, di folder OneDrive supaya ia tersalin keluar dari
 REM  laptop ini sendiri. Cadangan yang hanya ada di satu mesin akan hilang
 REM  bersama mesin itu.
-set TUJUAN=C:\Users\gabri\OneDrive\cadangan-kmb
+set TUJUAN=C:\Users\gabri\OneDrive\cadangan-mar
 
 REM  30 hari: satu periode gaji penuh plus dua minggu. Cukup untuk menyadari
 REM  ada yang salah pada periode sebelumnya dan masih bisa mundur ke sana.

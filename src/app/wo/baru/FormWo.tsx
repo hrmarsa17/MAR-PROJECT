@@ -10,7 +10,7 @@ import {
   type Blok, type GrupMode, type Katalog,
 } from './jenis.js';
 
-const KUNCI_KIRIMAN = 'kmb_kiriman_wo';
+const KUNCI_KIRIMAN = 'mar_kiriman_wo';
 
 interface BarisStruk { ok: boolean; no: string; sub: string }
 interface Struk { judul: string; sub: string; baris: BarisStruk[]; catatan?: string }

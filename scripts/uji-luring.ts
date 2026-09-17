@@ -77,7 +77,7 @@ globalThis.fetch = ((masukan: string | URL | Request, opsi?: RequestInit) => {
   const penuh = alamat.startsWith('/') ? `${ALAMAT}${alamat}` : alamat;
   return fetchAsli(penuh, {
     ...opsi,
-    headers: { ...(opsi?.headers ?? {}), Cookie: `kmb_token=${tokenAktif}` },
+    headers: { ...(opsi?.headers ?? {}), Cookie: `mar_token=${tokenAktif}` },
   });
 }) as typeof fetch;
 

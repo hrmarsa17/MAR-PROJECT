@@ -16,7 +16,7 @@ const OID_INT8 = 20;
  *
  * Sampai 15 Sep 2026 baris ini berbunyi:
  *
- *     process.env['DATABASE_URL'] ?? 'postgres://localhost:5432/kmb_project'
+ *     process.env['DATABASE_URL'] ?? 'postgres://localhost:5432/mar_project'
  *
  * Port 5432 di mesin ini BUKAN basis data pengembangan; ia milik Gabriel.
  * Basis data dev berdiri di 5433. Artinya skrip apa pun yang lupa memuat `.env`

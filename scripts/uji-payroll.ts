@@ -174,7 +174,7 @@ console.log('\n─── 9. mekanik tidak boleh mengunduh ───');
 {
   const tMek = await tokenUntuk('mechanic');
   const r = await fetch(`${ALAMAT}/api/laporan?mode=range&mulai=${minta.mulai}&akhir=${minta.akhir}`,
-    { headers: { Cookie: `kmb_token=${tMek}` } });
+    { headers: { Cookie: `mar_token=${tMek}` } });
   const j = await r.json().catch(() => ({ ok: true }));
   periksa('ditolak', j.ok === false, 'justru diterima');
 }

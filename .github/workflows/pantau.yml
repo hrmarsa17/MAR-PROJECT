@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Periksa /api/sehat
         env:
-          ALAMAT: https://kmb-project.vercel.app/api/sehat
+          ALAMAT: https://mar-project.vercel.app/api/sehat
         run: |
           # Tiga percobaan, jeda 20 detik. Satu kegagalan sesaat bukan alasan
           # membangunkan orang; tiga kegagalan berturut-turut adalah.

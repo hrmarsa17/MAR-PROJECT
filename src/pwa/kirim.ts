@@ -227,7 +227,7 @@ export async function mintaSinkronLatar(): Promise<boolean> {
       sync?: { register(tag: string): Promise<void> };
     }).sync;
     if (!sync) return false;
-    await sync.register('kmb-outbox');
+    await sync.register('mar-outbox');
     return true;
   } catch {
     return false;

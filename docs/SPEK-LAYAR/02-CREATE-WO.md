@@ -461,7 +461,7 @@ bergantung pada urutan (`:1718-1723`).
 > sama — jadi layar ini **tidak boleh mengaku tahu**.
 
 ```js
-KIRIMAN_KEY = 'kmb_kiriman_wo'
+KIRIMAN_KEY = 'mar_kiriman_wo'
 _kirimanBaru()  →  'KRM-' + Date.now() + '-' + 6 digit acak
 ```
 

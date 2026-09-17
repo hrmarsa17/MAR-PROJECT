@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { identitasDariToken, type Identitas } from './auth.js';
 
-export const NAMA_COOKIE = 'kmb_token';
+export const NAMA_COOKIE = 'mar_token';
 
 /**
  * Identitas untuk komponen server.

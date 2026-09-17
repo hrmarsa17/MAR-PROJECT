@@ -12,7 +12,7 @@
 ## Sekali: siapkan berkasnya
 
 ```powershell
-cd "C:\Users\gabri\OneDrive\1\Resurgam\KMBProject"
+cd "C:\Users\gabri\OneDrive\1\Resurgam\MARProject"
 copy cadangkan-produksi.cmd.contoh cadangkan-produksi.cmd
 notepad cadangkan-produksi.cmd
 ```
@@ -34,7 +34,7 @@ Coba jalankan sekali dengan tangan:
 Yang benar terlihat begini:
 
 ```
-▶  Mencadangkan ke C:\Users\gabri\OneDrive\cadangan-kmb\kmb-2026-09-16T....dump
+▶  Mencadangkan ke C:\Users\gabri\OneDrive\cadangan-mar\mar-2026-09-17T....dump
 ✅ 1.4 MB, 9 tabel inti diperiksa ada
    1 cadangan tersimpan
 ```
@@ -54,9 +54,9 @@ ada di sana.
 
 | Tab | Isian |
 |---|---|
-| General | Name: `Cadangan KMB` · centang **Run whether user is logged on or not** |
+| General | Name: `Cadangan MAR` · centang **Run whether user is logged on or not** |
 | Triggers | New → Daily → **01:40** · Enabled |
-| Actions | New → Start a program → `C:\Users\gabri\OneDrive\1\Resurgam\KMBProject\cadangkan-produksi.cmd` |
+| Actions | New → Start a program → `C:\Users\gabri\OneDrive\1\Resurgam\MARProject\cadangkan-produksi.cmd` |
 | Conditions | **hapus centang** "Start the task only if the computer is on AC power" |
 | Settings | centang **Run task as soon as possible after a scheduled start is missed** |
 
@@ -71,7 +71,7 @@ terjadwal di dunia berkumpul.
 
 ## Tiap minggu: lihat sebentar
 
-Buka `C:\Users\gabri\OneDrive\cadangan-kmb`. Yang dicari cuma dua hal:
+Buka `C:\Users\gabri\OneDrive\cadangan-mar`. Yang dicari cuma dua hal:
 
 1. **Ada berkas dari tadi malam.**
 2. **Ukurannya wajar** — naik pelan seiring bertambahnya WO, tidak pernah
@@ -104,8 +104,8 @@ Untuk membuktikan cadangan **produksi** yang sesungguhnya, pulihkan salah satu
 berkasnya ke basis data lokal:
 
 ```powershell
-npx tsx scripts/pulihkan.ts "C:\Users\gabri\OneDrive\cadangan-kmb\kmb-….dump" `
-    --ke postgres://postgres:SANDI@127.0.0.1:5433/kmb_pulih_uji
+npx tsx scripts/pulihkan.ts "C:\Users\gabri\OneDrive\cadangan-mar\mar-….dump" `
+    --ke postgres://postgres:SANDI@127.0.0.1:5433/mar_pulih_uji
 ```
 
 Tujuan **wajib** disebut dan tidak pernah diambil diam-diam — memulihkan

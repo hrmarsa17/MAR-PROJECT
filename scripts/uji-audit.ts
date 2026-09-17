@@ -48,7 +48,7 @@ await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 async function perintah(t: string, aksi: string, data: unknown) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${t}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${t}` },
     body: JSON.stringify({ aksi, op_id: crypto.randomUUID(), data }),
   });
   return r.json() as Promise<{
@@ -269,10 +269,10 @@ console.log('\n─── 6. pembacaan details: tiga pola, satu aturan ───'
 console.log('\n─── 7. gerbangnya penanda admin ───');
 {
   const r = await fetch(`${ALAMAT}/api/data?jenis=audit`,
-    { headers: { Cookie: `kmb_token=${l1.token}` } });
+    { headers: { Cookie: `mar_token=${l1.token}` } });
   periksa('bukan admin ditolak', r.status === 403, String(r.status));
   const r2 = await fetch(`${ALAMAT}/api/data?jenis=audit&limit=3`,
-    { headers: { Cookie: `kmb_token=${l2.token}` } });
+    { headers: { Cookie: `mar_token=${l2.token}` } });
   const j2 = await r2.json() as { ok: boolean; data?: { baris: unknown[] } };
   periksa('admin bisa membacanya lewat rute', j2.ok === true);
   periksa('dan rutenya benar-benar membawa barisnya',

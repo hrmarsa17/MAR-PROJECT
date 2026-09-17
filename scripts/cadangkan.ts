@@ -83,7 +83,7 @@ mkdirSync(DIR, { recursive: true });
    sama adalah hal biasa — sebelum migrasi, lalu sesudahnya — dan yang kedua
    tidak boleh menimpa yang pertama tanpa ada yang tahu. */
 const cap = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-const berkas = resolve(DIR, `kmb-${cap}.dump`);
+const berkas = resolve(DIR, `mar-${cap}.dump`);
 
 console.log(`\n▶  Mencadangkan ke ${berkas}`);
 execFileSync(PG_DUMP, [alamat, '--format=custom', '--file', berkas], { stdio: 'inherit' });
@@ -130,7 +130,12 @@ console.log(`✅ ${(ukuran / 1024 / 1024).toFixed(1)} MB`
 const batas = Date.now() - SIMPAN_HARI * 86_400_000;
 let dibuang = 0;
 for (const f of readdirSync(DIR)) {
-  if (!f.startsWith('kmb-') || !f.endsWith('.dump')) continue;
+  /* DUA awalan, dan itu disengaja. Berkas ditulis dengan awalan `mar-` sejak
+     proyek ini berganti nama 17 Sep 2026, tapi cadangan yang sudah terlanjur
+     ada bernama `kmb-`. Memangkas hanya yang baru membuat yang lama menumpuk
+     selamanya; memangkas hanya yang lama akan membuang justru yang terbaru. */
+  const punyaKita = f.startsWith('mar-') || f.startsWith('kmb-');
+  if (!punyaKita || !f.endsWith('.dump')) continue;
   const p = resolve(DIR, f);
   if (statSync(p).mtimeMs < batas) { unlinkSync(p); dibuang++; }
 }

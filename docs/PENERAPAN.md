@@ -291,7 +291,7 @@ sebagian besar menunggu image dibangun.
 ## Pemasangan pertama
 
 ```bash
-git clone <repo> kmb && cd kmb
+git clone <repo> mar && cd mar
 
 cp .env.produksi.example .env.produksi
 nano .env.produksi          # isi POSTGRES_PASSWORD, DOMAIN, EMAIL_TLS
@@ -354,7 +354,7 @@ Dari dalam aplikasi, tanpa baris perintah:
 ## Memperbarui ke versi baru
 
 ```bash
-cd kmb
+cd mar
 git pull
 docker compose --env-file .env.produksi up -d --build
 ```
@@ -381,7 +381,7 @@ crontab -e
 
 ```cron
 # 01:30 setiap hari. Simpan 30 hari terakhir.
-30 1 * * * cd /path/ke/kmb && docker compose --env-file .env.produksi run --rm migrasi npx tsx scripts/cadangkan.ts --ke /cadangan --simpan 30 >> /var/log/kmb-cadangan.log 2>&1
+30 1 * * * cd /path/ke/mar && docker compose --env-file .env.produksi run --rm migrasi npx tsx scripts/cadangkan.ts --ke /cadangan --simpan 30 >> /var/log/mar-cadangan.log 2>&1
 ```
 
 Berkasnya ada di `./cadangan` pada server.
@@ -402,8 +402,8 @@ docker compose --env-file .env.produksi run --rm migrasi \
 
 # pulihkan (tujuan WAJIB disebut — tidak pernah diambil diam-diam)
 docker compose --env-file .env.produksi run --rm migrasi \
-  npx tsx scripts/pulihkan.ts /cadangan/kmb-….dump \
-    --ke postgres://kmb:SANDI@db:5432/kmb
+  npx tsx scripts/pulihkan.ts /cadangan/mar-….dump \
+    --ke postgres://mar:SANDI@db:5432/mar
 ```
 
 Memulihkan **mengganti** isi basis data tujuan. WO yang masuk sesudah cadangan

@@ -46,7 +46,7 @@ if (!berkasArg || !tujuan) {
     console.log('');
   }
   console.log('Untuk memulihkan, sebutkan berkas DAN tujuannya:\n');
-  console.log('    npx tsx scripts/pulihkan.ts cadangan/kmb-….dump \\');
+  console.log('    npx tsx scripts/pulihkan.ts cadangan/mar-….dump \\');
   console.log('        --ke postgres://pengguna:sandi@host:5432/nama_basis_data\n');
   console.log('Tujuannya WAJIB disebut. Ia tidak pernah diambil dari DATABASE_URL —');
   console.log('memulihkan ke basis data yang kebetulan sedang dipakai adalah cara');

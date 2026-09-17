@@ -44,7 +44,7 @@ await sql`INSERT INTO api_tokens (tenant_id, mechanic_id, token)
 async function perintah(aksi: string, data: unknown) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${tok}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${tok}` },
     body: JSON.stringify({ aksi, op_id: crypto.randomUUID(), data }),
   });
   return r.json() as Promise<{

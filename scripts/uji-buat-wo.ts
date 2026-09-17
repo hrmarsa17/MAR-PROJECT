@@ -40,7 +40,7 @@ const tokenBaris = (
   `
 )[0]!;
 
-const kepala = { 'Content-Type': 'application/json', Cookie: `kmb_token=${token}` };
+const kepala = { 'Content-Type': 'application/json', Cookie: `mar_token=${token}` };
 
 let lulus = 0;
 let gagal = 0;

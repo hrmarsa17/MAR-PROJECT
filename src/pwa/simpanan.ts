@@ -28,7 +28,7 @@
  * worker — itu yang membuatnya bisa terkirim saat aplikasi sudah ditutup.
  */
 
-export const NAMA_DB = 'kmb_v1';
+export const NAMA_DB = 'mar_v1';
 export const VERSI_DB = 1;
 
 /** Sebuah pekerjaan yang menunggu sampai ke server. */

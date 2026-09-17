@@ -1,7 +1,7 @@
 /* eslint-disable */
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * SERVICE WORKER KMB
+ * SERVICE WORKER MAR
  * ════════════════════════════════════════════════════════════════════════════
  *
  * Ditulis tangan, mengikuti `mar-offline/sw.js` milik KMB V2 — yang sudah
@@ -22,7 +22,7 @@
  * keluar.
  */
 
-var CACHE = 'kmb-v1';
+var CACHE = 'mar-v1';
 
 /* Hanya yang benar-benar statis dan bukan milik siapa-siapa. Halaman TIDAK
    ikut: isinya bergantung siapa yang masuk. */
@@ -70,7 +70,7 @@ self.addEventListener('activate', function (e) {
    Nama dan bentuknya harus tetap sejalan dengan src/pwa/simpanan.ts. */
 function bukaDb() {
   return new Promise(function (res, rej) {
-    var r = indexedDB.open('kmb_v1', 1);
+    var r = indexedDB.open('mar_v1', 1);
     r.onsuccess = function () { res(r.result); };
     r.onerror = function () { rej(r.error); };
   });
@@ -96,11 +96,11 @@ function minta(d, store, mode, fn) {
 function kabari(isi, tag) {
   try {
     if (self.Notification && Notification.permission === 'granted') {
-      return self.registration.showNotification('KMB', {
+      return self.registration.showNotification('MAR', {
         body: isi,
         icon: './icon-192.png',
         badge: './icon-192.png',
-        tag: tag || ('kmb-' + isi.replace(/\s+/g, ' ')),
+        tag: tag || ('mar-' + isi.replace(/\s+/g, ' ')),
       });
     }
   } catch (e) { /* notifikasi tidak diizinkan — bukan alasan gagal */ }
@@ -229,7 +229,7 @@ function periksaPerubahan() {
                 /* Antrean approver: SATU kabar yang berdiri dan selalu
                    mutakhir, sengaja saling menimpa supaya tidak menumpuk.
                    Kabar lain berdiri sendiri-sendiri. */
-                p = kabari(isi, approver ? 'kmb-antrean' : undefined);
+                p = kabari(isi, approver ? 'mar-antrean' : undefined);
               }
 
               /* Menarik kembali kabar approver yang sudah basi.
@@ -267,11 +267,11 @@ function periksaPerubahan() {
 /* Background Sync — HANYA ada di Chrome/Android. Di iOS tidak pernah menyala,
    dan di sana antrean bergerak karena halaman memanggilnya saat dibuka. */
 self.addEventListener('sync', function (e) {
-  if (e.tag === 'kmb-outbox') e.waitUntil(kosongkanAntrean().then(periksaPerubahan));
+  if (e.tag === 'mar-outbox') e.waitUntil(kosongkanAntrean().then(periksaPerubahan));
 });
 
 self.addEventListener('periodicsync', function (e) {
-  if (e.tag === 'kmb-periksa') e.waitUntil(kosongkanAntrean().then(periksaPerubahan));
+  if (e.tag === 'mar-periksa') e.waitUntil(kosongkanAntrean().then(periksaPerubahan));
 });
 
 self.addEventListener('notificationclick', function (e) {

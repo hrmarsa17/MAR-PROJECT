@@ -27,7 +27,7 @@ services:
       # berubah diam-diam kalau bawaannya suatu hari berbeda.
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     volumes:
-      - kmb-db:/var/lib/postgresql/data
+      - mar-db:/var/lib/postgresql/data
       # Cadangan menulis ke sini, dan direktorinya ikut di-mount ke `alat`.
       - ./cadangan:/cadangan
     # TIDAK ada `ports:`. Basis data hanya dijangkau dari jaringan compose.
@@ -90,6 +90,6 @@ services:
       - caddy-config:/config
 
 volumes:
-  kmb-db:
+  mar-db:
   caddy-data:
   caddy-config:

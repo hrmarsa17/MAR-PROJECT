@@ -81,8 +81,8 @@ powershell -NoProfile -Command "Start-Process '$PGBIN/postgres.exe' \
 
 # pasang skema
 "$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d postgres \
-  -c "CREATE DATABASE kmb_project;"
-"$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d kmb_project \
+  -c "CREATE DATABASE mar_project;"
+"$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d mar_project \
   -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
 ```
 

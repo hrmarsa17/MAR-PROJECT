@@ -72,7 +72,7 @@ await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 async function perintah(t: string, aksi: string, data: unknown, opId = crypto.randomUUID()) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${t}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${t}` },
     body: JSON.stringify({ aksi, op_id: opId, data }),
   });
   return r.json() as Promise<{
@@ -282,7 +282,7 @@ console.log('\n─── 5b. pratinjau lewat jalur yang dipakai layar ───'
      tanpa penjaga. */
   async function baca(token: string, alamat: string) {
     const r = await fetch(`${ALAMAT}/api/data?${alamat}`, {
-      headers: { Cookie: `kmb_token=${token}` },
+      headers: { Cookie: `mar_token=${token}` },
     });
     return {
       status: r.status,

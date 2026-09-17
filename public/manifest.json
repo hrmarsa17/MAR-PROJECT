@@ -1,6 +1,6 @@
 {
-  "name": "Mechanic Activity Report — KMB",
-  "short_name": "MAR KMB",
+  "name": "Mechanic Activity Report",
+  "short_name": "MAR",
   "description": "Work order & insentif mekanik. Bisa dipakai tanpa sinyal.",
   "start_url": "/",
   "scope": "/",

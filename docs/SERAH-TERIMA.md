@@ -39,7 +39,7 @@ Konsekuensi yang penting untuk cara bekerja di sini:
 
 | | |
 |---|---|
-| Lokasi | `C:\Users\gabri\OneDrive\1\Resurgam\KMBProject` |
+| Lokasi | `C:\Users\gabri\OneDrive\1\Resurgam\MARProject` |
 | Git | lokal saja, **belum ada remote** |
 | Uji unit & integrasi | 56 lulus (`npm test`) |
 | Uji asap HTTP | buat-WO 13 · override 23 · alur override→approve 15 · payroll 23 |
@@ -78,7 +78,7 @@ Konsekuensi yang penting untuk cara bekerja di sini:
 ## 3. CARA MENJALANKAN
 
 ```bash
-cd "C:\Users\gabri\OneDrive\1\Resurgam\KMBProject"
+cd "C:\Users\gabri\OneDrive\1\Resurgam\MARProject"
 npm install
 npm run dev          # http://localhost:3000
 npm test             # 56 uji
@@ -108,13 +108,13 @@ Start-Process 'C:\Program Files\PostgreSQL\18\bin\postgres.exe' `
 ```
 
 Sambungan dibaca dari `.env` (tidak ikut git):
-`postgres://postgres@127.0.0.1:5433/kmb_project`
+`postgres://postgres@127.0.0.1:5433/mar_project`
 
 Membangun ulang dari nol:
 
 ```bash
-psql -U postgres -h 127.0.0.1 -p 5433 -d postgres -c "DROP DATABASE IF EXISTS kmb_project;" -c "CREATE DATABASE kmb_project;"
-psql -U postgres -h 127.0.0.1 -p 5433 -d kmb_project -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
+psql -U postgres -h 127.0.0.1 -p 5433 -d postgres -c "DROP DATABASE IF EXISTS mar_project;" -c "CREATE DATABASE mar_project;"
+psql -U postgres -h 127.0.0.1 -p 5433 -d mar_project -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
 npx vitest run                       # membuat mekanik & katalog uji
 psql ... -f db/contoh.sql            # 14 WO contoh
 npx tsx scripts/buat-token.ts UJI-L2 # token untuk masuk

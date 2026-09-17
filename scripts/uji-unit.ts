@@ -60,7 +60,7 @@ await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 async function perintah(t: string, aksi: string, data: unknown) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${t}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${t}` },
     body: JSON.stringify({ aksi, op_id: crypto.randomUUID(), data }),
   });
   return r.json() as Promise<{

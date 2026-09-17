@@ -40,7 +40,7 @@ async function tokenUntuk(peran: string) {
 }
 
 const l2 = await tokenUntuk('superintendent');
-const kepala = { 'Content-Type': 'application/json', Cookie: `kmb_token=${l2}` };
+const kepala = { 'Content-Type': 'application/json', Cookie: `mar_token=${l2}` };
 
 async function perintah(aksi: string, data: unknown) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {

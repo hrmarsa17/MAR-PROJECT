@@ -63,7 +63,7 @@ await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 async function perintah(t: string, aksi: string, data: unknown, opId = crypto.randomUUID()) {
   const r = await fetch(`${ALAMAT}/api/perintah`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `kmb_token=${t}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `mar_token=${t}` },
     body: JSON.stringify({ aksi, op_id: opId, data }),
   });
   return r.json() as Promise<{
@@ -338,7 +338,7 @@ console.log('\n─── 6. gerbangnya tetap penanda admin ───');
   });
   periksa('surut faktor tanpa penanda admin ditolak', a.ok === false, 'justru diterima');
   const r = await fetch(`${ALAMAT}/api/data?jenis=pratinjau_faktor&id=${faktorSulit}&nilai=1.5`,
-    { headers: { Cookie: `kmb_token=${l1.token}` } });
+    { headers: { Cookie: `mar_token=${l1.token}` } });
   periksa('pratinjau faktor juga ditolak untuk bukan admin', r.status === 403, String(r.status));
   await sql`UPDATE mechanics SET may_admin = true WHERE id = ${l2.id}`;
 }

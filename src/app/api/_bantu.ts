@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { identitasDariToken, type Identitas } from '../../lib/auth.js';
 import { GalatAplikasi } from '../../lib/errors.js';
 
-export const NAMA_COOKIE = 'kmb_token';
+export const NAMA_COOKIE = 'mar_token';
 
 /**
  * Identitas pemanggil, dari header Bearer atau cookie.

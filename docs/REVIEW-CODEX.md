@@ -33,7 +33,7 @@ Sumber acuan: `C:\Users\gabri\OneDrive\1\KMB\MAR github\MAR-project`, cabang
 ## 2. Cara menjalankan
 
 ```bash
-cd "C:\Users\gabri\OneDrive\1\Resurgam\KMBProject"
+cd "C:\Users\gabri\OneDrive\1\Resurgam\MARProject"
 
 # Basis data dev di port 5433 — BUKAN 5432 (itu milik Gabriel, jangan disentuh)
 Start-Process 'C:\Program Files\PostgreSQL\18\bin\postgres.exe' `
