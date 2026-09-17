@@ -36,9 +36,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # Alamatnya diambil dari variabel repo kalau ada (Settings -> Secrets and
+      # variables -> Actions -> Variables -> ALAMAT_SEHAT), supaya mengganti
+      # domain tidak menuntut mengubah kode. Cadangannya alamat yang BENAR-BENAR
+      # menjawab hari ini.
+      #
+      # 17 Sep 2026 baris ini sempat langsung menunjuk mar-project.vercel.app
+      # begitu proyeknya diganti nama -- padahal domain itu belum diklaim, dan
+      # pemantau yang menembak alamat mati mengirim surel kegagalan tiap jam.
+      # Pemantau yang berteriak palsu berhenti dipercaya, dan teriakan yang
+      # sungguhan ikut terabaikan bersamanya.
       - name: Periksa /api/sehat
         env:
-          ALAMAT: https://mar-project.vercel.app/api/sehat
+          ALAMAT: ${{ vars.ALAMAT_SEHAT || 'https://kmb-project.vercel.app/api/sehat' }}
         run: |
           # Tiga percobaan, jeda 20 detik. Satu kegagalan sesaat bukan alasan
           # membangunkan orang; tiga kegagalan berturut-turut adalah.
