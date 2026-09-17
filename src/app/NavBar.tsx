@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { TombolKeluar } from './TombolKeluar.js';
 
 /**
  * NAVBAR — urutan, label, dan aturan tampilnya sama persis dengan KMB V2.
@@ -24,6 +25,7 @@ import { usePathname } from 'next/navigation';
  */
 
 export interface AksesMenu {
+  mechanicId: number;
   peran: 'mechanic' | 'supervisor' | 'superintendent';
   nama: string;
   bolehLihat: { performa: boolean; teknis: boolean; report: boolean };
@@ -119,6 +121,9 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
             <span className={LENCANA[aku.peran]!.kelas}>{LENCANA[aku.peran]!.teks}</span>
           )}
           <span className="user-email">{aku.nama}</span>
+          {/* Paling kanan, sesudah nama — di situ orang mencarinya, dan di situ
+              pula ia paling kecil kemungkinannya tertekan tidak sengaja. */}
+          <TombolKeluar mechanicId={aku.mechanicId} />
         </div>
       </div>
     </nav>
@@ -197,6 +202,9 @@ function NavLapangan({ aku, path, approver }: {
             <span className={LENCANA[aku.peran]!.kelas}>{LENCANA[aku.peran]!.teks}</span>
           )}
           <span className="user-email">{aku.nama}</span>
+          {/* Paling kanan, sesudah nama — di situ orang mencarinya, dan di situ
+              pula ia paling kecil kemungkinannya tertekan tidak sengaja. */}
+          <TombolKeluar mechanicId={aku.mechanicId} />
         </div>
       </div>
     </nav>

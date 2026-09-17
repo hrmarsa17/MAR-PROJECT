@@ -2238,3 +2238,16 @@ select, textarea {
    ini berarti keterlambatan, dan WO buatan mekanik bukan sesuatu yang buruk;
    ia cuma perlu dibaca lebih teliti. */
 .badge-ungu-telaah { background: #EDE9FE; color: #5B21B6; cursor: help; }
+
+/* Tombol Keluar di navbar. Sengaja SAMAR dan kecil: ia jarang ditekan, dan
+   tekanan yang tidak sengaja berarti orang kehilangan sesinya di tengah shift.
+   Tapi tetap ada bingkainya — tautan tanpa bingkai di pojok kanan tidak terbaca
+   sebagai tombol oleh orang yang mencarinya dengan terburu-buru. */
+.nav-keluar {
+  background: transparent; border: 1px solid var(--divider);
+  color: var(--text-secondary, #64748B); border-radius: 6px;
+  padding: 0.2rem 0.55rem; font-size: 0.75rem; cursor: pointer;
+  margin-left: 0.5rem;
+}
+.nav-keluar:hover { background: #FEF2F2; border-color: #FCA5A5; color: #991B1B; }
+.nav-keluar:disabled { opacity: 0.5; cursor: default; }

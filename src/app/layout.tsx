@@ -30,7 +30,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
         {aku && (
           <NavBar
             aku={{
-              peran: aku.peran, nama: aku.nama,
+              mechanicId: aku.mechanicId, peran: aku.peran, nama: aku.nama,
               bolehLihat: aku.bolehLihat, bolehAdmin: aku.bolehAdmin,
             }}
           />

@@ -111,9 +111,23 @@ function kosongkanAntrean() {
   var terkirim = 0;
   var adaRamai = false;
   return bukaDb().then(function (d) {
+    /* SIAPA yang sedang masuk. Berkas ini mengosongkan antrean TANPA lewat
+       src/pwa/kirim.ts, jadi penyaringan pemiliknya harus ada di sini juga.
+       Kalau tidak, background sync mengirim antrean orang sebelumnya lewat
+       cookie orang yang sekarang -- justru saat aplikasinya tertutup dan tak
+       seorang pun melihat layarnya. */
+    return minta(d, 'kv', 'readonly', function (s) { return s.get('aku'); })
+      .then(function (aku) {
+    var punyaku = (aku && aku.mechanicId) ? aku.mechanicId : null;
     return minta(d, 'outbox', 'readonly', function (s) { return s.getAll(); })
       .then(function (semua) {
-        var antre = (semua || []).filter(function (i) { return i.status === 'antre'; });
+        var antre = (semua || []).filter(function (i) {
+          if (i.status !== 'antre') return false;
+          // Tak bertuan ikut terkirim; milik orang lain tidak.
+          // Lihat ItemOutbox.milik di src/pwa/simpanan.ts.
+          if (punyaku === null || i.milik === undefined) return true;
+          return i.milik === punyaku;
+        });
         antre.sort(function (a, b) { return a.dibuat_at < b.dibuat_at ? -1 : 1; });
 
         var rantai = Promise.resolve();
@@ -163,6 +177,7 @@ function kosongkanAntrean() {
               : Promise.resolve();
             return p.then(function () { throw err; });
           });
+      });
       });
   });
 }

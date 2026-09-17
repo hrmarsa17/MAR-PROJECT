@@ -22,6 +22,7 @@ afterEach(cleanup);
 vi.mock('next/navigation', () => ({ usePathname: () => '/monitoring' }));
 
 const AKU = (b: Partial<AksesMenu> = {}): AksesMenu => ({
+  mechanicId: 1,
   peran: 'superintendent', nama: 'Manager Uji',
   bolehLihat: { performa: true, teknis: true, report: true },
   bolehAdmin: true,

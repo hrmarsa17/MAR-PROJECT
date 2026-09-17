@@ -63,6 +63,22 @@ export interface ItemOutbox {
   percobaan: number;
   /** Ringkasan sependek mungkin untuk layar Antrean. */
   ringkas?: string;
+  /**
+   * SIAPA yang mengantrekannya — `mechanics.id`.
+   *
+   * HP dipinjam antar mekanik; itu hal biasa di shift. Tanpa penanda ini,
+   * kiriman yang diantrekan orang PERTAMA ikut terkirim saat orang KEDUA masuk
+   * dan sinyalnya pulih — dan server menentukan pelakunya dari cookie, bukan
+   * dari isi kiriman. Jam kerja orang pertama tercatat atas nama orang kedua,
+   * atau ditolak dengan alasan yang tidak dimengerti siapa pun.
+   *
+   * Item TANPA penanda ini dianggap milik siapa saja, dan itu disengaja: ia
+   * lahir sebelum penandanya ada, atau saat belum ada yang masuk. Menyembunyikan
+   * pekerjaan yang belum terkirim jauh lebih berbahaya daripada mengirimkannya
+   * lewat sesi yang salah — yang terburuk pun masih ditolak server dengan
+   * alasan yang tercatat, bukan lenyap tanpa jejak.
+   */
+  milik?: number;
 }
 
 /**
@@ -153,11 +169,26 @@ export async function bacaItem(opId: string): Promise<ItemOutbox | null> {
   return v === undefined ? null : v;
 }
 
-/** Yang masih menunggu, terlama lebih dulu — urutan pengerjaannya. */
-export async function antrean(): Promise<ItemOutbox[]> {
+/**
+ * Yang masih menunggu, terlama lebih dulu — urutan pengerjaannya.
+ *
+ * @param milik kalau disebut, hanya item milik orang itu (dan yang tak
+ *   bertuan). Dipakai supaya kiriman orang sebelumnya tidak ikut terkirim lewat
+ *   sesi orang berikutnya di HP yang sama. Lihat `ItemOutbox.milik`.
+ */
+export async function antrean(milik?: number | null): Promise<ItemOutbox[]> {
   const semua = await jalankan<ItemOutbox[]>('outbox', 'readonly', (s) =>
     s.index('status').getAll('antre'));
-  return semua.sort((a, b) => a.dibuat_at.localeCompare(b.dibuat_at));
+  const saring = milik == null
+    ? semua
+    : semua.filter((i) => i.milik === undefined || i.milik === milik);
+  return saring.sort((a, b) => a.dibuat_at.localeCompare(b.dibuat_at));
+}
+
+/** Berapa yang menunggu tapi MILIK ORANG LAIN — untuk diberitahukan saat keluar. */
+export async function antreanOrangLain(milik: number): Promise<number> {
+  const semua = await antrean();
+  return semua.filter((i) => i.milik !== undefined && i.milik !== milik).length;
 }
 
 export async function semuaItem(): Promise<ItemOutbox[]> {

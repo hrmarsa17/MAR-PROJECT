@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   antrean, bacaItem, hapusItem, lupakanKoneksi, pangkasYangSelesai,
   semuaItem, tulisOutbox, umurAntreanHari,
+  simpanKv,
 } from '../src/pwa/simpanan.js';
 import { kirimPerintah, kosongkanAntrean } from '../src/pwa/kirim.js';
 
@@ -249,5 +250,61 @@ describe('antrean yang menua di iPhone', () => {
 
     await hapusItem('menua');
     expect(await umurAntreanHari()).toBe(0);
+  });
+});
+
+describe('HP yang dipinjam antar mekanik', () => {
+  it('kiriman orang lain TIDAK ikut terkirim lewat sesi yang sekarang', async () => {
+    /* Ini yang menjaga jam kerja tercatat atas nama orang yang benar. Server
+       menentukan pelakunya dari COOKIE, bukan dari isi kiriman — jadi antrean
+       orang pertama yang di-flush lewat sesi orang kedua akan tercatat atas
+       nama orang kedua, atau ditolak dengan alasan yang tidak dimengerti
+       siapa pun. */
+    await simpanKv('aku', { mechanicId: 7 });
+
+    await tulisOutbox({
+      op_id: 'punya-7', aksi: 'kirim_kerja', data: {}, status: 'antre',
+      dibuat_at: new Date().toISOString(), percobaan: 0, milik: 7,
+    });
+    await tulisOutbox({
+      op_id: 'punya-9', aksi: 'kirim_kerja', data: {}, status: 'antre',
+      dibuat_at: new Date().toISOString(), percobaan: 0, milik: 9,
+    });
+
+    const dikirim: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_u: string, o: RequestInit) => {
+      dikirim.push(JSON.parse(String(o.body)).op_id);
+      return jawabanServer({ ok: true, data: { hasil: {} } });
+    }));
+
+    await kosongkanAntrean();
+
+    expect(dikirim).toEqual(['punya-7']);
+    /* Dan milik orang lain TETAP ADA — bukan dibuang, bukan ditandai gagal.
+       Ia menunggu sampai orangnya masuk lagi. */
+    expect((await bacaItem('punya-9'))?.status).toBe('antre');
+  });
+
+  it('kiriman TANPA pemilik tetap ikut terkirim', async () => {
+    /* Item yang lahir sebelum penandanya ada, atau saat belum ada yang masuk.
+       Menyembunyikannya berarti pekerjaan yang sudah dilaporkan menghilang dari
+       layar tanpa seorang pun bisa menjelaskannya. */
+    await simpanKv('aku', { mechanicId: 7 });
+    await tulisOutbox({
+      op_id: 'tak-bertuan', aksi: 'kirim_kerja', data: {}, status: 'antre',
+      dibuat_at: new Date().toISOString(), percobaan: 0,
+    });
+
+    vi.stubGlobal('fetch', vi.fn(async () => jawabanServer({ ok: true, data: { hasil: {} } })));
+    const h = await kosongkanAntrean();
+    expect(h.terkirim).toBe(1);
+  });
+
+  it('kiriman baru ditandai milik yang sedang masuk', async () => {
+    await simpanKv('aku', { mechanicId: 42 });
+    vi.stubGlobal('fetch', vi.fn(async () => jawabanServer({ ok: true, data: { hasil: {} } })));
+
+    const h = await kirimPerintah('kirim_kerja', { woId: 1 });
+    expect((await bacaItem(h.opId))?.milik).toBe(42);
   });
 });

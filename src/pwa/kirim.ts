@@ -1,5 +1,5 @@
 import {
-  type ItemOutbox, adaIndexedDb, antrean, bacaItem, tulisOutbox,
+  type ItemOutbox, adaIndexedDb, antrean, bacaItem, bacaKv, tulisOutbox,
 } from './simpanan.js';
 
 /**
@@ -96,6 +96,10 @@ export async function kirimPerintah(
     if (lama?.status === 'terkirim') {
       return { keadaan: 'berhasil', opId, hasil: lama.hasil as HasilKirim['hasil'] };
     }
+    /* Ditandai MILIK siapa. HP dipinjam antar mekanik; tanpa ini kiriman orang
+       pertama ikut terkirim lewat sesi orang kedua, dan server menentukan
+       pelakunya dari cookie — bukan dari isi kiriman. */
+    const aku = await bacaKv<{ mechanicId: number }>('aku');
     const item: ItemOutbox = lama ?? {
       op_id: opId,
       aksi,
@@ -103,6 +107,7 @@ export async function kirimPerintah(
       status: 'antre',
       dibuat_at: new Date().toISOString(),
       percobaan: 0,
+      ...(aku?.mechanicId ? { milik: aku.mechanicId } : {}),
       ...(opsi.pratinjau ? { pratinjau: opsi.pratinjau } : {}),
       ...(opsi.ringkas ? { ringkas: opsi.ringkas } : {}),
     };
@@ -195,11 +200,19 @@ async function tandai(
  * sekaligus lewat sinyal lapangan yang tipis membuat semuanya gagal bersama.
  */
 export async function kosongkanAntrean(): Promise<{ terkirim: number; sisa: number }> {
-  if (!adaIndexedDb() || !mungkinDaring()) {
-    return { terkirim: 0, sisa: adaIndexedDb() ? (await antrean()).length : 0 };
+  if (!adaIndexedDb()) return { terkirim: 0, sisa: 0 };
+
+  /* HANYA milik yang sedang masuk. Mengirim antrean orang lain lewat sesi ini
+     berarti mencatat jam kerjanya atas nama orang yang salah — atau ditolak
+     server dengan alasan yang tidak dimengerti siapa pun. */
+  const aku = await bacaKv<{ mechanicId: number }>('aku');
+  const punyaku = aku?.mechanicId ?? null;
+
+  if (!mungkinDaring()) {
+    return { terkirim: 0, sisa: (await antrean(punyaku)).length };
   }
   let terkirim = 0;
-  for (const it of await antrean()) {
+  for (const it of await antrean(punyaku)) {
     const h = await kirimSekarang(it.op_id, it.aksi, it.data, true);
     if (h.keadaan === 'berhasil') terkirim++;
     /* Berhenti pada kegagalan jaringan yang PERTAMA. Kalau satu tidak sampai,
@@ -207,7 +220,7 @@ export async function kosongkanAntrean(): Promise<{ terkirim: number; sisa: numb
        dan menguras baterai di tempat yang justru tidak ada sinyalnya. */
     if (h.keadaan === 'antre') break;
   }
-  return { terkirim, sisa: (await antrean()).length };
+  return { terkirim, sisa: (await antrean(punyaku)).length };
 }
 
 /**
