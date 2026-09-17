@@ -1,11 +1,14 @@
-# KMB Project
+# MARProject
 
-Sistem work order & insentif mekanik. Pengganti KMB V2 (Google Apps Script +
-Google Sheets), dibangun di atas PostgreSQL.
+Sistem work order & insentif mekanik, di atas PostgreSQL + TypeScript + Next.js.
 
-Proses bisnis dan cara memilih job mengikuti KMB V2. Yang berbeda: **unit dan
-daftar job diisi sendiri oleh pemilik produk**, dan seluruh penjagaan yang di
-KMB V2 ditulis tangan di JavaScript kini ditegakkan oleh basis data.
+Pengganti **KMB V2** (Google Apps Script + Google Sheets), yang sudah menggaji
+orang tiga bulan berturut-turut. Itu ukuran keandalan yang harus disamai sebelum
+sistem ini boleh menggantikannya.
+
+> **KMB adalah nama *tenant*, bukan nama produk.** Skemanya multi-tenant sejak
+> awal — 13 constraint `UNIQUE (tenant_id, …)`. SUM V2 menyusul sebagai tenant
+> kedua; karena itu repo ini bernama MARProject, bukan KMBProject.
 
 ## Dua kalimat yang mengikat seluruh rancangan
 
@@ -16,100 +19,88 @@ Setiap keputusan teknis di repo ini tunduk pada dua kalimat itu, dan setiap
 constraint di `db/schema.sql` menjawab satu kegagalan yang benar-benar pernah
 terjadi di KMB V2.
 
+## Baru di sini?
+
+→ **[docs/GABUNG.md](docs/GABUNG.md)** — dari nol sampai bisa menjalankan uji.
+Ikuti sekali, lalu tidak perlu dibuka lagi.
+
+Di dalamnya ada lima aturan yang tidak bisa ditawar. Yang paling sering
+menggigit: **basis data pengembangan ada di porta 5433, bukan 5432.** Uji
+integrasi menjalankan `TRUNCATE work_orders`, dan pagar 5433 itulah yang
+memisahkannya dari basis data yang dipakai menggaji orang.
+
 ## Dokumen
 
 | Berkas | Isi |
 |---|---|
-| [docs/PETA-KMB-V2.md](docs/PETA-KMB-V2.md) | Peta lengkap sistem lama: peran, siklus WO, anti-ganda, jalur uang, katalog, offline, 35 insiden |
-| [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md) | Bentuk target, pilihan teknis beserta alasannya, pola jalur tulis |
-| [db/schema.sql](db/schema.sql) | Skema Postgres |
-| [db/seed.sql](db/seed.sql) | Section, faktor, tarif, form detail — kerangka, bukan isi |
+| [docs/GABUNG.md](docs/GABUNG.md) | Pemasangan dari nol, aturan, alur cabang + PR |
+| [docs/PETA-KMB-V2.md](docs/PETA-KMB-V2.md) | Peta sistem lama: peran, siklus WO, anti-ganda, jalur uang, katalog, offline, 35 insiden |
+| [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md) | Bentuk target, pilihan teknis beserta alasannya |
+| [docs/SERAH-TERIMA.md](docs/SERAH-TERIMA.md) | Keadaan terkini, jebakan yang sudah memakan waktu |
+| [docs/PENERAPAN.md](docs/PENERAPAN.md) | Penerapan Docker mandiri |
+| [docs/CADANGAN.md](docs/CADANGAN.md) | Pencadangan dan pemulihan |
+| [db/schema.sql](db/schema.sql) | Skema Postgres, 37 tabel |
 
 ## Susunan
 
 ```
 src/
-  lib/
-    db.ts            kolam koneksi, konversi numeric, identitas RLS
-    errors.ts        galat yang punya KODE, bukan hanya kalimat
+  lib/db.ts            kolam koneksi, konversi numeric, identitas RLS
   domain/
-    scoring.ts       rumus poin & rupiah — murni, tanpa basis data
-    nilaiEfektif.ts  resolusi override → angka yang benar-benar dipakai
-    runCommand.ts    satu pintu untuk setiap tulis: idempoten, satu transaksi
-    workOrder.ts     pembuatan WO
-    approval.ts      approve L1/L2, pembatalan — tempat rupiah terbit
-tests/
-  scoring.test.ts    uji rumus uang
+    scoring.ts         rumus poin & rupiah — murni, tanpa basis data
+    nilaiEfektif.ts    resolusi override → angka yang benar-benar dipakai
+    runCommand.ts      SATU pintu untuk tiap tulis: idempoten, satu transaksi
+    workOrder.ts       pembuatan WO
+    approval.ts        approve L1/L2, pembatalan — tempat rupiah dibekukan
+  app/                 layar Next.js (App Router) + /lapangan untuk PWA
+  pwa/                 outbox IndexedDB, pintu kirim, deteksi daring
+public/sw.js           service worker, ditulis tangan
+db/migrasi/            migrasi bernomor
+scripts/               perkakas + 21 berkas uji ujung-ke-ujung
+tests/                 vitest — 256 uji
 ```
 
 ## Menjalankan
 
 ```bash
 npm install
-npm test          # 28 uji: rumus uang + invarian basis data
+npm test            # 256 uji: rumus uang, invarian basis data, outbox luring
 npm run typecheck
-npm run dev       # http://localhost:3000
+npm run siap        # isi data contoh, lalu tampilkan token untuk masuk
+npm run dev         # http://localhost:3000
 ```
 
-Untuk masuk, terbitkan token dulu:
+Pemasangan basis data pengembangan ada di [docs/GABUNG.md](docs/GABUNG.md#3-menyiapkan-mesin).
 
-```bash
-npm run token -- UJI-L2      # tampil sekali, hanya hash-nya yang tersimpan
-```
-
-Uji asap lewat HTTP (server harus sudah jalan):
-
-```bash
-npx tsx scripts/uji-alur.ts <token_L1> <token_L2> http://127.0.0.1:3000
-```
-
-### Basis data pengembangan
-
-Instans **terpisah** di port 5433, bukan Postgres yang mungkin sudah kamu pakai
-di 5432. Tanpa kata sandi, boleh dihapus kapan saja.
-
-```bash
-PGBIN="/c/Program Files/PostgreSQL/18/bin"
-DATA="/c/Users/gabri/AppData/Local/kmbproject-pg"
-
-# sekali saja
-"$PGBIN/initdb.exe" -D "$DATA" -U postgres --auth=trust --encoding=UTF8
-
-# tiap kali mau dipakai (lepas dari shell, supaya tak ikut mati)
-powershell -NoProfile -Command "Start-Process '$PGBIN/postgres.exe' \
-  -ArgumentList '-D','$DATA','-p','5433' -WindowStyle Hidden"
-
-# pasang skema
-"$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d postgres \
-  -c "CREATE DATABASE mar_project;"
-"$PGBIN/psql.exe" -U postgres -h 127.0.0.1 -p 5433 -d mar_project \
-  -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
-```
-
-> **Jangan taruh direktori data Postgres di OneDrive.** Sinkronisasi latar akan
-> menyentuh berkas yang sedang ditulis mesin basis data dan merusaknya. Karena
-> itu ia di `AppData\Local`, yang tidak ikut tersinkron.
-
-Sambungan dibaca dari `.env` (lihat `.env.example`).
+> **Token disimpan terbaca, bukan hash.** Itu keputusan sadar: mekanik yang lupa
+> tokennya harus bisa dibukakan lagi tanpa menggantinya, karena token yang
+> berganti berarti orang berhenti bisa bekerja di tengah shift. Alasan lengkapnya
+> ada di `db/schema.sql` pada tabel `api_tokens`.
 
 ## Keadaan sekarang
 
 | Tahap | Status |
 |---|---|
-| 1 · Skema + benih | ✅ berdiri, 37 tabel |
-| 2 · Lapisan bisnis (WO, approval, scoring) | ✅ 28 uji lulus, termasuk konkurensi |
-| 3 · Web | 🔨 masuk, buat WO, approval L1/L2 jalan; override & tolak belum |
-| 4 · PWA offline | belum |
-| 5 · Dashboard, payroll, koreksi meter | belum |
-| 6 · Layar admin katalog | belum |
-| 7 · Pengerasan | belum |
+| 1 · Skema + benih | ✅ 37 tabel, 9 migrasi |
+| 2 · Lapisan bisnis (WO, approval, scoring) | ✅ termasuk uji konkurensi & idempotensi |
+| 3 · Web | ✅ 11 layar |
+| 4 · PWA luring | ✅ terbangun — **menunggu uji di HP sungguhan** |
+| 5 · Dashboard, payroll, koreksi meter | ✅ `/performa`, `/reports`, `/koreksi` |
+| 6 · Layar admin katalog | ✅ `/admin` |
+| 7 · Pengerasan | 🔨 pagar skrip, cadangan, pemantauan sudah; uji balik belum |
 
-Layar tidak dibangun sebelum tahap 1-2 punya uji otomatis yang lulus — termasuk
-uji dua approver menekan bersamaan, dan uji kiriman terulang sepuluh kali.
+Produksi berdiri di Vercel + Supabase (Singapura) dan sudah dilalui ujung ke
+ujung, tetapi masih kosong: 0 work order, satu akun. Dua puluh empat orang
+menyusul saat go-live.
 
-## Yang masih ditunggu dari pemilik produk
+## Yang belum selesai
 
-1. Daftar unit & joblist (struktur cascade sudah siap menerima)
-2. Apakah rasio poin ÷ jam adalah aturan resmi, atau kebetulan pola lama
-3. Peran foreman — belum pernah ada di KMB V2
-4. Multi-tenant: satu basis data untuk beberapa plant, atau terpisah
+1. **Uji PWA di HP sungguhan** — tiga hal belum terbukti: bilah alamat tidak
+   muncul saat berpindah tab secara luring, notifikasi approver, dan keluar lalu
+   masuk sebagai orang lain tidak mengirim antrean orang pertama
+2. **Uji balik / jalan paralel** — menarik input GAS KMB V2 yang masih hidup ke
+   sini, supaya keandalannya terbukti sebelum berpindah
+3. **Penggabungan SUM V2** sebagai tenant kedua — 27 titik `code = 'KMB'` yang
+   masih ditulis keras di skrip, benih, migrasi, dan uji
+4. **RLS belum menjaga apa pun hari ini** — begitu SUM masuk, satu filter
+   `tenant_id` yang terlewat menjadi kebocoran antar-tenant

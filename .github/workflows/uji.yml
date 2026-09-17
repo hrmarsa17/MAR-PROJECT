@@ -1,0 +1,81 @@
+name: uji
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  uji:
+    runs-on: ubuntu-latest
+
+    # ── Kenapa porta 5433, bukan 5432 ────────────────────────────────────────
+    # Bukan sekadar meniru mesin lokal. Uji integrasi menjalankan
+    # `TRUNCATE work_orders`, dan SELURUH repo ini memakai ":5433" sebagai tanda
+    # "basis data ini boleh dirusak" — `tests/muat-env.ts` menolak berjalan
+    # tanpa itu, begitu pula 22 skrip lain. Kalau CI dijalankan di 5432, seluruh
+    # uji tertolak sebelum satu pun sempat jalan.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://postgres@127.0.0.1:5433/mar_project
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # `db/seed.sql` WAJIB ikut. Di dalamnya seluruh baris kebijakan — tenant,
+      # section, faktor, tarif, setelan. Tanpa tenant tidak ada yang bisa
+      # dibuat; tanpa `factors` seluruh pengali poin diam-diam jatuh ke 1,0 dan
+      # uji uang lulus dengan angka yang salah.
+      - name: pasang skema
+        run: |
+          psql "$DATABASE_URL_ADMIN" -c "CREATE DATABASE mar_project;"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
+        env:
+          DATABASE_URL_ADMIN: postgres://postgres@127.0.0.1:5433/postgres
+
+      - run: npm run db:migrasi
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+  # Menahan rahasia sebelum ia sampai ke riwayat git, bukan sesudah.
+  # .gitignore menjaga masa depan; yang sudah ter-commit tinggal selamanya.
+  rahasia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: tidak ada rahasia yang ikut
+        run: |
+          set -e
+          bocor=$(git ls-files \
+            | grep -E '(^|/)\.env($|\.)|\.xlsx$|\.dump$' \
+            | grep -v '\.example$' || true)
+          if [ -n "$bocor" ]; then
+            echo "DITOLAK — berkas ini tidak boleh ada di git:"
+            echo "$bocor"
+            echo ""
+            echo "  .env / .env.jauh  memuat sandi basis data"
+            echo "  *.xlsx            memuat nama dan gaji karyawan sungguhan"
+            echo "  *.dump            memuat seluruh isi basis data"
+            exit 1
+          fi
+          echo "bersih"
