@@ -1,4 +1,5 @@
 import { sql } from '../../../lib/db.js';
+import { catatPenerapan, komitSekarang } from '../../../domain/penerapan.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,13 @@ export const dynamic = 'force-dynamic';
  * sedang dibuka bukan hasil penerapan.
  */
 export async function GET(): Promise<Response> {
-  const komit = process.env['VERCEL_GIT_COMMIT_SHA']?.slice(0, 7) || 'lokal';
+  const komit = komitSekarang();
+  /* Sekali per instans. `catatPenerapan()` sudah menelan galatnya sendiri, tapi
+     `.catch()` di sini tetap dipasang: pemanggilan ini ada DI LUAR try di bawah,
+     jadi kalau suatu hari penelan itu dilepas, titik periksa kesehatan akan
+     berubah jadi merah karena hal yang sama sekali tidak menentukan sehat atau
+     tidaknya aplikasi. Dijaga oleh tests/penerapan.test.ts. */
+  await catatPenerapan().catch(() => { /* catatan tidak pernah sepenting ini */ });
   try {
     const [r] = await sql<{ migrasi: number }[]>`
       SELECT coalesce(

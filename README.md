@@ -79,6 +79,22 @@ Pemasangan basis data pengembangan ada di [docs/GABUNG.md](docs/GABUNG.md#3-meny
 > berganti berarti orang berhenti bisa bekerja di tengah shift. Alasan lengkapnya
 > ada di `db/schema.sql` pada tabel `api_tokens`.
 
+## Sudah tayang atau belum
+
+Dua tempat menjawabnya, keduanya tanpa akun Vercel:
+
+| | |
+|---|---|
+| `/api/sehat` | `{"ok":true,…,"komit":"0cecba8"}` — commit yang **sedang** tayang. Terbuka, tanpa login. Cocokkan dengan `git log --oneline -1`. |
+| `/penerapan` | Riwayat: apa saja yang pernah tayang, dari siapa, sejak jam berapa. Perlu login, peran apa pun. |
+
+Commit yang sudah ada di GitHub **belum tentu** tayang — ia bisa masih dibangun,
+gagal dibangun, atau di-rollback. Yang membedakannya hanya baris di `/penerapan`,
+dan baris itu lahir dari permintaan yang sungguhan dilayani.
+
+Sengaja **tidak** ada di menu: menu harus 1:1 dengan KMB V2, dan layar ini tidak
+ada di sana. Ia untuk yang menulis kode, bukan untuk orang lapangan.
+
 ## Keadaan sekarang
 
 | Tahap | Status |
