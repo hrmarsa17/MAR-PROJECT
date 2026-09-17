@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sql } from '../src/lib/db.js';
 
@@ -88,6 +90,35 @@ describe('penerapan hanya tercatat kalau benar-benar tayang', () => {
 
     const baris = (await riwayatPenerapan()).find((d) => d.commit_sha === SHA.slice(0, 7));
     expect(baris!.pesan).toBe('judul singkat');
+  });
+});
+
+describe('layar riwayat terbuka untuk siapa pun yang sudah masuk', () => {
+  /* ── KENAPA INI DIKUNCI ────────────────────────────────────────────────────
+     Layar teknis lain di repo ini dijaga penanda per-orang (`bolehLihat.teknis`,
+     `bolehAdmin`). Menambahkan penjaga serupa di sini terlihat seperti
+     merapikan, padahal justru mematikan gunanya: layar ini ada untuk orang yang
+     MENULIS kode tanpa akun Vercel, dan orang seperti itu belum tentu berperan
+     L1 atau L2.
+
+     Pada 17 Sep 2026 orang kedua di repo ini berperan `mechanic`. Satu baris
+     `if (!aku.bolehLihat.teknis) redirect(...)` akan menutup layar ini persis
+     dari satu-satunya orang yang membutuhkannya — dan tidak ada galat yang
+     muncul, cuma pengalihan diam-diam. */
+  const sumber = readFileSync(
+    resolve(__dirname, '..', 'src', 'app', 'penerapan', 'page.tsx'), 'utf8',
+  );
+
+  it('tidak menuntut peran apa pun, hanya menuntut sudah masuk', () => {
+    expect(sumber).toContain("redirect('/masuk')");
+    expect(sumber).not.toMatch(/bolehLihat|bolehAdmin|peran\s*[=!]==/);
+  });
+
+  it('menyebut penulis, supaya keduanya saling terlihat', () => {
+    /* Tanpa kolom ini layar cuma menjawab "apa yang tayang", bukan "siapa yang
+       menerbitkannya" — dan yang kedua itulah yang diminta saat dikerjakan
+       berdua. */
+    expect(sumber).toContain('penulis');
   });
 });
 
