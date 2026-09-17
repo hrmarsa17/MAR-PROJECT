@@ -37,8 +37,15 @@ export default async function Layout({ children }: { children: React.ReactNode }
         )}
         {/* Di bawah navbar, di atas segalanya yang lain: kalau ada yang belum
             terkirim, itu hal pertama yang harus dilihat orang — bukan sesuatu
-            yang ditemukan sesudah menggulir. */}
-        <DaftarSW />
+            yang ditemukan sesudah menggulir.
+
+            `aku` diturunkan bukan untuk ditampilkan, melainkan untuk DISIMPAN
+            ke IndexedDB. Service worker membacanya dari sana untuk tahu peran
+            siapa yang sedang masuk — dan tanpa itu seluruh jalur notifikasinya
+            berhenti di baris pertama. Lihat DaftarSW. */}
+        <DaftarSW
+          aku={aku ? { mechanicId: aku.mechanicId, peran: aku.peran, nama: aku.nama } : null}
+        />
         {children}
       </body>
     </html>

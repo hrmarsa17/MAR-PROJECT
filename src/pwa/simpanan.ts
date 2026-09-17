@@ -66,6 +66,12 @@ export interface ItemOutbox {
 }
 
 /**
+ * `wo_saya` dan `sinkron_terakhir` DIHAPUS dari daftar ini 17 Sep 2026: keduanya
+ * tercantum sebagai kunci yang sah tapi tidak pernah ditulis maupun dibaca satu
+ * baris pun. Kunci yang ada di tipe tapi tidak di kode membuat orang berikutnya
+ * mengira data itu tersedia — lalu membaca `null` dan mengira penyimpanannya
+ * rusak.
+ *
  * `approval`, bukan `antrean` — meski API-nya bernama `jenis=antrean`.
  * Di aplikasi ini kata "antrean" sudah berarti OUTBOX (layar /antrean, berisi
  * pekerjaan yang belum terkirim). Memakai kata yang sama untuk antrean
@@ -73,8 +79,7 @@ export interface ItemOutbox {
  * satu berkas — dan yang satu tidak boleh hilang sementara yang lain boleh.
  */
 export type KunciKv =
-  | 'aku' | 'katalog' | 'wo_saya' | 'approval' | 'monitoring'
-  | 'sw_snap' | 'sinkron_terakhir';
+  | 'aku' | 'katalog' | 'approval' | 'monitoring' | 'sw_snap';
 
 /** IndexedDB tidak ada di server-render maupun di sebagian peramban jadul. */
 export function adaIndexedDb(): boolean {
