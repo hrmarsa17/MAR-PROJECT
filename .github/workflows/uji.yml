@@ -51,7 +51,15 @@ jobs:
         env:
           DATABASE_URL_ADMIN: postgres://postgres@127.0.0.1:5433/postgres
 
-      - run: npm run db:migrasi
+      # `--terapkan` WAJIB. Tanpa bendera itu `migrasi.ts` hanya MENAMPILKAN apa
+      # yang tertinggal lalu keluar dengan sukses — dan CI melaporkan hijau
+      # untuk langkah yang tidak mengerjakan apa pun.
+      #
+      # Ketahuan 17 Sep 2026, saat migrasi pertama yang membuat tabel BARU
+      # (`deployments`) masuk. Sampai hari itu semua migrasi kebetulan
+      # menambahkan hal yang sudah ada di `db/schema.sql`, jadi tidak satu pun
+      # uji membutuhkannya dan langkah ini tampak bekerja selama berhari-hari.
+      - run: npm run db:migrasi -- --terapkan
 
       - run: npm run typecheck
 
