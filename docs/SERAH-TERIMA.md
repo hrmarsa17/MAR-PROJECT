@@ -117,8 +117,18 @@ psql -U postgres -h 127.0.0.1 -p 5433 -d postgres -c "DROP DATABASE IF EXISTS ma
 psql -U postgres -h 127.0.0.1 -p 5433 -d mar_project -v ON_ERROR_STOP=1 -f db/schema.sql -f db/seed.sql
 npx vitest run                       # membuat mekanik & katalog uji
 psql ... -f db/contoh.sql            # 14 WO contoh
-npx tsx scripts/buat-token.ts UJI-L2 # token untuk masuk
+npx tsx scripts/buat-token.ts UJI-L2 # token untuk masuk — HANYA dev (porta 5433)
 ```
+
+`buat-token.ts` menolak berjalan kecuali `DATABASE_URL` menunjuk porta 5433. Ia
+mencabut token orang lalu menerbitkan yang baru dengan `UPDATE`/`INSERT`
+langsung — tanpa baris di `audit_logs`. Di produksi, penggantian token dilakukan
+lewat **Admin → Orang & Token → Ganti token**, yang tercatat siapa penekannya.
+
+**Token tidak pernah berganti sendiri.** Tidak ada kedaluwarsa, tidak ada rotasi
+berkala, dan menekan "Terbitkan token" dua kali mengembalikan token yang SAMA —
+`terbitkanToken()` hanya mencabut yang lama bila diminta tegas dengan
+`ganti: true`. Dijaga oleh `scripts/uji-token.ts` dan `tests/penjagaSkrip.test.ts`.
 
 ---
 
