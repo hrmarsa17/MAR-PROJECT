@@ -1,4 +1,4 @@
-# Kenapa `vercel.json` cuma tiga baris
+# Kenapa `vercel.json` cuma empat baris
 
 `regions: ["sin1"]` adalah **sin**gapura, dan ia satu-satunya isi yang benar-benar
 penting di berkas itu.
@@ -26,6 +26,38 @@ centang di dasbor yang harus diingat seseorang saat membuat proyek ulang.
 Pilih region **Singapore** juga saat membuat proyek Supabase. Keduanya harus
 sama; salah satu saja di tempat lain sudah cukup untuk menimbulkan tabel di
 atas.
+
+## `ignoreCommand` — kenapa cabang tidak diterbitkan
+
+```
+"ignoreCommand": "[ \"$VERCEL_ENV\" = production ] && exit 1 || exit 0"
+```
+
+Vercel membalik arti kode keluar di sini: **1 = lanjut membangun, 0 = lewati.**
+Jadi barisnya berbunyi: bangun hanya kalau ini produksi; untuk yang lain,
+berhenti diam-diam.
+
+### Kenapa pratinjau dimatikan, bukan diperbaiki
+
+Secara bawaan Vercel membangun pratinjau untuk **setiap cabang**. Pada 17 Sep
+2026 pratinjau pertama gagal, dan sebabnya menunjuk masalah yang lebih dalam
+daripada sekadar build merah: `DATABASE_URL` hanya terpasang untuk lingkungan
+Production, sementara pratinjau berjalan di lingkungan Preview.
+
+Perbaikan yang paling terlihat mudah adalah menyalin `DATABASE_URL` yang sama ke
+Preview. Itu keliru, dan keliru dengan cara yang mahal: setiap cabang percobaan —
+kode yang belum diuji dan belum dibaca siapa pun — akan tersambung ke basis data
+yang menggaji orang. Seluruh repo ini justru dibangun untuk mencegah hal itu;
+dua puluh dua skrip menolak berjalan di luar porta 5433 karena alasan yang sama.
+
+Maka pratinjau dilewati sampai ada basis data staging yang memang untuknya.
+
+### Kalau suatu hari pratinjau dibutuhkan
+
+Buat proyek Supabase kedua (gratis, region Singapore juga), pasang
+`DATABASE_URL`-nya di Vercel **khusus lingkungan Preview**, lalu hapus
+`ignoreCommand` dari berkas ini. Jangan pernah mengarahkan Preview ke basis data
+produksi.
 
 ## Yang TIDAK ada di berkas ini, dan kenapa
 
