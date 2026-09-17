@@ -1,5 +1,7 @@
 # MARProject
 
+[![uji](https://github.com/gabrielrurent/MARProject/actions/workflows/uji.yml/badge.svg)](https://github.com/gabrielrurent/MARProject/actions/workflows/uji.yml)
+
 Sistem work order & insentif mekanik, di atas PostgreSQL + TypeScript + Next.js.
 
 Pengganti **KMB V2** (Google Apps Script + Google Sheets), yang sudah menggaji
