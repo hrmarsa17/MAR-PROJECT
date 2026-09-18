@@ -407,7 +407,7 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
         {kabar && <div className="kabar kabar-salah" style={{ marginTop: 12 }}>{kabar}</div>}
 
         <div className="wo-aksi" style={{ marginTop: 16 }}>
-          <button className="btn-primary btn-create-wo" disabled={sibuk}>
+          <button className="btn-primary" disabled={sibuk}>
             {sibuk ? 'Menyimpan Work Order…' : 'Create Work Order'}
           </button>
         </div>
