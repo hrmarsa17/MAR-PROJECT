@@ -122,3 +122,4 @@ menyusul saat go-live.
    masih ditulis keras di skrip, benih, migrasi, dan uji
 4. **RLS belum menjaga apa pun hari ini** — begitu SUM masuk, satu filter
    `tenant_id` yang terlewat menjadi kebocoran antar-tenant
+
