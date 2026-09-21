@@ -29,8 +29,8 @@ describe('nilaiEfektif', () => {
     mockTx.mockResolvedValueOnce([]);
     // Mock Team query
     mockTx.mockResolvedValueOnce([{ mechanic_id: 1 }]);
-    // Mock Pay Rate query
-    mockTx.mockResolvedValueOnce([{ idr_per_point: '2500' }]);
+    // Mock Pay Rate query - sekarang memakai single query dengan ANY
+    mockTx.mockResolvedValueOnce([{ mechanic_id: 1, idr_per_point: '2500' }]);
 
     const hasil = await nilaiEfektif(mockTx as any, 1);
 

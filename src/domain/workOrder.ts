@@ -126,6 +126,16 @@ export async function buatWorkOrder(
 
         if (b.jobId) await pastikanJobCocok(tx, b.jobId, section.id, b.unitId ?? null);
 
+        // Validasi tenant & status aktif semua mekanik sebelum proses pembuatan
+        const mekanikIds = [...new Set(b.teamMechanicIds)];
+        const sah = await tx<{ n: string }[]>`
+          SELECT count(*) AS n FROM mechanics
+           WHERE id = ANY(${mekanikIds}::int[]) AND tenant_id = ${m.tenantId} AND is_active
+        `;
+        if (Number(sah[0]!.n) !== mekanikIds.length) {
+          throw aturanBisnis('Ada anggota tim yang tidak dikenal, nonaktif, atau di luar tenant.');
+        }
+
         const woNumber = (
           await tx<{ next_wo_number: string }[]>`
             SELECT next_wo_number(${m.tenantId}::smallint, current_date)
@@ -155,7 +165,7 @@ export async function buatWorkOrder(
           `
         )[0]!;
 
-        for (const mechanicId of new Set(b.teamMechanicIds)) {
+        for (const mechanicId of mekanikIds) {
           await tx`
             INSERT INTO work_order_team (work_order_id, mechanic_id, added_by)
             VALUES (${baris.id}, ${mechanicId}, ${m.actorId})

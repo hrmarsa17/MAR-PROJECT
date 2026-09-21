@@ -98,9 +98,14 @@ export async function mintaTransfer(
         );
       }
 
-      // Hanya anggota tim. Approver TIDAK dibolehkan di sini — berbeda dari
-      // kirim kerja. Transfer adalah pernyataan "saya berhenti di jam ini",
-      // dan itu hanya bisa dinyatakan orang yang mengerjakannya.
+      const direbut = await rebutStatus(tx, m.woId, STATUS_BOLEH_TRANSFER, 'pending_transfer');
+      if (!direbut) {
+        throw konflikKeadaan(`WO ${wo.wo_number} tidak lagi di tahap mekanik`, {
+          status: wo.status,
+        });
+      }
+
+      // Hanya anggota tim. Cek setelah rebutStatus untuk cegah race condition.
       const anggota = (
         await tx<{ ada: boolean }[]>`
           SELECT EXISTS (SELECT 1 FROM work_order_team
@@ -126,13 +131,6 @@ export async function mintaTransfer(
           `Durasi sesi ${jamSesi} jam melebihi batas wajar ${BATAS_JAM_SESI} jam `
           + '— periksa jam mulainya',
         );
-      }
-
-      const direbut = await rebutStatus(tx, m.woId, STATUS_BOLEH_TRANSFER, 'pending_transfer');
-      if (!direbut) {
-        throw konflikKeadaan(`WO ${wo.wo_number} tidak lagi di tahap mekanik`, {
-          status: wo.status,
-        });
       }
 
       await tx`

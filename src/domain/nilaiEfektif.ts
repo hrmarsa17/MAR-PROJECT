@@ -108,22 +108,17 @@ export async function nilaiEfektif(tx: Tx, woId: number): Promise<NilaiEfektif> 
         `
       ).map((r) => r.mechanic_id);
 
-  const team = await Promise.all(
-    idTim.map(async (mechanicId) => {
-      const r = (
-        await tx<{ idr_per_point: string }[]>`
-          SELECT p.idr_per_point
-            FROM mechanics m JOIN pay_rates p ON p.id = m.pay_rate_id
-           WHERE m.id = ${mechanicId}
-        `
-      )[0];
-      // Tidak ada nilai cadangan. Mekanik tanpa tarif adalah keadaan yang
-      // dicegah skema (pay_rate_id NOT NULL); kalau toh terjadi, ia berhenti
-      // di sini dengan nyaring — bukan dibayar 11x lipat diam-diam.
-      if (!r) throw tidakDitemukan('Tarif mekanik', mechanicId);
-      return { mechanicId, idrPerPoint: angka(r.idr_per_point) };
-    }),
-  );
+  const team = (
+    await tx<{ mechanic_id: number; idr_per_point: string }[]>`
+      SELECT m.id AS mechanic_id, p.idr_per_point
+        FROM mechanics m JOIN pay_rates p ON p.id = m.pay_rate_id
+       WHERE m.id = ANY(${idTim}::int[])
+    `
+  ).map((r) => ({ mechanicId: r.mechanic_id, idrPerPoint: angka(r.idr_per_point) }));
+
+  if (team.length !== idTim.length) {
+    throw tidakDitemukan('Tarif mekanik', 'salah satu anggota tim');
+  }
 
   return {
     basePoints,

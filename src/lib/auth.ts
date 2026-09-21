@@ -82,7 +82,7 @@ export async function identitasDariToken(
 
   // Jejak pemakaian, sengaja tidak menunggu — kegagalan mencatat tidak boleh
   // menggagalkan permintaan yang sah.
-  void q`UPDATE api_tokens SET last_used_at = now() WHERE token = ${token.trim()}`;
+  void q`UPDATE api_tokens SET last_used_at = now() WHERE token = ${token.trim()}`.catch(() => {});
 
   const peran = r.role as Identitas['peran'];
   const l2 = peran === 'superintendent';

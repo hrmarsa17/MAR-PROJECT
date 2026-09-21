@@ -45,7 +45,7 @@ const Blok = z.object({
   keterangan: z.string().max(1000).optional(),
   hourMeter: z.number().nonnegative().optional(),
   kilometers: z.number().nonnegative().optional(),
-  teamMechanicIds: z.array(z.number().int().positive()).min(1),
+  teamMechanicIds: z.array(z.number().int().positive()).min(1).max(50),
   manual: z
     .object({
       description: z.string().min(1).max(500),

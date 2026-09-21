@@ -1,4 +1,18 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../src/lib/db.js', () => ({
+  sql: Object.assign(
+    vi.fn(async () => [{ count: 1 }]),
+    {
+      begin: vi.fn(async (cb) => cb(vi.fn())),
+      options: { host: 'localhost' },
+    }
+  ),
+}));
+
+vi.mock('../src/domain/kesehatan.js', () => ({
+  ringkasanKesehatan: vi.fn(async () => ({ ok: true, basisData: 'terhubung', migrasi: 10 })),
+}));
 
 /**
  * ════════════════════════════════════════════════════════════════════════════

@@ -56,6 +56,21 @@ export interface MasukanApprove {
 // L1
 // ────────────────────────────────────────────────────────────────────────────
 
+async function pastikanBolehSection(tx: Tx, mechanicId: number, sectionId: number) {
+  const scope = await tx<{ section: string }[]>`
+    SELECT section::text FROM mechanic_sections WHERE mechanic_id = ${mechanicId}
+  `;
+  if (scope.length === 0) return;
+  const cocok = await tx<{ ada: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1 FROM mechanic_sections ms
+       JOIN sections s ON s.code = ms.section
+       WHERE ms.mechanic_id = ${mechanicId} AND s.id = ${sectionId}
+    ) AS ada
+  `;
+  if (!cocok[0]?.ada) throw tidakBerhak('Section ini di luar cakupan Anda');
+}
+
 export async function approveL1(m: MasukanApprove): Promise<HasilPerintah<{ woId: number; status: string }>> {
   return jalankanPerintah({
     opId: m.opId,
@@ -77,6 +92,8 @@ export async function approveL1(m: MasukanApprove): Promise<HasilPerintah<{ woId
           { status: kini.status },
         );
       }
+
+      await pastikanBolehSection(tx, m.actorId, Number(wo['section_id']));
 
       await tx`
         UPDATE work_orders
@@ -155,6 +172,8 @@ export async function approveL2(m: MasukanApprove): Promise<HasilPerintah<HasilA
           { status: kini.status },
         );
       }
+
+      await pastikanBolehSection(tx, m.actorId, Number(wo['section_id']));
 
       if (m.mtbfRedoStatus || m.safetyIncident !== undefined) {
         await tx`
@@ -316,6 +335,8 @@ export async function tolakWo(m: {
         throw konflikKeadaan(`WO ${kini.wo_number} sudah diproses`, { status: kini.status });
       }
 
+      await pastikanBolehSection(tx, m.actorId, Number(wo['section_id']));
+
       await tx`
         UPDATE work_orders
            SET rejected_by = ${m.actorId}, rejected_at = now(),
@@ -371,6 +392,8 @@ export async function kembalikanKeMekanik(m: {
         if (!kini) throw tidakDitemukan('Work order', m.woId);
         throw konflikKeadaan(`WO ${kini.wo_number} sudah diproses`, { status: kini.status });
       }
+
+      await pastikanBolehSection(tx, m.actorId, Number(wo['section_id']));
 
       const putaranBaru = Number(wo['putaran']) + 1;
       await tx`

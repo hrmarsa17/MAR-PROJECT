@@ -162,7 +162,10 @@ export async function simpanOverride(
       }
 
       if (m.team !== undefined) {
-        const bersih = [...new Set(m.team.filter((x) => Number.isInteger(x) && x > 0))];
+        if (!m.team.every((x) => Number.isInteger(x) && x > 0)) {
+          throw aturanBisnis('ID mekanik harus berupa bilangan bulat positif.');
+        }
+        const bersih = [...new Set(m.team)];
         if (bersih.length === 0) {
           throw aturanBisnis('Tim tidak boleh kosong — WO wajib punya minimal satu mekanik.');
         }

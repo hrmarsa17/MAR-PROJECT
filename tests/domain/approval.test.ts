@@ -32,12 +32,15 @@ describe('approval', () => {
   });
 
   it('approveL1 sukses ubah status', async () => {
-    const tx = vi.fn(async () => [{ role: 'supervisor' }]) as any;
+    const tx: any = vi.fn()
+      .mockResolvedValueOnce([{ role: 'supervisor' }])
+      .mockResolvedValueOnce({ id: 101, section_id: 1 }) // rebutStatus returns
+      .mockResolvedValueOnce([{ ada: true }]); // pastikanBolehSection
     tx.json = vi.fn((v) => v);
-    mockRebut.mockResolvedValueOnce({ id: 1 });
+    mockRebut.mockResolvedValueOnce({ id: 101, section_id: 1 });
     mockJalankan.mockImplementationOnce(async ({ jalankan }: any) =>
       ({ hasil: await jalankan({ tx, tenantId: 1, actorId: 1 }), diulang: false }));
-    const r = await approveL1({ opId: '12345678', tenantId: 1, actorId: 1, woId: 1 });
+    const r = await approveL1({ opId: '12345678', tenantId: 1, actorId: 1, woId: 101 });
     expect(r.hasil.status).toBe('pending_superintendent');
   });
 });
