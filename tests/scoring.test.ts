@@ -152,3 +152,11 @@ describe('model poin penuh', () => {
     // Menambah anggota tidak memecah kue — ia menggandakan pengeluaran.
   });
 });
+
+describe('edge cases', () => {
+  it('mendukung base points besar', () => {
+    const s = hitungSkor({ ...DASAR, basePoints: 10000 }, FAKTOR);
+    expect(s.finalPoints).toBe(10000);
+  });
+});
+

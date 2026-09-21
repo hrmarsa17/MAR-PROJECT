@@ -1,0 +1,283 @@
+﻿TEST COVERAGE ANALYSIS - MARProject
+Generated: 2026-09-18
+
+==============================================================================
+EXECUTIVE SUMMARY
+==============================================================================
+
+Codebase: 103 src files, 15 test files (14.5 percent coverage)
+Domain logic: 33 modules, only 3 have dedicated tests
+Critical gaps: Payment logic, API endpoints, error handling, integration flows
+
+Risk Level: HIGH
+- Money-affecting code untested (nilaiEfektif, surutTarif, surutFaktor)
+- All main API endpoints untested
+- 80+ error paths have no test coverage
+- Concurrency only partially tested
+
+==============================================================================
+CRITICAL BUSINESS LOGIC WITHOUT TESTS
+==============================================================================
+
+D:\marbaru\MARProject\src\domain\nilaiEfektif.ts - NO TEST
+  Impact: CRITICAL - Calculates final payment amounts
+  Risk: Money miscalculation, factor misapplication
+
+D:\marbaru\MARProject\src\domain\terapkanSurut.ts - NO TEST
+  Impact: CRITICAL - Retroactive rate changes (MODIFIES PAID AMOUNTS)
+  Risk: Incorrect retroactivity, double-paying or underpaying
+
+D:\marbaru\MARProject\src\domain\surutTarif.ts - NO TEST
+  Impact: CRITICAL - Rate retroactivity
+  Risk: Incorrect IDR per point retroactivity
+
+D:\marbaru\MARProject\src\domain\surutFaktor.ts - NO TEST
+  Impact: CRITICAL - Factor retroactivity
+  Risk: Incorrect factor retroactivity across sections
+
+D:\marbaru\MARProject\src\domain\approval.ts - NO TEST
+  Impact: HIGH - WO approval workflow
+  Error paths: 19 throw statements
+  Risk: Incorrect approvals, state conflicts, unauthorized access
+
+D:\marbaru\MARProject\src\domain\workOrder.ts - NO TEST
+  Impact: HIGH - WO creation core logic
+  Error paths: 18 throw statements
+  Risk: Duplicate WOs, permission bypass, invalid team
+
+D:\marbaru\MARProject\src\domain\kirimKerja.ts - NO TEST
+  Impact: HIGH - Work submission
+  Error paths: 8 throw statements
+  Risk: Invalid hours, unauthorized submission
+
+D:\marbaru\MARProject\src\domain\transfer.ts - NO TEST
+  Impact: HIGH - Hour transfer workflow
+  Error paths: 19 throw statements
+  Risk: Incorrect partial hours, unauthorized transfers
+
+D:\marbaru\MARProject\src\domain\admin.ts - NO TEST
+  Impact: HIGH - Admin operations
+  Error paths: 20+ throw statements
+  Risk: Invalid config, permission bypass
+
+D:\marbaru\MARProject\src\domain\override.ts - NO TEST
+  Impact: MEDIUM-HIGH - Manual adjustments
+  Error paths: 16 throw statements
+
+D:\marbaru\MARProject\src\domain\imporKatalog.ts - NO TEST
+  Impact: MEDIUM - Catalog import
+  Risk: Invalid catalog, data corruption
+
+D:\marbaru\MARProject\src\domain\meter.ts - NO TEST
+  Impact: MEDIUM - Meter management
+
+D:\marbaru\MARProject\src\domain\detailForm.ts - NO TEST
+  Impact: MEDIUM - Technical detail forms
+
+==============================================================================
+API ENDPOINTS WITHOUT TESTS
+==============================================================================
+
+D:\marbaru\MARProject\src\app\api\masuk\route.ts - NO TEST
+  POST /api/masuk - Authentication via token
+  DELETE /api/masuk - Logout
+  Risk: Token bypass, auth bypass, session management
+
+D:\marbaru\MARProject\src\app\api\data\route.ts - NO TEST
+  GET /api/data with 15 query types
+  Risk: Information disclosure, authorization bypass
+  Complexity: 200 lines, 15 branches
+
+D:\marbaru\MARProject\src\app\api\perintah\route.ts - NO TEST
+  POST /api/perintah with 30+ action types
+  Risk: Malformed requests bypassing validation
+  Complexity: 471 lines, 30+ branches
+
+D:\marbaru\MARProject\src\app\api\katalog\route.ts - NO TEST
+  GET /api/katalog - Excel export
+  POST /api/katalog - Excel import preview
+  Risk: Excel parsing bypass, file upload issues
+
+D:\marbaru\MARProject\src\app\api\laporan\route.ts - NO TEST
+
+D:\marbaru\MARProject\src\app\api\sehat\route.ts - TESTED
+  Health check endpoint (sehat.test.ts with 2 tests)
+
+==============================================================================
+ERROR HANDLING PATHS NOT TESTED
+==============================================================================
+
+Total error paths across untested modules: 80+
+
+AUTHORIZATION (tidakBerhak): 20+ paths
+  - approval: L1/L2 permission checks
+  - workOrder: manual WO only for L1/L2
+  - kirimKerja: team membership validation
+  - transfer: L1 approval only
+  - admin: admin flag required
+
+VALIDATION (aturanBisnis, masukanTidakSah): 30+ paths
+  - approval: missing alasan, empty team
+  - workOrder: no job selected, no team, invalid section
+  - kirimKerja: invalid time format, end before start, duration limit
+  - transfer: missing sessionStart
+  - admin: code length, name length, numeric ranges
+  - override: point/hour range validation
+
+NOT FOUND (tidakDitemukan): 10+ paths
+  - approval: WO not found, mechanic not found
+  - workOrder: section not found
+  - admin: job/unit/user not found
+
+STATE CONFLICTS (konflikKeadaan): 10+ paths
+  - approval: WO already processed, concurrent modifications
+  - kirimKerja: WO status not submittable
+  - transfer: WO not in transfer state
+
+==============================================================================
+INTEGRATION TESTS MISSING FOR CRITICAL FLOWS
+==============================================================================
+
+Existing: invarian.test.ts
+  - 2 tests for concurrent approval
+  - 1 test for duplicate op_id handling
+
+MISSING:
+
+WO CREATION to APPROVAL to PAYMENT
+  1. Supervisor creates WO with 3 mechanics
+  2. L1 approves with override
+  3. L2 approves (freezes payment)
+  4. Verify payment calculated correctly
+  5. Verify all 3 mechanics paid
+  Status: NOT TESTED
+  Risk: Payment miscalculation
+
+ADMIN CATALOG IMPORT
+  1. Admin uploads Excel with 100 jobs
+  2. Preview shows new/updated/unchanged
+  3. Admin clicks apply
+  4. Verify DB state matches import
+  5. Verify duplicate detection
+  Status: NOT TESTED
+  Risk: Data corruption
+
+RATE CHANGE RETROACTIVITY
+  1. 10 WOs already approved (payment frozen)
+  2. Admin changes tarif (IDR per point)
+  3. Preview shows impact on 8 WOs
+  4. Admin clicks apply with matching rupiahSesudahDilihat
+  5. Verify only selected WOs updated
+  6. Verify payment amounts changed correctly
+  Status: NOT TESTED
+  Risk: Incorrect retroactivity, overpayment
+
+HOUR TRANSFER WORKFLOW
+  1. Mechanic A submits WO (full hours)
+  2. Mechanic A requests transfer (some hours to B)
+  3. L1 approves transfer with partial hours
+  4. Verify A payment reduced
+  5. Verify B payment includes transferred hours
+  Status: NOT TESTED
+  Risk: Incorrect hour allocation
+
+==============================================================================
+MOCK DATA DOES NOT MATCH PRODUCTION
+==============================================================================
+
+scoring.test.ts uses simplified test data
+  FAKTOR: 4 simple factors
+  DASAR: single job/unit
+  Missing: complex tenant configs, multiple sections, varied team sizes
+
+bekal.ts integration setup
+  Simple 3-person org: 1 L1, 1 L2, 2 mechanics
+  Missing: multiple sections, complex hierarchy, large teams
+
+Risk: Tests pass with simple data but fail in production
+
+==============================================================================
+EDGE CASES MISSING FROM TESTS
+==============================================================================
+
+BOUNDARY CONDITIONS:
+  - Team size: Max 50+ mechanics per WO (NOT TESTED)
+  - Duration: Near 100 hours limit (NOT TESTED)
+  - basePoints: 0-10,000 range (NOT TESTED)
+  - targetHours: 0-1,000 range (NOT TESTED)
+  - Negative values: Should reject (NOT TESTED)
+  - Zero values: Mixed behavior (NOT TESTED)
+  - Empty strings: How handled (NOT TESTED)
+
+CONCURRENCY SCENARIOS:
+  - Multiple approvers same WO: Partial (L2 only)
+  - Duplicate op_id: Basic test exists
+  - Concurrent WO edits: NOT TESTED
+  - Override + approval same WO: NOT TESTED
+  - State race conditions: NOT TESTED
+
+==============================================================================
+FLAKY TESTS WITH TIMING DEPENDENCIES
+==============================================================================
+
+outbox.test.ts
+  - Uses setTimeout with 5ms delay
+  - Queue ordering tests timing-sensitive
+  - Risk: May fail on slow CI/CD systems
+
+invarian.test.ts
+  - Requires real PostgreSQL connection
+  - Slow: database round-trips per test
+  - Risk: Database locks or connection pool issues
+
+==============================================================================
+COVERAGE STATISTICS
+==============================================================================
+
+Source files: 103
+Test files: 15
+Coverage: 14.5 percent of files have tests
+
+Domain modules: 33
+  - With dedicated tests: 3 (scoring, period, shift)
+  - NO TEST: 28 (85 percent)
+
+API endpoints: 6
+  - With tests: 1 (sehat)
+  - NO TEST: 5 (83 percent)
+
+Critical business logic: 13 modules
+  - All NO TEST: 100 percent
+
+Error paths: 80+
+  - NO TEST: 75+ (94 percent)
+
+==============================================================================
+RECOMMENDATIONS
+==============================================================================
+
+IMMEDIATE (before next production deployment):
+1. Add tests for nilaiEfektif.ts (payment calculation)
+2. Add tests for surutTarif.ts (rate retroactivity)
+3. Add tests for terapkanSurut.ts (apply retroactivity)
+4. Add integration test: WO to approval to payment flow
+5. Add tests for /api/masuk (authentication)
+6. Add tests for /api/perintah (main API)
+
+HIGH PRIORITY:
+7. Add tests for approval.ts (19 error paths)
+8. Add tests for workOrder.ts (18 error paths)
+9. Add tests for transfer.ts (19 error paths)
+10. Add integration test: hour transfer workflow
+11. Add tests for admin.ts (user/config management)
+12. Add tests for /api/data (all 15 query types)
+
+MEDIUM PRIORITY:
+13. Expand scoring.test.ts with edge cases
+14. Add tests for override.ts
+15. Add tests for imporKatalog.ts
+16. Add integration test: catalog import flow
+17. Add integration test: rate change retroactivity
+18. Add edge case tests (boundary conditions)
+
+==============================================================================

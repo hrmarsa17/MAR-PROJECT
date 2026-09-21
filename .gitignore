@@ -31,3 +31,4 @@ cadangan/
 # Berkas penjadwal cadangan memuat alamat basis data produksi beserta sandinya.
 # Templatnya (.contoh) yang ikut repo, bukan yang terisi.
 cadangkan-produksi.cmd
+.vercel
