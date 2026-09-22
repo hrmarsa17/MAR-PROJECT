@@ -18,10 +18,11 @@ const DEV = /:5433\//.test(process.env['DATABASE_URL'] ?? '');
 const { sql } = await import('../src/lib/db.js');
 
 const rows = await sql<{
-  kode: string; nama: string; peran: string;
+  tenant: string; kode: string; nama: string; peran: string;
   performa: boolean; uji: boolean; token: string | null; section: string | null;
 }[]>`
-  SELECT m.mechanic_code::text AS kode,
+  SELECT tn.code::text         AS tenant,
+         m.mechanic_code::text AS kode,
          m.name                AS nama,
          m.role::text          AS peran,
          m.may_view_performance AS performa,
@@ -29,6 +30,7 @@ const rows = await sql<{
          t.token,
          sec.daftar            AS section
     FROM mechanics m
+    JOIN tenants tn ON tn.id = m.tenant_id
     LEFT JOIN LATERAL (
       SELECT at.token FROM api_tokens at
        WHERE at.mechanic_id = m.id AND at.is_active AND at.revoked_at IS NULL
@@ -38,9 +40,9 @@ const rows = await sql<{
       SELECT string_agg(ms.section::text, ',' ORDER BY ms.section::text) AS daftar
         FROM mechanic_sections ms WHERE ms.mechanic_id = m.id
     ) sec ON true
-   WHERE m.tenant_id = (SELECT id FROM tenants WHERE code = 'KMB')
-     AND m.is_active
-   ORDER BY CASE m.role WHEN 'superintendent' THEN 0 WHEN 'supervisor' THEN 1 ELSE 2 END,
+   WHERE m.is_active
+   ORDER BY tn.code,
+            CASE m.role WHEN 'superintendent' THEN 0 WHEN 'supervisor' THEN 1 ELSE 2 END,
             m.name
 `;
 
@@ -56,8 +58,14 @@ console.log(DEV
   : '  ⚠️  basis data: PRODUKSI — ini token orang sungguhan, jangan disalin ke mana-mana.');
 console.log('  KODE          NAMA                      PERAN           SECTION    TOKEN');
 console.log('  ' + '─'.repeat(94));
+let tenantTerakhir = '';
 let peranTerakhir = '';
 for (const r of rows) {
+  if (r.tenant !== tenantTerakhir) {
+    tenantTerakhir = r.tenant;
+    peranTerakhir = '';
+    console.log(`\n  🏢 [TENANT: ${r.tenant}]`);
+  }
   if (r.peran !== peranTerakhir) { console.log(''); peranTerakhir = r.peran; }
   const tanda = [r.uji ? 'uji' : '', r.performa ? '' : ''].filter(Boolean).join(' ');
   console.log(
