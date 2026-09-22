@@ -101,4 +101,17 @@ describe('NavBar', () => {
     render(<NavBar aku={AKU({ peran: 'superintendent' })} />);
     expect(document.querySelector('.nav-user .badge')?.textContent).toBe('MANAGER');
   });
+
+  it('menampilkan identitas PT di bawah judul brand (KMB vs SUM)', () => {
+    // Default KMB
+    render(<NavBar aku={AKU({ tenantCode: 'KMB' })} />);
+    expect(document.querySelector('.tenant-badge')?.textContent).toBe('PT KMB');
+    expect(document.querySelector('.tenant-full-name')?.textContent).toContain('Karya Mandiri Bersama');
+    cleanup();
+
+    // Tenant SUM
+    render(<NavBar aku={AKU({ tenantCode: 'SUM' })} />);
+    expect(document.querySelector('.tenant-badge')?.textContent).toBe('PT SUM');
+    expect(document.querySelector('.tenant-full-name')?.textContent).toContain('Semesta Usaha Mandiri');
+  });
 });

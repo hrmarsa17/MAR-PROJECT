@@ -28,6 +28,7 @@ export interface AksesMenu {
   mechanicId: number;
   peran: 'mechanic' | 'supervisor' | 'superintendent';
   nama: string;
+  tenantCode?: string;
   bolehLihat: { performa: boolean; teknis: boolean; report: boolean };
   bolehAdmin?: boolean;
 }
@@ -61,6 +62,21 @@ const LENCANA: Record<string, { teks: string; kelas: string } | null> = {
  * hanya navbar dan alamatnya; layarnya komponen yang sama persis.
  */
 const DI_LAPANGAN = (path: string) => path === '/lapangan' || path.startsWith('/lapangan/');
+
+function InfoTenant({ tenantCode }: { tenantCode?: string }) {
+  const code = (tenantCode ?? 'KMB').toUpperCase();
+  const isSum = code === 'SUM';
+  return (
+    <div className="nav-tenant-sub">
+      <span className={`tenant-badge tenant-${code.toLowerCase()}`}>
+        {isSum ? 'PT SUM' : 'PT KMB'}
+      </span>
+      <span className="tenant-full-name">
+        {isSum ? '• Semesta Usaha Mandiri' : '• Karya Mandiri Bersama'}
+      </span>
+    </div>
+  );
+}
 
 export function NavBar({ aku }: { aku: AksesMenu }) {
   const path = usePathname();
@@ -100,7 +116,10 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <span className="nav-brand">⚙️ Mechanic Activity Report</span>
+        <div className="nav-brand-group">
+          <span className="nav-brand">⚙️ Mechanic Activity Report</span>
+          <InfoTenant tenantCode={aku.tenantCode} />
+        </div>
 
         <div className="nav-links">
           {menu
@@ -183,7 +202,10 @@ function NavLapangan({ aku, path, approver }: {
   return (
     <nav className="navbar navbar-lapangan">
       <div className="navbar-inner">
-        <span className="nav-brand">⚙️ MAR Lapangan</span>
+        <div className="nav-brand-group">
+          <span className="nav-brand">⚙️ MAR Lapangan</span>
+          <InfoTenant tenantCode={aku.tenantCode} />
+        </div>
 
         <div className="nav-links">
           {menu.filter((m) => m.tampil).map((m) => (

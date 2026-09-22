@@ -114,6 +114,12 @@ a { color: var(--primary); text-decoration: none; }
   flex-wrap: wrap;
 }
 
+.nav-brand-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .nav-brand {
   font-weight: 700;
   font-size: 1rem;
@@ -121,6 +127,43 @@ a { color: var(--primary); text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.nav-tenant-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.tenant-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tenant-badge.tenant-kmb {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.tenant-badge.tenant-sum {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}
+
+.tenant-full-name {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
   white-space: nowrap;
 }
 

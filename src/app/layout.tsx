@@ -31,6 +31,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           <NavBar
             aku={{
               mechanicId: aku.mechanicId, peran: aku.peran, nama: aku.nama,
+              tenantCode: aku.tenantCode,
               bolehLihat: aku.bolehLihat, bolehAdmin: aku.bolehAdmin,
             }}
           />
