@@ -50,11 +50,11 @@ console.log(`   • Joblist      : ${job!.n} pekerjaan`);
 console.log(`   • Work Order   : ${wo!.n} WO`);
 
 console.log('\n🔑 DAFTAR TOKEN LOGIN:');
-console.log('   • Supervisor (L1)     : token_uji_l1_spv_0123456789');
-console.log('   • Superintendent (L2) : token_uji_l2_mgr_0123456789');
-console.log('   • Mekanik Lapangan 1  : token_uji_m1_satu_012345678');
-console.log('   • Mekanik Lapangan 2  : token_uji_m2_dua_0123456789');
-console.log('   • Mekanik Workshop    : token_uji_m3_work_012345678');
-console.log('   • Mekanik Tyre        : token_uji_tyre_012345678901');
+console.log('   • Supervisor (L1)     : kmb-dnjasdians');
+console.log('   • Superintendent (L2) : kmb-mgr1234567');
+console.log('   • Mekanik Lapangan 1  : kmb-m1satu1234');
+console.log('   • Mekanik Lapangan 2  : kmb-m2dua12345');
+console.log('   • Mekanik Workshop    : kmb-m3work1234');
+console.log('   • Mekanik Tyre        : kmb-tyre123456');
 
 await sql.end();

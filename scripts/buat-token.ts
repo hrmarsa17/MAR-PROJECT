@@ -63,9 +63,11 @@ if (!kode) {
 }
 
 const mek = (
-  await sql<{ id: number; tenant_id: number; name: string; role: string }[]>`
-    SELECT id, tenant_id, name, role::text FROM mechanics
-     WHERE mechanic_code = ${kode} AND is_active
+  await sql<{ id: number; tenant_id: number; tenant_code: string; name: string; role: string }[]>`
+    SELECT m.id, m.tenant_id, t.code::text as tenant_code, m.name, m.role::text
+      FROM mechanics m
+      JOIN tenants t ON t.id = m.tenant_id
+     WHERE m.mechanic_code = ${kode} AND m.is_active
   `
 )[0];
 
@@ -75,7 +77,7 @@ if (!mek) {
   process.exit(1);
 }
 
-const token = buatToken();
+const token = buatToken(mek.tenant_code);
 await sql`
   UPDATE api_tokens SET is_active = false, revoked_at = now()
    WHERE mechanic_id = ${mek.id} AND is_active

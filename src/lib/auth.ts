@@ -40,8 +40,15 @@ export interface Identitas {
   bolehAdmin: boolean;
 }
 
-/** 20 huruf hex — panjang yang sama dengan token KMB V2 yang sudah dikenal. */
-export function buatToken(): string {
+/**
+ * Format token: <tenant>-<acak> bila tenantCode diberikan (mis. 'sum-sdan3i12d', 'kmb-dnjasdians'),
+ * atau 20 huruf hex jika tidak ada tenantCode.
+ */
+export function buatToken(tenantCode?: string): string {
+  if (tenantCode) {
+    const acak = randomBytes(5).toString('hex').slice(0, 9);
+    return `${tenantCode.toLowerCase()}-${acak}`;
+  }
   return randomBytes(10).toString('hex');
 }
 

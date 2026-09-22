@@ -37,6 +37,7 @@ export interface Job {
   id: number; job_code: string; section: string; unit_model: string | null;
   component: string | null; sub_component: string | null;
   job_description: string; plan_hours: string; base_points: string | null;
+  job_type?: string;
 }
 export interface Mekanik {
   id: number; name: string; role: string; sections: string[]; jabatan: string | null;
@@ -52,6 +53,7 @@ export interface Katalog {
   kondisi: Kondisi[];
   /** kunci "HM:12" / "KM:12" */
   meter: Record<string, Meter>;
+  tenantCode?: string;
 }
 
 /** Satu blok joblist. Tiap blok terbit sebagai 1 WO dengan nomornya sendiri. */

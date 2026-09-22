@@ -66,10 +66,11 @@ console.log(`   • Joblist SUM  : ${job!.n} komponen/pekerjaan`);
 console.log(`   • Work Order   : ${wo!.n} WO`);
 
 console.log('\n🔑 DAFTAR TOKEN LOGIN PT SUM:');
-console.log('   • Superintendent (L2) : token_sum_supt_pandu_012345 (Pandu Wijaksono)');
-console.log('   • Supervisor (L1)     : token_sum_supv_maman_012345 (Maman Suryadi)');
-console.log('   • Mekanik SUM 1       : token_sum_mech_ahmad_012345 (Ahmad Fauzi)');
-console.log('   • Mekanik SUM 2       : token_sum_mech_budi_0123456 (Budi Santoso)');
-console.log('   • Mekanik SUM 3       : token_sum_mech_charlie_123  (Charlie Wijaya)');
+console.log('   • Superintendent (L2) : sum-sdan3i12d (Pandu Wijaksono)');
+console.log('   • Supervisor (L1)     : sum-maman0123 (Maman Suryadi)');
+console.log('   • Mekanik SUM 1       : sum-ahmad0123 (Ahmad Fauzi)');
+console.log('   • Mekanik SUM 2       : sum-budi01234 (Budi Santoso)');
+console.log('   • Mekanik SUM 3       : sum-charlie12 (Charlie Wijaya)');
+console.log('   • Mekanik Tyreman     : sum-dani01234 (Dani Pratama)');
 
 await sql.end();

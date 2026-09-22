@@ -159,6 +159,7 @@ export async function katalog(aku: Identitas) {
                um.code::text AS unit_model,
                c.name::text  AS component,
                sc.name::text AS sub_component,
+               coalesce(j.job_type::text, '') AS job_type,
                j.job_description, j.plan_hours,
                ${bolehLihatPoin ? sql`j.base_points` : sql`NULL::numeric`} AS base_points
           FROM jobs j
@@ -196,7 +197,7 @@ export async function katalog(aku: Identitas) {
     meterTerakhirPerUnit(aku.tenantId),
   ]);
 
-  return { sections, units, jobs, mekanik, kondisi, meter };
+  return { sections, units, jobs, mekanik, kondisi, meter, tenantCode: aku.tenantCode };
 }
 
 /**

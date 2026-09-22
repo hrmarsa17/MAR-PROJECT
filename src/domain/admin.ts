@@ -291,7 +291,10 @@ export async function terbitkanToken(
            WHERE mechanic_id = ${m.mechanicId} AND is_active AND revoked_at IS NULL
         `;
       }
-      const token = buatToken();
+      const tenantRow = (
+        await tx<{ code: string }[]>`SELECT code::text FROM tenants WHERE id = ${m.tenantId}`
+      )[0];
+      const token = buatToken(tenantRow?.code);
       await tx`
         INSERT INTO api_tokens (tenant_id, mechanic_id, token)
         VALUES (${m.tenantId}, ${m.mechanicId}, ${token})

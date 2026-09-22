@@ -124,15 +124,16 @@ BEGIN
   ON CONFLICT (tenant_id, mechanic_code) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, is_active = true
   RETURNING id INTO v_mtyre;
 
-  -- 4. Token Login untuk masing-masing user
+  -- 4. Token Login untuk masing-masing user (Format: kmb-<acak>)
+  DELETE FROM api_tokens WHERE mechanic_id IN (v_l1, v_l2, v_m1, v_m2, v_m3, v_mtyre);
   INSERT INTO api_tokens (tenant_id, mechanic_id, token, is_active)
   VALUES
-    (v_tenant, v_l1,    'token_uji_l1_spv_0123456789', true),
-    (v_tenant, v_l2,    'token_uji_l2_mgr_0123456789', true),
-    (v_tenant, v_m1,    'token_uji_m1_satu_012345678', true),
-    (v_tenant, v_m2,    'token_uji_m2_dua_0123456789', true),
-    (v_tenant, v_m3,    'token_uji_m3_work_012345678', true),
-    (v_tenant, v_mtyre, 'token_uji_tyre_012345678901', true)
+    (v_tenant, v_l1,    'kmb-dnjasdians', true), -- Supervisor (L1)
+    (v_tenant, v_l2,    'kmb-mgr1234567', true), -- Superintendent (L2)
+    (v_tenant, v_m1,    'kmb-m1satu1234', true), -- Mekanik Lapangan 1
+    (v_tenant, v_m2,    'kmb-m2dua12345', true), -- Mekanik Lapangan 2
+    (v_tenant, v_m3,    'kmb-m3work1234', true), -- Mekanik Workshop
+    (v_tenant, v_mtyre, 'kmb-tyre123456', true)  -- Mekanik Tyre
   ON CONFLICT (token) DO UPDATE SET is_active = true, revoked_at = NULL;
 
   -- 5. Model Unit
@@ -176,6 +177,13 @@ BEGIN
   VALUES (v_tenant, 'UJI-UNIT-BAN', 'TYRE-SPT-01', v_mod_tyre, 1.0, 'HM')
   ON CONFLICT (tenant_id, unit_code) DO UPDATE SET unit_name = EXCLUDED.unit_name
   RETURNING id INTO v_unit_tyre;
+
+  -- Hubungkan unit ke SEMUA sections
+  INSERT INTO unit_sections (unit_id, section_id)
+  SELECT u.id, s.id
+  FROM units u, sections s
+  WHERE u.tenant_id = v_tenant AND s.tenant_id = v_tenant
+  ON CONFLICT DO NOTHING;
 
   -- 7. Komponen & Sub-komponen (Cascade)
   INSERT INTO job_components (section_id, name)
@@ -270,13 +278,13 @@ BEGIN
       CASE WHEN i % 2 = 0 THEN 'Lapangan Pit A' ELSE 'Workshop Main Bay' END,
       'DUMMY-WO #' || i || ': Simulasi alur ' || v_status::text,
       (ARRAY[6.0, 8.0, 7.5, 9.0, 4.0, 8.0, 2.5])[1 + (i % 7)],
-      now() - make_interval(hours => 10 + i),
-      now() - make_interval(hours => 2 + i),
-      CASE WHEN v_status NOT IN ('pending_mechanic_work','in_progress') THEN now() - make_interval(hours => 2 + i) END,
+      now() - make_interval(hours => 4, mins => 5 * i),
+      now() - make_interval(mins => 10 * i),
+      CASE WHEN v_status NOT IN ('pending_mechanic_work','in_progress') THEN now() - make_interval(mins => 10 * i) END,
       CASE WHEN v_status IN ('pending_superintendent','approved') THEN v_l1 END,
-      CASE WHEN v_status IN ('pending_superintendent','approved') THEN now() - make_interval(hours => i) END,
+      CASE WHEN v_status IN ('pending_superintendent','approved') THEN now() - make_interval(mins => 5 * i) END,
       CASE WHEN i % 5 = 0 THEN 'redo' ELSE 'first_time' END,
-      now() - make_interval(hours => 14 + i))
+      now() - make_interval(hours => 5, mins => 5 * i))
     RETURNING id INTO v_wo;
 
     -- Tim mekanik

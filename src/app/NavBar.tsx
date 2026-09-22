@@ -71,9 +71,6 @@ function InfoTenant({ tenantCode }: { tenantCode?: string }) {
       <span className={`tenant-badge tenant-${code.toLowerCase()}`}>
         {isSum ? 'PT SUM' : 'PT KMB'}
       </span>
-      <span className="tenant-full-name">
-        {isSum ? '• Semesta Usaha Mandiri' : '• Karya Mandiri Bersama'}
-      </span>
     </div>
   );
 }
