@@ -1,0 +1,416 @@
+{
+  "success": true,
+  "result": {
+    "mechanics": [
+      {
+        "id": "MECH-SVP-041",
+        "name": "Allif Cahyo Putro",
+        "token": "b0e241be6dba43c1b91d",
+        "has_token": true,
+        "pending_mechanic_work": 6,
+        "pending_l1": 17,
+        "pending_l2": 11,
+        "approved": 159
+      },
+      {
+        "id": "MECH-SVP-036",
+        "name": "M. Rizal Sanjaya",
+        "token": "7a38f3c1edfb4592a70d",
+        "has_token": true,
+        "pending_mechanic_work": 5,
+        "pending_l1": 32,
+        "pending_l2": 14,
+        "approved": 209
+      },
+      {
+        "id": "MECH-SVP-040",
+        "name": "Abar Hadi Syahbana",
+        "token": "cf4ce87372a74bea8833",
+        "has_token": true,
+        "pending_mechanic_work": 4,
+        "pending_l1": 9,
+        "pending_l2": 29,
+        "approved": 143
+      },
+      {
+        "id": "MECH-SVP-003",
+        "name": "Hatta Din Naza",
+        "token": "e578e8068096467eba3c",
+        "has_token": true,
+        "pending_mechanic_work": 4,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 177
+      },
+      {
+        "id": "MECH-SVP-028",
+        "name": "Christmas Nainggolan",
+        "token": "b59abcc757d54344877b",
+        "has_token": true,
+        "pending_mechanic_work": 3,
+        "pending_l1": 15,
+        "pending_l2": 61,
+        "approved": 98
+      },
+      {
+        "id": "MECH-SVP-023",
+        "name": "M. Abdul Raplin",
+        "token": "76a1490d44d84c0c9804",
+        "has_token": true,
+        "pending_mechanic_work": 3,
+        "pending_l1": 10,
+        "pending_l2": 59,
+        "approved": 273
+      },
+      {
+        "id": "MECH-SVP-021",
+        "name": "Yulius Kevin",
+        "token": "b03b0412a1e544d9bda5",
+        "has_token": true,
+        "pending_mechanic_work": 2,
+        "pending_l1": 4,
+        "pending_l2": 19,
+        "approved": 251
+      },
+      {
+        "id": "MECH-SVP-027",
+        "name": "Gede Sumertas",
+        "token": "cc9a5e0e050348038ffe",
+        "has_token": true,
+        "pending_mechanic_work": 1,
+        "pending_l1": 8,
+        "pending_l2": 68,
+        "approved": 314
+      },
+      {
+        "id": "MECH-SVP-007",
+        "name": "Holili",
+        "token": "d6c718dbd9654b8b8263",
+        "has_token": true,
+        "pending_mechanic_work": 1,
+        "pending_l1": 6,
+        "pending_l2": 12,
+        "approved": 70
+      },
+      {
+        "id": "MECH-SVP-037",
+        "name": "Siswanto",
+        "token": "8a6cc79df11b4df6912b",
+        "has_token": true,
+        "pending_mechanic_work": 1,
+        "pending_l1": 4,
+        "pending_l2": 11,
+        "approved": 193
+      },
+      {
+        "id": "MECH-SVP-013",
+        "name": "Susan bagus saputra",
+        "token": "abf1e3d7b0a34a7f81b7",
+        "has_token": true,
+        "pending_mechanic_work": 1,
+        "pending_l1": 10,
+        "pending_l2": 5,
+        "approved": 132
+      },
+      {
+        "id": "MECH-SVP-022",
+        "name": "Tegar Samudra",
+        "token": "e500f7084d1b4825846c",
+        "has_token": true,
+        "pending_mechanic_work": 1,
+        "pending_l1": 22,
+        "pending_l2": 4,
+        "approved": 96
+      },
+      {
+        "id": "MECH-SVP-015",
+        "name": "Wildan maulana firdaus",
+        "token": "7a12d13d4f2140f082a2",
+        "has_token": true,
+        "pending_mechanic_work": 1,
+        "pending_l1": 30,
+        "pending_l2": 13,
+        "approved": 206
+      },
+      {
+        "id": "MECH-SVP-005",
+        "name": "Adi Setiawan",
+        "token": "253de60cc43340d68d5a",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 11,
+        "pending_l2": 38,
+        "approved": 242
+      },
+      {
+        "id": "MECH-SVP-017",
+        "name": "Ahmad Fahrudin Almuzaka",
+        "token": "677664db443a4a3892c2",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 191
+      },
+      {
+        "id": "MECH-SVP-008",
+        "name": "Amos Ferianto",
+        "token": "4738b90a197443aaa410",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 6,
+        "pending_l2": 13,
+        "approved": 79
+      },
+      {
+        "id": "MECH-SVP-038",
+        "name": "Aris Miftakhuddin",
+        "token": "35b97786a50643f9a529",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 30,
+        "pending_l2": 12,
+        "approved": 216
+      },
+      {
+        "id": "MECH-SVP-012",
+        "name": "Arnoldus rangga toba",
+        "token": "48b0160633b242aa8159",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 32
+      },
+      {
+        "id": "MECH-SVP-019",
+        "name": "Arriston Bumbungan",
+        "token": "318947590ce946159209",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 18,
+        "pending_l2": 37,
+        "approved": 38
+      },
+      {
+        "id": "MECH-SVP-025",
+        "name": "Burhanudin",
+        "token": "4b3fded71a024a57b64a",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 16,
+        "pending_l2": 27,
+        "approved": 124
+      },
+      {
+        "id": "MECH-SVP-018",
+        "name": "Dwi Andrian Saputra",
+        "token": "6432e65ed62c412b8b9f",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 0
+      },
+      {
+        "id": "MECH-SVP-030",
+        "name": "Fajar Nuralim",
+        "token": "9d8a2f1751ea440698ba",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 0
+      },
+      {
+        "id": "MECH-SVP-039",
+        "name": "Gilang Ramadhan",
+        "token": "46454da399a0475ead6a",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 78
+      },
+      {
+        "id": "MECH-SVP-029",
+        "name": "Ilham Ridlo Ramdhani",
+        "token": "abb0920d57054ec4ac95",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 21,
+        "pending_l2": 10,
+        "approved": 227
+      },
+      {
+        "id": "MECH-SVP-006",
+        "name": "Jessen Pratama",
+        "token": "f8fd0f29762447aaa7e7",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 4,
+        "pending_l2": 25,
+        "approved": 36
+      },
+      {
+        "id": "MECH-SVP-011",
+        "name": "M risky firmansyah",
+        "token": "bf836da48f6148ab9569",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 3,
+        "pending_l2": 3,
+        "approved": 112
+      },
+      {
+        "id": "MECH-SVP-014",
+        "name": "M. Iqbal",
+        "token": "73582f32d6694970b5b0",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 6
+      },
+      {
+        "id": "MECH-000",
+        "name": "MEKANIK TES",
+        "token": "3b93fa787fc945a3a58a",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 3
+      },
+      {
+        "id": "MECH-SVP-026",
+        "name": "Muhamad Faizal Baihaqi",
+        "token": "df09605bce6244329b21",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 29,
+        "approved": 11
+      },
+      {
+        "id": "MECH-SVP-010",
+        "name": "Muhammad Eka adi rehantanto",
+        "token": "194ca8e96f6941aaada7",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 84
+      },
+      {
+        "id": "MECH-SVP-009",
+        "name": "Muhammad Hafizh",
+        "token": "83bff19ae2834c169311",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 0
+      },
+      {
+        "id": "MECH-SVP-032",
+        "name": "Muhammad Rizky Aditya",
+        "token": "dbb87c7948f043858876",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 176
+      },
+      {
+        "id": "MECH-SVP-031",
+        "name": "Muhibin",
+        "token": "0220cc17914f432eb36f",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 22
+      },
+      {
+        "id": "MECH-SVP-034",
+        "name": "Naufal Bagas Putra Suseno",
+        "token": "b4f117d894964595af2f",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 7,
+        "pending_l2": 7,
+        "approved": 221
+      },
+      {
+        "id": "MECH-SVP-004",
+        "name": "Pisa Alpairun",
+        "token": "b78a6213add54f3c9f72",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 157
+      },
+      {
+        "id": "MECH-SVP-002",
+        "name": "Prastawa Praba Sasangka",
+        "token": "08e74010f42f49109564",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 3,
+        "pending_l2": 2,
+        "approved": 106
+      },
+      {
+        "id": "MECH-SVP-033",
+        "name": "Puji Haryono",
+        "token": "cca7f048471346d29d74",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 37,
+        "pending_l2": 11,
+        "approved": 241
+      },
+      {
+        "id": "MECH-SVP-016",
+        "name": "Rikardus Budo",
+        "token": "2bc312ea25ac4ecd88c1",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 3,
+        "pending_l2": 13,
+        "approved": 220
+      },
+      {
+        "id": "MECH-SVP-020",
+        "name": "Rudiayanto",
+        "token": "166771a5cf2d4f5d9cd0",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 23,
+        "pending_l2": 7,
+        "approved": 164
+      },
+      {
+        "id": "MECH-SVP-024",
+        "name": "Satrio Ahmad Muhaimin",
+        "token": "ed326e96698d4439b998",
+        "has_token": true,
+        "pending_mechanic_work": 0,
+        "pending_l1": 0,
+        "pending_l2": 0,
+        "approved": 153
+      }
+    ],
+    "overall": {
+      "mechanics": 40,
+      "pending_mechanic_work": 17,
+      "pending_l1": 175,
+      "pending_l2": 250,
+      "approved": 2497
+    },
+    "periode": "September 2026",
+    "pulled_at": "2026-09-22T09:42:45.315Z"
+  }
+}

@@ -1,0 +1,1491 @@
+{
+  "success": true,
+  "result": {
+    "refs": {
+      "units": [
+        {
+          "unit_id": "UNIT-000",
+          "unit_name": "ROTABLE",
+          "unit_type": "ROTABLE",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-001",
+          "unit_name": "SUM 011",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-002",
+          "unit_name": "SUM 025",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-003",
+          "unit_name": "SUM 027",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-004",
+          "unit_name": "SUM 029",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-005",
+          "unit_name": "SUM 034",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-006",
+          "unit_name": "SUM 037",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-007",
+          "unit_name": "SUM 042",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-008",
+          "unit_name": "SUM 350",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-009",
+          "unit_name": "SUM 351",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-010",
+          "unit_name": "SUM 328",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-011",
+          "unit_name": "SUM 367",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-012",
+          "unit_name": "SUM 368",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-013",
+          "unit_name": "SUM 370",
+          "unit_type": "AXOR4843",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-014",
+          "unit_name": "SUM 372",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-015",
+          "unit_name": "SUM 374",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-016",
+          "unit_name": "SUM 375",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-017",
+          "unit_name": "SUM 376",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-018",
+          "unit_name": "SUM 378",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-019",
+          "unit_name": "SUM 379",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-020",
+          "unit_name": "SUM 380",
+          "unit_type": "VOLVOFMX440",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-021",
+          "unit_name": "SUM 377",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-022",
+          "unit_name": "SUM 381",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-023",
+          "unit_name": "SUM 382",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-024",
+          "unit_name": "SUM 383",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-025",
+          "unit_name": "SUM 384",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-026",
+          "unit_name": "SUM 385",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-027",
+          "unit_name": "SUM 386",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-028",
+          "unit_name": "SUM 387",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-029",
+          "unit_name": "SUM 388",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-030",
+          "unit_name": "SUM 389",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-031",
+          "unit_name": "SUM 390",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-032",
+          "unit_name": "SUM 391",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-033",
+          "unit_name": "SUM 392",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-034",
+          "unit_name": "SUM 393",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-035",
+          "unit_name": "SUM 394",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-036",
+          "unit_name": "SUM 395",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-037",
+          "unit_name": "SUM 396",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-038",
+          "unit_name": "SUM 397",
+          "unit_type": "VOLVOFMX460",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-039",
+          "unit_name": "SUM 398",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-040",
+          "unit_name": "SUM 399",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-041",
+          "unit_name": "SUM 400",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-042",
+          "unit_name": "SUM 401",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-043",
+          "unit_name": "SUM 402",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-044",
+          "unit_name": "SUM 403",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-045",
+          "unit_name": "SUM 404",
+          "unit_type": "BEIBEN3150",
+          "unit_factor": 1
+        },
+        {
+          "unit_id": "UNIT-100",
+          "unit_name": "GENERAL WORK",
+          "unit_type": "NON DEDICATED",
+          "unit_factor": 1
+        }
+      ],
+      "mechanics": [
+        {
+          "mechanic_id": "MECH-000",
+          "mechanic_name": "MEKANIK TES",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4C"
+        },
+        {
+          "mechanic_id": "MECH-SVP-040",
+          "mechanic_name": "Abar Hadi Syahbana",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "3C"
+        },
+        {
+          "mechanic_id": "MECH-SVP-005",
+          "mechanic_name": "Adi Setiawan",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-017",
+          "mechanic_name": "Ahmad Fahrudin Almuzaka",
+          "jabatan_aktual": "Helper Mekanik",
+          "golongan": "1A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-041",
+          "mechanic_name": "Allif Cahyo Putro",
+          "jabatan_aktual": "Mekanik",
+          "golongan": "3B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-008",
+          "mechanic_name": "Amos Ferianto",
+          "jabatan_aktual": "Welder Senior",
+          "golongan": "4A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-038",
+          "mechanic_name": "Aris Miftakhuddin",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-012",
+          "mechanic_name": "Arnoldus rangga toba",
+          "jabatan_aktual": "Helper Mekanik",
+          "golongan": "1A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-019",
+          "mechanic_name": "Arriston Bumbungan",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-025",
+          "mechanic_name": "Burhanudin",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-028",
+          "mechanic_name": "Christmas Nainggolan",
+          "jabatan_aktual": "Helper Mekanik",
+          "golongan": "1A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-018",
+          "mechanic_name": "Dwi Andrian Saputra",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-030",
+          "mechanic_name": "Fajar Nuralim",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-027",
+          "mechanic_name": "Gede Sumertas",
+          "jabatan_aktual": "Tyreman",
+          "golongan": "3B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-039",
+          "mechanic_name": "Gilang Ramadhan",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-003",
+          "mechanic_name": "Hatta Din Naza",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-007",
+          "mechanic_name": "Holili",
+          "jabatan_aktual": "Welder Senior",
+          "golongan": "4B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-029",
+          "mechanic_name": "Ilham Ridlo Ramdhani",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-006",
+          "mechanic_name": "Jessen Pratama",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-011",
+          "mechanic_name": "M risky firmansyah",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-023",
+          "mechanic_name": "M. Abdul Raplin",
+          "jabatan_aktual": "Helper Mekanik",
+          "golongan": "1A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-014",
+          "mechanic_name": "M. Iqbal",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-036",
+          "mechanic_name": "M. Rizal Sanjaya",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-026",
+          "mechanic_name": "Muhamad Faizal Baihaqi",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-010",
+          "mechanic_name": "Muhammad Eka adi rehantanto",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-009",
+          "mechanic_name": "Muhammad Hafizh",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-032",
+          "mechanic_name": "Muhammad Rizky Aditya",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-031",
+          "mechanic_name": "Muhibin",
+          "jabatan_aktual": "Welder Senior",
+          "golongan": "4C"
+        },
+        {
+          "mechanic_id": "MECH-SVP-034",
+          "mechanic_name": "Naufal Bagas Putra Suseno",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-004",
+          "mechanic_name": "Pisa Alpairun",
+          "jabatan_aktual": "Act. Grade",
+          "golongan": "1C"
+        },
+        {
+          "mechanic_id": "MECH-SVP-002",
+          "mechanic_name": "Prastawa Praba Sasangka",
+          "jabatan_aktual": "Mekanik Senior",
+          "golongan": "4A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-033",
+          "mechanic_name": "Puji Haryono",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-016",
+          "mechanic_name": "Rikardus Budo",
+          "jabatan_aktual": "Tyreman Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-020",
+          "mechanic_name": "Rudiayanto",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-024",
+          "mechanic_name": "Satrio Ahmad Muhaimin",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2B"
+        },
+        {
+          "mechanic_id": "MECH-SVP-037",
+          "mechanic_name": "Siswanto",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-013",
+          "mechanic_name": "Susan bagus saputra",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-022",
+          "mechanic_name": "Tegar Samudra",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-015",
+          "mechanic_name": "Wildan maulana firdaus",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        },
+        {
+          "mechanic_id": "MECH-SVP-021",
+          "mechanic_name": "Yulius Kevin",
+          "jabatan_aktual": "Mekanik Junior",
+          "golongan": "2A"
+        }
+      ],
+      "components": [
+        {
+          "component_no": "COM-054",
+          "component_name": "Lower Structure",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Welding Repair - Minor Repair"
+        },
+        {
+          "component_no": "COM-OTHERS",
+          "component_name": "Others - Custom Job",
+          "base_points": 0,
+          "target_hours": 0,
+          "category": "OTHERS"
+        },
+        {
+          "component_no": "COM-200",
+          "component_name": "Intercooler - Remove & Install",
+          "base_points": 3,
+          "target_hours": 6,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-201",
+          "component_name": "Injector Volvo - Remove & Install",
+          "base_points": 3,
+          "target_hours": 6,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-202",
+          "component_name": "Injector Beiben - Remove & Install",
+          "base_points": 2,
+          "target_hours": 4,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-203",
+          "component_name": "Injector Axor - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-204",
+          "component_name": "Alternator - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-205",
+          "component_name": "Water Pump - Remove & Install",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-206",
+          "component_name": "Fuel Filter - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-207",
+          "component_name": "Rehose Fuel - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-208",
+          "component_name": "Radiator & Cooling System - Remove & Install",
+          "base_points": 2,
+          "target_hours": 4,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-209",
+          "component_name": "Adjust Valve - Adjustment",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-210",
+          "component_name": "Turbocharger - Remove & Install",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-211",
+          "component_name": "Disc Clutch - Remove & Install",
+          "base_points": 6,
+          "target_hours": 8,
+          "category": "Transmission"
+        },
+        {
+          "component_no": "COM-212",
+          "component_name": "Transmission - Remove & Install",
+          "base_points": 6,
+          "target_hours": 8,
+          "category": "Transmission"
+        },
+        {
+          "component_no": "COM-213",
+          "component_name": "Clucth Cylinder - Remove & Install",
+          "base_points": 6,
+          "target_hours": 6,
+          "category": "Transmission"
+        },
+        {
+          "component_no": "COM-214",
+          "component_name": "Servo Clutch - Remove & Install",
+          "base_points": 3,
+          "target_hours": 3,
+          "category": "Transmission"
+        },
+        {
+          "component_no": "COM-215",
+          "component_name": "Rehose Transmission - Remove & Install",
+          "base_points": 3,
+          "target_hours": 3,
+          "category": "Transmission"
+        },
+        {
+          "component_no": "COM-216",
+          "component_name": "Propeller Shaft & U-Joint Rear - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Drive Shaft"
+        },
+        {
+          "component_no": "COM-217",
+          "component_name": "Propeller Shaft & U-Joint Front - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Drive Shaft"
+        },
+        {
+          "component_no": "COM-218",
+          "component_name": "Front Axle And Wheel - Remove & Install",
+          "base_points": 6,
+          "target_hours": 12,
+          "category": "Drive Shaft"
+        },
+        {
+          "component_no": "COM-219",
+          "component_name": "Center Bearing / Support Bearing - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Drive Shaft"
+        },
+        {
+          "component_no": "COM-220",
+          "component_name": "Rear Axle And Wheel - Remove & Install",
+          "base_points": 6,
+          "target_hours": 12,
+          "category": "Drive Shaft"
+        },
+        {
+          "component_no": "COM-221",
+          "component_name": "Final Drive Lh - Overhaul",
+          "base_points": 2,
+          "target_hours": 4,
+          "category": "Differential & Final Drive"
+        },
+        {
+          "component_no": "COM-222",
+          "component_name": "Final Drive Rh - Overhaul",
+          "base_points": 2,
+          "target_hours": 4,
+          "category": "Differential & Final Drive"
+        },
+        {
+          "component_no": "COM-223",
+          "component_name": "Air Compressor And Air Tank - Remove & Install",
+          "base_points": 2,
+          "target_hours": 4,
+          "category": "Brake Systems"
+        },
+        {
+          "component_no": "COM-224",
+          "component_name": "Brake Chamber + Brake Relay - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Brake Systems"
+        },
+        {
+          "component_no": "COM-225",
+          "component_name": "Brake Valves + Accumulator - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Brake Systems"
+        },
+        {
+          "component_no": "COM-226",
+          "component_name": "Slack Adjuster - Remove & Install & Adjustment",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Brake Systems"
+        },
+        {
+          "component_no": "COM-227",
+          "component_name": "Front Brake - Remove & Install & Adjustment",
+          "base_points": 1,
+          "target_hours": 0.5,
+          "category": "Brake Systems"
+        },
+        {
+          "component_no": "COM-228",
+          "component_name": "Rear Brake - Remove & Install & Adjustment",
+          "base_points": 1,
+          "target_hours": 0.5,
+          "category": "Brake Systems"
+        },
+        {
+          "component_no": "COM-229",
+          "component_name": "Hydraulic Control Valve  - Reseal",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Hydraulic System"
+        },
+        {
+          "component_no": "COM-230",
+          "component_name": "Hydraulic Cylinder  - Remove & Install",
+          "base_points": 6,
+          "target_hours": 12,
+          "category": "Hydraulic System"
+        },
+        {
+          "component_no": "COM-231",
+          "component_name": "Hidraulic Hose - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Hydraulic System"
+        },
+        {
+          "component_no": "COM-232",
+          "component_name": "Hydraulic Pump / Pto - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Hydraulic System"
+        },
+        {
+          "component_no": "COM-233",
+          "component_name": "Boggie And Suspension - Remove & Install",
+          "base_points": 3,
+          "target_hours": 6,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-234",
+          "component_name": "Steering And Brake Valve  - Remove & Install",
+          "base_points": 3,
+          "target_hours": 6,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-235",
+          "component_name": "Steering Gearbox - Remove & Install",
+          "base_points": 3,
+          "target_hours": 6,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-236",
+          "component_name": "Steering Lingkage ( Tie Rod ) - Remove & Install",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-237",
+          "component_name": "Steering Pump - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-238",
+          "component_name": "Drag Link - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-239",
+          "component_name": "Rehose Steering - Remove & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-240",
+          "component_name": "King Pin - Remove & Install",
+          "base_points": 2,
+          "target_hours": 2,
+          "category": "Frame / Chassis / Suspension / Steering"
+        },
+        {
+          "component_no": "COM-241",
+          "component_name": "Air Conditioner - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-242",
+          "component_name": "Alternator - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-243",
+          "component_name": "Electric Harness - Remove & Install, Repair, T/S",
+          "base_points": 0.5,
+          "target_hours": 3,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-244",
+          "component_name": "Starting Motor - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-245",
+          "component_name": "Wiper Blade - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 0.3333333333333333,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-246",
+          "component_name": "Head Lamp - Remove & Install, Repair, T/S",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-247",
+          "component_name": "Tail Lamp - Remove & Install, Repair, T/S",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-248",
+          "component_name": "Trouble Shooting Air Conditioning - Trouble Shooting",
+          "base_points": 6,
+          "target_hours": 3,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-249",
+          "component_name": "Hose Air Conditioning - Remove & Install",
+          "base_points": 2,
+          "target_hours": 2,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-250",
+          "component_name": "Vessel - Welding Repair",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Body & Attachment"
+        },
+        {
+          "component_no": "COM-251",
+          "component_name": "Tail Gate - Welding Repair",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Body & Attachment"
+        },
+        {
+          "component_no": "COM-252",
+          "component_name": "Upper Structure - Welding Repair",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Body & Attachment"
+        },
+        {
+          "component_no": "COM-253",
+          "component_name": "Lower Structure - Welding Repair",
+          "base_points": 1.5,
+          "target_hours": 3,
+          "category": "Body & Attachment"
+        },
+        {
+          "component_no": "COM-254",
+          "component_name": "Front Spring A1 - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-255",
+          "component_name": "Front Spring A2 - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-256",
+          "component_name": "Rear Spring A1 - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 2,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-257",
+          "component_name": "Rear Spring A2 - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 2,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-258",
+          "component_name": "Torque Rod - Remove & Install",
+          "base_points": 1,
+          "target_hours": 2,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-259",
+          "component_name": "V - Stay - Remove & Install",
+          "base_points": 2,
+          "target_hours": 4,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-260",
+          "component_name": "Shock Absorber Rear - Remove & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-261",
+          "component_name": "Shock Absorber Front - Remove & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-262",
+          "component_name": "Contact Stud / Hollow Spring - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-263",
+          "component_name": "Spring Seat - Remove & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-264",
+          "component_name": "Stabilizer - Remove & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-265",
+          "component_name": "Rear Tire - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 0.5,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-266",
+          "component_name": "Front Tire - Remove & Install",
+          "base_points": 1,
+          "target_hours": 0.5,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-267",
+          "component_name": "Stock Tire / Repair Tire - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 2,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-268",
+          "component_name": "Wheel Bearing - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-269",
+          "component_name": "Periodic Service 250 - PS & Backlog",
+          "base_points": 3,
+          "target_hours": 3,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-270",
+          "component_name": "Periodic Service 500 - PS & Backlog",
+          "base_points": 3,
+          "target_hours": 3,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-271",
+          "component_name": "Periodic Service 750 - PS & Backlog",
+          "base_points": 3,
+          "target_hours": 3,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-272",
+          "component_name": "Periodic Service 1000 - PS & Backlog",
+          "base_points": 6,
+          "target_hours": 6,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-273",
+          "component_name": "Greasing - Schedule Greasing",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-274",
+          "component_name": "Refill Oil / Coolant - P2H",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-275",
+          "component_name": "Inspection Unit - Inspection",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-276",
+          "component_name": "Cek Pressure Tire - Adjustment",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-277",
+          "component_name": "Engine - Remove & Install",
+          "base_points": 42,
+          "target_hours": 56,
+          "category": "Overhaul"
+        },
+        {
+          "component_no": "COM-278",
+          "component_name": "Transmission - Remove & Install",
+          "base_points": 30,
+          "target_hours": 56,
+          "category": "Overhaul"
+        },
+        {
+          "component_no": "COM-279",
+          "component_name": "Repair And Paiting Cabin, Vessel - Painting",
+          "base_points": 112,
+          "target_hours": 112,
+          "category": "Recondition & Rebuild"
+        },
+        {
+          "component_no": "COM-280",
+          "component_name": "Remove & Install Engine - Ovh, Remove & Install",
+          "base_points": 12,
+          "target_hours": 24,
+          "category": "Recondition & Rebuild"
+        },
+        {
+          "component_no": "COM-281",
+          "component_name": "Remove & Install Transmission - Ovh, Remove & Install",
+          "base_points": 12,
+          "target_hours": 24,
+          "category": "Recondition & Rebuild"
+        },
+        {
+          "component_no": "COM-282",
+          "component_name": "Front Brake Lining 1 Set - Rotable",
+          "base_points": 1,
+          "target_hours": 0.5,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-283",
+          "component_name": "Rear Brake Lining 1 Set - Rotable",
+          "base_points": 1,
+          "target_hours": 30,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-284",
+          "component_name": "Rotable Alternator - Rotable",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-285",
+          "component_name": "Rotable Motor Starting - Rotable",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-286",
+          "component_name": "Rotable Injector Volvo 6 Pcs - Rotable",
+          "base_points": 3,
+          "target_hours": 6,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-287",
+          "component_name": "Rotable Injector Axor 6 Pcs - Rotable",
+          "base_points": 3,
+          "target_hours": 3,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-288",
+          "component_name": "Rotable Torque Rod Volvo / Axor / Beiben - Rotable",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-289",
+          "component_name": "Rotable V Stay Volvo / Axor / Beiben - Rotable",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Rotable Parts"
+        },
+        {
+          "component_no": "COM-290",
+          "component_name": "Commisioning Completed  - Inspection, Repair, R&I",
+          "base_points": 24,
+          "target_hours": 12,
+          "category": "Fabrication"
+        },
+        {
+          "component_no": "COM-291",
+          "component_name": "Stock Spring ( Sesis ) - Welding & Repair",
+          "base_points": 3.5,
+          "target_hours": 4,
+          "category": "Fabrication"
+        },
+        {
+          "component_no": "COM-292",
+          "component_name": "Fabrikasi Support Minor - Welding & Repair",
+          "base_points": 1.5,
+          "target_hours": 4,
+          "category": "Fabrication"
+        },
+        {
+          "component_no": "COM-293",
+          "component_name": "Fabrikasi Support Major - Welding & Repair",
+          "base_points": 8,
+          "target_hours": 10,
+          "category": "Fabrication"
+        },
+        {
+          "component_no": "COM-294",
+          "component_name": "Adjustment Tail Gate - Adjustment - Minor Repair",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Body & Attachment"
+        },
+        {
+          "component_no": "COM-295",
+          "component_name": "Retorque Tire - Adjustment - Minor Repair",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-296",
+          "component_name": "Stock Spring Front Sesis - Welding & Repair - Minor Repair",
+          "base_points": 2.5,
+          "target_hours": 3,
+          "category": "Fabrication"
+        },
+        {
+          "component_no": "COM-297",
+          "component_name": "Washing DT - Washing & Clean Up",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-298",
+          "component_name": "Washing LV  - Washing & Clean Up",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-299",
+          "component_name": "Reseal Cylinder Dump - Reseal",
+          "base_points": 10,
+          "target_hours": 12,
+          "category": "Hydraulic System"
+        },
+        {
+          "component_no": "COM-300",
+          "component_name": "Flushing Fuel Tank - Flushing & Clean Up",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Fuel System"
+        },
+        {
+          "component_no": "COM-301",
+          "component_name": "Rewiring Cable Injector Volvo - Rewiring, Repair, Replace",
+          "base_points": 4,
+          "target_hours": 5,
+          "category": "Fuel System"
+        },
+        {
+          "component_no": "COM-302",
+          "component_name": "Adjust Valve Engine - Adjustment - Minor Repair",
+          "base_points": 2.5,
+          "target_hours": 1.5,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-303",
+          "component_name": "Retorque Front Ubolt - Adjustment - Minor Repair",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-304",
+          "component_name": "Retorque Rear Ubolt - Adjustment - Minor Repair",
+          "base_points": 0.5,
+          "target_hours": 0.25,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-305",
+          "component_name": "Cleaning Evaporator - Washing & Clean Up",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-306",
+          "component_name": "ABS Problem - Adjustment - Minor Repair",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Brake System"
+        },
+        {
+          "component_no": "COM-307",
+          "component_name": "Retorque Cylinder Dump Bolt - Retorque -  Replace",
+          "base_points": 1.5,
+          "target_hours": 1,
+          "category": "Hydraulic System"
+        },
+        {
+          "component_no": "COM-308",
+          "component_name": "Replace Wheel Bolt - Retorque -  Replace",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-309",
+          "component_name": "Replace ACCU - Remove & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-310",
+          "component_name": "Fuel Pressure - Remove & Install",
+          "base_points": 1.5,
+          "target_hours": 2,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-311",
+          "component_name": "Retorque Engine Mounting Bolt - Retorque & Replace",
+          "base_points": 0.5,
+          "target_hours": 0.5,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-312",
+          "component_name": "Replace Hose Tilt Cabin - Remove & Install",
+          "base_points": 0.5,
+          "target_hours": 1,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-313",
+          "component_name": "Cleaning Air Cleaner  - Replace, Clean Up",
+          "base_points": 0.5,
+          "target_hours": 0.5,
+          "category": "Engine Air Induction"
+        },
+        {
+          "component_no": "COM-314",
+          "component_name": "Bracket Mud Guard - Replace, Repair",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Wheel & Tire"
+        },
+        {
+          "component_no": "COM-315",
+          "component_name": "Power Window RH Volvo - Replace, Repair",
+          "base_points": 2,
+          "target_hours": 2,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-316",
+          "component_name": "Power Window LH Volvo - Replace, Repair",
+          "base_points": 2,
+          "target_hours": 2,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-317",
+          "component_name": "Gasket Cover Valve Engine Beiben - Replace, Repair, Reseal",
+          "base_points": 2,
+          "target_hours": 2,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-318",
+          "component_name": "Gasket Cover Valve Engine Volvo - Replace, Repair, Reseal",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Engine"
+        },
+        {
+          "component_no": "COM-319",
+          "component_name": "Bushing Spring Volvo - Replace, Repair",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-320",
+          "component_name": "Bushing Stabilizer Front - Replace, Repair",
+          "base_points": 0.8,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-321",
+          "component_name": "Bushing Stabilizer Rear - Replace, Repair",
+          "base_points": 0.8,
+          "target_hours": 1,
+          "category": "Suspension"
+        },
+        {
+          "component_no": "COM-322",
+          "component_name": "Pin Tailgate - Replace, Repair",
+          "base_points": 0.5,
+          "target_hours": 0.5,
+          "category": "Body & Attachment"
+        },
+        {
+          "component_no": "COM-323",
+          "component_name": "Repair Harness Tail Lamp - Replace, Repair",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-324",
+          "component_name": "Mirror View - Replace, Repair",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-325",
+          "component_name": "Replace Windscreen Volvo - Remove & Install",
+          "base_points": 12,
+          "target_hours": 12,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-326",
+          "component_name": "Replace Windscreen Beiben - Remove & Install",
+          "base_points": 7,
+          "target_hours": 7,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-327",
+          "component_name": "Replace Seat Belt - Remove, Repair & Install",
+          "base_points": 0.8,
+          "target_hours": 1,
+          "category": "Cabin"
+        },
+        {
+          "component_no": "COM-328",
+          "component_name": "Fatigue Alarm Problem - Remove, Repair & Install",
+          "base_points": 1,
+          "target_hours": 1,
+          "category": "Safety Device"
+        },
+        {
+          "component_no": "COM-329",
+          "component_name": "Service Air Compressor - Remove, Repair & Install",
+          "base_points": 0.8,
+          "target_hours": 0.8,
+          "category": "Maintenance"
+        },
+        {
+          "component_no": "COM-330",
+          "component_name": "Trouble Shooting Electrical Minor - Remove & Install, Repair, T/S",
+          "base_points": 5,
+          "target_hours": 6,
+          "category": "Electrics & Ac Systems"
+        },
+        {
+          "component_no": "COM-331",
+          "component_name": "Trouble Shooting Electrical Major - Remove & Install, Repair, T/S",
+          "base_points": 11,
+          "target_hours": 12,
+          "category": "Electrics & Ac Systems"
+        }
+      ],
+      "work_conditions": [
+        {
+          "key": "normal",
+          "label": "Normal",
+          "factor": 1
+        },
+        {
+          "key": "difficult",
+          "label": "Malam/Hujan",
+          "factor": 1.1
+        },
+        {
+          "key": "extreme",
+          "label": "Resiko Tinggi",
+          "factor": 1.2
+        }
+      ]
+    },
+    "pulled_at": "2026-09-22T09:42:11.595Z"
+  }
+}

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#3b82f6">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon-192.png">
+  <!-- iOS: dukungan Add to Home Screen (Safari tidak baca manifest sepenuhnya) -->
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MAR SUM V2">
+  <title>MAR SUM V2</title>
+  <style>
+    /* ===== DESIGN SYSTEM (BIRU SUM — token selaras web GAS Theme.gs) ===== */
+    :root{
+      --bg:#F8FAFC;--bg-secondary:#F3F4F6;--card:#FFFFFF;--border:#E5E7EB;
+      --text:#111827;--text-secondary:#6B7280;--text-disabled:#9CA3AF;
+      --primary:#3b82f6;--primary-hover:#1e40af;--primary-soft:#EFF6FF;
+      --success:#10B981;--warning:#F59E0B;--error:#EF4444;
+      --input-border:#D1D5DB;--radius:16px;--radius-sm:10px;
+      --shadow:0 4px 12px rgba(0,0,0,.05);--shadow-hover:0 8px 24px rgba(0,0,0,.08);
+      --focus-ring:0 0 0 3px rgba(59,130,246,.25);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    .top{position:sticky;top:0;background:var(--card);padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,.04);z-index:5}
+    .top h1{font-size:16px;font-weight:700;color:var(--text);flex:1}
+    .dot{width:9px;height:9px;border-radius:50%;background:var(--error)}
+    .net{font-size:11px;color:var(--text-secondary)}
+    .logoutBtn{font-size:11px;color:var(--text-secondary);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer}
+    .wrap{padding:16px;max-width:560px;margin:0 auto}
+    .tabBar{display:none;gap:6px;margin-bottom:14px;background:var(--bg-secondary);border-radius:12px;overflow:hidden;border:1px solid var(--border);padding:4px}
+    .tab{flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;color:var(--text-secondary);cursor:pointer;border:none;background:none;border-radius:8px}
+    .tab.active{background:var(--primary);color:#fff}
+    .card,.panel{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .cardTop{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+    .badge{font-size:10px;font-weight:700;color:#fff;padding:3px 9px;border-radius:99px;white-space:nowrap}
+    .cardBody{font-size:13px;color:var(--text-secondary);line-height:1.5}
+    .ket{font-size:12px;color:#B45309;margin-top:6px;background:#FEF3C7;padding:6px 9px;border-radius:8px}
+    .err{border-color:#FECACA;background:#FEF2F2;font-size:12px;color:#DC2626}
+    .big{display:block;width:100%;margin-top:10px;padding:13px;font-size:15px;font-weight:700;color:#fff;background:var(--primary);border:0;border-radius:var(--radius-sm);cursor:pointer}
+    .big:hover{background:var(--primary-hover)}
+    .big:active{transform:scale(0.98)}
+    .big.danger{background:var(--error);color:#fff}
+    .big.secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+    .mini{padding:6px 11px;font-size:12px;border:0;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;margin-top:5px;cursor:pointer}
+    .mini.gray{background:var(--card);color:var(--text);border:1px solid var(--border)}
+    .empty{text-align:center;color:var(--text-disabled);padding:40px 10px;line-height:1.7}
+    .sub{font-size:12px;color:var(--text-secondary);margin:3px 0 8px}
+    .inp,select{width:100%;padding:11px;font-size:15px;background:var(--card);color:var(--text);border:1px solid var(--input-border);border-radius:var(--radius-sm);margin:4px 0 12px}
+    .inp:focus,select:focus,input:focus{border-color:var(--primary);box-shadow:var(--focus-ring);outline:none}
+    label{font-size:12px;color:var(--text-secondary);font-weight:600}
+    /* minmax(0,1fr): batas minimal kolom grid = lebar isi terpanjang. Tanpa ini,
+       <select> dgn nama komponen panjang melebarkan kolomnya & mendorong tata letak
+       keluar kartu. Sama dgn perbaikan di WorkOrder.html sisi web. */
+    .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .row2>*{min-width:0}
+    @media (max-width:520px){.row2{grid-template-columns:1fr}}
+    input[type="datetime-local"]{width:100%;min-width:0;font-size:14px;padding:10px 8px;appearance:none;-webkit-appearance:none}
+    .spin{display:inline-block;width:13px;height:13px;border:2px solid #BFDBFE;border-top-color:#1e40af;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:5px}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .teamRow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+    .teamRow select{flex:1}
+    .obinfo{font-size:12px;color:#B45309;font-weight:700;margin-bottom:6px}
+    .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(17,24,39,.55);z-index:50;align-items:flex-end;justify-content:center}
+    .sheet{background:var(--card);width:100%;max-width:560px;border-radius:var(--radius) var(--radius) 0 0;padding:20px 16px 24px;max-height:92vh;overflow-y:auto}
+    .sheet h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+    .sheet .desc{font-size:13px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5}
+    #toast{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;font-weight:700;padding:11px 16px;border-radius:var(--radius-sm);font-size:13px;z-index:99;max-width:92vw;text-align:center;box-shadow:var(--shadow-hover)}
+    .syncbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .syncbar button{flex:0 0 auto}
+    .chkRow{display:flex;align-items:center;gap:6px;margin:6px 0;font-size:13px;color:var(--text)}
+    .chkRow input[type="checkbox"]{width:18px;height:18px;accent-color:var(--primary)}
+    /* ===== LAYAR LOGIN BERLATAR FOTO TIM (responsif HP) ===== */
+    #screen-login.loginBg{
+      position:fixed;top:0;left:0;right:0;bottom:0;max-width:none;margin:0;padding:20px 0;
+      display:flex;align-items:center;justify-content:center;overflow-y:auto;z-index:20;
+      background:#0b1b33 url('./bg-login.jpg') center center / cover no-repeat;
+    }
+    /* margin:auto pada anak flex = benar-benar di tengah, dan tetap bisa di-scroll
+       bila layar pendek / keyboard HP terbuka (tidak terpotong di atas). */
+    #screen-login.loginBg > div{ margin:auto; }
+    /* Lapisan gelap: teks tetap terbaca di atas foto, dan nuansa biru SUM terjaga */
+    #screen-login.loginBg::before{
+      content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+      background:linear-gradient(180deg,rgba(8,20,40,.72) 0%,rgba(8,20,40,.62) 45%,rgba(8,20,40,.82) 100%);
+    }
+    #screen-login.loginBg .panel{
+      position:relative;z-index:1;width:100%;max-width:400px;margin:16px;
+      background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,.6);box-shadow:0 18px 44px rgba(0,0,0,.35);
+    }
+    .loginBrand{position:relative;z-index:1;text-align:center;margin-bottom:14px}
+    .loginBrand img{width:64px;height:64px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+    .loginBrand h1{color:#fff;font-size:19px;font-weight:800;margin-top:9px;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+    .loginBrand p{color:rgba(255,255,255,.85);font-size:12px;margin-top:2px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+    /* Layar pendek (HP landscape / HP kecil): rapatkan agar tak perlu scroll jauh */
+    @media (max-height:640px){ .loginBrand img{width:52px;height:52px} .loginBrand h1{font-size:17px} }
+
+    .ovBox{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius-sm);padding:11px;margin:8px 0}
+    .ovLog{background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius-sm);padding:10px 12px;margin:8px 0}
+    .ovLogTitle{font-size:11px;font-weight:800;color:#92400E;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+    .ovLogItem{font-size:12px;color:#374151;margin-bottom:5px}
+    .ovLogItem:last-child{margin-bottom:0}
+    .ovLogWho{font-weight:800;color:#111827}
+    .ovLogTime{font-size:10px;color:#9CA3AF;margin-left:5px}
+    .ovLogList{margin:3px 0 0 15px;padding:0}
+    .ovLogList li{font-size:12px;line-height:1.6}
+    .ovTag{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;margin-right:4px}
+    .ovTag.l1{background:#FED7AA;color:#C2410C}
+    .ovTag.l2{background:#E9D5FF;color:#7C3AED}
+    .timerPill{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius-sm);padding:10px;text-align:center;margin:10px 0}
+    .timerClock{font-size:24px;font-weight:800;font-family:monospace;color:#1e40af}
+    .timerBtns{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+    .timerBtn{padding:7px 14px;border-radius:8px;font-weight:700;font-size:13px;border:none;cursor:pointer}
+    .btnStart{background:#10b981;color:#fff}
+    .btnPause{background:#f59e0b;color:#fff}
+    .btnStop{background:#ef4444;color:#fff}
+    /* Reset dibuat NETRAL, bukan merah - merah sudah dipakai Stop, dan menyamakan
+       warnanya membuat tombol penghapus waktu mudah tertekan saat buru-buru. */
+    .btnReset{background:#fff;color:#475569;border:1px solid #cbd5e1}
+    .btnTransfer{background:#4f46e5;color:#fff;width:100%;margin-top:6px}
+
+    /* ===== SPLASH SCREEN ===== */
+    .splash-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    .splash-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .splash-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- SPLASH SCREEN -->
+  <div class="splash-screen" id="splashScreen">
+    <img src="./foto.png" class="splash-logo" alt="Splash Screen">
+  </div>
+
+  <div class="top">
+    <h1>🔧 MAR SUM V2</h1>
+    <span class="dot" id="netDot"></span><span class="net" id="netText">-</span>
+    <button class="logoutBtn" id="installBtn" style="display:none;background:var(--primary);color:#fff;border-color:var(--primary)" onclick="doInstall()">📲 Instal</button>
+    <button class="logoutBtn" onclick="doLogout()">Logout</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="wrap loginBg" id="screen-login" style="display:none">
+    <div style="position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center">
+    <div class="loginBrand">
+      <img src="./icon-192.png" alt="MAR SUM V2">
+      <h1>MAR SUM V2</h1>
+      <p>Mechanic Activity Report · PT Srikandi Utama Makmur</p>
+    </div>
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><h2 style="color:#111827;font-size:16px">Masukkan Token</h2><span id="loginVersion" style="font-size:11px;font-weight:700;color:#6B7280;background:var(--bg-secondary);border:1px solid var(--border);border-radius:99px;padding:3px 9px">-</span></div>
+      <p class="sub">Token dari admin, cukup diisi SEKALI.</p>
+      <input class="inp" id="tokenInput" placeholder="token..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="big" id="btnLogin" onclick="doLogin()">Masuk</button>
+      <div id="loginLoading" style="display:none;margin-top:10px;text-align:center;font-size:13px;font-weight:700;color:#1e40af"><span class="spin"></span> Memeriksa token…</div>
+    </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="wrap" id="screen-main" style="display:none">
+    <div class="syncbar">
+      <button class="mini" id="syncBtn" onclick="syncNow(true)">🔄 Refresh</button>
+      <button class="mini gray" id="verBtn" onclick="bukaCekVersi()" title="Cek versi aplikasi">⬆️ Versi</button>
+      <div><div style="font-size:13px;font-weight:700" id="meName"></div><div class="sub" style="margin:0" id="lastSync"></div></div>
+    </div>
+    <div class="obinfo" id="outboxInfo" onclick="toggleOutboxDetail()" style="cursor:pointer"></div>
+    <div id="outboxDetail" style="display:none;margin-bottom:8px"></div>
+    <div id="failedOps"></div>
+    <!-- Tab khusus MEKANIK: Assigned | Pending | Done -->
+    <div class="tabBar" id="mechTabBar" style="display:none">
+      <button class="tab active" id="mtabAssigned" onclick="switchMechTab('assigned')">📋 Assigned</button>
+      <button class="tab" id="mtabPending" onclick="switchMechTab('pending')">⏳ Pending</button>
+      <button class="tab" id="mtabDone" onclick="switchMechTab('done')">✅ Done</button>
+    </div>
+    <div class="tabBar" id="tabBar">
+      <button class="tab active" id="tabWos" onclick="switchTab('wos')">📋 WO Saya</button>
+      <button class="tab" id="tabCreate" onclick="switchTab('create')">➕ Buat WO</button>
+      <button class="tab" id="tabActive" onclick="switchTab('active')">⏳ WO Aktif</button>
+      <button class="tab" id="tabApproval" onclick="switchTab('approval')">✅ Approval</button>
+      <button class="tab" id="tabMonitor" onclick="switchTab('monitor')">👥 Monitoring</button>
+    </div>
+    <div id="content"></div>
+  </div>
+
+  <!-- MODAL: Submit (mekanik isi kerja) -->
+  <div class="modal" id="submitModal">
+    <div class="sheet">
+      <h2 id="fTitle">-</h2>
+      <div class="desc" id="fDesc"></div>
+      <div class="ket" id="fKet" style="display:none"></div>
+
+      <!-- LIVE TIMER WIDGET (Opsional — tidak menghapus bar manual) -->
+      <div class="timerPill" id="modalTimerPill">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:2px">⏱️ LIVE TIMER REKAM WAKTU</div>
+        <div class="timerClock" id="modalTimerDisplay">00:00:00</div>
+        <div class="timerBtns">
+          <button type="button" class="timerBtn btnStart" id="modalBtnStart" onclick="modalTimerStart()">▶ Start</button>
+          <button type="button" class="timerBtn btnPause" id="modalBtnPause" onclick="modalTimerPause()" style="display:none">⏸ Pause</button>
+          <button type="button" class="timerBtn btnStop" id="modalBtnStop" onclick="modalTimerStop()" style="display:none">⏹ Stop & Isi Jam</button>
+          <button type="button" class="timerBtn btnReset" id="modalBtnReset" onclick="modalTimerReset()" style="display:none">↺ Reset</button>
+        </div>
+        <!-- Kesimpulan waktu pengerjaan setelah Stop -->
+        <div id="fTimerSummary" style="display:none;margin-top:9px;background:#DCFCE7;border:1px solid #86EFAC;color:#166534;border-radius:8px;padding:9px 11px;font-size:13px;font-weight:700;text-align:center"></div>
+        <div style="font-size:11px;color:#0284c7;margin-top:7px;line-height:1.5">▶ mulai kerja · ⏸ jeda · ⏹ selesai. Durasi terhitung otomatis & tersimpan walau app ditutup. Memulai WO lain akan menjeda WO ini.</div>
+      </div>
+
+      <!-- Jam mulai/selesai: DIISI OTOMATIS oleh timer (mekanik tak perlu mengetik).
+           Disembunyikan agar tak salah isi; nilainya tetap terkirim saat submit. -->
+      <div class="row2" id="manualTimeRow" style="display:none">
+        <div><label>Jam Mulai *</label><input type="datetime-local" class="inp" id="fStart"></div>
+        <div><label>Jam Selesai *</label><input type="datetime-local" class="inp" id="fEnd"></div>
+      </div>
+      <div class="row2">
+        <div><label>Hour Meter *</label><input type="number" class="inp" id="fHm" min="0.1" step="any" placeholder="1250"></div>
+        <div><label>Kilometer *</label><input type="number" class="inp" id="fKm" min="0.1" step="any" placeholder="4500"></div>
+      </div>
+      <label>Jenis Part *</label>
+      <select class="inp" id="fPart"><option value="">-- Pilih Jenis Part --</option><option value="baru">🆕 Baru</option><option value="repair">🔧 Repair</option><option value="canibal">♻️ Canibal</option></select>
+      <button class="big" onclick="queueSubmit()">📮 Simpan & Antre</button>
+      <button class="big secondary" onclick="closeModal('submitModal')">← Kembali</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Create WO (SUM: component/unit/kondisi/others/team — tanpa section/job katalog) -->
+  <div class="modal" id="createModal">
+    <div class="sheet">
+      <h2>➕ Buat Work Order</h2>
+      <label>Kategori Pekerjaan *</label>
+      <select class="inp" id="cCat" onchange="onCatChange()"></select>
+      <label>Komponen / Pekerjaan *</label>
+      <select class="inp" id="cComp" onchange="onCompChange()"><option value="">-- Pilih Kategori Dulu --</option></select>
+
+      <!-- Others fields (saat pilih Others) -->
+      <div id="cOthersWrap" style="display:none">
+        <label>Deskripsi Job *</label>
+        <input class="inp" id="cOthersDesc" placeholder="cth: perbaikan custom" oninput="updateCreatePreview()">
+        <div class="row2">
+          <div><label>Base Points *</label><input type="number" class="inp" id="cOthersBp" min="0.01" step="any" placeholder="0.5" oninput="updateCreatePreview()"></div>
+          <div><label>Target Hours *</label><input type="number" class="inp" id="cOthersTh" min="0.01" step="any" placeholder="2" oninput="updateCreatePreview()"></div>
+        </div>
+        <label>Unit Factor *</label>
+        <input type="number" class="inp" id="cOthersUf" min="0.1" step="0.01" placeholder="1.0" oninput="updateCreatePreview()">
+        <div class="sub" style="margin-top:-8px">Pengali kesulitan (mis. 1.0 standar, 1.2 kompleks)</div>
+      </div>
+
+      <!-- Unit (disembunyikan saat Others) -->
+      <div id="cUnitWrap">
+        <label>Unit *</label>
+        <select class="inp" id="cUnit" onchange="updateCreatePreview()"></select>
+      </div>
+
+      <label>Work Condition *</label>
+      <select class="inp" id="cWc" onchange="updateCreatePreview()"></select>
+
+      <label>Lokasi *</label>
+      <select class="inp" id="cLoc"><option value="workshop">🏭 Bengkel</option><option value="field">🚜 Lapangan</option></select>
+
+      <label>Keterangan (opsional)</label>
+      <input class="inp" id="cKet" placeholder="cth: unit di pit 3">
+
+      <label>Tim Mekanik *</label>
+      <div id="cTeamList"></div>
+      <button class="mini" onclick="addTeamMember()" style="margin-bottom:10px">+ Tambah Mekanik</button>
+
+      <div class="panel" id="cPreview" style="display:none;background:#EFF6FF;border-color:#BFDBFE;padding:11px;margin-bottom:10px">
+        <div class="sub" style="margin:0 0 4px;font-weight:700;color:#1e40af">📊 Preview Poin</div>
+        <div id="cPreviewBody" style="font-size:13px;color:#111827"></div>
+      </div>
+      <button class="big" onclick="queueCreate(true)">➕ Simpan & Buat Lagi</button>
+      <button class="big" onclick="queueCreate(false)" style="background:#15803d">📮 Simpan & Selesai</button>
+      <button class="big secondary" onclick="closeModal('createModal')">Batal</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Approve/Reject (SUM: tanpa MTBF, DENGAN override) -->
+  <div class="modal" id="approveModal">
+    <div class="sheet">
+      <h2 id="aTitle">-</h2>
+      <div class="desc" id="aDesc"></div>
+      <div class="sub" id="aTeam"></div>
+      <div class="sub" id="aStatus"></div>
+
+      <!-- OVERRIDE base_points / target_hours / TIM (parity dgn web) -->
+      <div class="ovBox">
+        <div onclick="toggleOverride()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">
+          <div class="sub" style="margin:0;font-weight:700;color:#1e40af">✏️ Override (opsional)</div>
+          <span id="ovArrow" style="font-size:14px;color:#1e40af;font-weight:800">▸</span>
+        </div>
+        <div id="ovBody" style="display:none;margin-top:9px">
+        <div class="row2">
+          <div><label>Base Points</label><input type="number" class="inp" id="aOvBp" min="0" step="any" placeholder="pakai bawaan"></div>
+          <div><label>Durasi kerja saat ini</label><input class="inp" id="aOvActualNow" disabled style="opacity:.7;background:#F3F4F6"></div>
+        </div>
+        <!-- ⏱️ Override WAKTU KERJA (mengganti override Target Hours) -->
+        <label>⏱️ Waktu Kerja (Start → Stop)</label>
+        <div class="row2">
+          <div><span class="sub" style="margin:0">Mulai</span><input type="datetime-local" class="inp" id="aOvStart" onchange="aOvHitungDurasi()"></div>
+          <div><span class="sub" style="margin:0">Selesai</span><input type="datetime-local" class="inp" id="aOvEnd" onchange="aOvHitungDurasi()"></div>
+        </div>
+        <div id="aOvDurBox" style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1e40af;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;margin-bottom:8px">Durasi: <span id="aOvDurText">-</span></div>
+
+        <label>Tim Mekanik <span class="sub" style="display:inline;margin:0">(tiap anggota poin penuh)</span></label>
+        <div id="aOvTeam"></div>
+        <button type="button" class="mini gray" onclick="aOvAddMember()" style="margin-bottom:6px">+ Tambah Mekanik</button>
+        <button class="mini" onclick="queueOverride()">💾 Simpan Override</button>
+        <div id="ovBelumSimpanNota" style="display:none;margin-top:8px;padding:8px 10px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;color:#92400E;font-size:13px;font-weight:600">⚠️ Ada perubahan yang belum disimpan — tekan 💾 Simpan Override sebelum Approve.</div>
+        <div class="sub" style="margin:6px 0 0">Override (base points / waktu kerja / tim) diantre & tersimpan SEBELUM approve (FIFO).</div>
+        </div>
+      </div>
+
+      <!-- 📋 Riwayat override: SIAPA mengubah APA -->
+      <div id="aOvLog" class="ovLog" style="display:none"></div>
+
+      <label>Catatan</label>
+      <input class="inp" id="aNotes" placeholder="opsional">
+      <div class="chkRow"><input type="checkbox" id="aSafety"><label>Safety Incident (poin → 0)</label></div>
+      <button class="big" id="aBtnL1" onclick="queueApprove(1)">✅ Approve L1</button>
+      <button class="big" id="aBtnL2" onclick="queueApprove(2)">✅ Approve L2 (Award Poin)</button>
+      <button class="big secondary" onclick="toggleRejectSection()">❌ Reject</button>
+      <div id="aRejectSection" style="display:none;margin-top:8px">
+        <label>Alasan Reject *</label>
+        <input class="inp" id="aReason" placeholder="alasan reject wajib diisi">
+        <button class="big danger" onclick="queueReject()">🚫 Kirim Reject</button>
+      </div>
+      <button class="big secondary" onclick="closeModal('approveModal')" style="margin-top:6px">Batal</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Request Transfer WO (Mekanik) -->
+  <div class="modal" id="transferModal">
+    <div class="sheet">
+      <h2>🔀 Transfer Work Order</h2>
+      <div class="desc" id="trDesc">-</div>
+      <div class="ket" style="margin-bottom:8px;background:#EFF6FF;color:#1E40AF">ℹ️ Jika timer live sedang berjalan, waktu akan otomatis dihentikan saat permintaan transfer dikirim.</div>
+      <label>Catatan Transfer (opsional)</label>
+      <input class="inp" id="trNote" placeholder="cth: belum selesai shift ini, minta dilanjut shift 2">
+      <button class="big" style="background:#4f46e5" onclick="queueRequestTransfer()">🚀 Kirim Permintaan Transfer</button>
+      <button class="big secondary" onclick="closeModal('transferModal')">Batal</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Approve Transfer WO (L1 pilih mekanik penerima) -->
+  <div class="modal" id="approveTransferModal">
+    <div class="sheet">
+      <h2>🔀 Setujui Transfer Work Order</h2>
+      <div class="desc" id="trAppDesc">-</div>
+      <label>Pilih Mekanik Penerima Transfer *</label>
+      <div id="trRecipientsList"></div>
+      <button type="button" class="mini gray" onclick="addTransferRecipientRow()" style="margin-bottom:10px">+ Tambah Mekanik Penerima</button>
+      <button class="big" style="background:#10b981" onclick="queueApproveTransfer()">✅ Setujui Transfer</button>
+      <button class="big secondary" onclick="closeModal('approveTransferModal')">Batal</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Cancel WO -->
+  <div class="modal" id="cancelModal">
+    <div class="sheet">
+      <h2>🗑 Batalkan Work Order</h2>
+      <div class="desc" id="cxDesc">-</div>
+      <div class="err" style="margin-bottom:8px">⚠️ Jika WO sudah <b>approved</b>, poin & rupiah mekanik akan <b>di-nol-kan</b> otomatis.</div>
+      <label>Alasan pembatalan *</label>
+      <input class="inp" id="cxReason" placeholder="alasan wajib diisi">
+      <button class="big danger" onclick="queueCancel()">🚫 Batalkan WO</button>
+      <button class="big secondary" onclick="closeModal('cancelModal')">Kembali</button>
+    </div>
+  </div>
+
+  <!-- MODAL: panduan instal iPhone/iPad -->
+  <div class="modal" id="iosModal">
+    <div class="sheet">
+      <h2>📲 Instal di iPhone / iPad</h2>
+      <div class="desc" style="line-height:1.9">
+        1. Buka link ini di <b>Safari</b><br>
+        2. Tap tombol <b>Bagikan</b> <span style="border:1px solid var(--border);border-radius:6px;padding:1px 7px">⬆️</span> di bawah layar<br>
+        3. Scroll → pilih <b>"Tambahkan ke Layar Utama"</b> (Add to Home Screen)<br>
+        4. Tap <b>Tambah</b> — ikon <b>MAR SUM</b> muncul di layar utama
+      </div>
+      <div class="sub">Dari Chrome iPhone: tombol Bagikan → Add to Home Screen (sama).</div>
+      <button class="big secondary" onclick="closeModal('iosModal')">Tutup</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <script src="./app.js"></script>
+  <!-- MODAL: Versi aplikasi -->
+  <div class="modal" id="versiModal">
+    <div class="sheet">
+      <h2 style="font-size:17px;margin-bottom:12px">⬆️ Versi Aplikasi</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px">
+        <span class="sub" style="margin:0">Terpasang di HP ini</span>
+        <b id="vTerpasang" style="font-size:15px">-</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px">
+        <span class="sub" style="margin:0">Terbaru di server</span>
+        <b id="vServer" style="font-size:15px">mengecek…</b>
+      </div>
+      <div id="vStatus" style="border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;font-weight:700;margin-bottom:6px">⏳ Mengecek…</div>
+      <div class="sub" id="vCatatan" style="display:none">Pekerjaan yang masih antre <b>tidak akan hilang</b> — antrean disimpan terpisah dari cache aplikasi.</div>
+      <button class="big" id="vBtnUpdate" style="display:none" onclick="perbaruiSekarang()">⬇️ Perbarui Sekarang</button>
+      <button class="big secondary" onclick="closeModal('versiModal')" style="margin-top:6px">Tutup</button>
+    </div>
+  </div>
+
+</body>
+</html>

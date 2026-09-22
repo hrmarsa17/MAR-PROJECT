@@ -34,8 +34,9 @@ export function BlokJoblist({
   ubah: (tambalan: Partial<Blok>) => void;
   hapus: () => void;
 }) {
+  const isSum = tenantCode === 'SUM';
   const sec = kat.sections.find((s) => s.code === blok.section) ?? null;
-  const datar = sec?.picker_style === 'flat';
+  const datar = isSum || (sec?.picker_style === 'flat');
   const butuhUnit = sec?.requires_unit ?? true;
   const M = meterUntuk(blok.section);
 
@@ -147,40 +148,44 @@ export function BlokJoblist({
       )}
 
       {/* ── Section ──────────────────────────────────────────────────────── */}
-      <div className="form-group">
-        <label className="form-label">Section <span className="wajib">*</span></label>
-        <div className="pilihan-grid">
-          {kat.sections.map((s) => (
-            <button
-              type="button"
-              key={s.code}
-              disabled={terkunciSection}
-              className={blok.section === s.code ? 'pilihan terpilih' : 'pilihan'}
-              onClick={() => gantiSection(s.code)}
-            >
-              {ikonSection(s.code)} {s.name}
-            </button>
-          ))}
+      {!isSum && (
+        <div className="form-group">
+          <label className="form-label">Section <span className="wajib">*</span></label>
+          <div className="pilihan-grid">
+            {kat.sections.map((s) => (
+              <button
+                type="button"
+                key={s.code}
+                disabled={terkunciSection}
+                className={blok.section === s.code ? 'pilihan terpilih' : 'pilihan'}
+                onClick={() => gantiSection(s.code)}
+              >
+                {ikonSection(s.code)} {s.name}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── HM / KM ──────────────────────────────────────────────────────── */}
-      <div className="form-group">
-        <label className="form-label">
-          {M.label} Unit{' '}
-          <span className="form-hint" style={{ display: 'inline', fontWeight: 400 }}>
-            {M.petunjuk}
-          </span>
-        </label>
-        <input
-          type="number" step="any" min="0" inputMode="decimal"
-          style={{ maxWidth: 220 }}
-          placeholder={M.contoh}
-          value={blok.meter}
-          onChange={(e) => ubah({ meter: e.target.value })}
-        />
-        <KakiMeter blok={blok} kat={kat} />
-      </div>
+      {!isSum && (
+        <div className="form-group">
+          <label className="form-label">
+            {M.label} Unit{' '}
+            <span className="form-hint" style={{ display: 'inline', fontWeight: 400 }}>
+              {M.petunjuk}
+            </span>
+          </label>
+          <input
+            type="number" step="any" min="0" inputMode="decimal"
+            style={{ maxWidth: 220 }}
+            placeholder={M.contoh}
+            value={blok.meter}
+            onChange={(e) => ubah({ meter: e.target.value })}
+          />
+          <KakiMeter blok={blok} kat={kat} />
+        </div>
+      )}
 
       {/* ── Keterangan ───────────────────────────────────────────────────── */}
       <div className="form-group">
