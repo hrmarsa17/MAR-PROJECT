@@ -17,7 +17,7 @@ import { durasiJam } from '../../../lib/format.js';
  */
 export function BlokJoblist({
   blok, nomor, total, kat, bolehManual, bolehLihatPoin,
-  terkunciUnit, terkunciJob, terkunciSection, tampilSemuaUnit,
+  terkunciUnit, terkunciJob, terkunciSection, tampilSemuaUnit, tenantCode,
   ubah, hapus,
 }: {
   blok: Blok;
@@ -30,6 +30,7 @@ export function BlokJoblist({
   terkunciJob: boolean;
   terkunciSection: boolean;
   tampilSemuaUnit: boolean;
+  tenantCode?: string;
   ubah: (tambalan: Partial<Blok>) => void;
   hapus: () => void;
 }) {

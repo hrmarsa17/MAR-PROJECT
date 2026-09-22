@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "db:dummy": "tsx scripts/siapkan-dummy.ts",
+    "db:dummy:sum": "tsx scripts/siapkan-dummy-sum.ts",
     "db:contoh": "tsx scripts/isi-contoh.ts",
     "db:katalog": "tsx scripts/isi-katalog-contoh.ts",
     "uji:wo": "tsx scripts/uji-buat-wo.ts",

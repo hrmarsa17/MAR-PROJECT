@@ -24,6 +24,7 @@ export default async function BuatWo() {
       <FormWo
         bolehManual={aku.peran !== 'mechanic'}
         bolehLihatPoin={aku.peran === 'superintendent'}
+        tenantCode={aku.tenantCode}
       />
     </div>
   );

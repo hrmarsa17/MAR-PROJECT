@@ -19,6 +19,11 @@ import { periksaMasuk } from './meter.js';
  * Ia ditandai lewat view wo_kembar_dicurigai, dan manusia yang memutuskan.
  */
 
+export interface TimAnggotaWo {
+  mechanicId: number;
+  share?: number;
+}
+
 export interface BlokWo {
   jobId?: number;
   unitId?: number;
@@ -27,8 +32,8 @@ export interface BlokWo {
   keterangan?: string;
   hourMeter?: number;
   kilometers?: number;
-  teamMechanicIds: number[];
-  /** WO manual ("Others") — angkanya langsung masuk jalur uang. */
+  team?: TimAnggotaWo[];
+  teamMechanicIds?: number[];
   manual?: {
     description: string;
     basePoints: number;
@@ -83,10 +88,18 @@ export async function buatWorkOrder(
 
       const grupId = m.grup ? crypto.randomUUID() : null;
       const dibuat: WoDibuat[] = [];
+      const tenantRow = (await tx<{ code: string }[]>`SELECT code FROM tenants WHERE id = ${m.tenantId}`)[0];
+      const isSum = tenantRow?.code?.toUpperCase() === 'SUM';
+      let baseWoForBatch: string | null = null;
+      if (isSum && m.grup && m.blok.length > 1) {
+        baseWoForBatch = (await tx<{ next_wo_number: string }[]>`SELECT next_wo_number(${m.tenantId}::smallint, current_date)`)[0]!.next_wo_number;
+      }
 
-      for (const b of m.blok) {
-        // WO manual mengetik base_points & target_hours sendiri, dan angka itu
-        // masuk langsung ke jalur uang. Mekanik hanya boleh dari katalog.
+      for (let idx = 0; idx < m.blok.length; idx++) {
+        const b = m.blok[idx]!;
+        const teamList: TimAnggotaWo[] = b.team
+          ? b.team.map((x) => ({ mechanicId: x.mechanicId, share: x.share ?? 1.0 }))
+          : (b.teamMechanicIds ?? []).map((id) => ({ mechanicId: id, share: 1.0 }));
         if (b.manual && pembuat.role === 'mechanic') {
           throw tidakBerhak(
             'WO manual hanya boleh dibuat oleh L1 atau L2. Silakan pilih job dari katalog.',
@@ -95,7 +108,7 @@ export async function buatWorkOrder(
         if (!b.manual && !b.jobId) {
           throw aturanBisnis('Job wajib dipilih dari katalog');
         }
-        if (b.teamMechanicIds.length === 0) {
+        if (teamList.length === 0) {
           throw aturanBisnis('WO wajib punya minimal satu anggota tim');
         }
         /* WO MANUAL TIDAK PUNYA UNIT, dan itu bukan kelonggaran.
@@ -126,8 +139,7 @@ export async function buatWorkOrder(
 
         if (b.jobId) await pastikanJobCocok(tx, b.jobId, section.id, b.unitId ?? null);
 
-        // Validasi tenant & status aktif semua mekanik sebelum proses pembuatan
-        const mekanikIds = [...new Set(b.teamMechanicIds)];
+        const mekanikIds = [...new Set(teamList.map(tm => tm.mechanicId))];
         const sah = await tx<{ n: string }[]>`
           SELECT count(*) AS n FROM mechanics
            WHERE id = ANY(${mekanikIds}::int[]) AND tenant_id = ${m.tenantId} AND is_active
@@ -136,11 +148,12 @@ export async function buatWorkOrder(
           throw aturanBisnis('Ada anggota tim yang tidak dikenal, nonaktif, atau di luar tenant.');
         }
 
-        const woNumber = (
-          await tx<{ next_wo_number: string }[]>`
-            SELECT next_wo_number(${m.tenantId}::smallint, current_date)
-          `
-        )[0]!.next_wo_number;
+        let woNumber: string;
+        if (baseWoForBatch) {
+          woNumber = `${baseWoForBatch}-${String.fromCharCode(65 + idx)}`;
+        } else {
+          woNumber = (await tx<{ next_wo_number: string }[]>`SELECT next_wo_number(${m.tenantId}::smallint, current_date)`)[0]!.next_wo_number;
+        }
 
         const baris = (
           await tx<{ id: number }[]>`
@@ -165,11 +178,11 @@ export async function buatWorkOrder(
           `
         )[0]!;
 
-        for (const mechanicId of mekanikIds) {
+        for (const tm of teamList) {
           await tx`
-            INSERT INTO work_order_team (work_order_id, mechanic_id, added_by)
-            VALUES (${baris.id}, ${mechanicId}, ${m.actorId})
-            ON CONFLICT (work_order_id, mechanic_id) DO NOTHING
+            INSERT INTO work_order_team (work_order_id, mechanic_id, share, added_by)
+            VALUES (${baris.id}, ${tm.mechanicId}, ${tm.share ?? 1.0}, ${m.actorId})
+            ON CONFLICT (work_order_id, mechanic_id) DO UPDATE SET share = EXCLUDED.share
           `;
         }
 

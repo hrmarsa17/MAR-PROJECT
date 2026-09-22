@@ -20,6 +20,7 @@ export default async function BuatWoLapangan() {
       <FormWo
         bolehManual={aku.peran !== 'mechanic'}
         bolehLihatPoin={aku.peran !== 'mechanic'}
+        tenantCode={aku.tenantCode}
       />
     </div>
   );

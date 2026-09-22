@@ -15,9 +15,10 @@ const KUNCI_KIRIMAN = 'mar_kiriman_wo';
 interface BarisStruk { ok: boolean; no: string; sub: string }
 interface Struk { judul: string; sub: string; baris: BarisStruk[]; catatan?: string }
 
-export function FormWo({ bolehManual, bolehLihatPoin }: {
+export function FormWo({ bolehManual, bolehLihatPoin, tenantCode }: {
   bolehManual: boolean;
   bolehLihatPoin: boolean;
+  tenantCode?: string;
 }) {
   const [kat, setKat] = useState<Katalog | null>(null);
   const [muatGagal, setMuatGagal] = useState<string | null>(null);
@@ -395,6 +396,7 @@ export function FormWo({ bolehManual, bolehLihatPoin }: {
             terkunciJob={terkunci && grupMode === 'job'}
             terkunciSection={terkunci}
             tampilSemuaUnit={tampilSemuaUnit}
+            tenantCode={tenantCode}
             ubah={(t) => ubahBlok(i, t)}
             hapus={() => hapusBlok(i)}
           />
@@ -540,7 +542,10 @@ function muatanBlok(b: Blok) {
     ...(angkaMeter !== undefined && Number.isFinite(angkaMeter)
       ? { [M.kunci]: angkaMeter }
       : {}),
-    teamMechanicIds: b.tim.filter((x) => x > 0),
+    team: b.tim.filter((x) => x > 0).map((id, index) => ({
+      mechanicId: id,
+      share: b.timShare?.[index] ?? 1.0,
+    })),
   };
 }
 

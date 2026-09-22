@@ -16,7 +16,7 @@ import { jamTerpakai } from './scoring.js';
  */
 
 export interface NilaiEfektif extends MasukanSkor {
-  team: { mechanicId: number; idrPerPoint: number }[];
+  team: { mechanicId: number; idrPerPoint: number; share: number }[];
   sectionId: number;
 }
 
@@ -109,12 +109,14 @@ export async function nilaiEfektif(tx: Tx, woId: number): Promise<NilaiEfektif> 
       ).map((r) => r.mechanic_id);
 
   const team = (
-    await tx<{ mechanic_id: number; idr_per_point: string }[]>`
-      SELECT m.id AS mechanic_id, p.idr_per_point
+    await tx<{ mechanic_id: number; idr_per_point: string; share: string }[]>`
+      SELECT m.id AS mechanic_id, p.idr_per_point, t.share
         FROM mechanics m JOIN pay_rates p ON p.id = m.pay_rate_id
-       WHERE m.id = ANY(${idTim}::int[])
+        JOIN work_order_team t ON t.mechanic_id = m.id
+       WHERE t.work_order_id = ${woId}
+         AND m.id = ANY(${idTim}::int[])
     `
-  ).map((r) => ({ mechanicId: r.mechanic_id, idrPerPoint: angka(r.idr_per_point) }));
+  ).map((r) => ({ mechanicId: r.mechanic_id, idrPerPoint: angka(r.idr_per_point), share: angka(r.share) }));
 
   if (team.length !== idTim.length) {
     throw tidakDitemukan('Tarif mekanik', 'salah satu anggota tim');

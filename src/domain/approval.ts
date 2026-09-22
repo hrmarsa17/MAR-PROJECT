@@ -2,7 +2,7 @@ import { angka, type Tx } from '../lib/db.js';
 import { aturanBisnis, konflikKeadaan, tidakBerhak, tidakDitemukan } from '../lib/errors.js';
 import { jalankanPerintah, rebutStatus, type HasilPerintah } from './runCommand.js';
 import { muatFaktor, nilaiEfektif } from './nilaiEfektif.js';
-import { hitungSkor, rupiahUntukPoin } from './scoring.js';
+import { bulatkan, hitungSkor, rupiahUntukPoin } from './scoring.js';
 
 /**
  * APPROVE — jalur tempat uang terbit.
@@ -218,17 +218,18 @@ export async function approveL2(m: MasukanApprove): Promise<HasilPerintah<HasilA
       // tidak akan pernah menampilkan rupiah berbeda untuk WO yang sama.
       const dibayar: HasilApproveL2['dibayar'] = [];
       for (const anggota of nilai.team) {
+        const poinAnggota = bulatkan(skor.finalPoints * (anggota.share ?? 1.0), 3);
         await tx`
           INSERT INTO mechanic_points (
             work_order_id, mechanic_id, section_id, points, idr_per_point)
           VALUES (${m.woId}, ${anggota.mechanicId}, ${nilai.sectionId},
-                  ${skor.finalPoints}, ${anggota.idrPerPoint})
+                  ${poinAnggota}, ${anggota.idrPerPoint})
           ON CONFLICT (work_order_id, mechanic_id) DO NOTHING
         `;
         dibayar.push({
           mechanicId: anggota.mechanicId,
-          points: skor.finalPoints,
-          idr: rupiahUntukPoin(skor.finalPoints, anggota.idrPerPoint),
+          points: poinAnggota,
+          idr: rupiahUntukPoin(poinAnggota, anggota.idrPerPoint),
         });
       }
 

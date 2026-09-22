@@ -20,6 +20,7 @@ import { tidakBerhak } from './errors.js';
 export interface Identitas {
   mechanicId: number;
   tenantId: number;
+  tenantCode: string;
   nama: string;
   peran: 'mechanic' | 'supervisor' | 'superintendent';
   /**
@@ -61,16 +62,17 @@ export async function identitasDariToken(
   const q = tx ?? sql;
   const baris = await q<
     {
-      mechanic_id: number; tenant_id: number; name: string; role: string;
+      mechanic_id: number; tenant_id: number; tenant_code: string; name: string; role: string;
       may_view_performance: boolean; may_view_technical: boolean; may_view_report: boolean;
       may_admin: boolean;
     }[]
   >`
-    SELECT t.mechanic_id, t.tenant_id, m.name, m.role::text,
+    SELECT t.mechanic_id, t.tenant_id, tn.code::text AS tenant_code, m.name, m.role::text,
            m.may_view_performance, m.may_view_technical, m.may_view_report,
            m.may_admin
       FROM api_tokens t
       JOIN mechanics m ON m.id = t.mechanic_id
+      JOIN tenants tn ON tn.id = t.tenant_id
      WHERE t.token = ${token.trim()}
        AND t.is_active
        AND t.revoked_at IS NULL
@@ -90,6 +92,7 @@ export async function identitasDariToken(
   return {
     mechanicId: Number(r.mechanic_id),
     tenantId: Number(r.tenant_id),
+    tenantCode: String(r.tenant_code ?? ''),
     nama: r.name,
     peran,
     // L2 selalu boleh; selain itu ditentukan penanda per orang.

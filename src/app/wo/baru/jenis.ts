@@ -75,6 +75,7 @@ export interface Blok {
   lokasi: 'workshop' | 'field';
   kondisi: string;
   tim: number[];
+  timShare?: number[];
   semuaMekanik: boolean;
 }
 
