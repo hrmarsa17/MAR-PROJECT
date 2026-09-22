@@ -99,3 +99,14 @@
 - **Lokasi:** `tests/sehat.test.ts` (baris 59–66)
 - **Status:** Selesai diperbaiki (mock kueri sql ditambahkan sehingga test selalu stabil).
 
+---
+
+## 🚀 4. Integrasi Multi-Tenant PT SUM & PT KMB
+- **Status:** Selesai diterapkan & diverifikasi.
+- **Fitur & Perbaikan:**
+  - Migrasi 011: Dukungan kolom `share` pada `work_order_team`.
+  - Migrasi 012: Pendaftaran tenant `SUM` di tabel `tenants`.
+  - Master Data & Dummy SUM: 94 Jobs/Komponen (`COM-001` s/d `COM-094`), 4 Unit, 2 Sections, 5 Akun Pengguna/Mekanik.
+  - UI Navbar: Menampilkan lencana dan identitas PT (`PT KMB` vs `PT SUM`) tepat di bawah judul *Mechanic Activity Report*.
+  - Pemisahan isolasi tenant penuh di lapisan basis data & otentikasi sesi token.
+
