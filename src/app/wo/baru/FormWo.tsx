@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { kirimPerintah } from '../../../pwa/kirim.js';
 import { adaIndexedDb, bacaKv, simpanKv } from '../../../pwa/simpanan.js';
 import { BlokJoblist } from './BlokJoblist.js';
-import { FormWoSum } from './FormWoSum.js';
 import { Portal } from '../../Portal.js';
 import {
   blokBaru, grupBolehUntuk, meterUntuk,
@@ -124,11 +123,6 @@ export function FormWo({ bolehManual, bolehLihatPoin, tenantCode }: {
     return <div className="kabar kabar-salah">Gagal memuat katalog: {muatGagal}</div>;
   }
   if (!kat || blok.length === 0) return <div className="kosong">Memuat katalog…</div>;
-
-  const isSum = (tenantCode ?? kat.tenantCode)?.toUpperCase() === 'SUM';
-  if (isSum) {
-    return <FormWoSum kat={kat} bolehLihatPoin={bolehLihatPoin} />;
-  }
 
   const terkunci = grupMode !== '' && blok.length > 1;
   const acuan = blok[0]!;
