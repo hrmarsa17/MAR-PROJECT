@@ -4,6 +4,20 @@ import { sql } from '../src/lib/db.js';
 
 const FILE_EXCEL = 'V2 PT SUM_Mechanic Activity Report.xlsx';
 
+const alamat = process.env['DATABASE_URL'] ?? '';
+if (!alamat) {
+  console.error('\n❌ DATABASE_URL belum ditentukan.');
+  process.exit(1);
+}
+
+if (!/:5433\//.test(alamat) && !process.argv.includes('--izinkan-luar') && !process.argv.includes('--jauh')) {
+  console.error(
+    '\n❌ DITOLAK. DATABASE_URL bukan basis data lokal (port 5433).\n' +
+    '   Gunakan --izinkan-luar atau --jauh untuk melanjutkan.\n'
+  );
+  process.exit(1);
+}
+
 async function main() {
   console.log('Membaca file Excel SUM...');
   const wb = new ExcelJS.Workbook();

@@ -300,7 +300,7 @@ async function pastikanJobCocok(
       `
     )[0];
     if (!unit) throw tidakDitemukan('Unit', unitId);
-    if (unit.unit_model_id !== job.unit_model_id) {
+    if (unit.unit_model_id !== null && unit.unit_model_id !== job.unit_model_id) {
       throw aturanBisnis('Job ini bukan untuk model unit tersebut', { jobId, unitId });
     }
   }

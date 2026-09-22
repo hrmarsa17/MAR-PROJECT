@@ -93,7 +93,10 @@ export function BlokJoblist({
     () => (datar || isSum ? jobSection : jobSection.filter((j) => j.unit_model === modelTerpilih)),
     [datar, isSum, jobSection, modelTerpilih],
   );
-  const daftarKomponen = useMemo(() => beda(jobCocok.map((j) => j.component)), [jobCocok]);
+  const daftarKomponen = useMemo(
+    () => beda(jobCocok.map((j) => (isSum ? (j.component || j.job_type || null) : j.component))),
+    [jobCocok, isSum],
+  );
   const daftarKategori = daftarKomponen;
   const daftarSub = useMemo(
     () => beda(jobCocok.filter((j) => j.component === blok.komponen).map((j) => j.sub_component)),
@@ -101,7 +104,7 @@ export function BlokJoblist({
   );
   const daftarJob = useMemo(
     () => (isSum
-      ? jobCocok.filter((j) => j.component === blok.komponen)
+      ? jobCocok.filter((j) => (j.component || j.job_type) === blok.komponen)
       : (datar
           ? jobCocok
           : jobCocok.filter((j) => j.component === blok.komponen && j.sub_component === blok.subKomponen))
@@ -225,26 +228,57 @@ export function BlokJoblist({
         </label>
       )}
 
-      {/* ── Kategori & Joblist (Mode SUM) ────────────────────────────────── */}
+      {/* ── Dropdown Unit & Kategori & Komponen (Mode SUM) ─────────────── */}
       {isSum && !blok.others && (
         <>
+          <div className="form-group">
+            <label className="form-label">Unit <span className="wajib">*</span></label>
+            <select
+              value={blok.unitId}
+              disabled={terkunciUnit}
+              onChange={(e) => {
+                const u = kat.units.find((x) => String(x.id) === e.target.value);
+                if (u?.is_virtual) {
+                  ubah({ others: true, unitId: '', komponen: '', subKomponen: '', jobId: '' });
+                  return;
+                }
+                ubah({ unitId: e.target.value });
+              }}
+            >
+              <option value="">-- Pilih Unit --</option>
+              {kat.units.filter((u) => !u.is_virtual).map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.unit_name}{u.unit_model ? ` · ${u.unit_model}` : ''}
+                </option>
+              ))}
+            </select>
+            {terkunciUnit && (
+              <p className="tanda-kunci">
+                🔒 Unit dikunci oleh grup — hapus joblist lain untuk mengubah
+              </p>
+            )}
+          </div>
+
           <div className="form-group">
             <label className="form-label">Kategori Pekerjaan <span className="wajib">*</span></label>
             <select
               value={blok.komponen}
+              disabled={terkunciJob}
               onChange={(e) => ubah({ komponen: e.target.value, jobId: '' })}
             >
               <option value="">-- Pilih Kategori Pekerjaan --</option>
               {daftarKategori.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+
           <div className="form-group">
             <label className="form-label">Komponen / Pekerjaan <span className="wajib">*</span></label>
             <select
               value={blok.jobId}
+              disabled={terkunciJob || !blok.komponen}
               onChange={(e) => ubah({ jobId: e.target.value })}
             >
-              <option value="">-- Pilih Komponen --</option>
+              <option value="">{!blok.komponen ? '-- Pilih Kategori Dulu --' : '-- Pilih Komponen --'}</option>
               {daftarJob.map((j) => <option key={j.id} value={j.id}>{labelJob(j, bolehLihatPoin)}</option>)}
             </select>
           </div>
@@ -613,12 +647,12 @@ function hitungPratinjau(
   } else {
     base = job?.base_points == null ? 0 : Number(job.base_points);
     target = job ? Number(job.plan_hours) : 0;
-    if (sec && !sec.requires_unit) {
-      // Workshop tidak punya unit, jadi tak ada yang bisa mengalikan.
-      unitFaktor = 1; unitTeks = '1.00x (Workshop)';
-    } else if (unit) {
+    if (unit) {
       unitFaktor = unit.unit_factor == null ? 1 : Number(unit.unit_factor);
       unitTeks = `${unitFaktor.toFixed(2)}x`;
+    } else if (sec && !sec.requires_unit) {
+      // Workshop tidak punya unit, jadi tak ada yang bisa mengalikan.
+      unitFaktor = 1; unitTeks = '1.00x (Workshop)';
     }
   }
 

@@ -152,6 +152,14 @@ export function FormWo({ bolehManual, bolehLihatPoin, tenantCode }: {
       if (mode === 'unit') {
         return { ...dasar, unitId: a.unitId, model: a.model };
       }
+      if (tenantCode === 'SUM') {
+        return {
+          ...dasar,
+          komponen: a.komponen,
+          subKomponen: a.subKomponen,
+          jobId: a.jobId,
+        };
+      }
       // mode 'job': job dikunci, unit bervariasi. Job dicocokkan lewat
       // job_description, BUKAN job_id — job_id berbeda per unit_model walau
       // pekerjaannya sama persis.
