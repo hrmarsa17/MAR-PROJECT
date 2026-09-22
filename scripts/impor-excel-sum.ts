@@ -86,15 +86,17 @@ async function main() {
   if (wsMech) {
     console.log('Mengimpor Mechanics...');
     let count = 0;
-    wsMech.eachRow(async (row, rowNum) => {
-      if (rowNum === 1) return;
+    const rows: any[] = [];
+    wsMech.eachRow((row, rowNum) => { if (rowNum > 1) rows.push(row); });
+
+    for (const row of rows) {
       const mechanicCode = String(row.getCell(1).value ?? '').trim();
       const mechanicName = String(row.getCell(2).value ?? '').trim();
       const email = String(row.getCell(3).value ?? '').trim();
       const roleStr = String(row.getCell(4).value ?? 'mechanic').trim().toLowerCase();
       const jabatan = String(row.getCell(7).value ?? '').trim();
       const golongan = String(row.getCell(8).value ?? '').trim();
-      if (!mechanicCode) return;
+      if (!mechanicCode) continue;
 
       let role = 'mechanic';
       if (roleStr.includes('supervisor')) role = 'supervisor';
@@ -118,30 +120,41 @@ async function main() {
             ON CONFLICT (token) DO NOTHING
           `;
         }
+        count++;
       } catch (e: any) {
         console.error('Gagal mekanik:', mechanicCode, e.message);
       }
-      count++;
-    });
-    console.log(`Selesai impor mechanics: ~${count} baris diproses.`);
+    }
+    console.log(`Selesai impor mechanics: ${count} baris diproses.`);
   }
 
   // 6. Impor Components / Jobs (Config_Components)
   const wsComp = wb.getWorksheet('Config_Components');
   if (wsComp) {
     console.log('Mengimpor Katalog Components...');
+    
+    // Buat dummy unit model untuk SUM agar lolos constraint bentuk_cascade
+    const resModel = await sql<{ id: number }[]>`
+      INSERT INTO unit_models (tenant_id, code, name, section_id)
+      VALUES (${tenantId}, 'SUM-GLOBAL', 'Global SUM', ${sectionId})
+      ON CONFLICT (tenant_id, code, section_id) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+    `;
+    const dummyModelId = resModel[0]!.id;
+
     let count = 0;
-    wsComp.eachRow(async (row, rowNum) => {
-      if (rowNum === 1) return;
+    const rows: any[] = [];
+    wsComp.eachRow((row, rowNum) => { if (rowNum > 1) rows.push(row); });
+
+    for (const row of rows) {
       const compNo = String(row.getCell(1).value ?? '').trim();
       const compName = String(row.getCell(2).value ?? '').trim();
       const category = String(row.getCell(3).value ?? 'General').trim();
       const basePoints = Number(row.getCell(4).value) || 10;
       const targetHours = Number(row.getCell(5).value) || 4;
-      if (!compNo) return;
+      if (!compNo) continue;
 
       try {
-        // Simpan component sebagai job_components atau langsung ke jobs
         let compRow = (await sql<{ id: number }[]>`SELECT id FROM job_components WHERE section_id = ${sectionId} AND name = ${category}`)[0];
         if (!compRow) {
           const cRes = await sql<{ id: number }[]>`
@@ -159,17 +172,17 @@ async function main() {
         }
 
         await sql`
-          INSERT INTO jobs (tenant_id, job_code, section_id, sub_component_id, job_description, plan_hours, base_points, is_active)
-          VALUES (${tenantId}, ${compNo}, ${sectionId}, ${subRow.id}, ${compName}, ${targetHours}, ${basePoints}, true)
+          INSERT INTO jobs (tenant_id, job_code, section_id, unit_model_id, sub_component_id, job_description, plan_hours, base_points, is_active)
+          VALUES (${tenantId}, ${compNo}, ${sectionId}, ${dummyModelId}, ${subRow.id}, ${compName}, ${targetHours}, ${basePoints}, true)
           ON CONFLICT (tenant_id, section_id, job_code)
           DO UPDATE SET job_description = EXCLUDED.job_description, base_points = EXCLUDED.base_points, plan_hours = EXCLUDED.plan_hours
         `;
+        count++;
       } catch (e: any) {
         console.error('Gagal job:', compNo, e.message);
       }
-      count++;
-    });
-    console.log(`Selesai impor jobs: ~${count} baris diproses.`);
+    }
+    console.log(`Selesai impor jobs: ${count} baris diproses.`);
   }
 
   console.log('Migrasi Master Data SUM selesai!');

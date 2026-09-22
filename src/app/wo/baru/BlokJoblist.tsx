@@ -79,8 +79,8 @@ export function BlokJoblist({
   }, [laci, sec, blok.section, tampilSemuaUnit, bolehManual]);
 
   const jobSection = useMemo(
-    () => kat.jobs.filter((j) => j.section === blok.section),
-    [kat, blok.section],
+    () => (isSum ? kat.jobs : kat.jobs.filter((j) => j.section === blok.section)),
+    [kat.jobs, blok.section, isSum],
   );
 
   const modelTerpilih = useMemo(() => {
@@ -90,19 +90,23 @@ export function BlokJoblist({
   }, [sec, butuhUnit, blok.model, blok.unitId, kat.units]);
 
   const jobCocok = useMemo(
-    () => (datar ? jobSection : jobSection.filter((j) => j.unit_model === modelTerpilih)),
-    [datar, jobSection, modelTerpilih],
+    () => (datar || isSum ? jobSection : jobSection.filter((j) => j.unit_model === modelTerpilih)),
+    [datar, isSum, jobSection, modelTerpilih],
   );
   const daftarKomponen = useMemo(() => beda(jobCocok.map((j) => j.component)), [jobCocok]);
+  const daftarKategori = daftarKomponen;
   const daftarSub = useMemo(
     () => beda(jobCocok.filter((j) => j.component === blok.komponen).map((j) => j.sub_component)),
     [jobCocok, blok.komponen],
   );
   const daftarJob = useMemo(
-    () => (datar
-      ? jobCocok
-      : jobCocok.filter((j) => j.component === blok.komponen && j.sub_component === blok.subKomponen)),
-    [datar, jobCocok, blok.komponen, blok.subKomponen],
+    () => (isSum
+      ? jobCocok.filter((j) => j.component === blok.komponen)
+      : (datar
+          ? jobCocok
+          : jobCocok.filter((j) => j.component === blok.komponen && j.sub_component === blok.subKomponen))
+    ),
+    [isSum, datar, jobCocok, blok.komponen, blok.subKomponen],
   );
 
   const mekanikTersedia = useMemo(() => {
@@ -221,8 +225,34 @@ export function BlokJoblist({
         </label>
       )}
 
-      {/* ── Cascade / joblist datar ──────────────────────────────────────── */}
-      {!blok.others && sec && (
+      {/* ── Kategori & Joblist (Mode SUM) ────────────────────────────────── */}
+      {isSum && !blok.others && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Kategori Pekerjaan <span className="wajib">*</span></label>
+            <select
+              value={blok.komponen}
+              onChange={(e) => ubah({ komponen: e.target.value, jobId: '' })}
+            >
+              <option value="">-- Pilih Kategori Pekerjaan --</option>
+              {daftarKategori.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Komponen / Pekerjaan <span className="wajib">*</span></label>
+            <select
+              value={blok.jobId}
+              onChange={(e) => ubah({ jobId: e.target.value })}
+            >
+              <option value="">-- Pilih Komponen --</option>
+              {daftarJob.map((j) => <option key={j.id} value={j.id}>{labelJob(j, bolehLihatPoin)}</option>)}
+            </select>
+          </div>
+        </>
+      )}
+
+      {/* ── Cascade / joblist datar (Mode KMB) ─────────────────────────────── */}
+      {!isSum && !blok.others && sec && (
         <>
           <div className="form-row">
             {butuhUnit ? (
@@ -232,11 +262,6 @@ export function BlokJoblist({
                   value={blok.unitId}
                   disabled={terkunciUnit}
                   onChange={(e) => {
-                    /* Unit semu bukan alat — di V2 memilihnya adalah CARA
-                       mengatakan "job manual" (`WorkOrder.html:570`). Kalau ia
-                       cuma disimpan sebagai unitId biasa, server menolaknya saat
-                       kirim dan yang terbaca pembuat WO adalah galat atas
-                       pilihan yang layar sendiri tawarkan. */
                     const u = kat.units.find((x) => String(x.id) === e.target.value);
                     if (u?.is_virtual) {
                       ubah({ others: true, unitId: '', komponen: '', subKomponen: '', jobId: '' });
@@ -257,8 +282,6 @@ export function BlokJoblist({
                     </optgroup>
                   ))}
                 </select>
-                {/* Tanpa baris ini orang mengira unitnya hilang dari katalog —
-                    persis kalimat yang dipakai V2. */}
                 {!tampilSemuaUnit && laci.global.length > 0 && (
                   <p className="form-hint">
                     🌐 {laci.global.length} unit global disembunyikan — tekan
