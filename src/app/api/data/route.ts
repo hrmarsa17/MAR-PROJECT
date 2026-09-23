@@ -232,6 +232,17 @@ function transformKartuTransferAppsScript(w: any): KartuTransfer {
   };
 }
 
+function bandingkanTerbaru(a: any, b: any): number {
+  const tA = new Date(a.created_at || a.submitted_at || a.dibuat_at || a.date || 0).getTime();
+  const tB = new Date(b.created_at || b.submitted_at || b.dibuat_at || b.date || 0).getTime();
+  if (!isNaN(tA) && !isNaN(tB) && tA > 0 && tB > 0 && tA !== tB) {
+    return tB - tA; // tanggal terbaru di awal
+  }
+  const idA = Number(a.id || a.wo_id || (typeof a.wo_number === 'string' ? a.wo_number.replace(/\D/g, '') : 0)) || 0;
+  const idB = Number(b.id || b.wo_id || (typeof b.wo_number === 'string' ? b.wo_number.replace(/\D/g, '') : 0)) || 0;
+  return idB - idA;
+}
+
 /** Bacaan. Tidak butuh op_id — tidak ada yang berubah. */
 export async function GET(req: Request): Promise<Response> {
   try {
@@ -258,6 +269,9 @@ export async function GET(req: Request): Promise<Response> {
 
       if (jenis === 'approval') {
         const dimintaTab = url.searchParams.get('tab') ?? 'menunggu';
+        const semua = url.searchParams.get('semua') === '1';
+        const batas = semua ? 100 : 10;
+
         const aksi = dimintaTab === 'aktif' ? 'pull_active'
                    : dimintaTab === 'approved' ? 'pull_approved'
                    : dimintaTab === 'ditolak' ? 'pull_rejected'
@@ -274,32 +288,36 @@ export async function GET(req: Request): Promise<Response> {
 
         let kartu: KartuApproval[] = [];
         let transfer: KartuTransfer[] = [];
+        let total = 0;
 
         if (dimintaTab === 'transfer') {
-          const listTransfer = rawList.filter((w: any) => String(w.status) === 'pending_transfer');
-          transfer = listTransfer.map(transformKartuTransferAppsScript);
+          const listTransfer = rawList
+            .filter((w: any) => String(w.status) === 'pending_transfer')
+            .sort(bandingkanTerbaru);
+          total = listTransfer.length;
+          transfer = listTransfer.slice(0, batas).map(transformKartuTransferAppsScript);
         } else {
-          const listKartu = dimintaTab === 'menunggu'
+          const listKartu = (dimintaTab === 'menunggu'
             ? rawList.filter((w: any) => String(w.status) !== 'pending_transfer')
-            : rawList;
-          kartu = listKartu.map(transformKartuApprovalAppsScript);
+            : rawList
+          ).sort(bandingkanTerbaru);
+          total = listKartu.length;
+          kartu = listKartu.slice(0, batas).map(transformKartuApprovalAppsScript);
         }
-
-        const total = dimintaTab === 'transfer' ? transfer.length : kartu.length;
 
         // Hitungan per tab
         const hitung = {
-          menunggu: dimintaTab === 'menunggu' ? kartu.length : (Array.isArray(resObj.pending) ? resObj.pending.filter((w: any) => String(w.status) !== 'pending_transfer').length : 0),
-          aktif: dimintaTab === 'aktif' ? kartu.length : 0,
-          approved: dimintaTab === 'approved' ? kartu.length : 0,
-          transfer: dimintaTab === 'transfer' ? transfer.length : (Array.isArray(resObj.pending) ? resObj.pending.filter((w: any) => String(w.status) === 'pending_transfer').length : 0),
-          ditolak: dimintaTab === 'ditolak' ? kartu.length : 0,
+          menunggu: dimintaTab === 'menunggu' ? total : (Array.isArray(resObj.pending) ? resObj.pending.filter((w: any) => String(w.status) !== 'pending_transfer').length : 0),
+          aktif: dimintaTab === 'aktif' ? total : 0,
+          approved: dimintaTab === 'approved' ? total : 0,
+          transfer: dimintaTab === 'transfer' ? total : (Array.isArray(resObj.pending) ? resObj.pending.filter((w: any) => String(w.status) === 'pending_transfer').length : 0),
+          ditolak: dimintaTab === 'ditolak' ? total : 0,
         };
 
         return jawab({
           peran: aku.peran,
           tab: dimintaTab,
-          semua: false,
+          semua,
           hitung,
           kartu,
           transfer,
