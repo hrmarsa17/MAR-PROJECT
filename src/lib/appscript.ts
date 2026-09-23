@@ -102,10 +102,19 @@ export async function identitasDariTokenAppsScript(token: string | null | undefi
   const rawId = Number(me['id'] ?? (typeof me['mechanic_id'] === 'number' ? me['mechanic_id'] : 1));
   const mechanicId = Number.isSafeInteger(rawId) && rawId > 0 ? rawId : 1;
 
+  let tenantCode = (process.env['DEFAULT_TENANT'] || 'KMB').toUpperCase();
+  if (me['tenant_code'] || me['tenant']) {
+    tenantCode = String(me['tenant_code'] || me['tenant']).toUpperCase();
+  } else if (token && token.toLowerCase().startsWith('sum')) {
+    tenantCode = 'SUM';
+  } else if (token && token.toLowerCase().startsWith('kmb')) {
+    tenantCode = 'KMB';
+  }
+
   return {
     mechanicId,
-    tenantId: Number(me['tenant_id'] || 1),
-    tenantCode: String(me['tenant_code'] || me['tenant'] || 'SUM'),
+    tenantId: Number(me['tenant_id'] || (tenantCode === 'SUM' ? 2 : 1)),
+    tenantCode,
     nama: String(me['name'] || me['nama'] || me['mechanic_id'] || token),
     peran,
     bolehLihat: {

@@ -103,7 +103,7 @@ function transformKatalogAppsScript(refs: any, tenantCode: string) {
     mekanik,
     kondisi,
     meter: (refs?.meter && typeof refs.meter === 'object') ? refs.meter : {},
-    tenantCode: tenantCode || 'SUM',
+    tenantCode: tenantCode || 'KMB',
   };
 }
 
