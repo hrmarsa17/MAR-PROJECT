@@ -96,9 +96,9 @@ a { color: var(--primary); text-decoration: none; }
    ============================================================================ */
 
 .navbar {
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: var(--primary);
+  border-bottom: 1px solid var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(35, 51, 22, 0.2);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -123,7 +123,7 @@ a { color: var(--primary); text-decoration: none; }
 .nav-brand {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--text);
+  color: #FFFFFF;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -149,20 +149,20 @@ a { color: var(--primary); text-decoration: none; }
 }
 
 .tenant-badge.tenant-kmb {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
+  background: #FFFFFF;
+  color: #B91C1C;
+  border: 1px solid rgba(255, 255, 255, 0.85);
 }
 
 .tenant-badge.tenant-sum {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #a5b4fc;
+  background: #FFFFFF;
+  color: #1E40AF;
+  border: 1px solid rgba(255, 255, 255, 0.85);
 }
 
 .tenant-full-name {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -171,7 +171,7 @@ a { color: var(--primary); text-decoration: none; }
 
 .nav-link {
   padding: 0.625rem 1.25rem;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   border-radius: var(--radius-sm);
   font-weight: 500;
   font-size: 0.9375rem;
@@ -179,19 +179,21 @@ a { color: var(--primary); text-decoration: none; }
   transition: all 0.2s;
   white-space: nowrap;
 }
-.nav-link:hover { background: var(--bg-secondary); color: var(--text); }
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
 
-/* Aktif = pill lembut + garis bawah tebal. Di KMB V2 ini biru; di sini merah,
-   dengan bentuk yang sama persis. */
+/* Aktif = kontras jelas di atas hijau Tertiary (#4F633F) */
 .nav-link.active {
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
   font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--primary);
+  box-shadow: inset 0 -2px 0 #D6E8C2;
 }
 
 .nav-user { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
-.user-email { font-size: 0.875rem; color: var(--text-secondary); }
+.user-email { font-size: 0.875rem; color: rgba(255, 255, 255, 0.9); font-weight: 500; }
 
 /* ============================================================================
    LAYOUT & JUDUL
@@ -2272,7 +2274,7 @@ select, textarea {
 /* Navbar lapangan: merah, supaya yang memegangnya tahu ia sedang di aplikasi
    lapangan dan bukan di tampilan lengkap — dua ikon di layar depan yang
    membuka layar yang mirip adalah cara paling mudah tersesat. */
-.navbar-lapangan { border-bottom: 3px solid var(--primary); }
+.navbar-lapangan { border-bottom: 3px solid #D6E8C2; }
 
 /* Penanda telaah "Dibuat Mekanik" — warna dari `Approval.html:62`
    (.badge-by-mechanic). Sengaja BUKAN .badge-purple: ungu itu sudah dipakai
@@ -2282,15 +2284,19 @@ select, textarea {
    ia cuma perlu dibaca lebih teliti. */
 .badge-ungu-telaah { background: #EDE9FE; color: #5B21B6; cursor: help; }
 
-/* Tombol Keluar di navbar. Sengaja SAMAR dan kecil: ia jarang ditekan, dan
-   tekanan yang tidak sengaja berarti orang kehilangan sesinya di tengah shift.
-   Tapi tetap ada bingkainya — tautan tanpa bingkai di pojok kanan tidak terbaca
-   sebagai tombol oleh orang yang mencarinya dengan terburu-buru. */
+/* Tombol Keluar di navbar. Selaras dengan tema header hijau Tertiary:
+   kontras jelas, nyaman dibaca, dan berubah merah tegas saat disentuh/hover. */
 .nav-keluar {
-  background: transparent; border: 1px solid var(--divider);
-  color: var(--text-secondary, #64748B); border-radius: 6px;
-  padding: 0.2rem 0.55rem; font-size: 0.75rem; cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #FFFFFF;
+  border-radius: 6px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
   margin-left: 0.5rem;
+  transition: all 0.2s;
 }
-.nav-keluar:hover { background: #FEF2F2; border-color: #FCA5A5; color: #991B1B; }
+.nav-keluar:hover { background: #EF4444; border-color: #DC2626; color: #FFFFFF; }
 .nav-keluar:disabled { opacity: 0.5; cursor: default; }
