@@ -35,7 +35,13 @@ export function BlokJoblist({
   hapus: () => void;
 }) {
   const isSum = tenantCode === 'SUM';
-  const sec = kat.sections.find((s) => s.code === blok.section) ?? null;
+  const listSections = kat?.sections ?? [];
+  const listUnits = kat?.units ?? [];
+  const listJobs = kat?.jobs ?? [];
+  const listMekanik = kat?.mekanik ?? [];
+  const listKondisi = kat?.kondisi ?? [];
+
+  const sec = listSections.find((s) => s.code === blok.section) ?? null;
   const datar = isSum || (sec?.picker_style === 'flat');
   const butuhUnit = sec?.requires_unit ?? true;
   const M = meterUntuk(blok.section);
@@ -56,9 +62,9 @@ export function BlokJoblist({
   const laci = useMemo(() => {
     const kosong = { utama: [] as Unit[], lain: [] as Unit[], global: [] as Unit[], semu: [] as Unit[] };
     if (!sec) return kosong;
-    for (const u of kat.units) kosong[laciUntuk(u, blok.section)].push(u);
+    for (const u of listUnits) kosong[laciUntuk(u, blok.section)].push(u);
     return kosong;
-  }, [kat.units, sec, blok.section]);
+  }, [listUnits, sec, blok.section]);
 
   const grupUnit = useMemo(() => {
     const g: { label: string; unit: Unit[] }[] = [
@@ -79,15 +85,15 @@ export function BlokJoblist({
   }, [laci, sec, blok.section, tampilSemuaUnit, bolehManual]);
 
   const jobSection = useMemo(
-    () => (isSum ? kat.jobs : kat.jobs.filter((j) => j.section === blok.section)),
-    [kat.jobs, blok.section, isSum],
+    () => (isSum ? listJobs : listJobs.filter((j) => j.section === blok.section)),
+    [listJobs, blok.section, isSum],
   );
 
   const modelTerpilih = useMemo(() => {
     if (!sec) return '';
     if (!butuhUnit) return blok.model;
-    return kat.units.find((u) => String(u.id) === blok.unitId)?.unit_model ?? '';
-  }, [sec, butuhUnit, blok.model, blok.unitId, kat.units]);
+    return listUnits.find((u) => String(u.id) === blok.unitId)?.unit_model ?? '';
+  }, [sec, butuhUnit, blok.model, blok.unitId, listUnits]);
 
   const jobCocok = useMemo(
     () => (datar || isSum ? jobSection : jobSection.filter((j) => j.unit_model === modelTerpilih)),
@@ -113,14 +119,14 @@ export function BlokJoblist({
   );
 
   const mekanikTersedia = useMemo(() => {
-    if (blok.semuaMekanik || !blok.section) return kat.mekanik;
+    if (blok.semuaMekanik || !blok.section) return listMekanik;
     // Mekanik TANPA section selalu tampil — kosong berarti milik semua section.
-    return kat.mekanik.filter(
+    return listMekanik.filter(
       (m) => m.sections.length === 0 || m.sections.includes(blok.section),
     );
-  }, [kat.mekanik, blok.section, blok.semuaMekanik]);
+  }, [listMekanik, blok.section, blok.semuaMekanik]);
 
-  const unitDipilih = kat.units.find((u) => String(u.id) === blok.unitId) ?? null;
+  const unitDipilih = listUnits.find((u) => String(u.id) === blok.unitId) ?? null;
   const jobDipilih = daftarJob.find((j) => String(j.id) === blok.jobId) ?? null;
   const pratinjau = hitungPratinjau(blok, sec, jobDipilih, unitDipilih, kat);
 
@@ -237,7 +243,7 @@ export function BlokJoblist({
               value={blok.unitId}
               disabled={terkunciUnit}
               onChange={(e) => {
-                const u = kat.units.find((x) => String(x.id) === e.target.value);
+                const u = listUnits.find((x) => String(x.id) === e.target.value);
                 if (u?.is_virtual) {
                   ubah({ others: true, unitId: '', komponen: '', subKomponen: '', jobId: '' });
                   return;
@@ -246,7 +252,7 @@ export function BlokJoblist({
               }}
             >
               <option value="">-- Pilih Unit --</option>
-              {kat.units.filter((u) => !u.is_virtual).map((u) => (
+              {listUnits.filter((u) => !u.is_virtual).map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.unit_name}{u.unit_model ? ` · ${u.unit_model}` : ''}
                 </option>
@@ -296,7 +302,7 @@ export function BlokJoblist({
                   value={blok.unitId}
                   disabled={terkunciUnit}
                   onChange={(e) => {
-                    const u = kat.units.find((x) => String(x.id) === e.target.value);
+                    const u = listUnits.find((x) => String(x.id) === e.target.value);
                     if (u?.is_virtual) {
                       ubah({ others: true, unitId: '', komponen: '', subKomponen: '', jobId: '' });
                       return;
@@ -483,7 +489,7 @@ export function BlokJoblist({
         <div className="form-group">
           <label className="form-label">Work Condition <span className="wajib">*</span></label>
           <select value={blok.kondisi} onChange={(e) => ubah({ kondisi: e.target.value })}>
-            {kat.kondisi.map((k) => (
+            {listKondisi.map((k) => (
               <option key={k.kunci} value={k.kunci}>
                 {k.label} (×{Number(k.faktor)})
               </option>
@@ -598,7 +604,8 @@ function KakiMeter({ blok, kat }: { blok: Blok; kat: Katalog }) {
       </p>
     );
   }
-  const d = kat.meter[`${M.jenis}:${blok.unitId}`];
+  const meterMap = kat?.meter ?? {};
+  const d = meterMap[`${M.jenis}:${blok.unitId}`];
   if (!d) {
     return (
       <p className="kaki-meter bebas">
@@ -656,7 +663,7 @@ function hitungPratinjau(
     }
   }
 
-  const k = kat.kondisi.find((x) => x.kunci === blok.kondisi);
+  const k = (kat?.kondisi ?? []).find((x) => x.kunci === blok.kondisi);
   const wcFaktor = k ? Number(k.faktor) : null;
   const wcTeks = k ? `${k.label} (${Number(k.faktor).toFixed(2)}x)` : '-';
 

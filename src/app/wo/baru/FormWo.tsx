@@ -59,8 +59,18 @@ export function FormWo({ bolehManual, bolehLihatPoin, tenantCode }: {
   useEffect(() => {
     let batal = false;
 
-    const pasang = (k: Katalog, dariHp: boolean) => {
-      if (batal) return;
+    const pasang = (k: Katalog | null | undefined, dariHp: boolean) => {
+      if (batal || !k) return;
+
+      // Validasi struktur data: jika cache lokal dari versi sebelumnya rusak atau tidak lengkap,
+      // jangan pasang dan buang dari IndexedDB agar dimuat ulang dari jaringan.
+      if (!Array.isArray(k.sections) || !Array.isArray(k.units) || !Array.isArray(k.jobs) || !Array.isArray(k.kondisi)) {
+        if (dariHp && adaIndexedDb()) {
+          void simpanKv('katalog', null).catch(() => {});
+        }
+        return;
+      }
+
       setKat(k);
       katPernahAda.current = true;
       setKatalogBasi(dariHp);
@@ -218,8 +228,8 @@ export function FormWo({ bolehManual, bolehLihatPoin, tenantCode }: {
 
   const acuanTeks =
     grupMode === 'unit'
-      ? (kat.units.find((u) => String(u.id) === acuan.unitId)?.unit_name ?? '(belum dipilih)')
-      : (kat.jobs.find((j) => String(j.id) === acuan.jobId)?.job_description ?? '(belum dipilih)');
+      ? ((kat?.units ?? []).find((u) => String(u.id) === acuan.unitId)?.unit_name ?? '(belum dipilih)')
+      : ((kat?.jobs ?? []).find((j) => String(j.id) === acuan.jobId)?.job_description ?? '(belum dipilih)');
 
   async function kirim(e: React.FormEvent) {
     e.preventDefault();
@@ -485,7 +495,7 @@ function periksa(blok: Blok[], mode: GrupMode, kat: Katalog): string | null {
   for (let i = 0; i < blok.length; i++) {
     const b = blok[i]!;
     const n = i + 1;
-    const sec = kat.sections.find((s) => s.code === b.section);
+    const sec = (kat?.sections ?? []).find((s) => s.code === b.section);
     if (!b.kondisi) return `Joblist #${n}: pilih work condition`;
 
     if (b.others) {
@@ -561,7 +571,7 @@ function muatanBlok(b: Blok) {
 function ringkasBlok(b: Blok | undefined, kat: Katalog): string {
   if (!b) return '(tanpa keterangan)';
   if (b.others) return `Others — ${b.othersDesc}`;
-  const job = kat.jobs.find((j) => String(j.id) === b.jobId)?.job_description ?? '(job?)';
-  const unit = kat.units.find((u) => String(u.id) === b.unitId)?.unit_name;
+  const job = (kat?.jobs ?? []).find((j) => String(j.id) === b.jobId)?.job_description ?? '(job?)';
+  const unit = (kat?.units ?? []).find((u) => String(u.id) === b.unitId)?.unit_name;
   return unit ? `${job} · ${unit}` : job;
 }
