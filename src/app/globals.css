@@ -33,14 +33,14 @@
   --text-secondary: #6B7280;
   --text-disabled: #9CA3AF;
 
-  /* ---- Warna utama: biru -> merah ---- */
-  --primary: #DC2626;
-  --primary-hover: #B91C1C;
-  --primary-active: #991B1B;
-  --primary-soft: rgba(220, 38, 38, 0.10);
-  --primary-softer: #FEF2F2;
+  /* ---- Warna utama: Tertiary Green (#4F633F) ---- */
+  --primary: #4F633F;
+  --primary-hover: #384B2B;
+  --primary-active: #233316;
+  --primary-soft: rgba(79, 99, 63, 0.12);
+  --primary-softer: #F5FAED;
 
-  /* ---- Reject: lebih gelap dari utama supaya tidak tertukar ---- */
+  /* ---- Reject: tetap kontras gelap ---- */
   --reject: #7F1D1D;
   --reject-hover: #641414;
 
@@ -62,7 +62,7 @@
   --input-border: #D1D5DB;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --focus-ring: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  --focus-ring: 0 0 0 3px rgba(79, 99, 63, 0.25);
 
   /* ---- Jarak: skala Styles.html ---- */
   --spacing-xs: 0.25rem;
@@ -690,7 +690,7 @@ textarea { min-height: 64px; resize: vertical; }
 .mechanic-avatar {
   width: 38px; height: 38px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #F87171, #DC2626);
+  background: linear-gradient(135deg, #687D56, #4F633F);
   color: #fff;
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
@@ -2272,7 +2272,7 @@ select, textarea {
 /* Navbar lapangan: merah, supaya yang memegangnya tahu ia sedang di aplikasi
    lapangan dan bukan di tampilan lengkap — dua ikon di layar depan yang
    membuka layar yang mirip adalah cara paling mudah tersesat. */
-.navbar-lapangan { border-bottom: 3px solid #DC2626; }
+.navbar-lapangan { border-bottom: 3px solid var(--primary); }
 
 /* Penanda telaah "Dibuat Mekanik" — warna dari `Approval.html:62`
    (.badge-by-mechanic). Sengaja BUKAN .badge-purple: ungu itu sudah dipakai

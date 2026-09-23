@@ -72,13 +72,13 @@ export function TrenSvg({ tren }: { tren: TrenPoin }) {
       })}
 
       {n > 1 && (
-        <polygon points={area} fill="rgba(220,38,38,0.08)" />
+        <polygon points={area} fill="rgba(79,99,63,0.08)" />
       )}
       {n > 1 && (
         <polyline
           points={garis}
           fill="none"
-          stroke="#DC2626"
+          stroke="#4F633F"
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -87,7 +87,7 @@ export function TrenSvg({ tren }: { tren: TrenPoin }) {
 
       {titik.map((t, i) => (
         <g key={i}>
-          <circle cx={t.x} cy={t.y} r={4} fill="#DC2626" />
+          <circle cx={t.x} cy={t.y} r={4} fill="#4F633F" />
           <text
             className="tren-label"
             x={t.x}

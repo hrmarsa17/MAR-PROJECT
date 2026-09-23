@@ -12,12 +12,16 @@ export const NAMA_COOKIE = 'mar_token';
  * bergantung pada cookie), sedangkan web memakai cookie httpOnly supaya token
  * tidak pernah tersentuh JavaScript halaman.
  */
-export async function akuDari(req: Request): Promise<Identitas> {
+export async function tokenDari(req: Request): Promise<string | null> {
   const header = req.headers.get('authorization');
   const bearer = header?.toLowerCase().startsWith('bearer ')
     ? header.slice(7).trim()
     : null;
-  const token = bearer ?? (await cookies()).get(NAMA_COOKIE)?.value ?? null;
+  return bearer ?? (await cookies()).get(NAMA_COOKIE)?.value ?? null;
+}
+
+export async function akuDari(req: Request): Promise<Identitas> {
+  const token = await tokenDari(req);
   return identitasDariToken(token);
 }
 

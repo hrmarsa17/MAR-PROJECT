@@ -1,6 +1,8 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { sql, type Tx } from './db.js';
 import { tidakBerhak } from './errors.js';
+import { pakaiAppsScript } from './backendConfig.js';
+import { identitasDariTokenAppsScript } from './appscript.js';
 
 /**
  * TOKEN.
@@ -63,6 +65,9 @@ export async function identitasDariToken(
   token: string | null | undefined,
   tx?: Tx,
 ): Promise<Identitas> {
+  if (pakaiAppsScript()) {
+    return identitasDariTokenAppsScript(token);
+  }
   if (!token || token.trim().length < 8) {
     throw tidakBerhak('Token tidak dikenal atau tidak berlaku');
   }

@@ -1,5 +1,7 @@
-import { akuDari, jawab, jawabGalat } from '../_bantu.js';
+import { akuDari, tokenDari, jawab, jawabGalat } from '../_bantu.js';
 import { masukanTidakSah, tidakBerhak, tidakDitemukan } from '../../../lib/errors.js';
+import { pakaiAppsScript } from '../../../lib/backendConfig.js';
+import { panggilAppsScript } from '../../../lib/appscript.js';
 import {
   antreanApproval, katalog, rincianWo, statusKiriman, woSaya,
 } from '../../../domain/kueri.js';
@@ -26,6 +28,49 @@ export async function GET(req: Request): Promise<Response> {
     const aku = await akuDari(req);
     const url = new URL(req.url);
     const jenis = url.searchParams.get('jenis');
+
+    if (pakaiAppsScript()) {
+      const token = await tokenDari(req);
+      if (jenis === 'aku') return jawab(aku);
+
+      if (jenis === 'katalog') {
+        const gasRes = await panggilAppsScript(token, 'pull_create_refs');
+        const refs = (gasRes.result as any)?.refs ?? gasRes.result ?? {};
+        return jawab(refs);
+      }
+
+      if (jenis === 'wo_saya') {
+        const gasRes = await panggilAppsScript(token, 'pull_my_wos');
+        const wos = (gasRes.result as any)?.wos ?? gasRes.result ?? [];
+        return jawab(wos);
+      }
+
+      if (jenis === 'approval') {
+        const dimintaTab = url.searchParams.get('tab') ?? 'menunggu';
+        const aksi = dimintaTab === 'aktif' ? 'pull_active'
+                   : dimintaTab === 'approved' ? 'pull_approved'
+                   : dimintaTab === 'ditolak' ? 'pull_rejected'
+                   : 'pull_pending';
+        const gasRes = await panggilAppsScript(token, aksi);
+        const kartu = (gasRes.result && ((gasRes.result as any)[dimintaTab] || (gasRes.result as any).pending || (gasRes.result as any).active || (gasRes.result as any).approved || (gasRes.result as any).rejected)) || gasRes.result || [];
+        const kartuArr = Array.isArray(kartu) ? kartu : [];
+        return jawab({
+          peran: aku.peran,
+          tab: dimintaTab,
+          semua: false,
+          hitung: { menunggu: kartuArr.length, aktif: 0, approved: 0, transfer: 0, ditolak: 0 },
+          kartu: kartuArr,
+          transfer: [],
+          penerima: [],
+          total: kartuArr.length,
+        });
+      }
+
+      if (jenis === 'monitoring') {
+        const gasRes = await panggilAppsScript(token, 'pull_monitoring');
+        return jawab(gasRes.result ?? {});
+      }
+    }
 
     switch (jenis) {
       case 'aku':

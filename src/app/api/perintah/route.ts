@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { akuDari, jawab, jawabGalat, pasangCookieSesi } from '../_bantu.js';
+import { akuDari, tokenDari, jawab, jawabGalat, pasangCookieSesi } from '../_bantu.js';
+import { pakaiAppsScript } from '../../../lib/backendConfig.js';
+import { panggilAppsScript } from '../../../lib/appscript.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
 import { buatWorkOrder } from '../../../domain/workOrder.js';
 import { simpanOverride } from '../../../domain/override.js';
@@ -320,6 +322,16 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     const { aksi, op_id } = amplop.data;
+
+    if (pakaiAppsScript()) {
+      const token = await tokenDari(req);
+      const res = await panggilAppsScript(token, aksi, amplop.data.data, op_id);
+      if (!res.success) {
+        throw new Error(res.error || `Operasi "${aksi}" ditolak oleh Google Apps Script`);
+      }
+      return jawab(res.result ?? { ok: true });
+    }
+
     const isi = SKEMA[aksi].safeParse(amplop.data.data);
     if (!isi.success) {
       throw masukanTidakSah(`Data untuk aksi "${aksi}" tidak lengkap atau tidak sah`, {
