@@ -15,7 +15,7 @@ import type { BekalForm, DetailWo } from '../../domain/kueriDetailForm.js';
  */
 
 function timTeks(tim: KartuWoMekanik['tim']) {
-  if (tim.length === 0) return <>-</>;
+  if (!tim || tim.length === 0) return <>-</>;
   return (
     <>
       {tim.map((t, i) => (
@@ -62,9 +62,9 @@ function kelompokkan(daftar: KartuWoMekanik[]): Kelompok[] {
 }
 
 export function DaftarWoMekanik({
-  daftar, bekal = [], detail = {},
+  daftar = [], bekal = [], detail = {},
 }: {
-  daftar: KartuWoMekanik[];
+  daftar?: KartuWoMekanik[];
   /** Metadata form dikirim SEKALI untuk seluruh daftar, bukan disalin per WO. */
   bekal?: BekalForm[];
   detail?: Record<string, DetailWo>;
@@ -138,7 +138,7 @@ export function DaftarWoMekanik({
     }
   }
 
-  if (daftar.length === 0) {
+  if (!daftar || daftar.length === 0) {
     return (
       <div className="empty-state">
         <div className="empty-icon">📋</div>

@@ -84,7 +84,16 @@ export function LayarMekanik({ as, tab, dasar = '' }: {
       const j = await r.json();
       if (!j.ok) throw new Error(j.pesan ?? 'Gagal memuat');
 
-      const m = j.data as Muatan;
+      const m = (j.data as Muatan) || {
+        sebagai: 0,
+        sendiri: true,
+        orang: null,
+        tab: tab,
+        hitung: {},
+        daftar: [],
+        bekal: [],
+        detail: {}
+      };
       setData(m);
       setDariSimpanan(false);
 
@@ -173,10 +182,10 @@ export function LayarMekanik({ as, tab, dasar = '' }: {
           <Link
             key={t.kunci}
             href={tautan(t.kunci)}
-            className={`filter-tab${t.kunci === data.tab ? ' active' : ''}`}
+            className={`filter-tab${t.kunci === (data?.tab ?? '') ? ' active' : ''}`}
           >
             {t.label}
-            <span className="count">{data.hitung?.[t.kunci] ?? 0}</span>
+            <span className="count">{(data?.hitung ?? {})[t.kunci] ?? 0}</span>
           </Link>
         ))}
       </div>

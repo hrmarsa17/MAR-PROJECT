@@ -154,7 +154,18 @@ export async function GET(req: Request): Promise<Response> {
 
       if (jenis === 'monitoring') {
         const gasRes = await panggilAppsScript(token, 'pull_monitoring');
-        return jawab(gasRes.result ?? {});
+        const hasil = gasRes.result ?? {};
+        // Pastikan struktur data yang dikirim ke klien lengkap
+        return jawab({
+          sebagai: hasil.sebagai ?? 0,
+          sendiri: hasil.sendiri ?? true,
+          orang: hasil.orang ?? null,
+          tab: hasil.tab ?? 'assigned',
+          hitung: hasil.hitung ?? {},
+          daftar: hasil.daftar ?? [],
+          bekal: hasil.bekal ?? [],
+          detail: hasil.detail ?? {},
+        });
       }
     }
 
