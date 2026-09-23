@@ -1,5 +1,5 @@
 import { APPSCRIPT_URL } from './backendConfig.js';
-import { tidakBerhak } from './errors.js';
+import { tidakBerhak, GalatAplikasi } from './errors.js';
 import type { Identitas } from './auth.js';
 
 export interface GasResponse<T = unknown> {
@@ -48,17 +48,27 @@ export async function panggilAppsScript<T = any>(
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      throw new Error(`Apps Script HTTP ${res.status}: ${res.statusText}`);
+      if (res.status === 404) {
+        throw tidakBerhak('Google Apps Script 404: ID yang dipasang adalah Script ID. Diperlukan Web App Deployment URL (yang berawalan AKfycb...).');
+      }
+      throw tidakBerhak(`Google Apps Script HTTP ${res.status}: ${res.statusText}`);
     }
 
-    const json = (await res.json()) as GasResponse<T>;
-    return json;
+    const text = await res.text();
+    try {
+      return JSON.parse(text) as GasResponse<T>;
+    } catch {
+      throw tidakBerhak('Google Apps Script tidak mengembalikan format JSON. Pastikan Web App disetel "Execute as: Me" dan "Who has access: Anyone".');
+    }
   } catch (err: any) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      throw new Error('Koneksi ke Google Apps Script melampaui batas waktu (timeout).');
+    if (err instanceof GalatAplikasi) {
+      throw err;
     }
-    throw err;
+    if (err.name === 'AbortError') {
+      throw tidakBerhak('Koneksi ke Google Apps Script melampaui batas waktu (timeout).');
+    }
+    throw tidakBerhak(`Gagal terhubung ke Google Apps Script: ${err.message}`);
   }
 }
 
