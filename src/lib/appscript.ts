@@ -99,11 +99,14 @@ export async function identitasDariTokenAppsScript(token: string | null | undefi
   const isL2 = peran === 'superintendent';
   const isL1 = peran === 'supervisor';
 
+  const rawId = Number(me['id'] ?? (typeof me['mechanic_id'] === 'number' ? me['mechanic_id'] : 1));
+  const mechanicId = Number.isSafeInteger(rawId) && rawId > 0 ? rawId : 1;
+
   return {
-    mechanicId: Number(me['mechanic_id'] || me['id'] || 1),
+    mechanicId,
     tenantId: Number(me['tenant_id'] || 1),
     tenantCode: String(me['tenant_code'] || me['tenant'] || 'SUM'),
-    nama: String(me['name'] || me['nama'] || token),
+    nama: String(me['name'] || me['nama'] || me['mechanic_id'] || token),
     peran,
     bolehLihat: {
       performa: isL2 || isL1 || Boolean(me['may_view_performance']),

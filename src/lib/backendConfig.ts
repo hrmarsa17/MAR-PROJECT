@@ -17,7 +17,7 @@ export const BACKEND_DRIVER: BackendDriver =
 
 export const APPSCRIPT_URL: string =
   process.env['APPSCRIPT_URL']?.trim() ||
-  'https://script.google.com/macros/s/17sBKK-x3qXzL7tRlejsXE1kQXGwF-CQtCoCdhA4ZWE4_E2NSq0ZUwtqo/exec';
+  'https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec';
 
 export function pakaiAppsScript(): boolean {
   return BACKEND_DRIVER === 'appscript';
