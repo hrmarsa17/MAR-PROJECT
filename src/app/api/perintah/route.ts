@@ -1,25 +1,9 @@
 import { z } from 'zod';
 import { akuDari, tokenDari, jawab, jawabGalat, pasangCookieSesi } from '../_bantu.js';
 import { pakaiAppsScript } from '../../../lib/backendConfig.js';
-import { panggilAppsScript } from '../../../lib/appscript.js';
+import { handlePerintahAppsScript } from '../../../backends/appscript/perintah.js';
+import { handlePerintahSupabase } from '../../../backends/supabase/perintah.js';
 import { masukanTidakSah } from '../../../lib/errors.js';
-import { buatWorkOrder } from '../../../domain/workOrder.js';
-import { simpanOverride } from '../../../domain/override.js';
-import { kirimKerja } from '../../../domain/kirimKerja.js';
-import { mintaTransfer, setujuiTransfer, tolakTransfer } from '../../../domain/transfer.js';
-import { simpanDetail } from '../../../domain/detailForm.js';
-import { gantiPanelMeter, koreksiMeterWo } from '../../../domain/meter.js';
-import {
-  cabutToken, hapusJob, hapusUnit, simpanFaktor, simpanJob, simpanOrang,
-  simpanSetelan, simpanTarif, simpanUnit, terbitkanToken,
-} from '../../../domain/admin.js';
-import { terapkanImpor } from '../../../domain/imporKatalog.js';
-import { terapkanSurut } from '../../../domain/terapkanSurut.js';
-import { terapkanFaktorSurut } from '../../../domain/surutFaktor.js';
-import { terapkanTarifSurut } from '../../../domain/surutTarif.js';
-import {
-  approveL1, approveL2, batalkanWo, kembalikanKeMekanik, tolakWo,
-} from '../../../domain/approval.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -325,11 +309,8 @@ export async function POST(req: Request): Promise<Response> {
 
     if (pakaiAppsScript()) {
       const token = await tokenDari(req);
-      const res = await panggilAppsScript(token, aksi, amplop.data.data, op_id);
-      if (!res.success) {
-        throw new Error(res.error || `Operasi "${aksi}" ditolak oleh Google Apps Script`);
-      }
-      return jawab(res.result ?? { ok: true });
+      const res = await handlePerintahAppsScript(aksi, amplop.data.data, op_id, token);
+      return jawab(res);
     }
 
     const isi = SKEMA[aksi].safeParse(amplop.data.data);
@@ -340,145 +321,8 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     const umum = { opId: op_id, tenantId: aku.tenantId, actorId: aku.mechanicId };
-
-    switch (aksi) {
-      case 'buat_wo': {
-        const d = isi.data as z.infer<typeof SKEMA.buat_wo>;
-        return jawab(await buatWorkOrder({ ...umum, ...d }));
-      }
-      case 'approve_l1': {
-        const d = isi.data as z.infer<typeof SKEMA.approve_l1>;
-        return jawab(await approveL1({ ...umum, ...d }));
-      }
-      case 'approve_l2': {
-        const d = isi.data as z.infer<typeof SKEMA.approve_l2>;
-        return jawab(await approveL2({ ...umum, ...d }));
-      }
-      case 'batal_wo': {
-        const d = isi.data as z.infer<typeof SKEMA.batal_wo>;
-        return jawab(await batalkanWo({ ...umum, ...d }));
-      }
-      case 'reject': {
-        const d = isi.data as z.infer<typeof SKEMA.reject>;
-        return jawab(await tolakWo({ ...umum, ...d }));
-      }
-      case 'kembalikan': {
-        const d = isi.data as z.infer<typeof SKEMA.kembalikan>;
-        return jawab(await kembalikanKeMekanik({ ...umum, ...d }));
-      }
-      case 'save_override': {
-        const d = isi.data as z.infer<typeof SKEMA.save_override>;
-        return jawab(await simpanOverride({ ...umum, ...d }));
-      }
-      case 'kirim_kerja': {
-        const d = isi.data as z.infer<typeof SKEMA.kirim_kerja>;
-        return jawab(await kirimKerja({ ...umum, ...d }));
-      }
-      case 'minta_transfer': {
-        const d = isi.data as z.infer<typeof SKEMA.minta_transfer>;
-        return jawab(await mintaTransfer({ ...umum, ...d }));
-      }
-      case 'setujui_transfer': {
-        const d = isi.data as z.infer<typeof SKEMA.setujui_transfer>;
-        return jawab(await setujuiTransfer({ ...umum, ...d }));
-      }
-      case 'tolak_transfer': {
-        const d = isi.data as z.infer<typeof SKEMA.tolak_transfer>;
-        return jawab(await tolakTransfer({ ...umum, ...d }));
-      }
-      case 'simpan_detail': {
-        const d = isi.data as z.infer<typeof SKEMA.simpan_detail>;
-        return jawab(await simpanDetail({ ...umum, ...d }));
-      }
-      case 'koreksi_meter': {
-        const d = isi.data as z.infer<typeof SKEMA.koreksi_meter>;
-        return jawab(await koreksiMeterWo({ ...umum, ...d }));
-      }
-      case 'ganti_panel_meter': {
-        const d = isi.data as z.infer<typeof SKEMA.ganti_panel_meter>;
-        return jawab(await gantiPanelMeter({ ...umum, ...d }));
-      }
-      case 'admin_orang': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_orang>;
-        return jawab(await simpanOrang({ ...umum, ...d }));
-      }
-      case 'admin_token': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_token>;
-        const h = await terbitkanToken({ ...umum, ...d });
-
-        /* MENGGANTI TOKEN SENDIRI TIDAK BOLEH MENGUSIR YANG MELAKUKANNYA.
-           Cookie sesi ini BERISI token yang barusan dicabut, jadi permintaan
-           berikutnya — termasuk pemuatan ulang layar yang seharusnya
-           menampilkan token barunya — ditolak. Yang menekan tombolnya
-           terlempar ke layar masuk tanpa sempat membaca token yang baru saja
-           ia terbitkan.
-
-           Itu bukan kemungkinan di pinggiran: docs/PENERAPAN.md menyuruh
-           mengganti token bootstrap sebagai hal PERTAMA yang dikerjakan di
-           dalam aplikasi, oleh satu-satunya admin yang ada. Pada pemasangan
-           produksi 16 Sep 2026 itu benar-benar terjadi.
-
-           `cabutToken` sudah lama menolak pencabutan diri sendiri dengan
-           alasan yang sama ("Anda akan terkunci di luar") — jalur GANTI
-           luput, padahal ia juga mencabut. Di sini larangan bukan jawabannya:
-           mengganti token sendiri justru yang paling dianjurkan. Yang benar
-           adalah membawa sesinya ikut pindah. */
-        if (d.mechanicId === aku.mechanicId) await pasangCookieSesi(h.hasil.token);
-
-        return jawab(h);
-      }
-      case 'admin_token_cabut': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_token_cabut>;
-        return jawab(await cabutToken({ ...umum, ...d }));
-      }
-      case 'admin_job': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_job>;
-        return jawab(await simpanJob({ ...umum, ...d }));
-      }
-      case 'admin_unit': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_unit>;
-        return jawab(await simpanUnit({ ...umum, ...d }));
-      }
-      case 'admin_hapus_job': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_hapus_job>;
-        return jawab(await hapusJob({ ...umum, ...d }));
-      }
-      case 'admin_hapus_unit': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_hapus_unit>;
-        return jawab(await hapusUnit({ ...umum, ...d }));
-      }
-      case 'admin_faktor': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_faktor>;
-        return jawab(await simpanFaktor({ ...umum, ...d }));
-      }
-      case 'admin_tarif': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_tarif>;
-        return jawab(await simpanTarif({ ...umum, ...d }));
-      }
-      case 'admin_setelan': {
-        const d = isi.data as z.infer<typeof SKEMA.admin_setelan>;
-        return jawab(await simpanSetelan({ ...umum, ...d }));
-      }
-      case 'impor_katalog': {
-        const d = isi.data as z.infer<typeof SKEMA.impor_katalog>;
-        return jawab(await terapkanImpor({
-          ...umum, jenis: d.jenis, sectionCode: d.sectionCode,
-          baris: d.baris as never,
-        }));
-      }
-      case 'terapkan_surut': {
-        const d = isi.data as z.infer<typeof SKEMA.terapkan_surut>;
-        return jawab(await terapkanSurut({ ...umum, ...d }));
-      }
-      case 'terapkan_faktor_surut': {
-        const d = isi.data as z.infer<typeof SKEMA.terapkan_faktor_surut>;
-        return jawab(await terapkanFaktorSurut({ ...umum, ...d }));
-      }
-      case 'terapkan_tarif_surut': {
-        const d = isi.data as z.infer<typeof SKEMA.terapkan_tarif_surut>;
-        return jawab(await terapkanTarifSurut({ ...umum, ...d }));
-      }
-    }
+    const hasil = await handlePerintahSupabase(aksi, isi.data, umum, aku, pasangCookieSesi);
+    return jawab(hasil);
   } catch (e) {
     return jawabGalat(e);
   }
