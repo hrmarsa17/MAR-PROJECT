@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { TombolKeluar } from './TombolKeluar.js';
-import { TombolInstallPWA } from './TombolInstallPWA.js';
 
 /**
  * NAVBAR — urutan, label, dan aturan tampilnya sama persis dengan KMB V2.
@@ -134,7 +133,6 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
         </div>
 
         <div className="nav-user">
-          <TombolInstallPWA />
           {LENCANA[aku.peran] && (
             <span className={LENCANA[aku.peran]!.kelas}>{LENCANA[aku.peran]!.teks}</span>
           )}
@@ -149,7 +147,7 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
 }
 
 /**
-  * NAVBAR LAPANGAN — hanya yang dikerjakan di lapangan.
+ * NAVBAR LAPANGAN — hanya yang dikerjakan di lapangan.
  *
  * Empat menu, dan tidak lebih. Reports, kedua dashboard, dan Admin sengaja
  * tidak ada di sini: tak satu pun bisa dikerjakan sambil berdiri di sebelah
@@ -219,7 +217,6 @@ function NavLapangan({ aku, path, approver }: {
         </div>
 
         <div className="nav-user">
-          <TombolInstallPWA />
           {LENCANA[aku.peran] && (
             <span className={LENCANA[aku.peran]!.kelas}>{LENCANA[aku.peran]!.teks}</span>
           )}

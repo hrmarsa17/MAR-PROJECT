@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { TombolInstallPWA } from '../TombolInstallPWA.js';
 
 export default function Masuk() {
   const [token, setToken] = useState('');
@@ -33,14 +32,11 @@ export default function Masuk() {
 
   return (
     <div className="container-sempit" style={{ maxWidth: 420 }}>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 className="page-title">⚙️ Mechanic Activity Report</h1>
-          <p className="page-subtitle">
-            Ketikkan token yang diberikan atasan Anda. Sekali saja.
-          </p>
-        </div>
-        <TombolInstallPWA />
+      <div className="page-header">
+        <h1 className="page-title">⚙️ Mechanic Activity Report</h1>
+        <p className="page-subtitle">
+          Ketikkan token yang diberikan atasan Anda. Sekali saja.
+        </p>
       </div>
 
       <form className="card" onSubmit={kirim}>

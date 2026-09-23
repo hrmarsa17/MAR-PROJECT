@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 
 export function TombolInstallPWA() {
+  // Disembunyikan sementara
+  return null;
+
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [terpasang, setTerpasang] = useState(false);
 
