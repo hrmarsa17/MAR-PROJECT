@@ -62,7 +62,12 @@ export function LayarApproval({ tab, semua, dasar = '' }: {
     if (adaIndexedDb() && bolehSimpan) {
       try {
         const simpan = await bacaKv<Muatan>('approval');
-        if (simpan) { setData(simpan); setDariSimpanan(true); }
+        if (simpan && Array.isArray(simpan.kartu) && (simpan.kartu.length === 0 || simpan.kartu[0]?.job_nama)) {
+          setData(simpan);
+          setDariSimpanan(true);
+        } else if (simpan) {
+          void simpanKv('approval', null).catch(() => {});
+        }
       } catch { /* penyimpanan diblokir */ }
     }
 
