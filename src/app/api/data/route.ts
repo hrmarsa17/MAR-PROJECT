@@ -22,6 +22,91 @@ import { bekalForm, detailUntukWo } from '../../../domain/kueriDetailForm.js';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function transformKatalogAppsScript(refs: any, tenantCode: string) {
+  const sections = Array.isArray(refs?.sections)
+    ? refs.sections.map((s: any) =>
+        typeof s === 'string'
+          ? { code: s, name: s.charAt(0).toUpperCase() + s.slice(1) }
+          : { code: String(s.code || s.id), name: String(s.name || s.code) },
+      )
+    : [];
+
+  const units = Array.isArray(refs?.units)
+    ? refs.units.map((u: any) => ({
+        id: u.unit_id || u.id,
+        unit_code: String(u.unit_id || u.code || ''),
+        unit_name: String(u.unit_name || u.name || ''),
+        unit_factor: Number(u.unit_factor) || 1,
+        unit_model: String(u.unit_model || ''),
+        is_global: Boolean(u.is_global),
+        is_virtual: Boolean(u.is_virtual),
+        sections: Array.isArray(u.unit_scope)
+          ? u.unit_scope.map(String)
+          : Array.isArray(u.sections)
+            ? u.sections.map(String)
+            : [],
+      }))
+    : [];
+
+  const rawJobsField = Array.isArray(refs?.jobs_field)
+    ? refs.jobs_field.map((j: any) => ({ ...j, section: 'field' }))
+    : [];
+  const rawJobsWorkshop = Array.isArray(refs?.jobs_workshop)
+    ? refs.jobs_workshop.map((j: any) => ({ ...j, section: 'workshop' }))
+    : [];
+  const rawJobsGeneric = Array.isArray(refs?.jobs) ? refs.jobs : [];
+  const allJobs = [...rawJobsField, ...rawJobsWorkshop, ...rawJobsGeneric];
+
+  const jobs = allJobs.map((j: any) => ({
+    id: j.job_id || j.id,
+    job_code: String(j.job_id || j.code || ''),
+    section: String(j.section || 'field'),
+    unit_model: String(j.unit_model || ''),
+    component: String(j.component || ''),
+    sub_component: String(j.sub_component || ''),
+    job_type: String(j.job_type || ''),
+    job_description: String(j.job_description || j.description || j.nama || ''),
+    plan_hours: Number(j.plan_hours) || 1,
+    base_points: Number(j.base_point || j.base_points) || 1,
+  }));
+
+  const mekanik = Array.isArray(refs?.mechanics)
+    ? refs.mechanics.map((m: any) => ({
+        id: m.mechanic_id || m.id,
+        name: String(m.mechanic_name || m.name || ''),
+        role: String(m.role || 'mechanic'),
+        sections: Array.isArray(m.sections)
+          ? m.sections.map(String)
+          : m.section
+            ? [String(m.section)]
+            : [],
+        jabatan: String(m.position || m.jabatan || ''),
+      }))
+    : [];
+
+  const kondisi = Array.isArray(refs?.work_conditions)
+    ? refs.work_conditions.map((k: any) => ({
+        kunci: String(k.key || k.kunci),
+        faktor: Number(k.factor || k.faktor) || 1,
+        label: String(k.label || k.key || ''),
+      }))
+    : [
+        { kunci: 'normal', faktor: 1, label: 'Shift 1' },
+        { kunci: 'difficult', faktor: 1.1, label: 'Shift 2' },
+        { kunci: 'extreme', faktor: 1.2, label: 'Kondisi Ekstrim' },
+      ];
+
+  return {
+    sections,
+    units,
+    jobs,
+    mekanik,
+    kondisi,
+    meter: (refs?.meter && typeof refs.meter === 'object') ? refs.meter : {},
+    tenantCode: tenantCode || 'SUM',
+  };
+}
+
 /** Bacaan. Tidak butuh op_id — tidak ada yang berubah. */
 export async function GET(req: Request): Promise<Response> {
   try {
@@ -36,7 +121,8 @@ export async function GET(req: Request): Promise<Response> {
       if (jenis === 'katalog') {
         const gasRes = await panggilAppsScript(token, 'pull_create_refs');
         const refs = (gasRes.result as any)?.refs ?? gasRes.result ?? {};
-        return jawab(refs);
+        const katalogHasil = transformKatalogAppsScript(refs, aku.tenantCode);
+        return jawab(katalogHasil);
       }
 
       if (jenis === 'wo_saya') {
