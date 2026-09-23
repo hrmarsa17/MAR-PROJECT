@@ -134,7 +134,7 @@ export function KartuTransferTampil({
       </div>
 
       <p className="tr-tim">
-        Tim sekarang: {kartu.tim.map((t) => t.nama).join(', ') || '—'}
+        Tim sekarang: {(kartu.tim ?? []).map((t) => t.nama).join(', ') || '—'}
       </p>
 
       <div className="form-group">

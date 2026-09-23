@@ -31,7 +31,7 @@ export async function panggilAppsScript<T = any>(
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   try {
     const res = await fetch(APPSCRIPT_URL, {

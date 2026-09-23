@@ -125,9 +125,9 @@ export function KartuApprovalTampil({
       <div className="wo-bagian">
         <div className="wo-bagian-judul">👥 Team</div>
         <div className="wo-tim">
-          {wo.tim.length === 0
+          {(wo.tim ?? []).length === 0
             ? <span style={{ color: 'var(--text-secondary)' }}>belum ada anggota</span>
-            : wo.tim.map((n) => <span key={n}>{n}</span>)}
+            : (wo.tim ?? []).map((n) => <span key={n}>{n}</span>)}
         </div>
       </div>
 

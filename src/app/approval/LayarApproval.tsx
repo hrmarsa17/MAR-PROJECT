@@ -104,7 +104,7 @@ export function LayarApproval({ tab, semua, dasar = '' }: {
   }
   if (!data) return <div className="kosong">Memuat…</div>;
 
-  const adaSisa = data.tab !== 'transfer' && !data.semua && data.total > data.kartu.length;
+  const adaSisa = data.tab !== 'transfer' && !data.semua && data.total > (data.kartu?.length ?? 0);
   const judulTab = TAB.find((t) => t.kunci === data.tab)!;
 
   return (
@@ -150,35 +150,35 @@ export function LayarApproval({ tab, semua, dasar = '' }: {
           tanpa mengatakannya membuat orang mengira antreannya sudah habis. */}
       {adaSisa && (
         <div className="kabar kabar-awas">
-          Menampilkan <b>{data.kartu.length}</b> dari <b>{data.total}</b> WO.
+          Menampilkan <b>{data.kartu?.length ?? 0}</b> dari <b>{data.total ?? 0}</b> WO.
           Sisanya naik dengan sendirinya begitu yang di atas selesai.{' '}
           <a href={`${dasar}/approval?tab=${data.tab}&semua=1`}>
-            <b>Tampilkan semua {data.total}</b>
+            <b>Tampilkan semua {data.total ?? 0}</b>
           </a>{' '}
           — memuatnya butuh waktu lebih lama.
         </div>
       )}
 
       {data.tab === 'transfer' ? (
-        data.transfer.length === 0 ? (
+        (data.transfer ?? []).length === 0 ? (
           <div className="kosong">
             ✅ Tidak ada permintaan transfer yang menunggu keputusan.
           </div>
         ) : (
           <div className="wo-grid">
-            {data.transfer.map((t) => (
-              <KartuTransferTampil key={t.transferId} kartu={t} mekanik={data.penerima} />
+            {(data.transfer ?? []).map((t) => (
+              <KartuTransferTampil key={t.transferId} kartu={t} mekanik={data.penerima ?? []} />
             ))}
           </div>
         )
-      ) : data.kartu.length === 0 ? (
+      ) : (data.kartu ?? []).length === 0 ? (
         <div className="kosong">
           {data.tab === 'menunggu'
             ? 'Antrean bersih — tidak ada yang menunggu.' : 'Tidak ada data.'}
         </div>
       ) : (
         <div className="wo-grid">
-          {data.kartu.map((w) => (
+          {(data.kartu ?? []).map((w) => (
             <KartuApprovalTampil
               key={w.id}
               wo={w}
