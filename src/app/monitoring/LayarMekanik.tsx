@@ -176,7 +176,7 @@ export function LayarMekanik({ as, tab, dasar = '' }: {
             className={`filter-tab${t.kunci === data.tab ? ' active' : ''}`}
           >
             {t.label}
-            <span className="count">{data.hitung[t.kunci] ?? 0}</span>
+            <span className="count">{data.hitung?.[t.kunci] ?? 0}</span>
           </Link>
         ))}
       </div>
