@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
 import {
   statistikRingkas, woTerbaru, papanPeriode, papanHarian, trenPoin,
+  type Statistik, type PapanHarian, type TrenPoin, type BarisPapan, type BarisWoTerbaru,
 } from '../../domain/kueriPerforma.js';
 import { tanggalPanjang, durasiJam } from '../../lib/format.js';
 import { PapanPeringkat } from './PapanPeringkat.js';
@@ -17,15 +18,35 @@ export default async function Performa() {
   if (!aku) redirect('/masuk');
   if (!aku.bolehLihat.performa) redirect('/monitoring');
 
-  // Lima bacaan sekaligus. Tidak ada yang bergantung pada hasil yang lain, jadi
-  // menjalankannya berurutan hanya menambah waktu tunggu tanpa menambah apa pun.
-  const [stat, daftarWo, periode, harian, tren] = await Promise.all([
-    statistikRingkas(aku),
-    woTerbaru(aku, 50),
-    papanPeriode(aku, 100),
-    papanHarian(aku, 10),
-    trenPoin(aku, JUMLAH_PERIODE_TREN),
-  ]);
+  let stat: Statistik = {
+    totalWo: 0, approved: 0, pending: 0, totalPoin: 0,
+    mekanikAktif: 0, jabatan: [], bulanIni: 0, rataJam: 0,
+    periodeLabel: 'Periode Berjalan',
+  };
+  let daftarWo: BarisWoTerbaru[] = [];
+  let periode: BarisPapan[] = [];
+  let harian: PapanHarian = {
+    label: '', shift: '',
+    field: { nama: 'Field', baris: [], jumlahWo: 0, taksir: false },
+    tyreman: { nama: 'Tyreman', baris: [], jumlahWo: 0, taksir: false },
+  };
+  let tren: TrenPoin = {
+    labels: [], labelPenuh: [], data: [], jumlahPeriode: 0,
+  };
+
+  try {
+    [stat, daftarWo, periode, harian, tren] = await Promise.all([
+      statistikRingkas(aku),
+      woTerbaru(aku, 50),
+      papanPeriode(aku, 100),
+      papanHarian(aku, 10),
+      trenPoin(aku, JUMLAH_PERIODE_TREN),
+    ]);
+  } catch (err) {
+    console.error('Galat memuat data performa:', err);
+  }
+
+
 
   const judul =
     aku.peran === 'mechanic' ? `Selamat datang, ${aku.nama}! 👋`

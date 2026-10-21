@@ -1,4 +1,4 @@
-import { APPSCRIPT_URL } from '../../lib/backendConfig.js';
+import { dapatkanAppscriptUrl } from '../../lib/backendConfig.js';
 import { tidakBerhak, GalatAplikasi } from '../../lib/errors.js';
 
 export interface GasResponse<T = unknown> {
@@ -31,9 +31,10 @@ export async function panggilAppsScript<T = any>(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 45000);
+  const targetUrl = dapatkanAppscriptUrl(token);
 
   try {
-    const res = await fetch(APPSCRIPT_URL, {
+    const res = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
@@ -43,6 +44,7 @@ export async function panggilAppsScript<T = any>(
       cache: 'no-store',
       redirect: 'follow',
     });
+
 
     clearTimeout(timeoutId);
 

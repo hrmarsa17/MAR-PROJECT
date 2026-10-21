@@ -15,13 +15,19 @@ export default async function Reports() {
      juga, dan gerbang layar bukan gerbang data. */
   if (!aku.bolehLihat.report) redirect('/monitoring');
 
-  const scope = await sectionYangBoleh(aku.mechanicId);
-  const sections = await sql<{ code: string; name: string }[]>`
-    SELECT code::text, name FROM sections
-     WHERE tenant_id = ${aku.tenantId} AND is_active
-       AND (${scope}::text[] IS NULL OR code::text = ANY(${scope}::text[]))
-     ORDER BY sort_order
-  `;
+  let sections: { code: string; name: string }[] = [];
+  try {
+    const scope = await sectionYangBoleh(aku.mechanicId);
+    sections = await sql<{ code: string; name: string }[]>`
+      SELECT code::text, name FROM sections
+       WHERE tenant_id = ${aku.tenantId} AND is_active
+         AND (${scope}::text[] IS NULL OR code::text = ANY(${scope}::text[]))
+       ORDER BY sort_order
+    `;
+  } catch (err) {
+    console.error('Galat memuat sections di reports:', err);
+  }
+
 
   /* Periode berjalan dihitung DI SERVER dan dikirim ke layar.
      Kalau layar menghitungnya sendiri, ia memakai jam peramban — dan jam

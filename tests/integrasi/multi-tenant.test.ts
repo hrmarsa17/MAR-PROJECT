@@ -7,9 +7,11 @@ test('Isolasi Tenant & Batch Suffix SUM', async () => {
   await bersihkanTransaksi();
   const bekal = await siapkanBekal();
 
-  // Buat tenant SUM
+  // Buat tenant SUM (atau gunakan yang sudah ada)
   const sumTenantRows = await sql<{ id: number }[]>`
-    INSERT INTO tenants (code, name) VALUES ('SUM', 'SUM Project') RETURNING id
+    INSERT INTO tenants (code, name) VALUES ('SUM', 'SUM Project')
+    ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
+    RETURNING id
   `;
   const sumTenantId = sumTenantRows[0]!.id;
 
@@ -46,12 +48,15 @@ test('Isolasi Tenant & Batch Suffix SUM', async () => {
   `;
   const unitSumId = unitSumRows[0]!.id;
 
-  // Buat job untuk SUM
+  // Buat 2 job untuk SUM
   const jobSumRows = await sql<{ id: number }[]>`
     INSERT INTO jobs (tenant_id, job_code, section_id, unit_model_id, job_description, plan_hours, base_points)
-    VALUES (${sumTenantId}, 'SUM-JOB-1', ${sectionSumId}, ${modelSumId}, 'sum service', 8, 20) RETURNING id
+    VALUES (${sumTenantId}, 'SUM-JOB-1', ${sectionSumId}, NULL, 'sum service 1', 8, 20),
+           (${sumTenantId}, 'SUM-JOB-2', ${sectionSumId}, NULL, 'sum service 2', 4, 10)
+    RETURNING id
   `;
-  const jobSumId = jobSumRows[0]!.id;
+  const jobSumId1 = jobSumRows[0]!.id;
+  const jobSumId2 = jobSumRows[1]!.id;
 
   // Buat WO batch SUM
   const hasil = await buatWorkOrder({
@@ -61,8 +66,8 @@ test('Isolasi Tenant & Batch Suffix SUM', async () => {
     sectionCode: 'field',
     grup: { mode: 'unit' },
     blok: [
-      { jobId: jobSumId, unitId: unitSumId, team: [{ mechanicId: mechSumId, share: 0.5 }] },
-      { jobId: jobSumId, unitId: unitSumId, team: [{ mechanicId: mechSumId, share: 0.5 }] }
+      { jobId: jobSumId1, unitId: unitSumId, team: [{ mechanicId: mechSumId, share: 0.5 }] },
+      { jobId: jobSumId2, unitId: unitSumId, team: [{ mechanicId: mechSumId, share: 0.5 }] }
     ]
   });
 
@@ -72,6 +77,17 @@ test('Isolasi Tenant & Batch Suffix SUM', async () => {
   expect(hasil.hasil.dibuat[1]!.woNumber).toMatch(/-B$/);
 
   // Verifikasi KMB tetap normal (tanpa suffix)
+  const [jobKmb] = await sql<{ sub_component_id: number; unit_model_id: number }[]>`
+    SELECT sub_component_id, unit_model_id FROM jobs WHERE id = ${bekal.jobId}
+  `;
+  const jobKmb2Rows = await sql<{ id: number }[]>`
+    INSERT INTO jobs (tenant_id, job_code, section_id, unit_model_id, sub_component_id, job_description, plan_hours, base_points)
+    VALUES (${bekal.tenantId}, 'UJI-JOB-KMB-2', ${bekal.sectionFieldId}, ${jobKmb!.unit_model_id}, ${jobKmb!.sub_component_id}, 'job 2', 4, 10)
+    ON CONFLICT (tenant_id, section_id, job_code) DO UPDATE SET base_points = EXCLUDED.base_points
+    RETURNING id
+  `;
+  const jobKmb2Id = jobKmb2Rows[0]!.id;
+
   const hasilKmb = await buatWorkOrder({
     opId: 'test-batch-kmb',
     tenantId: bekal.tenantId,
@@ -80,7 +96,7 @@ test('Isolasi Tenant & Batch Suffix SUM', async () => {
     grup: { mode: 'unit' },
     blok: [
       { jobId: bekal.jobId, unitId: bekal.unitId, teamMechanicIds: [bekal.mekanikA] },
-      { jobId: bekal.jobId, unitId: bekal.unitId, teamMechanicIds: [bekal.mekanikB] }
+      { jobId: jobKmb2Id, unitId: bekal.unitId, teamMechanicIds: [bekal.mekanikB] }
     ]
   });
   expect(hasilKmb.hasil.dibuat[0]!.woNumber).not.toMatch(/-A$/);

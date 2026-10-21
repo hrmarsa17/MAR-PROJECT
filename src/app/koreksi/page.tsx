@@ -46,10 +46,17 @@ export default async function Koreksi({
   const unitId = sp.unit ? Number(sp.unit) : null;
   const sah = unitId !== null && Number.isFinite(unitId);
 
-  const [unit, riwayat] = await Promise.all([
-    unitBermeter(aku.tenantId),
-    sah ? riwayatUnit(aku.tenantId, unitId, jenis) : Promise.resolve(null),
-  ]);
+  let unit: any[] = [];
+  let riwayat: any = null;
+  try {
+    [unit, riwayat] = await Promise.all([
+      unitBermeter(aku.tenantId),
+      sah ? riwayatUnit(aku.tenantId, unitId, jenis) : Promise.resolve(null),
+    ]);
+  } catch (err) {
+    console.error('Galat memuat unit koreksi meter:', err);
+  }
+
 
   return (
     <LayarKoreksi

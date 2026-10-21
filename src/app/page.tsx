@@ -28,9 +28,10 @@ export default async function Beranda() {
   const aku = await akuServer();
   if (!aku) redirect('/masuk');
 
-  /* L1 mendarat di meja approval-nya — itu memang pekerjaan hariannya, dan
-     tidak ada hak yang bisa dimatikan di sana. */
-  if (aku.peran === 'supervisor') redirect('/approval');
+  /* Approver (L1 & L2) mendarat di meja approval-nya — itu memang pekerjaan hariannya,
+     dan tidak ada hak yang bisa dimatikan di sana. */
+  if (aku.peran === 'supervisor' || aku.peran === 'superintendent') redirect('/approval');
 
   redirect('/monitoring');
+
 }

@@ -2,6 +2,9 @@ import { panggilAppsScript } from './client.js';
 import type { Identitas } from '../../lib/auth.js';
 import type { KartuApproval } from '../../domain/kueriApproval.js';
 import type { KartuTransfer } from '../../domain/kueriTransfer.js';
+import type { KartuMekanik, RingkasMonitoring } from '../../domain/kueriMonitoring.js';
+import type { KartuWoMekanik, TabWoMekanik } from '../../domain/kueriWoMekanik.js';
+
 
 export function transformKatalogAppsScript(refs: any, tenantCode: string) {
   const sections = Array.isArray(refs?.sections)
@@ -295,19 +298,136 @@ export async function handleDataAppsScript(
   }
 
   if (jenis === 'monitoring') {
-    const gasRes = await panggilAppsScript(token, 'pull_monitoring');
-    const hasil = gasRes.result ?? {};
+    const dimintaTab = url.searchParams.get('tab') ?? 'assigned';
+    const tab: TabWoMekanik =
+      dimintaTab === 'pending_approval' || dimintaTab === 'done'
+        ? dimintaTab
+        : 'assigned';
+
+    // Untuk tampilan LayarMekanik (daftar WO mekanik), panggil pull_my_wos
+    const gasRes = await panggilAppsScript(token, 'pull_my_wos');
+    const rawList = Array.isArray((gasRes.result as any)?.wos)
+      ? (gasRes.result as any).wos
+      : Array.isArray(gasRes.result)
+      ? gasRes.result
+      : [];
+
+    const allWos: KartuWoMekanik[] = rawList.map((w: any, idx: number) => {
+      const st = String(w.status || 'pending_mechanic_work');
+      let statusGroup: TabWoMekanik = 'assigned';
+      if (st === 'pending_mechanic_work') statusGroup = 'assigned';
+      else if (st === 'approved') statusGroup = 'done';
+      else statusGroup = 'pending_approval';
+
+      let statusLabel = 'Assigned';
+      if (st === 'pending_mechanic_work') statusLabel = 'Assigned';
+      else if (st === 'pending_supervisor') statusLabel = 'L1 Approval';
+      else if (st === 'pending_superintendent') statusLabel = 'L2 Approval';
+      else if (st === 'approved') statusLabel = 'Approved';
+      else if (st === 'pending_transfer') statusLabel = 'Transfer';
+      else statusLabel = st;
+
+      const rawId = Number(String(w.id || '').replace(/\D/g, '')) || idx + 1;
+
+      return {
+        id: rawId,
+        woNumber: String(w.wo_number || w.id || `WO-${rawId}`),
+        status: st,
+        statusLabel,
+        statusGroup,
+        jobNama: w.component_name || w.job_nama || w.job_name || '—',
+        unitNama: w.unit_name || w.unit_nama || null,
+        targetHours: w.target_hours != null ? Number(w.target_hours) : null,
+        partialHours: Number(w.partial_hours || 0),
+        lokasi: w.location ? String(w.location) : null,
+        keterangan: w.keterangan ? String(w.keterangan) : null,
+        hourMeter: w.hour_meter != null ? Number(w.hour_meter) : null,
+        kilometers: w.kilometers != null ? Number(w.kilometers) : null,
+        partCategory: w.part_type || w.partCategory || null,
+        safetyIncident: Boolean(w.safety_incident),
+        woGroupId: null,
+        woGroupMode: null,
+        grupTotal: null,
+        grupSelesai: null,
+        tim: [{ mechanicId: aku.mechanicId, nama: aku.nama, akuSendiri: true }],
+        bolehKirim: st === 'pending_mechanic_work',
+        catatanTransfer: w.transfer_note ? String(w.transfer_note) : null,
+      };
+    });
+
+    const hitung = {
+      assigned: allWos.filter((w) => w.statusGroup === 'assigned').length,
+      pending_approval: allWos.filter((w) => w.statusGroup === 'pending_approval').length,
+      done: allWos.filter((w) => w.statusGroup === 'done').length,
+    };
+
+    const daftar = allWos.filter((w) => w.statusGroup === tab);
+
     return {
-      sebagai: hasil.sebagai ?? 0,
-      sendiri: hasil.sendiri ?? true,
-      orang: hasil.orang ?? null,
-      tab: hasil.tab ?? 'assigned',
-      hitung: hasil.hitung ?? {},
-      daftar: hasil.daftar ?? [],
-      bekal: hasil.bekal ?? [],
-      detail: hasil.detail ?? {},
+      sebagai: aku.mechanicId,
+      sendiri: true,
+      orang: { nama: aku.nama },
+      tab,
+      hitung,
+      daftar,
+      bekal: [],
+      detail: {},
     };
   }
 
   return null;
 }
+
+/**
+ * Mengambil ringkasan dan kartu monitoring mekanik untuk approver via Google Apps Script.
+ */
+export async function pullMonitoringAppsScript(
+  token: string | null | undefined,
+): Promise<{ ringkas: RingkasMonitoring; kartu: KartuMekanik[] }> {
+  try {
+    const gasRes = await panggilAppsScript(token, 'pull_monitoring');
+    const res = (gasRes.result as any) ?? {};
+    const rawMek = Array.isArray(res.mechanics) ? res.mechanics : [];
+    const ov = res.overall || {};
+
+    const ringkas: RingkasMonitoring = {
+      mekanik: Number(ov.mechanics || rawMek.length || 0),
+      perlu_diisi: Number(ov.pending_mechanic_work || 0),
+      menunggu_approval: Number((ov.pending_l1 || 0) + (ov.pending_l2 || 0)),
+      approved: Number(ov.approved || 0),
+      periodeLabel: String(res.periode || 'Periode Berjalan'),
+    };
+
+    const kartu: KartuMekanik[] = rawMek.map((m: any, idx: number) => {
+      const rawId = Number(String(m.id || '').replace(/\D/g, '')) || idx + 1;
+      return {
+        id: rawId,
+        kode: String(m.id || `MECH-${idx + 1}`),
+        nama: String(m.name || m.nama || 'Mekanik'),
+        section: m.section ? String(m.section) : null,
+        jabatan: m.jabatan ? String(m.jabatan) : null,
+        akun_uji: false,
+        perlu_diisi: Number(m.pending_mechanic_work || 0),
+        menunggu_l1: Number(m.pending_l1 || 0),
+        menunggu_l2: Number(m.pending_l2 || 0),
+        approved: Number(m.approved || 0),
+        token: m.token ? String(m.token) : null,
+      };
+    });
+
+    return { ringkas, kartu };
+  } catch (e) {
+    console.error('Galat pullMonitoringAppsScript:', e);
+    return {
+      ringkas: {
+        mekanik: 0,
+        perlu_diisi: 0,
+        menunggu_approval: 0,
+        approved: 0,
+        periodeLabel: 'Periode Berjalan',
+      },
+      kartu: [],
+    };
+  }
+}
+

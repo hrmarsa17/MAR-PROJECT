@@ -28,7 +28,18 @@ export default async function Teknis() {
   if (!aku) redirect('/masuk');
   if (!aku.bolehLihat.teknis) redirect('/monitoring');
 
-  const data = await dataTeknisTyre(aku);
+  let data: any = {
+    ringkas: { unitTercatat: 0, posisiTercatat: 0, barisInspeksi: 0, barisRemove: 0, barisRepair: 0 },
+    kondisi: [],
+    umur: { selesai: [], rataRata: null, jumlah: 0, target: null, rataMerk: [], rataPosisi: [] },
+    mingguan: [],
+  };
+  try {
+    data = await dataTeknisTyre(aku);
+  } catch (err) {
+    console.error('Galat memuat data teknis tyre:', err);
+  }
+
 
   return (
     <div className="container layar-teknis">

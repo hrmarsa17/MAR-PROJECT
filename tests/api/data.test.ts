@@ -2,8 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/app/api/_bantu.js', () => ({
   akuDari: vi.fn(async () => ({ tenantId: 1, mechanicId: 10, peran: 'supervisor' })),
+  tokenDari: vi.fn(async () => 'dummy-token'),
   jawab: vi.fn((data, status = 200) => Response.json({ ok: true, data }, { status })),
   jawabGalat: vi.fn((e) => Response.json({ ok: false, pesan: e.message }, { status: 400 })),
+}));
+
+vi.mock('../../src/lib/backendConfig.js', () => ({
+  pakaiAppsScript: vi.fn(() => false),
 }));
 
 vi.mock('../../src/domain/kueri.js', () => ({

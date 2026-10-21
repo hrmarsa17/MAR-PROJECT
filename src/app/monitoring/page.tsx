@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation';
-import { akuServer } from '../../lib/sesi.js';
-import { kartuMekanik, ringkasMonitoring } from '../../domain/kueriMonitoring.js';
+import { cookies } from 'next/headers';
+import { akuServer, NAMA_COOKIE } from '../../lib/sesi.js';
+import { pakaiAppsScript } from '../../lib/backendConfig.js';
+import { kartuMekanik, ringkasMonitoring, type KartuMekanik, type RingkasMonitoring } from '../../domain/kueriMonitoring.js';
+import { pullMonitoringAppsScript } from '../../backends/appscript/data.js';
 import { CariMekanik } from './CariMekanik.js';
 import { LayarMekanik } from './LayarMekanik.js';
 
@@ -45,10 +48,33 @@ export default async function Monitoring({
     );
   }
 
-  const [ringkas, kartu] = await Promise.all([
-    ringkasMonitoring(aku),
-    kartuMekanik(aku),
-  ]);
+  let ringkas: RingkasMonitoring = {
+    mekanik: 0,
+    perlu_diisi: 0,
+    menunggu_approval: 0,
+    approved: 0,
+    periodeLabel: 'Periode Berjalan',
+  };
+  let kartu: KartuMekanik[] = [];
+  let galatKoneksi: string | null = null;
+
+  try {
+    if (pakaiAppsScript()) {
+      const token = (await cookies()).get(NAMA_COOKIE)?.value;
+      const data = await pullMonitoringAppsScript(token);
+      ringkas = data.ringkas;
+      kartu = data.kartu;
+    } else {
+      [ringkas, kartu] = await Promise.all([
+        ringkasMonitoring(aku),
+        kartuMekanik(aku),
+      ]);
+    }
+  } catch (err) {
+    console.error('Galat saat mengambil data monitoring:', err);
+    galatKoneksi = 'Basis data tidak dapat dijangkau. Menampilkan tampilan terbatas.';
+  }
+
 
   return (
     <div className="container">
@@ -60,6 +86,13 @@ export default async function Monitoring({
           <b>Buka</b> untuk melihat WO-nya.
         </p>
       </div>
+
+      {galatKoneksi && (
+        <div className="kabar kabar-awas" style={{ marginBottom: '1.25rem' }}>
+          ⚠️ {galatKoneksi}
+        </div>
+      )}
+
 
       <div className="stat-grid">
         <div className="stat-card">
