@@ -45,16 +45,66 @@ function formatHhMm(val: any): string | null {
   return null;
 }
 
+export interface HasilPayrollAppsScript extends HasilPayroll {
+  fileB64?: string;
+  filename?: string;
+  downloadUrl?: string;
+}
+
 export async function dataPayrollAppsScript(
   token: string | null | undefined,
   aku: Identitas,
   minta: PeriodePermintaan,
-): Promise<HasilPayroll> {
+): Promise<HasilPayrollAppsScript> {
   const batas = batasPeriode(minta);
+  const pilihSection = minta.section?.trim() && minta.section.trim() !== 'all'
+    ? normalisasiSectionCode(minta.section.trim())
+    : null;
+
+  // 1. Coba panggil generate_payroll_report langsung dari Apps Script (PayrollService.js)
+  try {
+    const reportRes = await panggilAppsScript(token, 'generate_payroll_report', {
+      filter_type: minta.mode,
+      year: minta.mode === 'month' ? minta.tahun : undefined,
+      month: minta.mode === 'month' ? minta.bulan : undefined,
+      start_date: minta.mode === 'range' ? minta.mulai : undefined,
+      end_date: minta.mode === 'range' ? minta.akhir : undefined,
+      section: pilihSection || 'all',
+    });
+
+    if (reportRes.success && reportRes.result) {
+      const r = reportRes.result as any;
+      const sm = r.summary || {};
+      const ex = r.dikecualikan || { baris: 0, nama: [] };
+
+      return {
+        periodeLabel: String(r.period || batas.label),
+        dibuatAt: new Date(),
+        sectionLabel: pilihSection ? namaSection(pilihSection) : 'Semua section',
+        detail: [],
+        ringkas: [],
+        statistik: {
+          mekanik: Number(sm.total_mechanics || 0),
+          wo: Number(sm.total_wos || 0),
+          idr: Number(sm.total_idr || 0),
+        },
+        dikecualikan: {
+          baris: Number(ex.baris || 0),
+          nama: Array.isArray(ex.nama) ? ex.nama : [],
+        },
+        fileB64: r.file_b64,
+        filename: r.filename,
+        downloadUrl: r.download_url,
+      };
+    }
+  } catch (e) {
+    console.warn('generate_payroll_report tidak tersedia atau gagal, beralih ke fallback approved:', e);
+  }
+
   const batasMulai = new Date(batas.y1, batas.m1 - 1, batas.d1, 0, 0, 0, 0).getTime();
   const batasAkhir = new Date(batas.y2, batas.m2 - 1, batas.d2, 23, 59, 59, 999).getTime();
 
-  // 1. Ambil data master mekanik (untuk mapping nama, id, role, rate)
+  // 2. Fallback: Ambil data master mekanik (untuk mapping nama, id, role, rate)
   const mechMap = new Map<string, { id: number; name: string; role: string; rate: number }>();
   try {
     const refsRes = await panggilAppsScript(token, 'pull_create_refs');
@@ -82,9 +132,7 @@ export async function dataPayrollAppsScript(
     ? (gasRes.result as any[])
     : [];
 
-  const pilihSection = minta.section?.trim() && minta.section.trim() !== 'all'
-    ? normalisasiSectionCode(minta.section.trim())
-    : null;
+
 
   // 3. Saring berdasarkan status, tanggal approval/pembuatan, dan section
   const lolos = rawList.filter((w: any) => {

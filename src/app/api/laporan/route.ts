@@ -70,6 +70,26 @@ export async function GET(req: Request): Promise<Response> {
       });
     }
 
+    const appData = data as any;
+    if (appData.fileB64) {
+      const buf = Buffer.from(appData.fileB64, 'base64');
+      const filename = appData.filename || `Payroll_${data.periodeLabel.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
+      const ascii = filename.replace(/[^ -~]/g, '-');
+      return new Response(new Uint8Array(buf), {
+        headers: {
+          'Content-Type':
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition':
+            `attachment; filename="${ascii}"; `
+            + `filename*=UTF-8''${encodeURIComponent(filename)}`,
+          'Content-Length': String(buf.length),
+          'Cache-Control': 'no-store',
+        },
+      });
+    } else if (appData.downloadUrl) {
+      return Response.redirect(appData.downloadUrl, 302);
+    }
+
     const buf = await workbookPayroll(data);
 
     /* NAMA BERKAS PUNYA DUA BENTUK, dan itu bukan kerapian.
