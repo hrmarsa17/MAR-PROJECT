@@ -16,20 +16,14 @@ export const BACKEND_DRIVER: BackendDriver =
     : 'appscript';
 
 export const APPSCRIPT_URL_KMB =
-  'https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec';
-
-export const APPSCRIPT_URL_SUM =
-  'https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec';
+  'https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec';
 
 export const APPSCRIPT_URL: string =
   process.env['APPSCRIPT_URL']?.trim() || APPSCRIPT_URL_KMB;
 
-export function dapatkanAppscriptUrl(token?: string | null): string {
+export function dapatkanAppscriptUrl(_token?: string | null): string {
   if (process.env['APPSCRIPT_URL']?.trim()) {
     return process.env['APPSCRIPT_URL'].trim();
-  }
-  if (token && token.toLowerCase().startsWith('sum')) {
-    return APPSCRIPT_URL_SUM;
   }
   return APPSCRIPT_URL_KMB;
 }
