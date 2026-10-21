@@ -109,7 +109,8 @@ export function beda(nilai: (string | null)[]): string[] {
  * menopang perhitungan yang berbeda (umur tyre vs WH/MTBF unit).
  */
 export function meterUntuk(section: string) {
-  return section === 'tyreman'
+  const s = String(section || '').toLowerCase();
+  return s === 'tyreman' || s === 'vessel'
     ? {
         jenis: 'KM' as const, label: 'KM', kunci: 'kilometers' as const,
         contoh: 'cth: 84200',
@@ -124,5 +125,6 @@ export function meterUntuk(section: string) {
 
 /** Grup hanya masuk akal bila barisnya punya DUA sumbu yang bisa divariasikan. */
 export function grupBolehUntuk(section: string): boolean {
-  return section === 'tyreman' || section === 'field';
+  const s = String(section || '').toLowerCase();
+  return s === 'tyreman' || s === 'vessel' || s === 'field' || s === 'maintenance';
 }

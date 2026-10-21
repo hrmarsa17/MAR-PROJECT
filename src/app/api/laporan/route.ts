@@ -65,7 +65,7 @@ export async function GET(req: Request): Promise<Response> {
           periodeLabel: data.periodeLabel,
           statistik: data.statistik,
           dikecualikan: data.dikecualikan,
-          barisDetail: data.detail.length,
+          barisDetail: data.statistik.wo,
         },
       });
     }

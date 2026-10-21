@@ -22,16 +22,16 @@ export const APPSCRIPT_URL_SUM =
   'https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec';
 
 export const APPSCRIPT_URL: string =
-  process.env['APPSCRIPT_URL']?.trim() || APPSCRIPT_URL_SUM;
+  process.env['APPSCRIPT_URL']?.trim() || APPSCRIPT_URL_KMB;
 
 export function dapatkanAppscriptUrl(token?: string | null): string {
   if (process.env['APPSCRIPT_URL']?.trim()) {
     return process.env['APPSCRIPT_URL'].trim();
   }
-  if (token && token.toLowerCase().startsWith('kmb')) {
-    return APPSCRIPT_URL_KMB;
+  if (token && token.toLowerCase().startsWith('sum')) {
+    return APPSCRIPT_URL_SUM;
   }
-  return APPSCRIPT_URL_SUM;
+  return APPSCRIPT_URL_KMB;
 }
 
 export function pakaiAppsScript(): boolean {

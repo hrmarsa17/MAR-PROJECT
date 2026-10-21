@@ -6,14 +6,27 @@ import type { KartuMekanik, RingkasMonitoring } from '../../domain/kueriMonitori
 import type { KartuWoMekanik, TabWoMekanik } from '../../domain/kueriWoMekanik.js';
 
 
+import { normalisasiSection, SECTIONS_BAKU_KMB } from '../../domain/sections.js';
+
 export function transformKatalogAppsScript(refs: any, tenantCode: string) {
-  const sections = Array.isArray(refs?.sections)
-    ? refs.sections.map((s: any) =>
-        typeof s === 'string'
-          ? { code: s, name: s.charAt(0).toUpperCase() + s.slice(1) }
-          : { code: String(s.code || s.id), name: String(s.name || s.code) },
-      )
-    : [];
+  const sections = Array.isArray(refs?.sections) && refs.sections.length > 0
+    ? refs.sections.map((s: any) => {
+        const rawCode = typeof s === 'string' ? s : String(s.code || s.id);
+        const rawName = typeof s === 'string' ? '' : String(s.name || '');
+        const norm = normalisasiSection(rawCode, rawName);
+        return {
+          code: norm.code,
+          name: norm.name,
+          picker_style: norm.code === 'vessel' ? 'flat' : 'cascade',
+          requires_unit: norm.code !== 'workshop',
+        };
+      })
+    : SECTIONS_BAKU_KMB.map((s) => ({
+        code: s.code,
+        name: s.name,
+        picker_style: s.code === 'vessel' ? 'flat' : 'cascade',
+        requires_unit: s.code !== 'workshop',
+      }));
 
   const units = Array.isArray(refs?.units)
     ? refs.units.map((u: any) => ({

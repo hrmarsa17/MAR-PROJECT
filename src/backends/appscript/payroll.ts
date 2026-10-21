@@ -8,6 +8,7 @@ import {
   type BarisRingkas,
 } from '../../domain/kueriPayroll.js';
 import { aturanBisnis } from '../../lib/errors.js';
+import { normalisasiSectionCode, namaSection } from '../../domain/sections.js';
 
 function parseDateSmart(val: any): number | null {
   if (!val) return null;
@@ -82,14 +83,15 @@ export async function dataPayrollAppsScript(
     : [];
 
   const pilihSection = minta.section?.trim() && minta.section.trim() !== 'all'
-    ? minta.section.trim().toLowerCase()
+    ? normalisasiSectionCode(minta.section.trim())
     : null;
 
   // 3. Saring berdasarkan status, tanggal approval/pembuatan, dan section
   const lolos = rawList.filter((w: any) => {
     // Saring section bila diminta
     if (pilihSection) {
-      const sec = String(w.section || w.section_code || '').toLowerCase();
+      const rawSec = String(w.section || w.section_code || '');
+      const sec = normalisasiSectionCode(rawSec);
       if (sec && sec !== pilihSection) return false;
     }
 
@@ -208,7 +210,7 @@ export async function dataPayrollAppsScript(
   return {
     periodeLabel: batas.label,
     dibuatAt: new Date(),
-    sectionLabel: pilihSection ?? 'Semua section',
+    sectionLabel: pilihSection ? namaSection(pilihSection) : 'Semua section',
     detail,
     ringkas,
     statistik: {

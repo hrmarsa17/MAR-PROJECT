@@ -7,6 +7,7 @@ import { periodeSaatIni } from '../../domain/periode.js';
 import { FormLaporan } from './FormLaporan.js';
 import { pakaiAppsScript } from '../../lib/backendConfig.js';
 import { panggilAppsScript } from '../../backends/appscript/client.js';
+import { normalisasiSection, SECTIONS_BAKU_KMB } from '../../domain/sections.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,24 +26,31 @@ export default async function Reports() {
       const token = cookieStore.get('mar_token')?.value;
       const refsRes = await panggilAppsScript(token, 'pull_create_refs');
       const refs = (refsRes.result as any)?.refs ?? refsRes.result ?? {};
-      if (Array.isArray(refs?.sections)) {
-        sections = refs.sections.map((s: any) =>
-          typeof s === 'string'
-            ? { code: s, name: s.charAt(0).toUpperCase() + s.slice(1) }
-            : { code: String(s.code || s.id), name: String(s.name || s.code) },
-        );
+      if (Array.isArray(refs?.sections) && refs.sections.length > 0) {
+        sections = refs.sections.map((s: any) => {
+          const rawCode = typeof s === 'string' ? s : String(s.code || s.id);
+          const rawName = typeof s === 'string' ? '' : String(s.name || '');
+          const norm = normalisasiSection(rawCode, rawName);
+          return norm;
+        });
+      } else {
+        sections = [...SECTIONS_BAKU_KMB];
       }
     } else {
       const scope = await sectionYangBoleh(aku.mechanicId);
-      sections = await sql<{ code: string; name: string }[]>`
+      const rows = await sql<{ code: string; name: string }[]>`
         SELECT code::text, name FROM sections
          WHERE tenant_id = ${aku.tenantId} AND is_active
            AND (${scope}::text[] IS NULL OR code::text = ANY(${scope}::text[]))
          ORDER BY sort_order
       `;
+      sections = rows.length > 0
+        ? rows.map((r) => normalisasiSection(r.code, r.name))
+        : [...SECTIONS_BAKU_KMB];
     }
   } catch (err) {
     console.error('Galat memuat sections di reports:', err);
+    sections = [...SECTIONS_BAKU_KMB];
   }
 
 

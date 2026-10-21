@@ -95,4 +95,56 @@ describe('dataPayrollAppsScript', () => {
       }),
     ).rejects.toThrow(/Tidak ada work order yang disetujui/);
   });
+
+  it('menyaring section dengan penormalan alias KMB V2 (vessel / maintenance / workshop)', async () => {
+    vi.mocked(panggilAppsScript).mockImplementation(async (_token, action) => {
+      if (action === 'pull_create_refs') {
+        return {
+          success: true,
+          result: {
+            mechanics: [{ id: 101, name: 'Budi Mekanik', role: 'Senior', rate: 3000 }],
+          },
+        };
+      }
+      if (action === 'pull_approved') {
+        return {
+          success: true,
+          result: {
+            approved: [
+              {
+                id: 'WO-1',
+                wo_number: 'WO-1',
+                section: 'vessel',
+                approved_at: '2026-10-10T10:00:00.000Z',
+                final_points: 5,
+                team: [{ id: 101, share: 1 }],
+              },
+              {
+                id: 'WO-2',
+                wo_number: 'WO-2',
+                section: 'maintenance',
+                approved_at: '2026-10-10T10:00:00.000Z',
+                final_points: 8,
+                team: [{ id: 101, share: 1 }],
+              },
+            ],
+          },
+        };
+      }
+      return { success: false };
+    });
+
+    // Minta filter 'vessel' (Rekondisi Vessel)
+    const hasilVessel = await dataPayrollAppsScript('token-123', dummyAku, {
+      mode: 'month',
+      tahun: 2026,
+      bulan: 10,
+      section: 'vessel',
+    });
+
+    expect(hasilVessel.detail.length).toBe(1);
+    expect(hasilVessel.detail[0]?.woNumber).toBe('WO-1');
+    expect(hasilVessel.sectionLabel).toBe('Rekondisi Vessel');
+  });
 });
+

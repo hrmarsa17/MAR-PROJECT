@@ -633,7 +633,8 @@ function labelJob(j: Job, bolehLihatPoin: boolean): string {
 }
 
 function ikonSection(code: string): string {
-  return code === 'tyreman' ? '🛢️' : code === 'field' ? '🚜' : '🏭';
+  const c = code.toLowerCase();
+  return c === 'tyreman' || c === 'vessel' ? '🛢️' : c === 'field' || c === 'maintenance' ? '🚜' : '🏭';
 }
 
 /** Angka pratinjau. Sumbernya berbeda-beda menurut keadaan blok. */
