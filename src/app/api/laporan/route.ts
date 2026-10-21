@@ -1,7 +1,9 @@
-import { akuDari, jawabGalat } from '../_bantu.js';
-import { masukanTidakSah, tidakBerhak } from '../../../lib/errors.js';
-import { dataPayroll, type PeriodePermintaan } from '../../../domain/kueriPayroll.js';
+import { akuDari, tokenDari, jawabGalat } from '../_bantu.js';
+import { masukanTidakSah, tidakBerhak, GalatAplikasi, aturanBisnis } from '../../../lib/errors.js';
+import { dataPayroll, type PeriodePermintaan, type HasilPayroll } from '../../../domain/kueriPayroll.js';
 import { workbookPayroll } from '../../../domain/excelPayroll.js';
+import { pakaiAppsScript } from '../../../lib/backendConfig.js';
+import { dataPayrollAppsScript } from '../../../backends/appscript/payroll.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,7 +41,20 @@ export async function GET(req: Request): Promise<Response> {
       ...(u.searchParams.get('section') ? { section: u.searchParams.get('section')! } : {}),
     };
 
-    const data = await dataPayroll(aku, minta);
+    let data: HasilPayroll;
+    if (pakaiAppsScript()) {
+      const token = await tokenDari(req);
+      data = await dataPayrollAppsScript(token, aku, minta);
+    } else {
+      try {
+        data = await dataPayroll(aku, minta);
+      } catch (err: any) {
+        if (err instanceof GalatAplikasi) throw err;
+        throw aturanBisnis(
+          'Basis data sedang tidak terhubung. Laporan payroll tidak dapat diambil saat ini.',
+        );
+      }
+    }
 
     // `ringkas` saja tidak cukup untuk memutuskan berkasnya layak: laporan
     // boleh berisi nol mekanik kalau seluruh poinnya nol, dan itu BUKAN galat.

@@ -321,7 +321,7 @@ export async function dataPayroll(
   };
 }
 
-interface Batas {
+export interface Batas {
   y1: number; m1: number; d1: number;
   y2: number; m2: number; d2: number;
   label: string;
@@ -339,7 +339,7 @@ const BULAN_PANJANG = [
  * menjalankannya, dan proses itu bisa saja UTC. Komponennya diserahkan ke
  * Postgres yang tahu zona tenantnya.
  */
-function batasPeriode(m: PeriodePermintaan): Batas {
+export function batasPeriode(m: PeriodePermintaan): Batas {
   if (m.mode === 'month') {
     const tahun = Number(m.tahun);
     const bulan = Number(m.bulan);

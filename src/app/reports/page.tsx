@@ -1,9 +1,12 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
 import { sectionYangBoleh } from '../../domain/kueri.js';
 import { sql } from '../../lib/db.js';
 import { periodeSaatIni } from '../../domain/periode.js';
 import { FormLaporan } from './FormLaporan.js';
+import { pakaiAppsScript } from '../../lib/backendConfig.js';
+import { panggilAppsScript } from '../../backends/appscript/client.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,13 +20,27 @@ export default async function Reports() {
 
   let sections: { code: string; name: string }[] = [];
   try {
-    const scope = await sectionYangBoleh(aku.mechanicId);
-    sections = await sql<{ code: string; name: string }[]>`
-      SELECT code::text, name FROM sections
-       WHERE tenant_id = ${aku.tenantId} AND is_active
-         AND (${scope}::text[] IS NULL OR code::text = ANY(${scope}::text[]))
-       ORDER BY sort_order
-    `;
+    if (pakaiAppsScript()) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get('mar_token')?.value;
+      const refsRes = await panggilAppsScript(token, 'pull_create_refs');
+      const refs = (refsRes.result as any)?.refs ?? refsRes.result ?? {};
+      if (Array.isArray(refs?.sections)) {
+        sections = refs.sections.map((s: any) =>
+          typeof s === 'string'
+            ? { code: s, name: s.charAt(0).toUpperCase() + s.slice(1) }
+            : { code: String(s.code || s.id), name: String(s.name || s.code) },
+        );
+      }
+    } else {
+      const scope = await sectionYangBoleh(aku.mechanicId);
+      sections = await sql<{ code: string; name: string }[]>`
+        SELECT code::text, name FROM sections
+         WHERE tenant_id = ${aku.tenantId} AND is_active
+           AND (${scope}::text[] IS NULL OR code::text = ANY(${scope}::text[]))
+         ORDER BY sort_order
+      `;
+    }
   } catch (err) {
     console.error('Galat memuat sections di reports:', err);
   }
