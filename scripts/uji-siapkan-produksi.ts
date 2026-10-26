@@ -121,9 +121,9 @@ try {
       psql(uji, `SELECT count(*) FROM api_tokens WHERE token='${token}'`
         + ' AND is_active AND revoked_at IS NULL') === '1');
 
-    periksa('menyebut langkah Vercel berikutnya', /vercel\.com/i.test(h.keluar));
-    periksa('menyebut porta 6543 untuk Vercel, bukan 5432', /6543/.test(h.keluar));
-    periksa('mengingatkan region harus sama', /Singapura/i.test(h.keluar));
+    periksa('menyebut langkah Cloudflare berikutnya', /Cloudflare Zero Trust/i.test(h.keluar));
+    periksa('menyebut token tunnel', /CLOUDFLARE_TUNNEL_TOKEN/.test(h.keluar));
+    periksa('menyebut porta pooler', /6543/.test(h.keluar));
   }
 
   console.log('\n─── 3. dijalankan lagi DITOLAK ───');

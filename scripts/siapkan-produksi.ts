@@ -97,7 +97,8 @@ if (/:6543\//.test(db)) {
                            — IPv4, jalan di mana saja
 
      Keduanya ada di Project Settings -> Database -> Connection string.
-     Alamat 6543 tetap dipakai nanti — untuk Vercel, bukan untuk ini.
+     Alamat 6543 hanya dipakai jika database produksi menyediakan transaction
+     pooler; database lokal Compose tetap memakai porta 5432.
 `);
   process.exit(1);
 }
@@ -220,10 +221,6 @@ try {
 }
 
 // ── 4. Apa berikutnya ──────────────────────────────────────────────────────
-const pooler = db
-  .replace(':5432/', ':6543/')
-  .replace(/db\.([a-z0-9]+)\.supabase\.co/, 'aws-0-ap-southeast-1.pooler.supabase.com');
-
 console.log(`
 ════════════════════════════════════════════════════════════════
   SIAP. TOKEN ANDA:
@@ -235,28 +232,21 @@ console.log(`
   hanya Anda.
 ════════════════════════════════════════════════════════════════
 
-  BERIKUTNYA — di vercel.com:
+  BERIKUTNYA — di Cloudflare Zero Trust:
 
-  1. Add New Project -> pilih repo ini
-  2. Environment Variables, tambahkan SATU:
+  1. Buat Cloudflare Tunnel dan salin tokennya ke CLOUDFLARE_TUNNEL_TOKEN
+     di .env.produksi.
+  2. Tambahkan public hostname yang mengarah ke http://app:3000.
+  3. Jalankan:
 
-       Nama : DATABASE_URL
-       Isi  : alamat POOLER (porta 6543) dari Supabase
+       docker compose --env-file .env.produksi up -d --build
 
-     Bukan alamat yang barusan dipakai. Ambil yang
-     "Transaction pooler" di Project Settings -> Database.
-     Kira-kira bentuknya:
-
-       ${pooler.replace(/:\/\/([^:]+):[^@]*@/, '://$1:SANDI@')}
-
-  3. Deploy.
-
-  Region sudah terkunci ke Singapura lewat vercel.json — pastikan
-  proyek Supabase Anda juga di Singapura. Kalau berbeda, impor
-  katalog besar akan putus di tengah; alasannya di docs/vercel.md.
+  DATABASE_URL tetap berada di server Docker; jangan menaruhnya di Cloudflare.
+  Jika memakai database pooler, gunakan alamat Transaction pooler (porta 6543)
+  hanya untuk aplikasi yang memang membutuhkannya.
 
   Sesudah hidup:
-    - buka https://<proyek>.vercel.app/masuk, masukkan token di atas
+    - buka https://<hostname-cloudflare>/masuk, masukkan token di atas
     - Admin -> Orang & Token   : tambahkan mekanik, L1, L2
     - Admin -> Katalog Job     : unggah katalog lewat Excel
     - Admin -> Kesehatan Sistem: pastikan tak ada butir merah

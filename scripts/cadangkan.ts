@@ -63,7 +63,7 @@ if (!alamat) {
    cocok di sini.
 
    Alamat inilah yang paling mungkin tersalin ke tugas terjadwal, karena ia yang
-   dipakai Vercel dan karena itu yang paling sering ada di papan klip. Ditolak
+   dipakai aplikasi dan karena itu yang paling sering ada di papan klip. Ditolak
    dengan menyebut alamat penggantinya — bukan dibiarkan menghasilkan cadangan
    yang mungkin tidak utuh dan baru ketahuan saat dibutuhkan. */
 if (/:6543\//.test(alamat)) {

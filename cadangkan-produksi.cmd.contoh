@@ -17,8 +17,8 @@ REM  lalu menulis dump ke dalam folder proyek.
 REM ==========================================================================
 
 REM  PORTA 5432, BUKAN 6543.
-REM  6543 adalah pooler mode transaksi yang dipakai Vercel; pg_dump butuh satu
-REM  sesi utuh dan skripnya akan menolak alamat itu. Ambil "Session pooler"
+REM  6543 adalah pooler mode transaksi; pg_dump butuh satu sesi utuh dan
+REM  skripnya akan menolak alamat itu. Ambil "Session pooler"
 REM  dari Supabase, tombol Connect.
 set DATABASE_URL=postgresql://postgres.pdlevnrhrabfxxdlzebc:GANTI-SANDI@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
 

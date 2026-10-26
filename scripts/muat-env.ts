@@ -70,8 +70,7 @@ export function muatEnv(): void {
         + '   perintah, karena PowerShell menyimpan riwayatnya selamanya:\n\n'
         + '       copy .env.jauh.example .env.jauh\n'
         + '       notepad .env.jauh\n\n'
-        + '   Isi DATABASE_URL-nya dari Vercel → Settings → Environment\n'
-        + '   Variables → DATABASE_URL (klik ikon mata, lalu salin).\n\n'
+        + '   Isi DATABASE_URL-nya dari database produksi.\n\n'
         + '   Berkasnya tidak ikut git (.gitignore: .env.*).\n',
       );
       process.exit(1);

@@ -209,8 +209,9 @@ Anda punya akses penuh. Karena itu bagian ini penting.
 
 ### 6.1 Dapatkan akun sendiri, jangan pinjam
 
-- **Vercel** — minta diundang ke proyek MARProject dengan akun Anda sendiri
-- **Supabase** — minta diundang ke organisasinya dengan akun Anda sendiri
+- **Cloudflare Zero Trust** — minta diundang ke akun organisasinya dengan akun
+  Anda sendiri
+- **Server/database produksi** — minta akses SSH dan akses database yang sesuai
 
 Jangan memakai login orang lain. Kalau nanti ada yang perlu ditelusuri, jejaknya
 harus menunjuk orang yang benar.
@@ -219,15 +220,7 @@ harus menunjuk orang yang benar.
 
 ```bash
 copy .env.jauh.example .env.jauh
-notepad .env.jauh          # isi DATABASE_URL dari Vercel → Settings → Env Vars
-```
-
-Atau, lebih bersih, tanpa nilainya pernah muncul di layar:
-
-```bash
-npx vercel login
-npx vercel link
-npx vercel env pull .env.jauh --environment=production
+notepad .env.jauh          # isi DATABASE_URL dari database produksi
 ```
 
 Lalu:

@@ -33,9 +33,9 @@ export default function Masuk() {
   return (
     <div className="container-sempit" style={{ maxWidth: 420 }}>
       <div className="page-header">
-        <h1 className="page-title">⚙️ Mechanic Activity Report</h1>
+        <h1 className="page-title">⚙️ MAR Gate</h1>
         <p className="page-subtitle">
-          Ketikkan token yang diberikan atasan Anda. Sekali saja.
+          Ketikkan token akses Anda untuk masuk ke sistem (KMB, MAR, dll).
         </p>
       </div>
 

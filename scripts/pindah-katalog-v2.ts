@@ -32,7 +32,7 @@ import ExcelJS from 'exceljs';
    Karena itu di luar basis data dev ia harus disebut dengan sengaja.
 
    Impor lewat skrip, bukan lewat menu Admin, memang yang benar untuk katalog
-   sebesar ini: fungsi Vercel berhenti di 10 detik, sementara skrip tidak punya
+   sebesar ini: request HTTP punya batas waktu, sementara skrip tidak punya
    batas waktu sama sekali. */
 if (!/:5433\//.test(process.env['DATABASE_URL'] ?? '')
     && !process.argv.includes('--izinkan-luar')) {

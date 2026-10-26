@@ -81,7 +81,7 @@ Pemasangan basis data pengembangan ada di [docs/GABUNG.md](docs/GABUNG.md#3-meny
 
 ## Sudah tayang atau belum
 
-Dua tempat menjawabnya, keduanya tanpa akun Vercel:
+Dua tempat menjawabnya, keduanya tanpa bergantung pada penyedia hosting:
 
 | | |
 |---|---|
@@ -107,7 +107,8 @@ ada di sana. Ia untuk yang menulis kode, bukan untuk orang lapangan.
 | 6 · Layar admin katalog | ✅ `/admin` |
 | 7 · Pengerasan | 🔨 pagar skrip, cadangan, pemantauan sudah; uji balik belum |
 
-Produksi berdiri di Vercel + Supabase (Singapura) dan sudah dilalui ujung ke
+Produksi dijalankan sebagai container Docker di balik Cloudflare Tunnel dan
+database PostgreSQL yang dikelola terpisah. Sistem sudah dilalui ujung ke
 ujung, tetapi masih kosong: 0 work order, satu akun. Dua puluh empat orang
 menyusul saat go-live.
 

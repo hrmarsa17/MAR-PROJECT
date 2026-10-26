@@ -64,9 +64,9 @@
 ### [ ] 2.4 Penyelarasan Zona Waktu Operasional Lapangan (WIB vs Serverless UTC) (`src/domain/kueriPerforma.ts` & `src/domain/shift.ts`)
 - **Lokasi:** `src/domain/kueriPerforma.ts` (`woTerbaru:205-207`) & `src/domain/shift.ts`
 - **Masalah:**
-  Kueri "Work Order Terbaru" menggunakan `new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0)`. Di Vercel (UTC), jam 06:00 UTC adalah 13:00 WIB.
+  Kueri "Work Order Terbaru" menggunakan `new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0)`. Pada server UTC, jam 06:00 UTC adalah 13:00 WIB.
 - **Dampak:**
-  Pekerjaan shift 1 lapangan (pagi hari 06:00–12:59 WIB) dianggap tanggal kemarin oleh server Vercel, sehingga tabel "Work Order Terbaru" di dashboard tampak kosong.
+  Pekerjaan shift 1 lapangan (pagi hari 06:00–12:59 WIB) dianggap tanggal kemarin oleh server, sehingga tabel "Work Order Terbaru" di dashboard tampak kosong.
 - **Rencana Perbaikan:**
   Pastikan perhitungan jam shift dikonversi eksplisit ke zona waktu operasional tambang/lapangan (`Asia/Jakarta` / UTC+7).
 
@@ -109,4 +109,3 @@
   - Master Data & Dummy SUM: 94 Jobs/Komponen (`COM-001` s/d `COM-094`), 4 Unit, 2 Sections, 5 Akun Pengguna/Mekanik.
   - UI Navbar: Menampilkan lencana dan identitas PT (`PT KMB` vs `PT SUM`) tepat di bawah judul *Mechanic Activity Report*.
   - Pemisahan isolasi tenant penuh di lapisan basis data & otentikasi sesi token.
-

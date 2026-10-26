@@ -77,14 +77,9 @@ try {
  * Di server sendiri (Docker, `npm start`, `npm run dev`): SATU proses melayani
  * semua orang. Sepuluh koneksi dipakai bersama, dibuka sekali, hidup terus.
  *
- * Di Vercel: TIAP permintaan bisa membangunkan instans fungsinya sendiri, dan
- * tiap instans membuka kolamnya sendiri. Sepuluh koneksi per instans dikali
- * sekian instans menghabiskan jatah koneksi Postgres dalam hitungan menit —
- * dan yang terjadi berikutnya bukan lambat, melainkan "too many clients" untuk
- * semua orang sekaligus.
- *
- * Karena itu di sana kolamnya 1, dan penyambungannya lewat POOLER Supabase
- * (porta 6543), yang memang dibuat untuk pola ini.
+ * Pada runtime serverless atau saat memakai pooler transaksi, tiap proses dapat
+ * membuka kolamnya sendiri. Karena itu kolam diperkecil dan prepared statement
+ * dimatikan untuk pooler transaksi.
  *
  * `prepare: false` WAJIB saat lewat pooler MODE TRANSAKSI: pernyataan yang
  * sudah disiapkan terikat pada satu koneksi, sementara mode transaksi
@@ -105,7 +100,7 @@ try {
  * hanya punya IPv4, tapi ia tidak menuntut pembatasan apa pun.
  */
 const modeTransaksi = /:6543\//.test(alamat);
-const tanpaServer = process.env['VERCEL'] === '1' || modeTransaksi;
+const tanpaServer = modeTransaksi;
 
 /**
  * DB_POOL_MAX yang KOSONG berarti tidak disebut, bukan berarti nol.
@@ -115,11 +110,9 @@ const tanpaServer = process.env['VERCEL'] === '1' || modeTransaksi;
  * `Number('')` adalah **0**, dan kolam berisi nol koneksi tidak melayani
  * siapa pun.
  *
- * Itu bukan kemungkinan yang dikarang: papan Environment Variables di Vercel
- * mendeteksi DB_POOL_MAX dari berkas contoh dan menyodorkannya sebagai isian
- * kosong yang siap disimpan. Menekan Deploy tanpa mengisinya adalah hal yang
- * paling wajar dilakukan — dan bawaannya yang sudah benar justru terbuang
- * karenanya.
+ * Nilai kosong dapat muncul saat environment variable dibuat dari template.
+ * Menekan deploy tanpa mengisinya adalah hal yang wajar dilakukan — dan
+ * bawaannya yang sudah benar tidak boleh terbuang karenanya.
  *
  * Nilai yang tidak masuk akal (nol, minus, bukan angka) diperlakukan sama:
  * kembali ke bawaan, bukan diteruskan ke postgres.js.

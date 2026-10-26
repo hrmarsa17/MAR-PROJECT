@@ -3,16 +3,11 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   reactStrictMode: true,
   /**
-   * Keluaran MANDIRI — hanya untuk penerapan sendiri (Docker), BUKAN Vercel.
+   * Keluaran MANDIRI — dipakai oleh Docker dan Cloudflare Tunnel.
    *
    * Tanpa ini, image Docker harus membawa seluruh `node_modules`: ratusan
    * megabyte yang sebagian besar hanya dipakai saat MEMBANGUN, bukan saat
    * melayani.
-   *
-   * Di Vercel ia justru tidak diinginkan — Vercel punya cara mengemasnya
-   * sendiri, dan `standalone` menghasilkan keluaran kedua yang tidak ia pakai.
-   * Vercel menyetel VERCEL=1 di lingkungan build-nya, jadi pembedaannya tidak
-   * perlu diingat siapa pun.
    *
    * ── DAN TIDAK PERNAH SAAT `next dev` ──────────────────────────────────────
    * `standalone` menjalankan penelusuran berkas, yang memanggil `readlink` ke
@@ -33,7 +28,7 @@ const config: NextConfig = {
    * tidak ada yang membutuhkannya di sana. `standalone` urusan MEMBANGUN, dan
    * `npm run build` tetap menghasilkannya seperti biasa.
    */
-  ...(process.env['VERCEL'] || process.env['NODE_ENV'] === 'development'
+  ...(process.env['NODE_ENV'] === 'development'
     ? {}
     : { output: 'standalone' as const }),
   // Ada package-lock.json lain di C:\Users\gabri, dan Next memilihnya sebagai

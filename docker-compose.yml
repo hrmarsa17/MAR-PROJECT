@@ -8,7 +8,8 @@
 #   db        Postgres 18. TIDAK membuka porta ke luar mesin.
 #   migrasi   sekali jalan. App tidak dimulai sebelum ia SELESAI DENGAN SUKSES.
 #   app       Next standalone. Juga tidak membuka porta ke luar.
-#   caddy     satu-satunya yang menghadap internet. HTTPS otomatis.
+#   cloudflared Cloudflare Tunnel yang menghadap internet. HTTPS diterminasi
+#              Cloudflare; tidak ada porta server yang perlu dibuka.
 #
 # Kenapa `migrasi` layanan tersendiri: menjalankan migrasi di dalam app yang
 # baru menyala berarti dua wadah app yang menyala bersamaan akan bermigrasi
@@ -68,13 +69,24 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       DB_POOL_MAX: ${DB_POOL_MAX:-10}
       NODE_ENV: production
-    # Juga tanpa `ports:` — hanya Caddy yang boleh menghadap keluar.
+    # Tanpa `ports:` — hanya cloudflared yang boleh menghadap keluar.
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.9.1
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?wajib diisi dari Cloudflare Zero Trust}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["cloudflared tunnel --no-autoupdate run --token \"$$TUNNEL_TOKEN\""]
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
     depends_on:
       - app
+    profiles: ["direct"]
     ports:
       - "80:80"
       - "443:443"

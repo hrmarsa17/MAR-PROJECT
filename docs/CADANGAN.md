@@ -21,8 +21,8 @@ Isi `GANTI-SANDI` dengan sandi basis data Supabase. Yang terisi sudah diabaikan
 `.gitignore` — ia tidak akan ikut ke GitHub.
 
 **Porta 5432, bukan 6543.** Ambil *Session pooler* dari Supabase → Connect.
-6543 adalah pooler mode transaksi yang dipakai Vercel; `pg_dump` membutuhkan
-satu sesi utuh, dan skripnya memang menolak alamat itu daripada menghasilkan
+6543 adalah pooler mode transaksi; `pg_dump` membutuhkan satu sesi utuh, dan
+skripnya memang menolak alamat itu daripada menghasilkan
 cadangan yang mungkin tidak utuh.
 
 Coba jalankan sekali dengan tangan:

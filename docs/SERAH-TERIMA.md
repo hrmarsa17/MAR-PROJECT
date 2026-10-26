@@ -136,7 +136,7 @@ Lupa token sendiri, atau ingin memeriksa keadaan produksi:
 
 ```bash
 copy .env.jauh.example .env.jauh   # SEKALI saja
-notepad .env.jauh                  # isi DATABASE_URL dari Vercel
+notepad .env.jauh                  # isi DATABASE_URL dari database produksi
 
 npm run orang   -- --jauh          # daftar orang + token (read-only)
 npm run periksa -- --jauh          # periksa keadaan (read-only)

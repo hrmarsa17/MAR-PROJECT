@@ -10,9 +10,8 @@
 
 export type BackendDriver = 'appscript' | 'supabase';
 
-// DITETAPKAN: Seluruh data wajib diambil dari Google Apps Script (Script ID 1cKrVdmxH_hD4yVTwqLAXKdUjwM5wd7Glh4MdlpT7oP8KDOaGNgJCJVyh)
-// Jangan gunakan Supabase.
-export const BACKEND_DRIVER: BackendDriver = 'appscript';
+// Backend driver: 'appscript' (Google Sheets) atau 'supabase' (PostgreSQL)
+export const BACKEND_DRIVER: BackendDriver = (process.env.BACKEND_DRIVER as BackendDriver) || 'appscript';
 
 export const APPSCRIPT_URL_KMB =
   'https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec';
@@ -24,6 +23,6 @@ export function dapatkanAppscriptUrl(_token?: string | null): string {
 }
 
 export function pakaiAppsScript(): boolean {
-  return true;
+  return BACKEND_DRIVER === 'appscript';
 }
 
