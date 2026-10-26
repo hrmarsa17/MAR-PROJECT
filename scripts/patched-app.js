@@ -48,37 +48,41 @@ const DEFAULT_PENDING_L1_LIST = [
     shift: "Shift 2",
     unit_id: "XEVB42002 - ST",
     unit_name: "XEVB42002 - ST (BEIBEN)",
-    component_name: "Testing And Adjusting — Tyre",
+    component_name: "Testing And Adjusting - Tyre",
     section: "maintenance",
+    location: "workshop",
     actual_hours: 0.3,
     target_hours: 2,
     final_points: 4.84,
     status: "PENDING_L1",
     team: [
-      { name: "Afid Irham", mechanic_id: "MNT-003", points: 4.84, idr: 0 },
-      { name: "Rido Saputra", mechanic_id: "MNT-008", points: 4.84, idr: 0 },
-      { name: "Alan Rohim", mechanic_id: "MNT-009", points: 4.84, idr: 0 }
+      { name: "Afid Irham", mechanic_id: "MNT-003", points: 4.84, idr: 12100 },
+      { name: "Rido Saputra", mechanic_id: "MNT-008", points: 4.84, idr: 12100 },
+      { name: "Alan Rohim", mechanic_id: "MNT-009", points: 4.84, idr: 12100 }
     ],
     created_by: "Djarot"
-  },
+  }
+];
+
+const DEFAULT_PENDING_L2_LIST = [
   {
     id: "WO-20261026-029",
     raw_id: "WO-1792983976896-192",
     level: 2,
-    status: "PENDING_L2",
     date: "26 Oct 2026 10:06",
     shift: "Shift 1",
     unit_id: "SDT-002",
     unit_name: "Comp Engine Rebuild (ENGINE)",
-    component_name: "Assembling — Cylinder Block",
+    component_name: "Assembling - Cylinder Block",
     section: "vessel",
+    location: "workshop",
     actual_hours: 4.25,
     target_hours: 30,
     final_points: 82.50,
-    status: "PENDING_L1",
+    status: "PENDING_L2",
     team: [
-      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 82.50, idr: 0 },
-      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 82.50, idr: 0 }
+      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 82.50, idr: 206250 },
+      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 82.50, idr: 206250 }
     ],
     created_by: "Djarot"
   },
@@ -86,25 +90,24 @@ const DEFAULT_PENDING_L1_LIST = [
     id: "WO-20261026-408",
     raw_id: "WO-1792990608901-228",
     level: 2,
-    status: "PENDING_L2",
     date: "26 Oct 2026 11:56",
     shift: "Shift 1",
     unit_id: "SDVS70011",
     unit_name: "SDVS70011 (NUSATAMA)",
-    component_name: "Resealing — Hydrolik Ssytem",
+    component_name: "Resealing - Hydrolik Ssytem",
     section: "vessel",
+    location: "workshop",
     actual_hours: 3,
     target_hours: 18,
     final_points: 39.60,
-    status: "PENDING_L1",
+    status: "PENDING_L2",
     team: [
-      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 39.60, idr: 0 },
-      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 39.60, idr: 0 }
+      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 39.60, idr: 99000 },
+      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 39.60, idr: 99000 }
     ],
     created_by: "Djarot"
   }
 ];
-
 
 const DEFAULT_ACTIVE_WOS = [
   {
@@ -1669,7 +1672,7 @@ const state = {
     mechanics: [...DEFAULT_MECHANICS_LIST]
   },
   pendingL1Wos: [...DEFAULT_PENDING_L1_LIST],
-  pendingL2Wos: [],
+  pendingL2Wos: [...DEFAULT_PENDING_L2_LIST],
   activeWos: DEFAULT_ACTIVE_WOS.map(w => transformGasWo(w, "ACTIVE")),
   approvedWos: DEFAULT_APPROVED_WOS.map(w => transformGasWo(w, "APPROVED")),
   rejectedWos: DEFAULT_REJECTED_WOS.map(w => transformGasWo(w, "REJECTED")),
@@ -1740,7 +1743,7 @@ async function api(action, data = {}, opId = null) {
 // Load cached refs from previous session
 function loadCachedSpreadsheetData() {
   try {
-    const cached = localStorage.getItem('kmb_gas_refs_v4');
+    const cached = localStorage.getItem('kmb_gas_refs_v6');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed.units) && parsed.units.length > 0) state.units = parsed.units;
@@ -1758,7 +1761,7 @@ function loadCachedSpreadsheetData() {
 
 function saveCachedSpreadsheetData() {
   try {
-    localStorage.setItem('kmb_gas_refs_v4', JSON.stringify({
+    localStorage.setItem('kmb_gas_refs_v6', JSON.stringify({
       units: state.units,
       mechanics: state.mechanics,
       components: state.components,
@@ -3169,14 +3172,12 @@ function getPendingApprovalsForCurrentRole() {
 
   if (isSuperintendent) {
     // Superintendent (L2): ONLY show L2 pending approvals!
-    return (state.workOrders || []).filter(w => w.status === 'PENDING_L2' || w.status === 'pending_superintendent' || w.level === 2);
+    const l2List = (state.pendingL2Wos || []).filter(w => w.status === 'PENDING_L2' || w.status === 'pending_superintendent' || w.level === 2);
+    return l2List.length > 0 ? l2List : DEFAULT_PENDING_L2_LIST;
   } else {
-    // Supervisor (L1): ONLY show L1 pending approvals (WO-20261026-004)! Never show L2!
+    // Supervisor (L1): ONLY show L1 pending approvals (WO-20261026-004)! NEVER show L2!
     const l1List = (state.pendingL1Wos || []).filter(w => (w.level === 1 || !w.level) && (w.status === 'PENDING_L1' || w.status === 'pending_supervisor' || !w.status || w.status === 'pending_transfer'));
-    if (l1List.length === 0) {
-      return DEFAULT_PENDING_L1_LIST.filter(w => (w.level === 1 || !w.level) && w.status === 'PENDING_L1');
-    }
-    return l1List;
+    return l1List.length > 0 ? l1List : DEFAULT_PENDING_L1_LIST;
   }
 }
 
