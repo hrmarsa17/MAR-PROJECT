@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>KMB PORTAL - Mechanic Activity Report</title>
+  <link rel="icon" href="https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico">
+  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="portal-header">
+    <div class="header-inner">
+      <div class="brand-wrapper">
+        <div class="brand-icon">
+          <i class="fa-solid fa-gear" style="color: #6B7280;"></i>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="brand-title">Mechanic Activity Report</span>
+            <span class="brand-badge" id="project-badge">PROJEK KMB</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
+            <i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i>
+            <span id="engine-status"><i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i> SPREADSHEET LIVE (Google Sheets)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Profile & Token Info -->
+      <div class="user-profile" id="user-profile-bar" style="display: none;">
+        <div class="user-info">
+          <div class="user-name" id="profile-name">Mekanik</div>
+          <div class="user-role-badge role-mechanic" id="profile-role">MECHANIC</div>
+        </div>
+        <button class="btn-token-switch" id="btn-sync-spreadsheet" title="Tarik data terbaru dari Google Spreadsheet" style="margin-right: 6px; background: #E8F5E9; border-color: #C8E6C9; color: #2E7D32;"><i class="fa-solid fa-rotate"></i> <span class="hide-mobile">Sync Sheets</span></button><button class="btn-token-switch" id="btn-switch-token" title="Ganti Akun / Token">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span class="hide-mobile">Ganti Token</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== NAVBAR ==================== -->
+  <nav class="portal-nav" id="portal-nav" style="display: none;">
+    <div class="nav-inner">
+      <div class="nav-tab active" data-tab="dashboard">Performa</div>
+      <div class="nav-tab" data-tab="create-wo">Create WO</div>
+      <div class="nav-tab" data-tab="monitoring">Monitoring</div>
+      <div class="nav-tab" data-tab="approvals" id="nav-tab-approvals" style="display: none;">
+        Approvals
+        <span class="brand-badge" id="approval-badge-count" style="display:none; background:rgba(245,158,11,0.2); color:#F59E0B; margin-left:4px;">0</span>
+      </div>
+      <div class="nav-tab" data-tab="teknis" style="opacity: 0.8;">Teknis</div>
+      <div class="nav-tab" data-tab="koreksi-hm" style="opacity: 0.8;">Koreksi HM</div>
+      <div class="nav-tab" data-tab="koreksi-km" style="opacity: 0.8;">Koreksi KM</div>
+      <div class="nav-tab" data-tab="reports" style="opacity: 0.8;">Reports</div>
+    </div>
+  </nav>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="portal-main">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section class="view-section active" id="view-dashboard">
+      <div class="page-title-row">
+        <h1>Dashboard Performa 🎯</h1>
+        <p id="dashboard-date-str">Senin, 26 Oktober 2026</p>
+        <p id="dashboard-periode-str" style="font-size: 13px; font-weight: 600; color: #2D6A4F; margin: 2px 0 0 0;">📅 Periode: 26 Okt – 25 Nov 2026 (Live Google Sheets)</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon-top">📊</span>
+          <div class="stat-label">TOTAL WO</div>
+          <div class="stat-value" id="stat-total-wo">44</div>
+          <div class="stat-desc">Semua waktu & status</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon-top">✅</span>
+          <div class="stat-label">APPROVED</div>
+          <div class="stat-value" id="stat-approved-wo">13</div>
+          <div class="stat-desc">Selesai & disetujui</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon-top">⏳</span>
+          <div class="stat-label">PENDING</div>
+          <div class="stat-value" id="stat-pending-wo">31</div>
+          <div class="stat-desc">Sedang berjalan</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon-top">💰</span>
+          <div class="stat-label">TOTAL POIN</div>
+          <div class="stat-value" id="stat-total-points">20.20</div>
+          <div class="stat-desc" id="stat-incentive-preview">Live Sheets: Rp 52.520</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>📋</span> Work Order Terbaru
+          </div>
+          <div class="panel-actions">
+            <div class="search-input-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="quick-search-wo" placeholder="Semua Status">
+            </div>
+            <button class="btn btn-primary" id="btn-goto-create-wo">
+              <i class="fa-solid fa-plus"></i> Create WO
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>WO NUMBER</th>
+                <th>COMPONENT</th>
+                <th>MEKANIK</th>
+                <th>STATUS</th>
+                <th>JUDGMENT</th>
+                <th>CREATED BY</th>
+                <th>TANGGAL</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-recent-wo-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                  <i class="fa-solid fa-inbox" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                  Belum ada aktivitas transaksi WO. Klik tab <strong>"Buat Work Order"</strong> untuk memulai.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. CREATE WORK ORDER VIEW -->
+    <section class="view-section" id="view-create-wo">
+      <div style="max-width: 900px; margin: 0 auto;">
+        
+        <!-- Model Pembuatan Card -->
+        <div class="grup-bar">
+          <label class="form-label" style="margin: 0; font-size: 14px; font-weight: 700; color: #111827;">Model pembuatan</label>
+          <div class="pilihan-grid" id="mode-pembuatan-grid" style="margin-top: 10px;">
+            <button type="button" class="pilihan terpilih" id="btn-mode-bebas" data-mode="">
+              📄 Bebas
+              <span class="sub">tiap joblist berdiri sendiri</span>
+            </button>
+            <button type="button" class="pilihan" id="btn-mode-unit" data-mode="unit">
+              🚜 1 unit · banyak job
+              <span class="sub">unit dikunci</span>
+            </button>
+            <button type="button" class="pilihan" id="btn-mode-job" data-mode="job">
+              🔧 1 job · banyak unit
+              <span class="sub">job dikunci</span>
+            </button>
+          </div>
+          <p class="form-hint" id="mode-petunjuk-text" style="margin-top: 10px; font-size: 12px; color: #6B7280; line-height: 1.5;">
+            Bebas: setiap joblist boleh unit dan job berbeda, terbit sebagai WO terpisah tanpa ikatan grup.
+          </p>
+          <button type="button" class="btn-toggle-global" id="btn-toggle-all-units" style="margin-top: 10px;">
+            <span id="label-toggle-all-units">🌐 Tampilkan semua unit</span>
+          </button>
+        </div>
+
+        <!-- Joblists Container -->
+        <div id="joblists-container">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+
+        <!-- Bottom Action Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; margin-bottom: 40px;">
+          <button type="button" class="btn btn-secondary" id="btn-add-joblist" style="background:#fff; border:1px solid #D1D5DB; color:#374151; font-weight:600; padding:9px 18px; border-radius:8px;">
+            + Add Joblist
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-submit-all-wos" style="background:#2D6A4F; color:#fff; font-weight:700; padding:10px 24px; border-radius:8px;">
+            Create Work Order
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. APPROVALS VIEW (Supervisor Only) -->
+    <section class="view-section" id="view-approvals">
+      <div class="page-title-row" style="margin-bottom: 16px;">
+        <div>
+          <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">Persetujuan Work Order (Approvals) ✍️</h1>
+          <p style="font-size: 13px; color: var(--text-dim); margin: 0;">Verifikasi & Approval Work Order (L1: Supervisor & L2: Superintendent)</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-success" id="btn-bulk-approve" style="padding: 8px 16px; font-size: 13px; font-weight: 600;">
+            <i class="fa-solid fa-check-double"></i> Setujui Terpilih (Bulk)
+          </button>
+          <button class="btn btn-secondary" id="btn-refresh-approvals" style="padding: 8px 16px; font-size: 13px;">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button class="subtab-btn active-subtab" id="appr-subtab-l1-btn">
+              ⏳ Menunggu L1 (<span id="appr-count-l1">3</span>)
+            </button>
+            <button class="subtab-btn" id="appr-subtab-l2-btn">
+              ⏳ Menunggu L2 (<span id="appr-count-l2">21</span>)
+            </button>
+            <button class="subtab-btn" id="appr-subtab-active-btn">
+              ⚙️ Aktif / Dikerjakan (<span id="appr-count-active">7</span>)
+            </button>
+            <button class="subtab-btn" id="appr-subtab-approved-btn">
+              ✅ Approved (<span id="appr-count-approved">13</span>)
+            </button>
+            <button class="subtab-btn" id="appr-subtab-rejected-btn">
+              ❌ Ditolak (<span id="appr-count-rejected">38</span>)
+            </button>
+          </div>
+
+          <div class="search-input-box" style="width: 220px; margin-left: auto;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-approvals" placeholder="Cari WO, Unit, Pekerjaan...">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr id="approvals-table-header-row">
+                <th style="width: 40px;"><input type="checkbox" id="check-all-approvals"></th>
+                <th>NO WO</th>
+                <th>TANGGAL</th>
+                <th>UNIT</th>
+                <th>KOMPONEN / PEKERJAAN</th>
+                <th>TIM MEKANIK</th>
+                <th>POIN</th>
+                <th>STATUS</th>
+                <th style="text-align: right; width: 170px;">AKSI</th>
+              </tr>
+            </thead>
+            <tbody id="approvals-table-body">
+              <tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-dim);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar persetujuan work order...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. MONITORING VIEW -->
+    <section class="view-section" id="view-monitoring">
+      <div class="page-title-row" style="margin-bottom: 16px;">
+        <div>
+          <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">Mekanik Monitoring (L1 & L2) 📊</h1>
+          <p id="monitoring-periode-str" style="font-size: 13px; color: var(--text-dim); margin: 0;">Periode: 26 Okt – 25 Nov 2026 (Live Google Sheets)</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <span class="kpi-pill" style="background: #FEF3C7; color: #92400E;">
+            📝 Perlu Diisi: <span id="mon-kpi-work">7</span>
+          </span>
+          <span class="kpi-pill" style="background: #E0E7FF; color: #3730A3;">
+            ⏳ Menunggu L1: <span id="mon-kpi-l1">3</span>
+          </span>
+          <span class="kpi-pill" style="background: #FCE7F3; color: #9D174D;">
+            ⏳ Menunggu L2: <span id="mon-kpi-l2">21</span>
+          </span>
+          <span class="kpi-pill" style="background: #DCFCE7; color: #166534;">
+            ✅ Approved: <span id="mon-kpi-approved">13</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="subtab-btn active-subtab" id="mon-subtab-mechanics-btn">
+              <i class="fa-solid fa-users"></i> Ringkasan Per Mekanik (<span id="mon-count-mechanics">20</span>)
+            </button>
+            <button class="subtab-btn" id="mon-subtab-wos-btn">
+              <i class="fa-solid fa-list-check"></i> Semua Work Order (<span id="mon-count-all-wos">58</span>)
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+            <div class="search-input-box" style="width: 220px;">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="search-monitoring" placeholder="Cari nama, ID, unit...">
+            </div>
+            <select id="filter-monitoring-section" class="form-control" style="width: 140px; padding: 6px 10px; font-size: 13px;">
+              <option value="">Semua Section</option>
+              <option value="vessel">Vessel</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 1: RINGKASAN MEKANIK (DEFAULT) -->
+        <div id="mon-subview-mechanics" class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 45px; text-align: center;">NO</th>
+                <th style="width: 110px;">ID MEKANIK</th>
+                <th>NAMA MEKANIK</th>
+                <th style="width: 120px;">SECTION</th>
+                <th style="width: 110px; text-align: center;">PERLU DIISI</th>
+                <th style="width: 110px; text-align: center;">MENUNGGU L1</th>
+                <th style="width: 110px; text-align: center;">MENUNGGU L2</th>
+                <th style="width: 100px; text-align: center;">APPROVED</th>
+                <th style="width: 200px;">TOKEN AKSES</th>
+              </tr>
+            </thead>
+            <tbody id="mon-mechanics-table-body">
+              <tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-dim);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data monitoring dari Google Spreadsheet...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- SUBVIEW 2: SEMUA WORK ORDER -->
+        <div id="mon-subview-all-wos" class="table-responsive" style="display: none;">
+          <table>
+            <thead>
+              <tr>
+                <th>NO WO</th>
+                <th>TANGGAL</th>
+                <th>SHIFT</th>
+                <th>UNIT</th>
+                <th>PEKERJAAN</th>
+                <th>TIM MEKANIK</th>
+                <th>JAM (ACT/TAR)</th>
+                <th>POIN</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="mon-all-wos-table-body">
+              <tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-dim);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar work order...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== TOKEN LOGIN GATE OVERLAY ==================== -->
+  <div class="gate-overlay" id="gate-overlay">
+    <div class="gate-card">
+      <div class="gate-icon">
+        <i class="fa-solid fa-key" style="color: #fff;"></i>
+      </div>
+      <h2 class="gate-title">KMB PORTAL GATE</h2>
+      <p class="gate-desc">
+        Masukkan Token Akses Anda untuk membuka sistem MAR Projek KMB. Sistem akan mengenali profil, hak akses, dan tarif Anda secara otomatis.
+      </p>
+
+      <div style="margin-bottom: 20px;">
+        <input type="text" class="form-control" id="input-token" placeholder="Contoh: 52fdb552231348ffb14a" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
+        <div id="gate-error-msg" style="color: var(--accent-red); font-size: 12px; margin-top: 8px; display: none;"></div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-enter-gate" style="width: 100%; padding: 14px; font-size: 15px;">
+        <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem KMB
+      </button>
+
+      <!-- Quick Test Tokens -->
+      <div style="margin-top: 24px; border-top: 1px solid var(--border-subtle); padding-top: 16px; text-align: left;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
+          ⚡ Token Pengujian Cepat:
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button type="button" class="btn btn-secondary quick-token-btn" data-token="52fdb552231348ffb14a" style="padding: 8px 12px; font-size: 12px; justify-content: space-between;">
+            <span><i class="fa-solid fa-user-shield" style="color: #60A5FA;"></i> <strong>L1 Test (Supervisor)</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim);">52fdb...14a</span>
+          </button>
+          <button type="button" class="btn btn-secondary quick-token-btn" data-token="token-budi-002" style="padding: 8px 12px; font-size: 12px; justify-content: space-between;">
+            <span><i class="fa-solid fa-wrench" style="color: #34D399;"></i> <strong>Mekanik KMB</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim);">Ahmad Fauzi</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+  <!-- Application Logic Scripts -->
+  <script type="module" src="app.js?v=3"></script>
+</body>
+</html>
