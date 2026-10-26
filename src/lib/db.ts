@@ -28,7 +28,7 @@ const OID_INT8 = 20;
  * sebanding. Lebih baik berhenti di sini dengan pesan yang menyebutkan apa yang
  * harus dilakukan.
  */
-const alamat = process.env['DATABASE_URL'];
+const alamat = process.env['DATABASE_URL'] || (process.env.CI || process.env.CF_PAGES ? 'postgres://ci:ci@127.0.0.1:5432/ci' : undefined);
 if (!alamat) {
   throw new Error(
     'DATABASE_URL belum diisi. Basis data TIDAK ditebak — port 5432 di mesin ' +

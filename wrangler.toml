@@ -1,15 +1,6 @@
-{
-  "configVersion": 1,
-  "buildCommand": "npm run build",
-  "buildOutputDirectory": ".next",
-  "env": {
-    "NODEJS_VERSION": "22"
-  },
-  "compatibility_date": "2024-12-01",
-  "routes": [
-    {
-      "pattern": "/api/*",
-      "zone_name": "example.com"
-    }
-  ]
-}
+name = "project-kmb"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+STORAGE_MODE = "SUPABASE"
