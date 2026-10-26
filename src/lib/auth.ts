@@ -60,11 +60,24 @@ export function buatToken(tenantCode?: string): string {
  * Pencocokan dilakukan basis data lewat index unik, bukan pemindaian baris demi
  * baris seperti `_resolveToken` di V2 yang membaca seluruh sheet ApiTokens
  * setiap permintaan.
+ *
+ * @param token Token akses
+ * @param sistemAtauTx Sistem ('PKMB'|'KMB'|'SUM') atau Tx untuk backward compat
  */
 export async function identitasDariToken(
   token: string | null | undefined,
-  tx?: Tx,
+  sistemAtauTx?: string | Tx,
 ): Promise<Identitas> {
+  const sistem = typeof sistemAtauTx === 'string' ? sistemAtauTx : undefined;
+  const tx = typeof sistemAtauTx === 'object' ? sistemAtauTx : undefined;
+
+  // Routing by sistem
+  if (sistem === 'KMB' || sistem === 'SUM') {
+    // Google Sheets backend
+    return identitasDariTokenAppsScript(token, sistem);
+  }
+
+  // PKMB atau default: Supabase (hybrid)
   if (pakaiAppsScript()) {
     return identitasDariTokenAppsScript(token);
   }

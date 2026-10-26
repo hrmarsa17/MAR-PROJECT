@@ -4,8 +4,13 @@ import type { Identitas } from '../../lib/auth.js';
 
 /**
  * Menukar token menjadi Identitas pengguna melalui Google Apps Script.
+ * @param token Token akses
+ * @param sistem Sistem pilihan: 'KMB', 'SUM', atau undefined (gunakan token prefix)
  */
-export async function identitasDariTokenAppsScript(token: string | null | undefined): Promise<Identitas> {
+export async function identitasDariTokenAppsScript(
+  token: string | null | undefined,
+  sistem?: string,
+): Promise<Identitas> {
   if (!token || token.trim().length < 4) {
     throw tidakBerhak('Token tidak dikenal atau tidak berlaku');
   }
@@ -32,12 +37,12 @@ export async function identitasDariTokenAppsScript(token: string | null | undefi
   const rawId = Number(me['id'] ?? (typeof me['mechanic_id'] === 'number' ? me['mechanic_id'] : 1));
   const mechanicId = Number.isSafeInteger(rawId) && rawId > 0 ? rawId : 1;
 
-  let tenantCode = (process.env['DEFAULT_TENANT'] || 'KMB').toUpperCase();
+  let tenantCode = sistem?.toUpperCase() || (process.env['DEFAULT_TENANT'] || 'KMB').toUpperCase();
   if (me['tenant_code'] || me['tenant']) {
     tenantCode = String(me['tenant_code'] || me['tenant']).toUpperCase();
-  } else if (token && token.toLowerCase().startsWith('sum')) {
+  } else if (!sistem && token && token.toLowerCase().startsWith('sum')) {
     tenantCode = 'SUM';
-  } else if (token && token.toLowerCase().startsWith('kmb')) {
+  } else if (!sistem && token && token.toLowerCase().startsWith('kmb')) {
     tenantCode = 'KMB';
   }
 

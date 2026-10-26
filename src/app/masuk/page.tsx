@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 export default function Masuk() {
+  const [sistem, setSistem] = useState('PKMB');
   const [token, setToken] = useState('');
   const [sibuk, setSibuk] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
@@ -15,7 +16,7 @@ export default function Masuk() {
       const r = await fetch('/api/masuk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token.trim() }),
+        body: JSON.stringify({ token: token.trim(), sistem }),
       });
       const j = await r.json();
       if (!j.ok) {
@@ -34,13 +35,19 @@ export default function Masuk() {
     <div className="container-sempit" style={{ maxWidth: 420 }}>
       <div className="page-header">
         <h1 className="page-title">⚙️ MAR Gate</h1>
-        <p className="page-subtitle">
-          Ketikkan token akses Anda untuk masuk ke sistem (KMB, MAR, dll).
-        </p>
       </div>
 
       <form className="card" onSubmit={kirim}>
         <div className="card-body">
+        <div className="form-group">
+          <label className="form-label">Sistem</label>
+          <select value={sistem} onChange={(e) => setSistem(e.target.value)} style={{ marginBottom: 16 }}>
+            <option value="PKMB">PKMB (Hybrid)</option>
+            <option value="KMB">KMB (Sheet)</option>
+            <option value="SUM">SUM (Sheet)</option>
+          </select>
+        </div>
+
         <div className="form-group">
           <label className="form-label" htmlFor="token">
             Token <span className="wajib">*</span>
@@ -52,7 +59,7 @@ export default function Masuk() {
             autoComplete="off"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="20 huruf"
+            placeholder="Ketik token akses"
             style={{ fontFamily: 'var(--font-mono)' }}
           />
         </div>
