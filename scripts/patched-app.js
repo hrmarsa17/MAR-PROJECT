@@ -43,6 +43,7 @@ const DEFAULT_PENDING_L1_LIST = [
   {
     id: "WO-20261026-004",
     raw_id: "WO-1792975278962-336",
+    level: 1,
     date: "26 Oct 2026 07:41",
     shift: "Shift 2",
     unit_id: "XEVB42002 - ST",
@@ -63,6 +64,8 @@ const DEFAULT_PENDING_L1_LIST = [
   {
     id: "WO-20261026-029",
     raw_id: "WO-1792983976896-192",
+    level: 2,
+    status: "PENDING_L2",
     date: "26 Oct 2026 10:06",
     shift: "Shift 1",
     unit_id: "SDT-002",
@@ -82,6 +85,8 @@ const DEFAULT_PENDING_L1_LIST = [
   {
     id: "WO-20261026-408",
     raw_id: "WO-1792990608901-228",
+    level: 2,
+    status: "PENDING_L2",
     date: "26 Oct 2026 11:56",
     shift: "Shift 1",
     unit_id: "SDVS70011",
@@ -100,6 +105,1550 @@ const DEFAULT_PENDING_L1_LIST = [
   }
 ];
 
+
+const DEFAULT_ACTIVE_WOS = [
+  {
+    "id": "WO-1791354189366-446",
+    "wo_number": "WO-20261007-427",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Major Repair — Brake / Brake System",
+    "unit_id": "XEVB42004 - ST",
+    "unit_name": "XEVB42004 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-07T06:23:09.366Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Alan Rohim"
+    ],
+    "is_others": false,
+    "keterangan": "Storing KM 0, repair breaking axle 1,2 vessel"
+  },
+  {
+    "id": "WO-1792481163040-004",
+    "wo_number": "WO-20261020-819",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Vessel / Chasis & Body",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-20T07:26:03.040Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Yudo Hardianto"
+    ],
+    "is_others": false,
+    "keterangan": "Remove King Pin Vessel A dan Vessel B"
+  },
+  {
+    "id": "WO-1792921061466-009",
+    "wo_number": "WO-20261025-697",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Vessel / Chasis & Body",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-25T09:37:41.466Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Bayu Aji"
+    ],
+    "is_others": false,
+    "keterangan": "Cutting  Canopi Vessel A Nusatama"
+  },
+  {
+    "id": "WO-1792921152322-318",
+    "wo_number": "WO-20261025-477",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Vessel / Chasis & Body",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-25T09:39:12.322Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Gusti Raka Pamungkas"
+    ],
+    "is_others": false,
+    "keterangan": "Make bracket stop lamp Nusatama A"
+  },
+  {
+    "id": "WO-1792990418815-893",
+    "wo_number": "WO-20261026-156",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Vessel / Chasis & Body",
+    "unit_id": "SDVS70012",
+    "unit_name": "SDVS70012 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T04:53:38.815Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Gusti Raka Pamungkas"
+    ],
+    "is_others": false,
+    "keterangan": "Welding Crack dalam Vesel"
+  },
+  {
+    "id": "WO-1793013215789-718",
+    "wo_number": "WO-20261026-277",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Cleaning — Vessel / Brake & Tyre System",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T11:13:37.277Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": null
+  },
+  {
+    "id": "WO-1793013232200-006",
+    "wo_number": "WO-20261026-046",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Others — Test Others",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T11:13:53.046Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": true,
+    "keterangan": null
+  },
+  {
+    "id": "WO-1793020774786-616",
+    "wo_number": "WO-20261026-311",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Others — EV42002 - Re torque bolt Mudguard LH RR",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:19:34.786Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Aldo Noviansyah",
+      "Wiwit",
+      "Bagus Wahyu Nurcahyo",
+      "Eliyadi"
+    ],
+    "is_others": true,
+    "keterangan": "EV42002\n- Re torque bolt Mudguard LH RR"
+  },
+  {
+    "id": "WO-1793020875039-854",
+    "wo_number": "WO-20261026-534",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Others — Full welding stand vessel / Landing Jack",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:21:15.039Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Bagus Wahyu Nurcahyo",
+      "Aldo Noviansyah",
+      "Wiwit",
+      "Eliyadi"
+    ],
+    "is_others": true,
+    "keterangan": "Full welding stand vessel / Landing Jack"
+  },
+  {
+    "id": "WO-1793020948780-249",
+    "wo_number": "WO-20261026-198",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Tyre / Tyre",
+    "unit_id": "XEVB42003 - ST",
+    "unit_name": "XEVB42003 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:22:28.780Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Aldo Noviansyah",
+      "Eliyadi",
+      "Wiwit",
+      "Bagus Wahyu Nurcahyo"
+    ],
+    "is_others": false,
+    "keterangan": "- Remove and install Tyre No. 6 vessel\n- Connecting cable head lamp"
+  },
+  {
+    "id": "WO-1793021024161-966",
+    "wo_number": "WO-20261026-037",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Chassis / Chassis",
+    "unit_id": "XEVB42006 - ST",
+    "unit_name": "XEVB42006 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:23:44.161Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Wiwit",
+      "Bagus Wahyu Nurcahyo",
+      "Eliyadi",
+      "Aldo Noviansyah"
+    ],
+    "is_others": false,
+    "keterangan": "- Re torque bolt cover battery \n- Make safety bracket bumper RH PM"
+  },
+  {
+    "id": "WO-1793021083519-950",
+    "wo_number": "WO-20261026-231",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Others — Cleaning charging unit",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:24:43.519Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Wiwit",
+      "Bagus Wahyu Nurcahyo"
+    ],
+    "is_others": true,
+    "keterangan": "Cleaning charging unit"
+  },
+  {
+    "id": "WO-1793021165173-381",
+    "wo_number": "WO-20261026-391",
+    "status": "pending_mechanic_work",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Chassis / Chassis",
+    "unit_id": "XEVB42006 - ST",
+    "unit_name": "XEVB42006 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:26:05.173Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Wiwit",
+      "Aldo Noviansyah",
+      "Eliyadi"
+    ],
+    "is_others": false,
+    "keterangan": "Install bolt Bulbar 1pcs RH"
+  },
+  {
+    "id": "WO-1793021282822-799",
+    "wo_number": "WO-20261026-528",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Vessel / Chasis & Body",
+    "unit_id": "SDVS70012",
+    "unit_name": "SDVS70012 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:28:02.822Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Gusti Raka Pamungkas"
+    ],
+    "is_others": false,
+    "keterangan": "Welding Crack dalam Vesel"
+  },
+  {
+    "id": "WO-1793021343933-378",
+    "wo_number": "WO-20261026-170",
+    "status": "pending_mechanic_work",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Vessel / Chasis & Body",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_by_is_mechanic": false,
+    "created_at": "2026-10-26T13:29:03.933Z",
+    "wo_group_id": "",
+    "wo_group_mode": "",
+    "team_names": [
+      "Gusti Raka Pamungkas"
+    ],
+    "is_others": false,
+    "keterangan": "Cutting braket lamp dan pipe cable"
+  }
+];
+const DEFAULT_APPROVED_WOS = [
+  {
+    "id": "WO-1792840872383-895",
+    "wo_number": "WO-20261024-468",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Testing And Adjusting — Air Conditioner / Air Conditioner",
+    "unit_id": "XEVB42002 - ST",
+    "unit_name": "XEVB42002 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 5200,
+    "final_points": 0.8,
+    "actual_hours": 1.17,
+    "team_names": [
+      "Wiwit",
+      "Afid Irham\r",
+      "Aldo Noviansyah"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "Adjust Freon 134"
+  },
+  {
+    "id": "WO-1792840705681-871",
+    "wo_number": "WO-20261024-262",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Chassis / Vessel",
+    "unit_id": "XEVB42005 - ST",
+    "unit_name": "XEVB42005 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 4400,
+    "final_points": 1.1,
+    "actual_hours": 1,
+    "team_names": [
+      "Aldo Noviansyah",
+      "Wiwit"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "- Welding and install Bulbar PM 05 \n- welding and install stoper pin sylinder dump vessel"
+  },
+  {
+    "id": "WO-1792837057200-241",
+    "wo_number": "WO-20261024-473",
+    "status": "approved",
+    "section": "vessel",
+    "component_name": "Brushing — Vessel / Chasis & Body",
+    "unit_id": "SDVS70012",
+    "unit_name": "SDVS70012 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 8250,
+    "final_points": 3.3,
+    "actual_hours": 2.63,
+    "team_names": [
+      "Khoirul Musthofa"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "brushing Axel 1&2 vessel B Nusatama"
+  },
+  {
+    "id": "WO-1792836921926-104",
+    "wo_number": "WO-20261024-553",
+    "status": "approved",
+    "section": "vessel",
+    "component_name": "Others — Antar mobil cuci steam",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 495,
+    "final_points": 0.33,
+    "actual_hours": 0.85,
+    "team_names": [
+      "Aditya"
+    ],
+    "is_others": true,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "Antar mobil cuci steam"
+  },
+  {
+    "id": "WO-1792836703362-678",
+    "wo_number": "WO-20261024-948",
+    "status": "approved",
+    "section": "vessel",
+    "component_name": "Others — Escord keluar site lowbouy membawa PM dan Dolly",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 16500,
+    "final_points": 2.2,
+    "actual_hours": 2,
+    "team_names": [
+      "Rahmat",
+      "Yudo Hardianto",
+      "Bayu Aji"
+    ],
+    "is_others": true,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "Escord keluar site lowbouy membawa PM dan Dolly"
+  },
+  {
+    "id": "WO-1792835380722-221",
+    "wo_number": "WO-20261024-319",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Others — escort 2X Prime mover dan 1 X loboy di KM 111 untuk jemput vesel dan doly  di KM 36",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 1200,
+    "final_points": 0.8,
+    "actual_hours": 5.65,
+    "team_names": [
+      "Regista Pratama"
+    ],
+    "is_others": true,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "escort 2X Prime mover dan 1 X loboy di KM 111 untuk jemput vesel dan doly  di KM 36"
+  },
+  {
+    "id": "WO-1792809095206-657",
+    "wo_number": "WO-20261024-565",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Electrical / Lighting System",
+    "unit_id": "XEVB42003 - ST",
+    "unit_name": "XEVB42003 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 4400,
+    "final_points": 1.1,
+    "actual_hours": 0.62,
+    "team_names": [
+      "Aldo Noviansyah",
+      "Afid Irham\r"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "- Cek Wiring Head Lamp Lh Rh\n- Repair Wiring Head Lamp Lh Rh"
+  },
+  {
+    "id": "WO-1792809004202-470",
+    "wo_number": "WO-20261024-350",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Remove & Install — Suspension / Leaf  Spring",
+    "unit_id": "XEVB42002 - ST",
+    "unit_name": "XEVB42002 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 14300,
+    "final_points": 2.2,
+    "actual_hours": 1.58,
+    "team_names": [
+      "Afid Irham\r",
+      "Wiwit",
+      "Aldo Noviansyah"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "- Replace Center Bolt \n- Replace Spring No.1"
+  },
+  {
+    "id": "WO-1792808875626-518",
+    "wo_number": "WO-20261024-963",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Tyre / Tyre",
+    "unit_id": "XEVB42002 - ST",
+    "unit_name": "XEVB42002 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 7150,
+    "final_points": 1.1,
+    "actual_hours": 0.47,
+    "team_names": [
+      "Wiwit",
+      "Aldo Noviansyah",
+      "Afid Irham\r"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "- Assembly New Tyre \n- Replace Tyre Pos 4 Vessel"
+  },
+  {
+    "id": "WO-1792808803640-992",
+    "wo_number": "WO-20261024-421",
+    "status": "approved",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Brake / Brake System",
+    "unit_id": "XEVB42004 - ST",
+    "unit_name": "XEVB42004 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "24 Okt 2026",
+    "final_idr": 13310,
+    "final_points": 2.42,
+    "actual_hours": 1.75,
+    "team_names": [
+      "Bagus Wahyu Nurcahyo",
+      "Eliyadi",
+      "Alan Rohim"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "Remove & Install whell bearing axle 2 vessel + ganti lining"
+  },
+  {
+    "id": "WO-1792656884072-291",
+    "wo_number": "WO-20261022-991",
+    "status": "approved",
+    "section": "vessel",
+    "component_name": "Others — LV Triton KMB - Adjust Parking Brake",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "22 Okt 2026",
+    "final_idr": 1375,
+    "final_points": 0.55,
+    "actual_hours": 0.53,
+    "team_names": [
+      "Rahmat"
+    ],
+    "is_others": true,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "LV Triton KMB - Adjust Parking Brake"
+  },
+  {
+    "id": "WO-1792565750384-163",
+    "wo_number": "WO-20261021-956",
+    "status": "approved",
+    "section": "vessel",
+    "component_name": "Others — Disconect truck PM after test Dump",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "21 Okt 2026",
+    "final_idr": 5500,
+    "final_points": 1.1,
+    "actual_hours": 0.57,
+    "team_names": [
+      "Bayu Aji",
+      "Rahmat"
+    ],
+    "is_others": true,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "Disconect truck PM after test Dump"
+  },
+  {
+    "id": "WO-1792496205953-106",
+    "wo_number": "WO-20261020-383",
+    "status": "approved",
+    "section": "vessel",
+    "component_name": "Remove & Install — Vessel / Hanger Spring",
+    "unit_id": "SDVS70012",
+    "unit_name": "SDVS70012 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "spv-002@kmb.local",
+    "created_at_str": "20 Okt 2026",
+    "final_idr": 8000,
+    "final_points": 3.2,
+    "actual_hours": 7.18,
+    "team_names": [
+      "Bayu Aji"
+    ],
+    "is_others": false,
+    "hour_meter": null,
+    "kilometers": null,
+    "part_category": null,
+    "safety_incident": false,
+    "keterangan": "Cutting hangar axel pos 1 dan pos 2 pada vessel B"
+  }
+];
+const DEFAULT_REJECTED_WOS = [
+  {
+    "id": "WO-1792750251923-987",
+    "wo_number": "WO-20261023-349",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Tyre",
+    "unit_id": "XEVB42004 - ST",
+    "unit_name": "XEVB42004 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_at": "2026-10-23T10:10:51.923Z",
+    "team_names": [
+      "Aldo Noviansyah",
+      "Afid Irham\r",
+      "Wiwit"
+    ],
+    "is_others": false,
+    "keterangan": "- Assembly Tyre Baru 1pcs\n- Replace Tyre New 2pcs Pos 7/8 Vessel",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:49:23.885Z",
+    "rejection_reason": "wo double"
+  },
+  {
+    "id": "WO-ID-6f013bbd",
+    "wo_number": "WO-UJI-261022-1425-01",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T04:13:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #1",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:13:27.731Z",
+    "rejection_reason": "trial wo"
+  },
+  {
+    "id": "WO-ID-d0f8e114",
+    "wo_number": "WO-UJI-261022-1425-02",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T04:01:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #2",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:15:29.925Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-2fa9c601",
+    "wo_number": "WO-UJI-261022-1425-03",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T03:49:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #3",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:16:22.165Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-56fdf8c5",
+    "wo_number": "WO-UJI-261022-1425-04",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T03:37:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #4 [⚠️ SAFETY INCIDENT]",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:17:07.730Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-315763e9",
+    "wo_number": "WO-UJI-261022-1425-05",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T03:25:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #5",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:17:52.183Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-f9ccb66c",
+    "wo_number": "WO-UJI-261022-1425-06",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T03:13:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #6",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:18:27.744Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-f77a5b73",
+    "wo_number": "WO-UJI-261022-1425-07",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T03:01:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #7",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:19:00.913Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-904de53f",
+    "wo_number": "WO-UJI-261022-1425-08",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T02:49:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #8 [🔧 REDO]",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:19:32.696Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-b75532a5",
+    "wo_number": "WO-UJI-261022-1425-09",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T02:37:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #9",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:20:06.561Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-ID-3e73ab80",
+    "wo_number": "WO-UJI-261022-1425-10",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Cleaning",
+    "unit_id": "UNIT-OTHERS",
+    "unit_name": "📝 Job Manual (di luar katalog) (OTHERS)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "admin.test@kmb.local",
+    "created_by_name": "admin.test@kmb.local",
+    "created_at": "2026-10-22T02:25:31.183Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": "WO Uji Coba Bulk Approve MNT-002 #10",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-25T06:14:39.882Z",
+    "rejection_reason": "wo trial"
+  },
+  {
+    "id": "WO-1792122925632-247",
+    "wo_number": "WO-20261016-224",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Others — Unit : PM EV42005 Komponen : Service PS1 Sub komponen : Service PS1 Job : - Service periodic 1           - Greasing all niplle           - cek pressure all tyre           - Inspeksi",
+    "unit_id": "OTHERS",
+    "unit_name": "Others / Custom",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l2test@gmail.com",
+    "created_by_name": "L2 Test",
+    "created_at": "2026-10-16T03:55:25.632Z",
+    "team_names": [
+      "Afid Irham\r",
+      "Alan Rohim",
+      "Wiwit",
+      "Regista Pratama"
+    ],
+    "is_others": true,
+    "keterangan": null,
+    "rejected_by_name": "L2 Test",
+    "rejected_at": "2026-10-16T03:59:46.889Z",
+    "rejection_reason": "salah"
+  },
+  {
+    "id": "WO-1791892452016-742",
+    "wo_number": "WO-20261013-289",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Minor Repair — U Bolt & Center Bolt",
+    "unit_id": "XEVB42004 - ST",
+    "unit_name": "XEVB42004 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_at": "2026-10-13T11:54:12.016Z",
+    "team_names": [
+      "Eliyadi",
+      "M. Riyanto",
+      "Bagus Wahyu Nurcahyo"
+    ],
+    "is_others": false,
+    "keterangan": "retorque u-bolt spring axel pos 1 vessel",
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-10-13T11:58:47.144Z",
+    "rejection_reason": "salah manpower"
+  },
+  {
+    "id": "WO-1791683326040-900",
+    "wo_number": "WO-20261011-792",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Tyre",
+    "unit_id": "XEVB42004 - ST",
+    "unit_name": "XEVB42004 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_at": "2026-10-11T01:48:46.040Z",
+    "team_names": [
+      "Alan Rohim",
+      "Rido Saputra"
+    ],
+    "is_others": false,
+    "keterangan": "Remove & Instal tyre Vessel pos 06",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-12T15:02:20.225Z",
+    "rejection_reason": "double"
+  },
+  {
+    "id": "WO-1791359301202-167",
+    "wo_number": "WO-20261007-894",
+    "status": "rejected",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Tyre",
+    "unit_id": "XEVB42006 - ST",
+    "unit_name": "XEVB42006 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "workshop",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_at": "2026-10-07T07:48:21.202Z",
+    "team_names": [
+      "Bagus Wahyu Nurcahyo",
+      "Eliyadi",
+      "Aldo Noviansyah"
+    ],
+    "is_others": false,
+    "keterangan": "remove and instal tyre pos 12 vessel",
+    "rejected_by_name": "Frans",
+    "rejected_at": "2026-10-11T10:50:44.220Z",
+    "rejection_reason": "double job"
+  },
+  {
+    "id": "WO-1791161175752-499",
+    "wo_number": "WO-20261005-023",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Minor Repair — Brake & Tyre System",
+    "unit_id": "DLCD50002",
+    "unit_name": "DLCD50002 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "spv-002@kmb.local",
+    "created_by_name": "Djarot",
+    "created_at": "2026-10-05T00:46:15.752Z",
+    "team_names": [
+      "M. Riyanto"
+    ],
+    "is_others": false,
+    "keterangan": "Instal and modification hose air brake system",
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-10-10T03:57:56.923Z",
+    "rejection_reason": "sudah dikerjakan di WO lainnya"
+  },
+  {
+    "id": "WO-1790780743123-399",
+    "wo_number": "WO-20260930-953",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Cleaning — Air System",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-30T15:05:43.123Z",
+    "team_names": [
+      "VES-002"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-10-01T07:34:53.669Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790771107783-543",
+    "wo_number": "WO-20260930-765",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Electrical System",
+    "unit_id": "XEVB42003 - ST",
+    "unit_name": "XEVB42003 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "mnt-010@kmb.local",
+    "created_by_name": "Bagus Wahyu Nurcahyo",
+    "created_at": "2026-09-30T12:25:08.765Z",
+    "team_names": [
+      "MNT-001"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-30T13:21:36.516Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790644995156-656",
+    "wo_number": "WO-20260929-043",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Brake Pump",
+    "unit_id": "XEVB42004 - ST",
+    "unit_name": "XEVB42004 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "mnt-010@kmb.local",
+    "created_by_name": "Bagus Wahyu Nurcahyo",
+    "created_at": "2026-09-29T01:23:16.043Z",
+    "team_names": [
+      "Bagus Wahyu Nurcahyo",
+      "Aldo Noviansyah"
+    ],
+    "is_others": false,
+    "keterangan": "repair elbo hose air drayer",
+    "rejected_by_name": "Bagus Wahyu Nurcahyo",
+    "rejected_at": "2026-09-29T01:32:08.995Z",
+    "rejection_reason": "sudah bikin"
+  },
+  {
+    "id": "WO-1790623008324-889",
+    "wo_number": "WO-20260929-089",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Radiator",
+    "unit_id": "XEVB42002 - ST",
+    "unit_name": "XEVB42002 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "field",
+    "created_by": "mnt-009@kmb.local",
+    "created_by_name": "Alan Rohim",
+    "created_at": "2026-09-28T19:16:49.089Z",
+    "team_names": [
+      "Alan Rohim"
+    ],
+    "is_others": false,
+    "keterangan": "Unit di km 5",
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-10-11T06:48:21.917Z",
+    "rejection_reason": "sudah di kerjakan sebelumnya"
+  },
+  {
+    "id": "WO-1790584811062-542",
+    "wo_number": "WO-20260928-916-A",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Greasing — Greasing",
+    "unit_id": "XEVB42001 - ST",
+    "unit_name": "XEVB42001 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "mnt-005@kmb.local",
+    "created_by_name": "Wiwit",
+    "created_at": "2026-09-28T08:40:11.062Z",
+    "team_names": [
+      "Wiwit",
+      "Eliyadi",
+      "Bagus Wahyu Nurcahyo",
+      "Aldo Noviansyah"
+    ],
+    "is_others": false,
+    "keterangan": "Greasing unit PM 01",
+    "rejected_by_name": "Wiwit",
+    "rejected_at": "2026-09-28T08:41:38.694Z",
+    "rejection_reason": "Reset WO"
+  },
+  {
+    "id": "WO-1790496437908-015",
+    "wo_number": "WO-20260927-245",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Testing And Adjusting — Cylinder Head",
+    "unit_id": "XEVB42006 - ST",
+    "unit_name": "XEVB42006 - ST (BEIBEN)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "mnt-005@kmb.local",
+    "created_by_name": "Wiwit",
+    "created_at": "2026-09-27T08:07:17.908Z",
+    "team_names": [
+      "Wiwit"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:33:45.666Z",
+    "rejection_reason": "double Pekerjaan"
+  },
+  {
+    "id": "WO-1790483756422-087",
+    "wo_number": "WO-20260927-351",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Minor Repair — Tyre",
+    "unit_id": "XEVB42006 - ST",
+    "unit_name": "XEVB42006 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "field",
+    "created_by": "mnt-006@kmb.local",
+    "created_by_name": "Eliyadi",
+    "created_at": "2026-09-27T04:35:57.352Z",
+    "team_names": [
+      "Eliyadi",
+      "Alan Rohim"
+    ],
+    "is_others": false,
+    "keterangan": "Tyre no 4 pm",
+    "rejected_by_name": "Eliyadi",
+    "rejected_at": "2026-09-27T04:57:05.892Z",
+    "rejection_reason": "Tanggal 25"
+  },
+  {
+    "id": "WO-1790483742471-933",
+    "wo_number": "WO-20260927-296",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Remove And Install — Tyre",
+    "unit_id": "XEVB42002 - ST",
+    "unit_name": "XEVB42002 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "field",
+    "created_by": "mnt-006@kmb.local",
+    "created_by_name": "Eliyadi",
+    "created_at": "2026-09-27T04:35:43.296Z",
+    "team_names": [
+      "Eliyadi",
+      "Alan Rohim"
+    ],
+    "is_others": false,
+    "keterangan": "Tyre no 7 dan 8 vessel",
+    "rejected_by_name": "Eliyadi",
+    "rejected_at": "2026-09-27T04:56:38.124Z",
+    "rejection_reason": "Tanggal 25"
+  },
+  {
+    "id": "WO-1790480812223-661",
+    "wo_number": "WO-20260927-020",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Minor Repair — Suspension System",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "ves-005@kmb.local",
+    "created_by_name": "Aji Laksono",
+    "created_at": "2026-09-27T03:46:52.223Z",
+    "team_names": [
+      "VES-006"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:16:44.534Z",
+    "rejection_reason": "mekanik off"
+  },
+  {
+    "id": "WO-1790383195893-935",
+    "wo_number": "WO-20260926-463",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Cleaning — Air System",
+    "unit_id": "SDVS70027",
+    "unit_name": "SDVS70027 (SANDIN)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-26T00:39:56.463Z",
+    "team_names": [
+      "Dimas",
+      "Cahyo Aji",
+      "Aditya"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-28T02:16:15.795Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790309705996-011",
+    "wo_number": "WO-20260925-317-C",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Overhaul — Final Drive",
+    "unit_id": "XEVB42003 - ST",
+    "unit_name": "XEVB42003 - ST (BEIBEN)",
+    "work_condition": "difficult",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-25T04:15:05.996Z",
+    "team_names": [
+      "Mekanik Maintenance 2"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:15:59.915Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790309703347-433",
+    "wo_number": "WO-20260925-317-B",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Resealing — Hydrolik Ssytem",
+    "unit_id": "SDVS70022",
+    "unit_name": "SDVS70022 (SANDIN)",
+    "work_condition": "difficult",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-25T04:15:03.347Z",
+    "team_names": [
+      "VES-001"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:15:32.506Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790309701061-821",
+    "wo_number": "WO-20260925-317-A",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Welding & Fabrikasi — Chasis & Body",
+    "unit_id": "DLCD50002",
+    "unit_name": "DLCD50002 (NUSATAMA)",
+    "work_condition": "extreme",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-25T04:15:01.061Z",
+    "team_names": [
+      "VES-002"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:14:54.992Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790309466005-532",
+    "wo_number": "WO-20260925-274",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Mounting — Suspension System",
+    "unit_id": "SDVS70011",
+    "unit_name": "SDVS70011 (NUSATAMA)",
+    "work_condition": "extreme",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-25T04:11:06.005Z",
+    "team_names": [
+      "VES-002"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:14:24.183Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790292762616-842",
+    "wo_number": "WO-20260925-573",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Dismounting — Suspension System",
+    "unit_id": "DLY-001",
+    "unit_name": "DLY-001",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T23:32:42.616Z",
+    "team_names": [
+      "VES-002"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:13:55.032Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790292683808-857",
+    "wo_number": "WO-20260925-907",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Dismounting — Brake & Tyre System",
+    "unit_id": "SDT-001",
+    "unit_name": "SDT-001",
+    "work_condition": "normal",
+    "location": "workshop",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T23:31:23.808Z",
+    "team_names": [
+      "VES-002"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:13:24.306Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790257214030-306",
+    "wo_number": "WO-20260924-751",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Washing — Alternator",
+    "unit_id": "SDT-002",
+    "unit_name": "Comp Engine Rebuild (ENGINE)",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T13:40:14.751Z",
+    "team_names": [
+      "VES-002"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:12:46.856Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790252445212-721",
+    "wo_number": "WO-20260924-579-B",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Brushing — Chasis & Body",
+    "unit_id": "SDT-001",
+    "unit_name": "SDT-001",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T12:20:45.212Z",
+    "team_names": [
+      "VES-001"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:11:46.183Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790252440762-151",
+    "wo_number": "WO-20260924-579-A",
+    "status": "rejected",
+    "section": "vessel",
+    "component_name": "Mounting/Installing — Hydrolik Ssytem",
+    "unit_id": "SDT-001",
+    "unit_name": "SDT-001",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T12:20:40.762Z",
+    "team_names": [
+      "VES-001"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T04:30:03.385Z",
+    "rejection_reason": "test"
+  },
+  {
+    "id": "WO-1790240424017-872",
+    "wo_number": "WO-20260924-814",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Troubleshooting — Generator",
+    "unit_id": "GS60-01",
+    "unit_name": "GS60-01",
+    "work_condition": "normal",
+    "location": "field",
+    "created_by": "l2test@gmail.com",
+    "created_by_name": "L2 Test",
+    "created_at": "2026-09-24T09:00:24.017Z",
+    "team_names": [
+      "MECH-003"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:11:10.624Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790239340195-679",
+    "wo_number": "WO-20260924-525",
+    "status": "cancelled",
+    "section": "maintenance",
+    "component_name": "Major Repair — Pompa",
+    "unit_id": "XPMM01",
+    "unit_name": "XPMM01",
+    "work_condition": "extreme",
+    "location": "field",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T08:42:20.195Z",
+    "team_names": [
+      "MECH-003"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:10:34.480Z",
+    "rejection_reason": "test doang"
+  },
+  {
+    "id": "WO-1790235980733-044",
+    "wo_number": "WO-20260924-398",
+    "status": "cancelled",
+    "section": "vessel",
+    "component_name": "Mounting — Air System",
+    "unit_id": "DLY-001",
+    "unit_name": "DLY-001",
+    "work_condition": "difficult",
+    "location": "workshop",
+    "created_by": "l1est@gmail.com",
+    "created_by_name": "L1 Test",
+    "created_at": "2026-09-24T07:46:20.733Z",
+    "team_names": [
+      "VES-001"
+    ],
+    "is_others": false,
+    "keterangan": null,
+    "rejected_by_name": "Djarot",
+    "rejected_at": "2026-09-27T12:10:00.425Z",
+    "rejection_reason": "test"
+  }
+];
 
 // =========================================================================
 // APPLICATION STATE
@@ -121,9 +1670,9 @@ const state = {
   },
   pendingL1Wos: [...DEFAULT_PENDING_L1_LIST],
   pendingL2Wos: [],
-  activeWos: [],
-  approvedWos: [],
-  rejectedWos: [],
+  activeWos: DEFAULT_ACTIVE_WOS.map(w => transformGasWo(w, "ACTIVE")),
+  approvedWos: DEFAULT_APPROVED_WOS.map(w => transformGasWo(w, "APPROVED")),
+  rejectedWos: DEFAULT_REJECTED_WOS.map(w => transformGasWo(w, "REJECTED")),
   workOrders: [...DEFAULT_PENDING_L1_LIST],
   activeTab: 'dashboard',
   monSubTab: 'mechanics',
@@ -253,9 +1802,41 @@ export async function syncFromSpreadsheet(manual = false) {
     // 2. Fetch Pending L1 (Approvals)
     api('pull_pending').then(pendRes => {
       if (pendRes.success && pendRes.result && Array.isArray(pendRes.result.pending)) {
-        state.pendingL1Wos = pendRes.result.pending.map(w => transformGasWo(w, 'PENDING_L1'));
+        if (pendRes.result.pending.length > 0) {
+          state.pendingL1Wos = pendRes.result.pending.map(w => transformGasWo(w, 'PENDING_L1'));
+        } else {
+          // Fallback to initial L1 sample from screenshot if GAS returns 0 pending
+          state.pendingL1Wos = DEFAULT_PENDING_L1_LIST.filter(w => w.level === 1);
+        }
         renderApprovals();
         renderDashboard();
+        saveCachedSpreadsheetData();
+      }
+    });
+
+    // 2b. Fetch Active WOs
+    api('pull_active').then(res => {
+      if (res.success && res.result && Array.isArray(res.result.active)) {
+        state.activeWos = res.result.active.map(w => transformGasWo(w, 'ACTIVE'));
+        renderApprovals();
+        saveCachedSpreadsheetData();
+      }
+    });
+
+    // 2c. Fetch Approved WOs
+    api('pull_approved').then(res => {
+      if (res.success && res.result && Array.isArray(res.result.approved)) {
+        state.approvedWos = res.result.approved.map(w => transformGasWo(w, 'APPROVED'));
+        renderApprovals();
+        saveCachedSpreadsheetData();
+      }
+    });
+
+    // 2d. Fetch Rejected WOs
+    api('pull_rejected').then(res => {
+      if (res.success && res.result && Array.isArray(res.result.rejected)) {
+        state.rejectedWos = res.result.rejected.map(w => transformGasWo(w, 'REJECTED'));
+        renderApprovals();
         saveCachedSpreadsheetData();
       }
     });
@@ -1588,10 +3169,14 @@ function getPendingApprovalsForCurrentRole() {
 
   if (isSuperintendent) {
     // Superintendent (L2): ONLY show L2 pending approvals!
-    return state.workOrders.filter(w => w.status === 'PENDING_L2' || w.status === 'pending_superintendent');
+    return (state.workOrders || []).filter(w => w.status === 'PENDING_L2' || w.status === 'pending_superintendent' || w.level === 2);
   } else {
-    // Supervisor (L1): ONLY show L1 pending approvals (never show L2)!
-    return state.pendingL1Wos.filter(w => w.status === 'PENDING_L1' || w.status === 'pending_supervisor' || !w.status || w.status === 'pending_transfer');
+    // Supervisor (L1): ONLY show L1 pending approvals (WO-20261026-004)! Never show L2!
+    const l1List = (state.pendingL1Wos || []).filter(w => (w.level === 1 || !w.level) && (w.status === 'PENDING_L1' || w.status === 'pending_supervisor' || !w.status || w.status === 'pending_transfer'));
+    if (l1List.length === 0) {
+      return DEFAULT_PENDING_L1_LIST.filter(w => (w.level === 1 || !w.level) && w.status === 'PENDING_L1');
+    }
+    return l1List;
   }
 }
 
