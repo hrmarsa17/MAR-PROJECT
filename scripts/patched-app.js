@@ -1967,12 +1967,26 @@ async function api(action, data = {}, opId = null, customToken = null) {
 // Load cached refs from previous session
 function loadCachedSpreadsheetData() {
   try {
-    const cached = localStorage.getItem('kmb_gas_refs_v8') || localStorage.getItem('kmb_gas_refs_v7');
+    // Purge obsolete cache versions
+    localStorage.removeItem('kmb_gas_refs_v7');
+    localStorage.removeItem('kmb_gas_refs_v8');
+
+    const cached = localStorage.getItem('kmb_gas_refs_v9');
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed.units) && parsed.units.length > 0) state.units = parsed.units;
+      // Validate that units contain valid rekondisi models before accepting
+      const hasRekondisi = Array.isArray(parsed.units) && parsed.units.some(u => {
+        const id = (u.unit_id || u.id || '').toLowerCase();
+        const model = (u.unit_model || '').toLowerCase();
+        const scope = (u.unit_scope || '').toLowerCase();
+        return id.startsWith('sdvs') || id.startsWith('dlcd') || id.startsWith('sdt') || model.includes('vessel') || scope.includes('vessel');
+      });
+
+      if (hasRekondisi) {
+        state.units = parsed.units;
+      }
       if (Array.isArray(parsed.mechanics) && parsed.mechanics.length > 0) state.mechanics = parsed.mechanics;
-      if (Array.isArray(parsed.components) && parsed.components.length > 0) state.components = parsed.components;
+      if (Array.isArray(parsed.components) && parsed.components.length > 200) state.components = parsed.components;
       if (parsed.monitoringData && parsed.monitoringData.overall) state.monitoringData = parsed.monitoringData;
       if (Array.isArray(parsed.workOrders) && parsed.workOrders.length > 0) state.workOrders = parsed.workOrders;
       if (Array.isArray(parsed.pendingL1Wos) && parsed.pendingL1Wos.length > 0) state.pendingL1Wos = parsed.pendingL1Wos;
@@ -1990,7 +2004,7 @@ function loadCachedSpreadsheetData() {
 
 function saveCachedSpreadsheetData() {
   try {
-    localStorage.setItem('kmb_gas_refs_v8', JSON.stringify({
+    localStorage.setItem('kmb_gas_refs_v9', JSON.stringify({
       units: state.units,
       mechanics: state.mechanics,
       components: state.components,
@@ -2033,62 +2047,61 @@ export async function syncFromSpreadsheet(manual = false) {
     });
 
     // 2. Fetch Catalogs & Refs
-    api('pull_create_refs').then(refsRes => {
-      if (refsRes.success && refsRes.result && refsRes.result.refs) {
-        const refs = refsRes.result.refs;
-        if (Array.isArray(refs.units) && refs.units.length > 0) {
-          state.units = refs.units.map(u => ({
-            unit_id: u.unit_id || u.id,
-            unit_name: u.unit_name || u.name,
-            unit_model: (u.unit_model || '').trim().toLowerCase(),
-            unit_factor: parseFloat(u.unit_factor) || 1.0,
-            unit_scope: Array.isArray(u.unit_scope) ? u.unit_scope.join(',') : (u.unit_scope || '')
-          }));
-        }
-        if (Array.isArray(refs.mechanics) && refs.mechanics.length > 0) {
-          state.mechanics = refs.mechanics.map(m => ({
-            id: m.mechanic_id || m.id,
-            mechanic_id: m.mechanic_id || m.id,
-            name: String(m.mechanic_name || m.name || '').trim(),
-            mechanic_name: String(m.mechanic_name || m.name || '').trim(),
-            section: String(m.section || '').trim().toLowerCase(),
-            position: String(m.position || m.jabatan_aktual || 'junior').trim()
-          }));
-        }
-        const allJobs = [];
-        if (Array.isArray(refs.jobs_vessel)) {
-          refs.jobs_vessel.forEach(j => {
-            allJobs.push({
-              job_id: j.job_id,
-              section: 'rekondisi',
-              unit_model: (j.unit_model || 'vessel').trim().toLowerCase(),
-              component: j.component,
-              sub_component: j.sub_component,
-              job_description: j.job_description,
-              plan_hours: parseFloat(j.plan_hours) || 0,
-              base_point: parseFloat(j.base_point) || (parseFloat(j.plan_hours || 0) * 2)
-            });
-          });
-        }
-        if (Array.isArray(refs.jobs_field)) {
-          refs.jobs_field.forEach(j => {
-            allJobs.push({
-              job_id: j.job_id,
-              section: 'maintenance',
-              unit_model: (j.unit_model || 'hauler').trim().toLowerCase(),
-              component: j.component,
-              sub_component: j.sub_component,
-              job_description: j.job_description,
-              plan_hours: parseFloat(j.plan_hours) || 0,
-              base_point: parseFloat(j.base_point) || (parseFloat(j.plan_hours || 0) * 2)
-            });
-          });
-        }
-        if (allJobs.length > 0) state.components = allJobs;
-        renderJoblists();
-        saveCachedSpreadsheetData();
+    const refsRes = await api('pull_create_refs');
+    if (refsRes && refsRes.success && refsRes.result && refsRes.result.refs) {
+      const refs = refsRes.result.refs;
+      if (Array.isArray(refs.units) && refs.units.length > 0) {
+        state.units = refs.units.map(u => ({
+          unit_id: u.unit_id || u.id,
+          unit_name: u.unit_name || u.name,
+          unit_model: (u.unit_model || '').trim().toLowerCase(),
+          unit_factor: parseFloat(u.unit_factor) || 1.0,
+          unit_scope: Array.isArray(u.unit_scope) ? u.unit_scope.join(',') : (u.unit_scope || '')
+        }));
       }
-    });
+      if (Array.isArray(refs.mechanics) && refs.mechanics.length > 0) {
+        state.mechanics = refs.mechanics.map(m => ({
+          id: m.mechanic_id || m.id,
+          mechanic_id: m.mechanic_id || m.id,
+          name: String(m.mechanic_name || m.name || '').trim(),
+          mechanic_name: String(m.mechanic_name || m.name || '').trim(),
+          section: String(m.section || '').trim().toLowerCase(),
+          position: String(m.position || m.jabatan_aktual || 'junior').trim()
+        }));
+      }
+      const allJobs = [];
+      if (Array.isArray(refs.jobs_vessel)) {
+        refs.jobs_vessel.forEach(j => {
+          allJobs.push({
+            job_id: j.job_id,
+            section: 'rekondisi',
+            unit_model: (j.unit_model || 'vessel').trim().toLowerCase(),
+            component: j.component,
+            sub_component: j.sub_component,
+            job_description: j.job_description,
+            plan_hours: parseFloat(j.plan_hours) || 0,
+            base_point: parseFloat(j.base_point) || (parseFloat(j.plan_hours || 0) * 2)
+          });
+        });
+      }
+      if (Array.isArray(refs.jobs_field)) {
+        refs.jobs_field.forEach(j => {
+          allJobs.push({
+            job_id: j.job_id,
+            section: 'maintenance',
+            unit_model: (j.unit_model || 'hauler').trim().toLowerCase(),
+            component: j.component,
+            sub_component: j.sub_component,
+            job_description: j.job_description,
+            plan_hours: parseFloat(j.plan_hours) || 0,
+            base_point: parseFloat(j.base_point) || (parseFloat(j.plan_hours || 0) * 2)
+          });
+        });
+      }
+      if (allJobs.length > 0) state.components = allJobs;
+      renderJoblists();
+      saveCachedSpreadsheetData();
+    }
 
     // 3. Fetch Pending, Active, Approved, Rejected WOs in parallel
     const [pendRes, actRes, apprRes, rejRes] = await Promise.all([
@@ -2691,15 +2704,19 @@ function getAvailableUnits(section, showAll, lockedJobId) {
   if (!showAll) {
     if (sec === 'rekondisi') {
       units = state.units.filter(u => {
+        const id = (u.unit_id || u.id || '').toLowerCase();
         const scope = (u.unit_scope || '').toLowerCase();
         const model = (u.unit_model || '').toLowerCase();
-        return scope.includes('vessel') || model.includes('vessel') || model.includes('dolly') || (!scope && !model);
+        return scope.includes('vessel') || model.includes('vessel') || model.includes('dolly') ||
+               id.startsWith('sdvs') || id.startsWith('dlcd') || id.startsWith('sdt') || (!scope && !model);
       });
     } else {
       units = state.units.filter(u => {
+        const id = (u.unit_id || u.id || '').toLowerCase();
         const scope = (u.unit_scope || '').toLowerCase();
         const model = (u.unit_model || '').toLowerCase();
-        return scope.includes('maintenance') || model.includes('hauler') || model.includes('engine') || model.includes('transmission') || (!scope && !model);
+        return scope.includes('maintenance') || model.includes('hauler') || model.includes('engine') || model.includes('transmission') ||
+               id.startsWith('xevb') || id.startsWith('xtn') || (!scope && !model);
       });
     }
   }
@@ -2716,15 +2733,26 @@ function getAvailableUnits(section, showAll, lockedJobId) {
     }
   }
 
+  // Safety fallback: if section filtering somehow returned 0 units, show all available units
+  if (units.length === 0 && state.units.length > 0) {
+    units = [...state.units];
+  }
+
   return units;
 }
 
 // Distinct components available
 function getAvailableComponents(unitId, section) {
   const isRekondisi = (section || '').toLowerCase() === 'rekondisi';
-  const targetSection = isRekondisi ? 'rekondisi' : 'maintenance';
   
-  let jobs = state.components.filter(j => j.section === targetSection);
+  let jobs = state.components.filter(j => {
+    const s = (j.section || '').toLowerCase();
+    return isRekondisi ? (s === 'rekondisi' || s === 'vessel') : (s === 'maintenance' || s === 'field');
+  });
+  if (jobs.length === 0 && state.components.length > 0) {
+    jobs = [...state.components];
+  }
+
   const unit = state.units.find(u => (u.unit_id || u.id) === unitId);
   if (unit && unit.unit_model) {
     const cleanModel = unit.unit_model.trim().toLowerCase();
@@ -2742,8 +2770,15 @@ function getAvailableComponents(unitId, section) {
 function getAvailableSubComponents(componentName, section, unitId) {
   if (!componentName) return [];
   const isRekondisi = (section || '').toLowerCase() === 'rekondisi';
-  const targetSection = isRekondisi ? 'rekondisi' : 'maintenance';
-  let jobs = state.components.filter(j => j.section === targetSection && j.component === componentName);
+  let jobs = state.components.filter(j => {
+    const s = (j.section || '').toLowerCase();
+    const matchSec = isRekondisi ? (s === 'rekondisi' || s === 'vessel') : (s === 'maintenance' || s === 'field');
+    return matchSec && j.component === componentName;
+  });
+  if (jobs.length === 0 && state.components.length > 0) {
+    jobs = state.components.filter(j => j.component === componentName);
+  }
+
   const unit = state.units.find(u => (u.unit_id || u.id) === unitId);
   if (unit && unit.unit_model) {
     const cleanModel = unit.unit_model.trim().toLowerCase();
@@ -2760,14 +2795,21 @@ function getAvailableSubComponents(componentName, section, unitId) {
 function getAvailableJobs(componentName, subComponentName, section, unitId) {
   if (!componentName) return [];
   const isRekondisi = (section || '').toLowerCase() === 'rekondisi';
-  const targetSection = isRekondisi ? 'rekondisi' : 'maintenance';
   let jobs = state.components.filter(j => {
-    if (j.section !== targetSection) return false;
+    const s = (j.section || '').toLowerCase();
+    const matchSec = isRekondisi ? (s === 'rekondisi' || s === 'vessel') : (s === 'maintenance' || s === 'field');
+    if (!matchSec) return false;
     if (subComponentName) {
       return j.component === componentName && j.sub_component === subComponentName;
     }
     return j.component === componentName;
   });
+  if (jobs.length === 0 && state.components.length > 0) {
+    jobs = state.components.filter(j => {
+      if (subComponentName) return j.component === componentName && j.sub_component === subComponentName;
+      return j.component === componentName;
+    });
+  }
 
   const unit = state.units.find(u => (u.unit_id || u.id) === unitId);
   if (unit && unit.unit_model) {

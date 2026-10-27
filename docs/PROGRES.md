@@ -24,6 +24,17 @@ Formatnya:
 
 ---
 
+### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
+- Berubah:
+  - Memperbaiki pengisian dropdown Create WO (Rekondisi & Maintenance) agar tidak lagi kosong:
+    1. Bump cache version ke kmb_gas_refs_v9 dan otomatis purge cache usang (v8/v7) di browser klien.
+    2. Menambahkan validasi integritas cache sebelum dipakai (hasRekondisi, validasi count komponen).
+    3. Menambahkan ID prefix matching (sdvs, dlcd, sdt, xevb, xtn) dan safety fallback pada getAvailableUnits, getAvailableComponents, getAvailableSubComponents, dan getAvailableJobs agar cascading kebal terhadap perbedaan penamaan section.
+    4. Menyinkronkan pull_create_refs secara asinkron-deterministik (await) dalam syncFromSpreadsheet.
+    5. Re-pack worker.js siap deploy ke Cloudflare Workers.
+- Belum selesai / berikutnya:
+  - Deploy bundle worker.js ke Cloudflare Workers Quick Edit.
+
 ### 2026-10-27 · Raka (+ opencode) · bersama
 - Berubah:
   - Membuat fondasi folder tiga rumah: `workers/kmb/`, `workers/kmb-projek/`, `workers/sum/`, `db/kmb/`, `db/sum/`, `pwa/kmb/`, `pwa/kmb-projek/`, `pwa/sum/`.
