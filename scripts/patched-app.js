@@ -66,6 +66,91 @@ const DEFAULT_PENDING_L1_LIST = [
 
 const DEFAULT_PENDING_L2_LIST = [
   {
+    id: "WO-20261026-004",
+    raw_id: "WO-1792975278962-336",
+    level: 2,
+    date: "26 Oct 2026 07:41",
+    shift: "Shift 2",
+    unit_id: "XEVB42002 - ST",
+    unit_name: "XEVB42002 - ST (BEIBEN)",
+    component_name: "Testing And Adjusting — Tyre",
+    section: "maintenance",
+    location: "workshop",
+    actual_hours: 0.3,
+    target_hours: 1,
+    final_points: 2,
+    status: "PENDING_L2",
+    team: [
+      { name: "Afid Irham", mechanic_id: "MNT-003", points: 2, idr: 5000 },
+      { name: "Rido Saputra", mechanic_id: "MNT-008", points: 2, idr: 5000 },
+      { name: "Alan Rohim", mechanic_id: "MNT-009", points: 2, idr: 5000 }
+    ],
+    created_by: "Djarot"
+  },
+  {
+    id: "WO-20261026-682",
+    raw_id: "WO-1792981211087-586",
+    level: 2,
+    date: "26 Oct 2026 09:20",
+    shift: "Shift 1",
+    unit_id: "OTHERS",
+    unit_name: "Others / Custom",
+    others_description: "pengambilan solar dan pipa ke site BAS tanjung enim",
+    component_name: "pengambilan solar dan pipa ke site BAS tanjung enim",
+    section: "maintenance",
+    location: "workshop",
+    actual_hours: 10.63,
+    target_hours: 4,
+    final_points: 1,
+    status: "PENDING_L2",
+    team: [
+      { name: "Regista Pratama", mechanic_id: "MNT-011", points: 1, idr: 2500 }
+    ],
+    created_by: "Djarot"
+  },
+  {
+    id: "WO-20261026-222",
+    raw_id: "WO-1792981270025-036",
+    level: 2,
+    date: "26 Oct 2026 09:21",
+    shift: "Shift 1",
+    unit_id: "OTHERS",
+    unit_name: "Others / Custom",
+    others_description: "konek 2X Prime mover dan naikin 2X dolly ke Loboy",
+    component_name: "konek 2X Prime mover dan naikin 2X dolly ke Loboy",
+    section: "maintenance",
+    location: "workshop",
+    actual_hours: 2.27,
+    target_hours: 2,
+    final_points: 1,
+    status: "PENDING_L2",
+    team: [
+      { name: "Regista Pratama", mechanic_id: "MNT-011", points: 1, idr: 2500 }
+    ],
+    created_by: "Djarot"
+  },
+  {
+    id: "WO-20261026-366",
+    raw_id: "WO-1792981311764-241",
+    level: 2,
+    date: "26 Oct 2026 09:21",
+    shift: "Shift 1",
+    unit_id: "OTHERS",
+    unit_name: "Others / Custom",
+    others_description: "escort 2X prime over+ 2 Vesel dan 1X loboy+2X Doly ke KM 64",
+    component_name: "escort 2X prime over+ 2 Vesel dan 1X loboy+2X Doly ke KM 64",
+    section: "maintenance",
+    location: "workshop",
+    actual_hours: 2.53,
+    target_hours: 2,
+    final_points: 1,
+    status: "PENDING_L2",
+    team: [
+      { name: "Regista Pratama", mechanic_id: "MNT-011", points: 1, idr: 2500 }
+    ],
+    created_by: "Djarot"
+  },
+  {
     id: "WO-20261026-029",
     raw_id: "WO-1792983976896-192",
     level: 2,
@@ -73,16 +158,16 @@ const DEFAULT_PENDING_L2_LIST = [
     shift: "Shift 1",
     unit_id: "SDT-002",
     unit_name: "Comp Engine Rebuild (ENGINE)",
-    component_name: "Assembling - Cylinder Block",
+    component_name: "Assembling — Cylinder Block",
     section: "vessel",
     location: "workshop",
     actual_hours: 4.25,
-    target_hours: 30,
-    final_points: 82.50,
+    target_hours: 4,
+    final_points: 8,
     status: "PENDING_L2",
     team: [
-      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 82.50, idr: 206250 },
-      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 82.50, idr: 206250 }
+      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 8, idr: 20000 },
+      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 8, idr: 20000 }
     ],
     created_by: "Djarot"
   },
@@ -94,16 +179,16 @@ const DEFAULT_PENDING_L2_LIST = [
     shift: "Shift 1",
     unit_id: "SDVS70011",
     unit_name: "SDVS70011 (NUSATAMA)",
-    component_name: "Resealing - Hydrolik Ssytem",
+    component_name: "Resealing — Hydrolik Ssytem",
     section: "vessel",
     location: "workshop",
     actual_hours: 3,
-    target_hours: 18,
-    final_points: 39.60,
+    target_hours: 4,
+    final_points: 8,
     status: "PENDING_L2",
     team: [
-      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 39.60, idr: 99000 },
-      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 39.60, idr: 99000 }
+      { name: "Cahyo Aji", mechanic_id: "VES-009", points: 8, idr: 20000 },
+      { name: "Nicko Herman Saputra", mechanic_id: "VES-013", points: 8, idr: 20000 }
     ],
     created_by: "Djarot"
   }
@@ -1685,7 +1770,20 @@ const state = {
   tampilSemuaUnit: false,
   joblists: [],
   isSyncing: false,
-  lastSyncTime: null
+  lastSyncTime: null,
+  teknisData: null,
+  teknisSubTab: 'kondisi',
+  teknisDemo: false,
+  koreksiHmUnit: null,
+  koreksiHmData: null,
+  koreksiKmUnit: null,
+  koreksiKmData: null,
+  reportsFilterType: 'month',
+  lastReportResult: null,
+  viewAsMechanic: null,
+  mechanicFilter: 'assigned',
+  mechanicWos: [],
+  currentModalWo: null
 };
 
 // =========================================================================
@@ -1703,9 +1801,49 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================================================
 // API CLIENT (Cloudflare Worker Proxy -> Google Apps Script / Sheets)
 // =========================================================================
-async function api(action, data = {}, opId = null) {
-  const token = state.activeToken;
-  const isReadAction = action.startsWith('pull_') || action === 'ping';
+const ROUTER_ACTIONS = new Set([
+  'dataDashboardTeknis', 'dataDashboardField',
+  'riwayatHmUnit', 'riwayatKmUnit',
+  'koreksiHmWo', 'koreksiKmWo',
+  'gantiPanelHm', 'gantiPanelKm'
+]);
+
+async function api(action, data = {}, opId = null, customToken = null) {
+  const token = customToken || (action === 'pull_my_wos' && state.viewAsMechanic?.token ? state.viewAsMechanic.token : state.activeToken);
+  const isRouter = ROUTER_ACTIONS.has(action);
+
+  if (isRouter) {
+    const payloadData = { token, ...data };
+    const body = new URLSearchParams({
+      action: action,
+      data: JSON.stringify(payloadData)
+    }).toString();
+
+    try {
+      const res = await fetch('/api/gas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+      });
+      return await res.json();
+    } catch (err) {
+      try {
+        const gasUrl = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec";
+        const directRes = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body,
+          redirect: 'follow'
+        });
+        return await directRes.json();
+      } catch (err2) {
+        console.warn('API router call error:', action, err2);
+        return { success: false, error: err2.message };
+      }
+    }
+  }
+
+  const isReadAction = action.startsWith('pull_') || action === 'ping' || action === 'generate_payroll_report';
   const autoOpId = opId || (isReadAction ? undefined : `op-${Date.now()}-${Math.round(Math.random() * 100000)}`);
 
   const payload = {
@@ -1743,7 +1881,7 @@ async function api(action, data = {}, opId = null) {
 // Load cached refs from previous session
 function loadCachedSpreadsheetData() {
   try {
-    const cached = localStorage.getItem('kmb_gas_refs_v6');
+    const cached = localStorage.getItem('kmb_gas_refs_v7') || localStorage.getItem('kmb_gas_refs_v6');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed.units) && parsed.units.length > 0) state.units = parsed.units;
@@ -1752,6 +1890,11 @@ function loadCachedSpreadsheetData() {
       if (parsed.monitoringData && parsed.monitoringData.overall) state.monitoringData = parsed.monitoringData;
       if (Array.isArray(parsed.workOrders) && parsed.workOrders.length > 0) state.workOrders = parsed.workOrders;
       if (Array.isArray(parsed.pendingL1Wos) && parsed.pendingL1Wos.length > 0) state.pendingL1Wos = parsed.pendingL1Wos;
+      if (Array.isArray(parsed.pendingL2Wos) && parsed.pendingL2Wos.length >= 6) {
+        state.pendingL2Wos = parsed.pendingL2Wos;
+      } else {
+        state.pendingL2Wos = [...DEFAULT_PENDING_L2_LIST];
+      }
       if (Array.isArray(parsed.activeWos)) state.activeWos = parsed.activeWos;
       if (Array.isArray(parsed.approvedWos)) state.approvedWos = parsed.approvedWos;
       if (Array.isArray(parsed.rejectedWos)) state.rejectedWos = parsed.rejectedWos;
@@ -1761,13 +1904,14 @@ function loadCachedSpreadsheetData() {
 
 function saveCachedSpreadsheetData() {
   try {
-    localStorage.setItem('kmb_gas_refs_v6', JSON.stringify({
+    localStorage.setItem('kmb_gas_refs_v7', JSON.stringify({
       units: state.units,
       mechanics: state.mechanics,
       components: state.components,
       monitoringData: state.monitoringData,
       workOrders: state.workOrders,
       pendingL1Wos: state.pendingL1Wos,
+      pendingL2Wos: state.pendingL2Wos,
       activeWos: state.activeWos,
       approvedWos: state.approvedWos,
       rejectedWos: state.rejectedWos,
@@ -1802,49 +1946,7 @@ export async function syncFromSpreadsheet(manual = false) {
       }
     });
 
-    // 2. Fetch Pending L1 (Approvals)
-    api('pull_pending').then(pendRes => {
-      if (pendRes.success && pendRes.result && Array.isArray(pendRes.result.pending)) {
-        if (pendRes.result.pending.length > 0) {
-          state.pendingL1Wos = pendRes.result.pending.map(w => transformGasWo(w, 'PENDING_L1'));
-        } else {
-          // Fallback to initial L1 sample from screenshot if GAS returns 0 pending
-          state.pendingL1Wos = DEFAULT_PENDING_L1_LIST.filter(w => w.level === 1);
-        }
-        renderApprovals();
-        renderDashboard();
-        saveCachedSpreadsheetData();
-      }
-    });
-
-    // 2b. Fetch Active WOs
-    api('pull_active').then(res => {
-      if (res.success && res.result && Array.isArray(res.result.active)) {
-        state.activeWos = res.result.active.map(w => transformGasWo(w, 'ACTIVE'));
-        renderApprovals();
-        saveCachedSpreadsheetData();
-      }
-    });
-
-    // 2c. Fetch Approved WOs
-    api('pull_approved').then(res => {
-      if (res.success && res.result && Array.isArray(res.result.approved)) {
-        state.approvedWos = res.result.approved.map(w => transformGasWo(w, 'APPROVED'));
-        renderApprovals();
-        saveCachedSpreadsheetData();
-      }
-    });
-
-    // 2d. Fetch Rejected WOs
-    api('pull_rejected').then(res => {
-      if (res.success && res.result && Array.isArray(res.result.rejected)) {
-        state.rejectedWos = res.result.rejected.map(w => transformGasWo(w, 'REJECTED'));
-        renderApprovals();
-        saveCachedSpreadsheetData();
-      }
-    });
-
-    // 3. Fetch Catalogs & Refs
+    // 2. Fetch Catalogs & Refs
     api('pull_create_refs').then(refsRes => {
       if (refsRes.success && refsRes.result && refsRes.result.refs) {
         const refs = refsRes.result.refs;
@@ -1902,12 +2004,38 @@ export async function syncFromSpreadsheet(manual = false) {
       }
     });
 
-    // 4. Fetch Active, Approved, Rejected WOs
-    const [actRes, apprRes, rejRes] = await Promise.all([
+    // 3. Fetch Pending, Active, Approved, Rejected WOs in parallel
+    const [pendRes, actRes, apprRes, rejRes] = await Promise.all([
+      api('pull_pending'),
       api('pull_active'),
       api('pull_approved'),
       api('pull_rejected')
     ]);
+
+    if (pendRes.success && pendRes.result && Array.isArray(pendRes.result.pending)) {
+      const rawPending = pendRes.result.pending;
+      const role = (state.currentUser?.role || '').toLowerCase();
+      const isSuperintendent = role === 'superintendent' || role === 'manager';
+
+      const transformed = rawPending.map(w => {
+        const isL2 = w.status === 'pending_superintendent' || (isSuperintendent && w.status !== 'pending_supervisor');
+        const defaultSt = isL2 ? 'PENDING_L2' : 'PENDING_L1';
+        const item = transformGasWo(w, defaultSt);
+        item.level = isL2 ? 2 : 1;
+        return item;
+      });
+
+      const l2Items = transformed.filter(w => w.status === 'PENDING_L2' || w.status === 'pending_superintendent' || w.level === 2);
+      const l1Items = transformed.filter(w => w.status === 'PENDING_L1' || w.status === 'pending_supervisor' || w.level === 1);
+
+      if (isSuperintendent || l2Items.length > 0) {
+        state.pendingL2Wos = l2Items.length > 0 ? l2Items : transformed;
+      }
+      if (!isSuperintendent || l1Items.length > 0) {
+        state.pendingL1Wos = l1Items.length > 0 ? l1Items : transformed;
+      }
+      state.hasSyncedPending = true;
+    }
 
     if (actRes.success && actRes.result && Array.isArray(actRes.result.active)) {
       state.activeWos = actRes.result.active.map(w => transformGasWo(w, 'ACTIVE'));
@@ -1920,10 +2048,11 @@ export async function syncFromSpreadsheet(manual = false) {
     }
 
     const combined = [
-      ...state.pendingL1Wos,
-      ...state.activeWos,
-      ...state.approvedWos,
-      ...state.rejectedWos
+      ...(state.pendingL1Wos || []),
+      ...(state.pendingL2Wos || []),
+      ...(state.activeWos || []),
+      ...(state.approvedWos || []),
+      ...(state.rejectedWos || [])
     ];
     if (combined.length > 0) state.workOrders = combined;
 
@@ -1983,7 +2112,16 @@ function transformGasWo(w, defaultStatus) {
   const st = statusMap[w.status] || defaultStatus;
 
   const teamList = [];
-  if (Array.isArray(w.team_names) && w.team_names.length > 0) {
+  if (Array.isArray(w.effective_team) && w.effective_team.length > 0) {
+    w.effective_team.forEach(t => {
+      teamList.push({
+        name: String(t.name || t.mechanic_name || (t.mechanic_id ? `Mekanik ${t.mechanic_id}` : 'Mekanik')).trim(),
+        mechanic_id: t.mechanic_id || '',
+        points: Number(t.points || w.final_points || 0),
+        idr: Number(t.idr || 0)
+      });
+    });
+  } else if (Array.isArray(w.team_names) && w.team_names.length > 0) {
     w.team_names.forEach(name => {
       teamList.push({ name: String(name).trim(), mechanic_id: '', points: Number(w.final_points || w.base_points || 0), idr: 0 });
     });
@@ -2000,9 +2138,12 @@ function transformGasWo(w, defaultStatus) {
     teamList.push({ name: String(w.created_by_name).trim(), mechanic_id: '', points: Number(w.final_points || 0), idr: 0 });
   }
 
+  const isL2 = st === 'PENDING_L2' || w.status === 'pending_superintendent' || w.level === 2;
+
   return {
     id: w.wo_number || w.id,
     raw_id: w.id,
+    level: w.level || (isL2 ? 2 : 1),
     date: (w.created_at_str && String(w.created_at_str).trim()) || (w.created_at ? new Date(w.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'),
     final_idr: Number(w.final_idr || 0),
     rejection_reason: w.rejection_reason || '',
@@ -2012,6 +2153,8 @@ function transformGasWo(w, defaultStatus) {
     unit_name: w.unit_name || w.unit_id || '-',
     component_no: w.component_no || w.job_id || '-',
     component_name: w.component_name || w.others_description || 'Pekerjaan',
+    others_description: w.others_description || '',
+    is_others: !!(w.is_others || w.unit_id === 'OTHERS'),
     section: w.section || 'vessel',
     location: w.location || 'workshop',
     work_condition: w.work_condition || 'normal',
@@ -2050,12 +2193,21 @@ export async function loginWithToken(token) {
   const cleanToken = String(token).trim();
 
   // 1. First resolve from local TOKENS / state for instant UI rendering
-  const tokenRecord = TOKENS.find(t => t.token.toLowerCase() === cleanToken.toLowerCase());
+  const tokenRecord = TOKENS.find(t => (t.token || t.offline_token || '').toLowerCase() === cleanToken.toLowerCase());
   let user = null;
   if (tokenRecord) {
     user = state.mechanics.find(m => (m.id || m.mechanic_id) === tokenRecord.mechanic_id);
+    if (!user) {
+      user = {
+        id: tokenRecord.mechanic_id,
+        mechanic_id: tokenRecord.mechanic_id,
+        name: tokenRecord.name || tokenRecord.mechanic_name || (cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB'),
+        role: tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic')),
+        section: tokenRecord.section || 'vessel,maintenance'
+      };
+    }
   } else {
-    user = state.mechanics.find(m => (m.id || m.mechanic_id).toLowerCase() === cleanToken.toLowerCase());
+    user = state.mechanics.find(m => (m.id || m.mechanic_id || '').toLowerCase() === cleanToken.toLowerCase());
   }
 
   // Fallback temporary user
@@ -2063,8 +2215,8 @@ export async function loginWithToken(token) {
     user = {
       id: cleanToken,
       mechanic_id: cleanToken,
-      name: 'User KMB',
-      role: cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'
+      name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB',
+      role: cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : 'mechanic')
     };
   }
 
@@ -2102,6 +2254,9 @@ export async function loginWithToken(token) {
       };
       updateUserBar();
       showToast(`Terhubung sebagai ${info.name} (${(info.role || 'user').toUpperCase()}) via Google Sheets!`, 'success');
+      renderApprovals();
+      renderDashboard();
+      renderMonitoring();
     }
   });
 
@@ -3015,6 +3170,31 @@ function renderDashboard() {
 }
 
 function renderMonitoring() {
+  const isMechanicMode = (state.currentUser?.role || '').toLowerCase() === 'mechanic' || state.viewAsMechanic !== null;
+  const banner = document.getElementById('mon-viewing-as-banner');
+  const supervisorPanel = document.getElementById('mon-supervisor-panel');
+  const mechanicSubview = document.getElementById('mon-subview-mechanic-work');
+
+  if (state.viewAsMechanic) {
+    if (banner) {
+      banner.style.display = 'flex';
+      const nameEl = document.getElementById('mon-viewing-as-name');
+      if (nameEl) nameEl.textContent = `${state.viewAsMechanic.name} (${state.viewAsMechanic.id})`;
+    }
+  } else {
+    if (banner) banner.style.display = 'none';
+  }
+
+  if (isMechanicMode) {
+    if (supervisorPanel) supervisorPanel.style.display = 'none';
+    if (mechanicSubview) mechanicSubview.style.display = 'block';
+    loadMechanicWos();
+    return;
+  }
+
+  if (supervisorPanel) supervisorPanel.style.display = 'block';
+  if (mechanicSubview) mechanicSubview.style.display = 'none';
+
   const overall = state.monitoringData?.overall || DEFAULT_MONITORING_OVERALL;
 
   const kpiWork = document.getElementById('mon-kpi-work');
@@ -3116,17 +3296,682 @@ function renderMechanicsMonitoringTable() {
       <td style="text-align: center;">${l2Badge}</td>
       <td style="text-align: center;">${approvedBadge}</td>
       <td>
-        <div class="token-copy-box">
-          <input type="text" class="token-copy-input" readonly value="${m.token || ''}" id="tok-${m.id}">
-          <button class="btn-copy-token" id="btn-copy-${m.id}" onclick="window.copyMechanicToken('${m.token}', 'btn-copy-${m.id}')" title="Salin Link Akses">
+        <div class="token-copy-box" style="display: flex; gap: 4px; align-items: center;">
+          <input type="text" class="token-copy-input" readonly value="${m.token || ''}" id="tok-${m.id}" style="flex: 1; font-size: 11px;">
+          <button class="btn-copy-token" id="btn-copy-${m.id}" onclick="window.copyMechanicToken('${m.token}', 'btn-copy-${m.id}')" title="Salin Token">
             <i class="fa-regular fa-copy"></i> Salin
           </button>
+          ${m.token ? `
+            <button class="btn-open-mech" onclick="window.bukaSebagaiMekanik('${m.id}', '${m.token}', '${(m.name || '').replace(/'/g, "\\'")}')" title="Buka WO Mekanik ini" style="background:#111827; color:#fff; border:none; padding:4px 9px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">
+              Buka →
+            </button>
+          ` : ''}
         </div>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+// =========================================================================
+// MECHANIC WORKFLOW CONTROLLERS (Page Mekanik / WO Saya / Live Timer)
+// =========================================================================
+
+export function bukaSebagaiMekanik(mechId, mechToken, mechName) {
+  state.viewAsMechanic = { id: mechId, token: mechToken, name: mechName };
+  state.mechanicFilter = 'assigned';
+  renderMonitoring();
+}
+window.bukaSebagaiMekanik = bukaSebagaiMekanik;
+
+export function kembaliDariMekanik() {
+  state.viewAsMechanic = null;
+  renderMonitoring();
+}
+window.kembaliDariMekanik = kembaliDariMekanik;
+
+export async function loadMechanicWos() {
+  const container = document.getElementById('mech-wos-grid');
+  if (container) {
+    container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>Memuat daftar work order...</div>';
+  }
+
+  const tokenToUse = state.viewAsMechanic?.token || state.activeToken;
+  try {
+    const res = await api('pull_my_wos', {}, null, tokenToUse);
+    const rawWos = res?.result?.wos || res?.wos || [];
+    state.mechanicWos = Array.isArray(rawWos) ? rawWos : [];
+    updateMechanicCounts();
+    renderMechanicWoGrid();
+  } catch (err) {
+    console.error('Error loading mechanic WOs:', err);
+    if (container) {
+      container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--accent-red); font-weight: 600;">Gagal memuat WO: ${err.message}</div>`;
+    }
+  }
+}
+
+function updateMechanicCounts() {
+  const wos = state.mechanicWos || [];
+  let assigned = 0, pending = 0, done = 0;
+  wos.forEach(w => {
+    const st = String(w.status || '');
+    if (st === 'pending_mechanic_work') assigned++;
+    else if (st === 'approved' || st === 'done') done++;
+    else pending++;
+  });
+  const cAssigned = document.getElementById('mech-count-assigned');
+  if (cAssigned) cAssigned.textContent = assigned;
+  const cPending = document.getElementById('mech-count-pending');
+  if (cPending) cPending.textContent = pending;
+  const cDone = document.getElementById('mech-count-done');
+  if (cDone) cDone.textContent = done;
+}
+
+function renderMechanicWoGrid() {
+  const container = document.getElementById('mech-wos-grid');
+  if (!container) return;
+
+  const wos = state.mechanicWos || [];
+  const filter = state.mechanicFilter || 'assigned';
+
+  const filtered = wos.filter(w => {
+    const st = String(w.status || '');
+    let group = 'pending_approval';
+    if (st === 'pending_mechanic_work') group = 'assigned';
+    else if (st === 'approved' || st === 'done') group = 'done';
+    return group === filter;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: var(--text-dim); background: #FFFFFF; border-radius: 12px; border: 1px dashed var(--border);"><i class="fa-solid fa-clipboard-check" style="font-size: 32px; margin-bottom: 12px; opacity: 0.4; display: block;"></i><h3 style="font-size: 16px; color: #4B5563; margin-bottom: 4px;">Tidak Ada Work Order</h3><p style="font-size: 13px; margin: 0;">Tidak ditemukan work order untuk filter ini.</p></div>`;
+    return;
+  }
+
+  const groups = [];
+  const indexMap = {};
+  filtered.forEach(wo => {
+    const g = String(wo.wo_group_id || '');
+    const key = g || ('__solo__' + (wo.id || wo.wo_number));
+    if (indexMap[key] === undefined) {
+      indexMap[key] = groups.length;
+      groups.push({ id: g, mode: String(wo.wo_group_mode || ''), items: [] });
+    }
+    groups[indexMap[key]].items.push(wo);
+  });
+
+  let html = '';
+  groups.forEach(G => {
+    const isBorongan = !!G.id && G.items.length > 1;
+    if (isBorongan) {
+      const w0 = G.items[0];
+      const gTotal = parseInt(w0.grup_total, 10) || G.items.length;
+      const selesai = parseInt(w0.grup_selesai, 10) || G.items.filter(w => w.status === 'approved').length;
+      const judul = (G.mode === 'job')
+        ? (w0.component_name || '-') + ' · ' + gTotal + ' unit'
+        : (w0.unit_name || 'Workshop') + ' · ' + gTotal + ' job';
+      html += `
+        <div class="grup-wrap">
+          <div class="grup-head">
+            <div class="grup-head-top">
+              <div class="grup-judul">📦 ${judul}</div>
+              <span class="grup-tag">${G.mode === 'job' ? '1 Job · Banyak Unit' : '1 Unit · Banyak Job'}</span>
+            </div>
+            <div class="grup-sub">
+              📍 ${w0.location === 'field' ? '🚜 Field' : '🏭 Workshop'} · ✅ Selesai <b>${selesai} dari ${gTotal}</b> baris
+            </div>
+          </div>
+          <div class="grup-body">
+      `;
+    }
+
+    G.items.forEach((wo, idx) => {
+      html += renderWoCardHtml(wo, isBorongan ? (idx + 1) : 0);
+    });
+
+    if (isBorongan) {
+      html += '</div></div>';
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+function renderWoCardHtml(wo, nomor) {
+  const isIncident = (wo.safety_incident === true || wo.safety_incident === 'true');
+  const st = String(wo.status || '');
+  let statusGroup = 'pending_approval';
+  let statusLabel = 'Menunggu L1';
+
+  if (st === 'pending_mechanic_work') {
+    statusGroup = 'assigned';
+    statusLabel = 'Assigned';
+  } else if (st === 'pending_supervisor') {
+    statusGroup = 'pending_approval';
+    statusLabel = 'Menunggu L1';
+  } else if (st === 'pending_superintendent') {
+    statusGroup = 'pending_approval';
+    statusLabel = 'Menunggu L2';
+  } else if (st === 'pending_transfer') {
+    statusGroup = 'pending_approval';
+    statusLabel = 'Transfer Shift';
+  } else if (st === 'approved' || st === 'done') {
+    statusGroup = 'done';
+    statusLabel = 'Approved';
+  } else {
+    statusLabel = st;
+  }
+
+  const woId = wo.id || wo.wo_number;
+  const woNo = wo.wo_number || wo.id;
+  const comp = wo.component_name || wo.job_name || 'Pekerjaan';
+  const unit = wo.unit_name || wo.unit_id || '-';
+  const targetH = formatJamMenit(wo.target_hours || 0);
+  const lokasi = wo.location === 'field' ? '🚜 Field' : '🏭 Workshop';
+  const ket = wo.keterangan || wo.notes || '';
+
+  let timStr = '-';
+  if (Array.isArray(wo.team) && wo.team.length > 0) {
+    timStr = wo.team.map(t => {
+      const name = t.name || t.mechanic_name || String(t);
+      return (t.is_me || t.akuSendiri)
+        ? `<strong style="color: #047857;">${name} (Anda)</strong>`
+        : name;
+    }).join(', ');
+  }
+
+  const canSubmit = (statusGroup === 'assigned');
+
+  return `
+    <div class="wo-card" onclick="window.openKerjaWoModal('${woId}')">
+      <div class="wo-header">
+        <div class="wo-id">
+          ${nomor ? `<span class="wo-line-no">${nomor}</span>` : ''}
+          ${woNo}
+        </div>
+        <div class="wo-status status-${statusGroup}">${isIncident ? '⚠️ Insiden' : statusLabel}</div>
+      </div>
+      <div class="wo-component">${comp}</div>
+      <div class="wo-details">
+        <div class="wo-detail-item">
+          <span class="wo-detail-label">Unit</span>
+          <span class="wo-detail-value">${unit}</span>
+        </div>
+        <div class="wo-detail-item">
+          <span class="wo-detail-label">Target Hours</span>
+          <span class="wo-detail-value">${targetH}</span>
+        </div>
+        <div class="wo-detail-item" style="grid-column: 1 / -1;">
+          <span class="wo-detail-label">👥 Tim Pengerjaan</span>
+          <span class="wo-detail-value">${timStr}</span>
+        </div>
+        <div class="wo-detail-item">
+          <span class="wo-detail-label">Lokasi</span>
+          <span class="wo-detail-value">${lokasi}</span>
+        </div>
+        ${wo.submitted_at_str ? `
+          <div class="wo-detail-item">
+            <span class="wo-detail-label">📮 Dikirim</span>
+            <span class="wo-detail-value">${wo.submitted_at_str}</span>
+          </div>
+        ` : ''}
+        ${wo.disahkan_at_str ? `
+          <div class="wo-detail-item">
+            <span class="wo-detail-label">✅ Disahkan</span>
+            <span class="wo-detail-value">${wo.disahkan_at_str}</span>
+          </div>
+        ` : ''}
+        ${ket ? `
+          <div class="wo-detail-item" style="grid-column: 1 / -1;">
+            <span class="wo-detail-label">📝 Keterangan</span>
+            <span class="wo-detail-value">${ket}</span>
+          </div>
+        ` : ''}
+      </div>
+      ${canSubmit ? `
+        <div style="display: flex; gap: 8px; margin-top: 14px;" onclick="event.stopPropagation()">
+          <button type="button" class="btn btn-secondary" style="flex: 1; padding: 7px 10px; font-size: 13px;" onclick="window.openKerjaWoModal('${woId}')">
+            ⏱️ Isi Jam
+          </button>
+          <button type="button" class="btn btn-primary" style="flex: 1; padding: 7px 10px; font-size: 13px;" onclick="window.kirimLangsungWo('${woId}')">
+            📮 Kirim
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ── LIVE TIMER (localStorage / In-Memory Persistence) ──
+const TIMER_KEY = 'mar_projek_kmb_timers';
+let _timerMem = null;
+let _timerTick = null;
+
+function timerAll() {
+  if (_timerMem) return _timerMem;
+  try { _timerMem = JSON.parse(localStorage.getItem(TIMER_KEY) || '{}'); }
+  catch (e) { _timerMem = {}; }
+  return _timerMem;
+}
+
+function timerSave() {
+  try { localStorage.setItem(TIMER_KEY, JSON.stringify(_timerMem || {})); } catch (e) {}
+}
+
+function timerState(woId) {
+  const all = timerAll();
+  if (!all[woId]) all[woId] = { state: 'idle', start_epoch: 0, elapsed_ms: 0 };
+  return all[woId];
+}
+
+function timerPauseOthers(currentWoId) {
+  const all = timerAll();
+  let n = 0;
+  for (const id in all) {
+    if (!all.hasOwnProperty(id) || String(id) === String(currentWoId)) continue;
+    const st = all[id];
+    if (!st || st.state !== 'running') continue;
+    st.elapsed_ms = (parseFloat(st.elapsed_ms) || 0) + (Date.now() - (parseFloat(st.start_epoch) || Date.now()));
+    st.state = 'paused';
+    st.start_epoch = 0;
+    n++;
+  }
+  if (n) timerSave();
+  return n;
+}
+
+function timerCurrentMs(st) {
+  return (parseFloat(st.elapsed_ms) || 0) + (st.state === 'running' ? (Date.now() - st.start_epoch) : 0);
+}
+
+function msToHms(ms) {
+  if (!ms || ms < 0) return '00:00:00';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s - h * 3600) / 60);
+  const sec = s - h * 3600 - m * 60;
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+function msToJamMenit(ms) {
+  const tot = Math.round((parseFloat(ms) || 0) / 60000);
+  const j = Math.floor(tot / 60);
+  const m = tot % 60;
+  if (j > 0 && m > 0) return j + ' jam ' + m + ' menit';
+  if (j > 0) return j + ' jam';
+  return m + ' menit';
+}
+
+function toDatetimeLocal(d) {
+  const p = (n) => (n < 10 ? '0' : '') + n;
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function timerRefreshUI() {
+  const wo = state.currentModalWo;
+  if (!wo) return;
+  const woId = wo.id || wo.wo_number;
+  const st = timerState(woId);
+  const disp = document.getElementById('mwo-timer-display');
+  if (disp) disp.textContent = msToHms(timerCurrentMs(st));
+
+  const bS = document.getElementById('mwo-btn-timer-start');
+  const bP = document.getElementById('mwo-btn-timer-pause');
+  const bF = document.getElementById('mwo-btn-timer-stop');
+  const bR = document.getElementById('mwo-btn-timer-reset');
+
+  if (bR) bR.style.display = (st.state === 'idle') ? 'none' : 'inline-block';
+  if (st.state === 'idle') {
+    if (bS) { bS.style.display = 'inline-block'; bS.textContent = '▶ Mulai'; }
+    if (bP) bP.style.display = 'none';
+    if (bF) bF.style.display = 'none';
+  } else if (st.state === 'running') {
+    if (bS) bS.style.display = 'none';
+    if (bP) bP.style.display = 'inline-block';
+    if (bF) bF.style.display = 'inline-block';
+  } else {
+    if (bS) { bS.style.display = 'inline-block'; bS.textContent = '▶ Lanjut'; }
+    if (bP) bP.style.display = 'none';
+    if (bF) bF.style.display = 'inline-block';
+  }
+}
+
+function timerStartTicker() {
+  if (_timerTick) return;
+  _timerTick = setInterval(() => {
+    const wo = state.currentModalWo;
+    if (!wo) return;
+    const woId = wo.id || wo.wo_number;
+    const st = timerState(woId);
+    if (st.state === 'running') {
+      const disp = document.getElementById('mwo-timer-display');
+      if (disp) disp.textContent = msToHms(timerCurrentMs(st));
+    }
+  }, 1000);
+}
+
+export function openKerjaWoModal(woId) {
+  const wo = (state.mechanicWos || []).find(w => String(w.id || w.wo_number) === String(woId));
+  if (!wo) return;
+  state.currentModalWo = wo;
+
+  document.getElementById('mwo-title').textContent = wo.wo_number || wo.id;
+  document.getElementById('mwo-component').textContent = wo.component_name || wo.job_name || 'Pekerjaan';
+  document.getElementById('mwo-unit').textContent = wo.unit_name || wo.unit_id || '-';
+  document.getElementById('mwo-target-hours').textContent = formatJamMenit(wo.target_hours || 0);
+  document.getElementById('mwo-status').textContent = (wo.status === 'pending_mechanic_work') ? 'Assigned' : (wo.status || '-');
+  document.getElementById('mwo-location').textContent = wo.location === 'field' ? '🚜 Field' : '🏭 Workshop';
+
+  const ketWrap = document.getElementById('mwo-keterangan-wrap');
+  const ketText = document.getElementById('mwo-keterangan');
+  if (wo.keterangan || wo.notes) {
+    if (ketWrap) ketWrap.style.display = 'block';
+    if (ketText) ketText.textContent = wo.keterangan || wo.notes;
+  } else {
+    if (ketWrap) ketWrap.style.display = 'none';
+  }
+
+  document.getElementById('mwo-wo-id').value = wo.id || wo.wo_number;
+  document.getElementById('mwo-start-time').value = '';
+  document.getElementById('mwo-end-time').value = '';
+  document.getElementById('mwo-hour-meter').value = wo.hour_meter || '';
+  document.getElementById('mwo-kilometers').value = wo.kilometers || '';
+  document.getElementById('mwo-part-category').value = wo.part_category || '';
+  document.getElementById('mwo-transfer-note').value = '';
+
+  const dp = document.getElementById('mwo-duration-preview');
+  if (dp) dp.style.display = 'none';
+  const sumBox = document.getElementById('mwo-timer-summary');
+  if (sumBox) sumBox.style.display = 'none';
+
+  validateMwoTimes();
+  timerRefreshUI();
+  timerStartTicker();
+
+  const modal = document.getElementById('modal-kerjakan-wo');
+  if (modal) modal.style.display = 'flex';
+}
+window.openKerjaWoModal = openKerjaWoModal;
+
+export function closeKerjaWoModal() {
+  const modal = document.getElementById('modal-kerjakan-wo');
+  if (modal) modal.style.display = 'none';
+  state.currentModalWo = null;
+}
+window.closeKerjaWoModal = closeKerjaWoModal;
+
+export function timerStartAction() {
+  const wo = state.currentModalWo;
+  if (!wo) return;
+  const woId = wo.id || wo.wo_number;
+  const n = timerPauseOthers(woId);
+  const st = timerState(woId);
+  st.state = 'running';
+  st.start_epoch = Date.now();
+  timerSave();
+  timerStartTicker();
+  timerRefreshUI();
+  if (n) showToast(`⏸ ${n} WO lain otomatis dijeda.`, 'info');
+}
+window.timerStartAction = timerStartAction;
+
+export function timerPauseAction() {
+  const wo = state.currentModalWo;
+  if (!wo) return;
+  const woId = wo.id || wo.wo_number;
+  const st = timerState(woId);
+  if (st.state !== 'running') return;
+  st.elapsed_ms = (parseFloat(st.elapsed_ms) || 0) + (Date.now() - st.start_epoch);
+  st.state = 'paused';
+  st.start_epoch = 0;
+  timerSave();
+  timerRefreshUI();
+}
+window.timerPauseAction = timerPauseAction;
+
+export function timerStopAction() {
+  const wo = state.currentModalWo;
+  if (!wo) return;
+  const woId = wo.id || wo.wo_number;
+  const st = timerState(woId);
+  const total = timerCurrentMs(st);
+
+  if (total > 0 && total < 60000) {
+    if (!confirm(`Durasi kerja baru ${msToJamMenit(total)}.\nYakin hentikan timer dan pakai durasi ini?`)) return;
+  }
+
+  st.state = 'paused';
+  st.elapsed_ms = total;
+  st.start_epoch = 0;
+  timerSave();
+
+  if (total > 0) {
+    const now = new Date();
+    const start = new Date(now.getTime() - total);
+    document.getElementById('mwo-start-time').value = toDatetimeLocal(start);
+    document.getElementById('mwo-end-time').value = toDatetimeLocal(now);
+
+    const sumBox = document.getElementById('mwo-timer-summary');
+    if (sumBox) {
+      sumBox.style.display = 'block';
+      sumBox.innerHTML = `✅ Total waktu pengerjaan: <b>${msToJamMenit(total)}</b><div style="font-size:11px;opacity:0.85;margin-top:2px;">${toDatetimeLocal(start).replace('T',' ')} → ${toDatetimeLocal(now).replace('T',' ')}</div>`;
+    }
+    validateMwoTimes();
+  }
+  timerRefreshUI();
+}
+window.timerStopAction = timerStopAction;
+
+export function timerResetAction() {
+  const wo = state.currentModalWo;
+  if (!wo) return;
+  const woId = wo.id || wo.wo_number;
+  const st = timerState(woId);
+  const total = timerCurrentMs(st);
+
+  if (total > 0) {
+    if (!confirm(`Reset timer ke 00:00:00?\n\nWaktu terekam ${msToJamMenit(total)} akan DIHAPUS dan tidak bisa dikembalikan.`)) return;
+  }
+
+  const all = timerAll();
+  all[woId] = { state: 'idle', start_epoch: 0, elapsed_ms: 0 };
+  timerSave();
+
+  document.getElementById('mwo-start-time').value = '';
+  document.getElementById('mwo-end-time').value = '';
+  const sumBox = document.getElementById('mwo-timer-summary');
+  if (sumBox) sumBox.style.display = 'none';
+
+  timerRefreshUI();
+  validateMwoTimes();
+}
+window.timerResetAction = timerResetAction;
+
+function timerClear(woId) {
+  const all = timerAll();
+  all[woId] = { state: 'idle', start_epoch: 0, elapsed_ms: 0 };
+  timerSave();
+}
+
+function validateMwoTimes() {
+  const s = document.getElementById('mwo-start-time')?.value;
+  const e = document.getElementById('mwo-end-time')?.value;
+  const btn = document.getElementById('mwo-btn-submit');
+  const dp = document.getElementById('mwo-duration-preview');
+  const dt = document.getElementById('mwo-duration-text');
+
+  if (!btn) return;
+  if (!s || !e) {
+    btn.disabled = true;
+    if (dp) dp.style.display = 'none';
+    return;
+  }
+
+  const sd = new Date(s), ed = new Date(e);
+  if (ed <= sd) {
+    btn.disabled = true;
+    if (dp) {
+      dp.style.display = 'block';
+      dp.style.background = '#FEE2E2';
+      dp.style.color = '#991B1B';
+    }
+    if (dt) dt.textContent = '⚠️ End time harus setelah start time';
+    return;
+  }
+
+  if (dp) {
+    dp.style.display = 'block';
+    dp.style.background = '#F3F4F6';
+    dp.style.color = '#1F2937';
+  }
+  const durH = (ed - sd) / 3600000;
+  if (dt) dt.textContent = `Durasi: ${formatJamMenit(durH)}`;
+  btn.disabled = false;
+}
+
+export async function submitPekerjaanMekanik(e) {
+  if (e) e.preventDefault();
+  const wo = state.currentModalWo;
+  if (!wo) return;
+
+  const st = document.getElementById('mwo-start-time').value;
+  const et = document.getElementById('mwo-end-time').value;
+  if (!st || !et) {
+    alert('Mohon isi Start Time dan End Time');
+    return;
+  }
+
+  const sd = new Date(st), ed = new Date(et);
+  if (ed <= sd) {
+    alert('End Time harus setelah Start Time');
+    return;
+  }
+
+  const hm = document.getElementById('mwo-hour-meter').value;
+  const km = document.getElementById('mwo-kilometers').value;
+  const part = document.getElementById('mwo-part-category').value;
+  const btn = document.getElementById('mwo-btn-submit');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+
+  const tokenToUse = state.viewAsMechanic?.token || state.activeToken;
+  const woId = wo.id || wo.wo_number;
+
+  try {
+    const res = await api('submit_work', {
+      wo_id: woId,
+      start_time: sd.toISOString(),
+      end_time: ed.toISOString(),
+      hour_meter: hm || '',
+      kilometers: km || '',
+      part_category: part || '',
+      detail_tyre: null
+    }, null, tokenToUse);
+
+    if (res?.success) {
+      timerClear(woId);
+      window.closeKerjaWoModal();
+      showToast(`✅ Laporan terkirim!\nWO: ${wo.wo_number || woId}`, 'success');
+      loadMechanicWos();
+    } else {
+      alert(`❌ Error: ${res?.error?.message || res?.error || 'Gagal mengirim laporan'}`);
+      btn.disabled = false;
+      btn.textContent = '📮 Kirim Laporan';
+    }
+  } catch (err) {
+    alert(`⚠️ Terjadi kesalahan: ${err.message}`);
+    btn.disabled = false;
+    btn.textContent = '📮 Kirim Laporan';
+  }
+}
+
+export async function transferPekerjaanMekanik() {
+  const wo = state.currentModalWo;
+  if (!wo) return;
+
+  const st = document.getElementById('mwo-start-time').value;
+  if (!st) {
+    alert('Isi Start Time dulu — jam itu dipakai untuk menghitung sesi kerja Anda.');
+    return;
+  }
+  if (new Date(st).getTime() > Date.now()) {
+    alert('Start Time tidak boleh melewati jam sekarang.');
+    return;
+  }
+
+  const note = document.getElementById('mwo-transfer-note').value;
+  if (!confirm(`Oper WO ini ke shift berikutnya?\n\nJam kerja Anda sejak ${st.replace('T', ' ')} dicatat, dan baru dihitung kalau Supervisor/L1 menyetujui transfernya.`)) return;
+
+  const btn = document.getElementById('mwo-btn-transfer');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+
+  const tokenToUse = state.viewAsMechanic?.token || state.activeToken;
+  const woId = wo.id || wo.wo_number;
+
+  try {
+    const res = await api('request_transfer', {
+      wo_id: woId,
+      transfer_note: note || '',
+      session_start_time: new Date(st).toISOString()
+    }, null, tokenToUse);
+
+    if (res?.success) {
+      window.closeKerjaWoModal();
+      showToast(`Permintaan transfer terkirim untuk WO: ${wo.wo_number || woId}`, 'success');
+      loadMechanicWos();
+    } else {
+      alert(`❌ Error: ${res?.error?.message || res?.error || 'Gagal mengirim transfer'}`);
+      btn.disabled = false;
+      btn.textContent = '🔁 Transfer ke Shift Berikutnya';
+    }
+  } catch (err) {
+    alert(`⚠️ Terjadi kesalahan: ${err.message}`);
+    btn.disabled = false;
+    btn.textContent = '🔁 Transfer ke Shift Berikutnya';
+  }
+}
+
+export async function kirimLangsungWo(woId) {
+  const wo = (state.mechanicWos || []).find(w => String(w.id || w.wo_number) === String(woId));
+  if (!wo) return;
+
+  const st = timerState(woId);
+  const total = timerCurrentMs(st);
+  if (total <= 0) {
+    alert('⏱️ Timer masih 00:00:00.\n\nTekan ▶ Mulai dulu lewat ⏱️ Isi Jam, atau jalankan timer.');
+    return;
+  }
+
+  const now = new Date();
+  const start = new Date(now.getTime() - total);
+  if (!confirm(`Kirim laporan kerja ${wo.wo_number || woId}?\n\nDurasi: ${msToJamMenit(total)}\n${start.toLocaleString('id-ID')} → ${now.toLocaleString('id-ID')}\n\nSetelah terkirim, WO masuk ke meja L1 dan tidak bisa diubah lagi.`)) return;
+
+  const tokenToUse = state.viewAsMechanic?.token || state.activeToken;
+  try {
+    const res = await api('submit_work', {
+      wo_id: woId,
+      start_time: start.toISOString(),
+      end_time: now.toISOString(),
+      hour_meter: '',
+      kilometers: '',
+      part_category: '',
+      detail_tyre: null
+    }, null, tokenToUse);
+
+    if (res?.success) {
+      timerClear(woId);
+      showToast(`✅ Laporan terkirim!\nWO: ${wo.wo_number || woId}`, 'success');
+      loadMechanicWos();
+    } else {
+      alert(`❌ Gagal: ${res?.error?.message || res?.error || 'Tidak diketahui'}`);
+    }
+  } catch (err) {
+    alert(`⚠️ Terjadi kesalahan: ${err.message}`);
+  }
+}
+window.kirimLangsungWo = kirimLangsungWo;
 
 function renderAllWosMonitoringTable() {
   const tbody = document.getElementById('mon-all-wos-table-body');
@@ -3173,11 +4018,11 @@ function getPendingApprovalsForCurrentRole() {
   if (isSuperintendent) {
     // Superintendent (L2): ONLY show L2 pending approvals!
     const l2List = (state.pendingL2Wos || []).filter(w => w.status === 'PENDING_L2' || w.status === 'pending_superintendent' || w.level === 2);
-    return l2List.length > 0 ? l2List : DEFAULT_PENDING_L2_LIST;
+    return l2List.length > 0 ? l2List : (state.hasSyncedPending ? [] : DEFAULT_PENDING_L2_LIST);
   } else {
     // Supervisor (L1): ONLY show L1 pending approvals (WO-20261026-004)! NEVER show L2!
     const l1List = (state.pendingL1Wos || []).filter(w => (w.level === 1 || !w.level) && (w.status === 'PENDING_L1' || w.status === 'pending_supervisor' || !w.status || w.status === 'pending_transfer'));
-    return l1List.length > 0 ? l1List : DEFAULT_PENDING_L1_LIST;
+    return l1List.length > 0 ? l1List : (state.hasSyncedPending ? [] : DEFAULT_PENDING_L1_LIST);
   }
 }
 
@@ -3192,7 +4037,10 @@ function renderApprovals() {
   const rolePendingList = getPendingApprovalsForCurrentRole();
   const activeList = state.activeWos || [];
   const approvedList = state.approvedWos || [];
-  const transferList = (state.pendingL1Wos || []).filter(w => w.status === 'pending_transfer');
+  const transferList = [
+    ...(state.pendingL1Wos || []),
+    ...(state.pendingL2Wos || [])
+  ].filter(w => w.status === 'pending_transfer');
   const rejectedList = state.rejectedWos || [];
 
   // Update counts on subtabs
@@ -3296,20 +4144,28 @@ function renderApprovals() {
     card.className = 'wo-approval-card';
     card.id = 'card-' + w.id;
 
-    // Duration formatting: e.g. 0.3 hr -> 18 menit / tgt 2 jam
+    // Duration formatting: e.g. 0.3 hr -> 18 menit / tgt 1 jam
     let durationText = '';
     const actHours = parseFloat(w.actual_hours) || 0;
-    const tgtHours = parseFloat(w.target_hours) || 2;
+    const tgtHours = parseFloat(w.target_hours) || 1;
     if (actHours > 0 && actHours < 1) {
       durationText = Math.round(actHours * 60) + ' menit / tgt ' + tgtHours + ' jam';
     } else if (actHours >= 1) {
-      durationText = actHours + ' jam / tgt ' + tgtHours + ' jam';
+      const h = Math.floor(actHours);
+      const m = Math.round((actHours - h) * 60);
+      durationText = (m > 0 ? h + ' jam ' + m + ' menit' : h + ' jam') + ' / tgt ' + tgtHours + ' jam';
     } else {
       durationText = '0 menit / tgt ' + tgtHours + ' jam';
     }
 
+    const isWayLate = actHours > (tgtHours * 2);
     const isLate = actHours > tgtHours;
-    const onTimeBadge = '<span class="wo-ontime-pill ' + (isLate ? 'late' : 'ontime') + '">' + (isLate ? '⏱ TERLAMBAT' : '⏱ ON TIME') + '</span>';
+    let onTimeBadge = '<span class="wo-ontime-pill ontime" style="background:#ECFDF5;color:#059669;font-weight:700;">⏱ ON TIME</span>';
+    if (isWayLate) {
+      onTimeBadge = '<span class="wo-ontime-pill late" style="background:#FEE2E2;color:#DC2626;font-weight:700;">🔥 WAY LATE</span>';
+    } else if (isLate) {
+      onTimeBadge = '<span class="wo-ontime-pill late" style="background:#FEF3C7;color:#D97706;font-weight:700;">⏱ LATE</span>';
+    }
 
     // Team members formatting: "Afid Irham + 2 org"
     let teamText = '-';
@@ -3320,14 +4176,30 @@ function renderApprovals() {
 
     // Unit & Lokasi
     const rawUnit = w.unit_name || w.unit_id || '-';
-    const unitTitle = rawUnit.includes('(') ? rawUnit.split('(')[0].trim() : rawUnit;
-    const unitCode = w.unit_id || unitTitle;
+    let unitTitle = rawUnit;
+    let unitSubtitle = '';
+    if (w.unit_id === 'OTHERS' || rawUnit.startsWith('OTHERS') || rawUnit.includes('Others')) {
+      const desc = w.others_description || (rawUnit.includes('(') ? rawUnit.match(/\((.*?)\)/)?.[1] : '') || w.component_name || '';
+      unitTitle = 'OTHERS';
+      unitSubtitle = desc ? `(${desc})` : '(OTHERS)';
+    } else if (rawUnit.includes('(')) {
+      unitTitle = rawUnit.split('(')[0].trim();
+      const match = rawUnit.match(/\((.*?)\)/);
+      unitSubtitle = match ? `(${match[1].trim()})` : `(${w.unit_id})`;
+    } else {
+      unitSubtitle = `(${w.unit_id || unitTitle})`;
+    }
     const lokasiStr = w.location || w.lokasi || 'BENGKEL';
 
     // Component & Type
-    const compTitle = w.component_name || w.job_name || '-';
-    const jobCodeStr = w.job_code || w.job_id || 'JCB-0103';
-    const jobTypeStr = w.type || w.job_type || 'preventive';
+    let compTitle = w.component_name || w.job_name || '-';
+    let jobCodeStr = w.job_code || w.job_id || 'JOB-0103';
+    let jobTypeStr = w.type || w.job_type || 'preventive';
+    if (w.unit_id === 'OTHERS' || w.is_others || rawUnit.startsWith('OTHERS')) {
+      compTitle = 'Others - Custom Job';
+      jobCodeStr = 'COM-OTHERS';
+      jobTypeStr = 'OTHERS';
+    }
 
     const isPending = currentSub === 'pending';
     const isChecked = state.selectedWoIds.has(w.id);
@@ -3351,7 +4223,7 @@ function renderApprovals() {
             <i class="fa-solid fa-tractor" style="color: #059669;"></i>
             <span>${unitTitle}</span>
           </div>
-          <div class="wo-unit-subtitle">(${unitCode})</div>
+          <div class="wo-unit-subtitle">${unitSubtitle}</div>
           <span class="wo-loc-pill">🏢 ${lokasiStr}</span>
         </div>
 
@@ -3471,15 +4343,28 @@ window.holdWo = function(woId) {
 };
 
 window.approveWo = async function(woNumber) {
-  const wo = state.workOrders.find(w => w.id === woNumber) || state.pendingL1Wos.find(w => w.id === woNumber);
+  const role = (state.currentUser?.role || 'supervisor').toLowerCase();
+  const isSuperintendent = role === 'superintendent' || role === 'manager';
+  const wo = state.workOrders.find(w => w.id === woNumber) || 
+             state.pendingL2Wos?.find(w => w.id === woNumber) || 
+             state.pendingL1Wos?.find(w => w.id === woNumber);
   const woIdToSend = wo?.raw_id || woNumber;
+  const action = isSuperintendent ? 'approve_l2' : 'approve_l1';
   showToast('⏳ Mengirim persetujuan ' + woNumber + ' ke Google Spreadsheet...', 'info');
 
-  const res = await api('approve_l1', { wo_id: woIdToSend });
+  const res = await api(action, { wo_id: woIdToSend });
   if (res.success) {
-    showToast('✅ WO ' + woNumber + ' disetujui di Google Spreadsheet! (Lanjut ke Superintendent L2)', 'success');
-    if (wo) wo.status = 'PENDING_L2';
-    state.pendingL1Wos = state.pendingL1Wos.filter(w => w.id !== woNumber);
+    if (isSuperintendent) {
+      showToast('✅ WO ' + woNumber + ' disetujui penuh (Approved) di Google Spreadsheet!', 'success');
+      if (wo) wo.status = 'APPROVED';
+      state.pendingL2Wos = (state.pendingL2Wos || []).filter(w => w.id !== woNumber);
+      if (wo && !state.approvedWos.some(w => w.id === wo.id)) state.approvedWos.unshift(wo);
+    } else {
+      showToast('✅ WO ' + woNumber + ' disetujui di Google Spreadsheet! (Lanjut ke Superintendent L2)', 'success');
+      if (wo) wo.status = 'PENDING_L2';
+      state.pendingL1Wos = (state.pendingL1Wos || []).filter(w => w.id !== woNumber);
+      if (wo && !state.pendingL2Wos.some(w => w.id === wo.id)) state.pendingL2Wos.unshift(wo);
+    }
     state.selectedWoIds.delete(woNumber);
     updateBulkApproveBtn();
     saveCachedSpreadsheetData();
@@ -3495,19 +4380,22 @@ window.rejectWo = async function(woNumber) {
   const reason = prompt('Masukkan alasan penolakan work order:');
   if (reason === null) return;
 
-  const wo = state.workOrders.find(w => w.id === woNumber) || state.pendingL1Wos.find(w => w.id === woNumber);
+  const wo = state.workOrders.find(w => w.id === woNumber) || 
+             state.pendingL2Wos?.find(w => w.id === woNumber) || 
+             state.pendingL1Wos?.find(w => w.id === woNumber);
   const woIdToSend = wo?.raw_id || woNumber;
   showToast('⏳ Mengirim penolakan ke Google Spreadsheet...', 'info');
 
-  const res = await api('reject', { wo_id: woIdToSend, reason: reason || 'Ditolak oleh supervisor' });
+  const res = await api('reject', { wo_id: woIdToSend, reason: reason || 'Ditolak' });
   if (res.success) {
     showToast('✅ WO ' + woNumber + ' ditolak di Google Spreadsheet.', 'info');
     if (wo) {
       wo.status = 'REJECTED';
       wo.rejection_reason = reason;
-      state.rejectedWos.unshift(wo);
+      if (!state.rejectedWos.some(w => w.id === wo.id)) state.rejectedWos.unshift(wo);
     }
-    state.pendingL1Wos = state.pendingL1Wos.filter(w => w.id !== woNumber);
+    state.pendingL1Wos = (state.pendingL1Wos || []).filter(w => w.id !== woNumber);
+    state.pendingL2Wos = (state.pendingL2Wos || []).filter(w => w.id !== woNumber);
     state.selectedWoIds.delete(woNumber);
     updateBulkApproveBtn();
     saveCachedSpreadsheetData();
@@ -3526,15 +4414,29 @@ async function bulkApprove() {
     return;
   }
 
+  const role = (state.currentUser?.role || 'supervisor').toLowerCase();
+  const isSuperintendent = role === 'superintendent' || role === 'manager';
+  const action = isSuperintendent ? 'approve_l2' : 'approve_l1';
+
   showToast('⏳ Menyetujui ' + selected.length + ' work order terpilih...', 'info');
   let successCount = 0;
   for (const id of selected) {
-    const wo = state.pendingL1Wos.find(w => w.id === id) || state.workOrders.find(w => w.id === id);
+    const wo = state.workOrders.find(w => w.id === id) || 
+               state.pendingL2Wos?.find(w => w.id === id) || 
+               state.pendingL1Wos?.find(w => w.id === id);
     const woIdToSend = wo?.raw_id || id;
-    const res = await api('approve_l1', { wo_id: woIdToSend });
+    const res = await api(action, { wo_id: woIdToSend });
     if (res.success) {
       successCount++;
-      state.pendingL1Wos = state.pendingL1Wos.filter(w => w.id !== id);
+      if (isSuperintendent) {
+        if (wo) wo.status = 'APPROVED';
+        state.pendingL2Wos = (state.pendingL2Wos || []).filter(w => w.id !== id);
+        if (wo && !state.approvedWos.some(w => w.id === wo.id)) state.approvedWos.unshift(wo);
+      } else {
+        if (wo) wo.status = 'PENDING_L2';
+        state.pendingL1Wos = (state.pendingL1Wos || []).filter(w => w.id !== id);
+        if (wo && !state.pendingL2Wos.some(w => w.id === wo.id)) state.pendingL2Wos.unshift(wo);
+      }
     }
   }
 
@@ -3591,6 +4493,10 @@ function switchTab(tabName) {
   if (tabName === 'approvals') renderApprovals();
   if (tabName === 'monitoring') renderMonitoring();
   if (tabName === 'create-wo') renderJoblists();
+  if (tabName === 'teknis') renderTeknis();
+  if (tabName === 'koreksi-hm') renderKoreksiHm();
+  if (tabName === 'koreksi-km') renderKoreksiKm();
+  if (tabName === 'reports') renderReports();
 }
 
 function initEventListeners() {
@@ -3680,6 +4586,92 @@ function initEventListeners() {
 
   document.getElementById('search-approvals')?.addEventListener('input', renderApprovals);
   document.getElementById('quick-search-wo')?.addEventListener('input', renderDashboard);
+
+  // Teknis Event Listeners
+  document.getElementById('btn-toggle-demo-teknis')?.addEventListener('click', toggleDemoTeknis);
+  document.getElementById('btn-refresh-teknis')?.addEventListener('click', () => renderTeknis(true));
+  document.querySelectorAll('#teknis-subtabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#teknis-subtabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.teknisSubTab = tab.dataset.sub;
+      switchTeknisSubtab();
+    });
+  });
+  document.getElementById('tek-filter-unit')?.addEventListener('change', (e) => {
+    renderTeknisUnitDetail(e.target.value);
+  });
+
+  // Koreksi HM Listeners
+  document.getElementById('koreksi-hm-unit-select')?.addEventListener('change', (e) => {
+    state.koreksiHmUnit = e.target.value;
+    loadKoreksiHmData(e.target.value);
+  });
+  document.getElementById('form-ganti-panel-hm')?.addEventListener('submit', submitGantiPanelHm);
+
+  // Koreksi KM Listeners
+  document.getElementById('koreksi-km-unit-select')?.addEventListener('change', (e) => {
+    state.koreksiKmUnit = e.target.value;
+    loadKoreksiKmData(e.target.value);
+  });
+  document.getElementById('form-ganti-panel-km')?.addEventListener('submit', submitGantiPanelKm);
+
+  // Modal Koreksi Meter Listeners
+  document.getElementById('btn-modal-km-close')?.addEventListener('click', closeModalKoreksiMeter);
+  document.getElementById('btn-modal-km-batal')?.addEventListener('click', closeModalKoreksiMeter);
+  document.getElementById('form-modal-koreksi-meter')?.addEventListener('submit', submitModalKoreksiMeter);
+
+  // Reports Listeners
+  document.getElementById('btn-report-toggle-month')?.addEventListener('click', () => setReportFilterType('month'));
+  document.getElementById('btn-report-toggle-range')?.addEventListener('click', () => setReportFilterType('range'));
+  document.getElementById('btn-generate-report')?.addEventListener('click', generatePayrollReport);
+  document.getElementById('rep-btn-download')?.addEventListener('click', downloadPayrollReport);
+
+  // Mechanic Impersonation & Workflow Listeners
+  document.getElementById('btn-back-to-monitoring')?.addEventListener('click', () => {
+    window.kembaliDariMekanik();
+  });
+
+  document.getElementById('btn-refresh-mech-wos')?.addEventListener('click', () => {
+    loadMechanicWos();
+  });
+
+  ['assigned', 'pending_approval', 'done'].forEach(flt => {
+    const btnId = 'tab-mech-' + flt.replace('_approval', '');
+    document.getElementById(btnId)?.addEventListener('click', () => {
+      state.mechanicFilter = flt;
+      document.querySelectorAll('#mech-filter-tabs .mech-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.fontWeight = '600';
+        btn.style.color = '#6B7280';
+        btn.style.borderBottom = 'none';
+        const pill = btn.querySelector('.count-pill');
+        if (pill) { pill.style.background = '#E5E7EB'; pill.style.color = '#374151'; }
+      });
+      const activeBtn = document.getElementById(btnId);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.fontWeight = '700';
+        activeBtn.style.color = '#047857';
+        activeBtn.style.borderBottom = '3px solid #047857';
+        const pill = activeBtn.querySelector('.count-pill');
+        if (pill) { pill.style.background = '#047857'; pill.style.color = '#fff'; }
+      }
+      renderMechanicWoGrid();
+    });
+  });
+
+  // Modal Kerjakan WO Listeners
+  document.getElementById('btn-close-mwo')?.addEventListener('click', () => window.closeKerjaWoModal());
+  document.getElementById('btn-cancel-mwo')?.addEventListener('click', () => window.closeKerjaWoModal());
+  document.getElementById('mwo-btn-timer-start')?.addEventListener('click', () => window.timerStartAction());
+  document.getElementById('mwo-btn-timer-pause')?.addEventListener('click', () => window.timerPauseAction());
+  document.getElementById('mwo-btn-timer-stop')?.addEventListener('click', () => window.timerStopAction());
+  document.getElementById('mwo-btn-timer-reset')?.addEventListener('click', () => window.timerResetAction());
+  document.getElementById('mwo-start-time')?.addEventListener('input', validateMwoTimes);
+  document.getElementById('mwo-end-time')?.addEventListener('input', validateMwoTimes);
+  document.getElementById('form-kerjakan-wo')?.addEventListener('submit', submitPekerjaanMekanik);
+  document.getElementById('mwo-btn-transfer')?.addEventListener('click', transferPekerjaanMekanik);
 }
 
 // Helpers
@@ -3736,4 +4728,891 @@ function showToast(message, type = 'info') {
     toast.style.transition = 'opacity 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 3500);
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDateTime(v) {
+  if (!v) return '<span style="color:#94A3B8;">–</span>';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return escapeHtml(v);
+  const bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+  const pad = (n) => (n < 10 ? '0' : '') + n;
+  return `${d.getDate()} ${bln[d.getMonth()]} ${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// =========================================================================
+// TEKNIS CONTROLLERS (DASHBOARD TEKNIS & BAN)
+// =========================================================================
+
+function toggleDemoTeknis() {
+  state.teknisDemo = !state.teknisDemo;
+  renderTeknis(true);
+}
+
+async function renderTeknis(forceRefresh = false) {
+  const banner = document.getElementById('teknis-demo-banner');
+  if (banner) banner.style.display = state.teknisDemo ? 'block' : 'none';
+  const demoLabel = document.getElementById('label-demo-teknis');
+  if (demoLabel) demoLabel.textContent = state.teknisDemo ? 'Kembali ke Real' : 'Mode Demo';
+
+  if (!state.teknisData || forceRefresh) {
+    const tbody = document.getElementById('tek-kondisi-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-dim);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data teknis...</td></tr>';
+
+    try {
+      const res = await api('dataDashboardTeknis', { demo: state.teknisDemo });
+      if (res && res.success && res.data) {
+        state.teknisData = res.data;
+      } else if (res && res.kondisi) {
+        state.teknisData = res;
+      } else {
+        console.warn('Teknis API warning:', res);
+        state.teknisData = res?.data || {
+          kondisi: [], problem: { jenis: [], posisi: [] }, riwayat: [], repair: [], mingguan: [],
+          life: { rata: 0, jumlah: 0, per_merk: [], per_posisi: [], selesai: [] },
+          ringkas: { unit: 0, posisi: 0, baris_inspeksi: 0, baris_removeinstal: 0, baris_repair: 0 }
+        };
+      }
+    } catch (err) {
+      console.error('Error fetching teknis data:', err);
+    }
+  }
+
+  const d = state.teknisData;
+  if (!d) return;
+
+  const r = d.ringkas || {};
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val != null ? val : '-'; };
+  setEl('tek-stat-unit', r.unit || 0);
+  setEl('tek-stat-posisi', r.posisi || 0);
+  setEl('tek-stat-inspeksi', r.baris_inspeksi || 0);
+  setEl('tek-stat-remove', r.baris_removeinstal || 0);
+  setEl('tek-stat-repair', r.baris_repair || 0);
+  setEl('tek-ambang-kritis', d.rtd_kritis || 3);
+
+  // Render Tren Mingguan
+  const barsContainer = document.getElementById('teknis-mingguan-bars');
+  if (barsContainer && Array.isArray(d.mingguan) && d.mingguan.length > 0) {
+    const maxVal = Math.max(...d.mingguan.map(m => Math.max(m.inspeksi || 0, m.removeinstal || m.removeInstal || 0, m.problem || 0)), 1);
+    barsContainer.innerHTML = d.mingguan.map(m => {
+      const insp = m.inspeksi || 0;
+      const rem = m.removeinstal || m.removeInstal || 0;
+      const prob = m.problem || 0;
+      const inspPct = Math.round((insp / maxVal) * 100);
+      const remPct = Math.round((rem / maxVal) * 100);
+      const probPct = Math.round((prob / maxVal) * 100);
+      return `
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 14px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #1E293B; margin-bottom: 6px;">
+            <span>${escapeHtml(m.label || '')} (${escapeHtml(m.rentang || '')})</span>
+            <span>Inspeksi: ${insp} | Rem/Inst: ${rem} | Problem: ${prob}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+              <span style="width: 80px; color: #64748B;">Inspeksi</span>
+              <div class="bar-track" style="flex: 1;"><div class="bar-fill" style="width: ${inspPct}%; background: #3B82F6;"></div></div>
+              <span style="width: 25px; text-align: right; font-weight: 600;">${insp}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+              <span style="width: 80px; color: #64748B;">Remove/Inst</span>
+              <div class="bar-track" style="flex: 1;"><div class="bar-fill" style="width: ${remPct}%; background: #10B981;"></div></div>
+              <span style="width: 25px; text-align: right; font-weight: 600;">${rem}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+              <span style="width: 80px; color: #64748B;">Problem</span>
+              <div class="bar-track" style="flex: 1;"><div class="bar-fill" style="width: ${probPct}%; background: #EF4444;"></div></div>
+              <span style="width: 25px; text-align: right; font-weight: 600;">${prob}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  switchTeknisSubtab();
+}
+
+function switchTeknisSubtab() {
+  const d = state.teknisData;
+  if (!d) return;
+
+  const sub = state.teknisSubTab || 'kondisi';
+  const panels = ['kondisi', 'problem', 'riwayat', 'repair', 'life', 'unit'];
+  panels.forEach(p => {
+    const el = document.getElementById(`tek-panel-${p}`);
+    if (el) el.classList.toggle('active', p === sub);
+  });
+
+  if (sub === 'kondisi') renderTeknisKondisi(d);
+  if (sub === 'problem') renderTeknisProblem(d);
+  if (sub === 'riwayat') renderTeknisRiwayat(d);
+  if (sub === 'repair') renderTeknisRepair(d);
+  if (sub === 'life') renderTeknisLife(d);
+  if (sub === 'unit') renderTeknisUnit(d);
+}
+
+function renderTeknisKondisi(d) {
+  const tbody = document.getElementById('tek-kondisi-tbody');
+  if (!tbody) return;
+  const list = d.kondisi || [];
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-dim);">Belum ada catatan inspeksi tyre</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(k => {
+    const isKritis = k.kritis || (k.rtd != null && k.rtd <= (d.rtd_kritis || 3));
+    return `
+      <tr class="${isKritis ? 'kritis' : ''}">
+        <td><strong>${escapeHtml(k.unit_label || k.unit || '-')}</strong></td>
+        <td style="text-align: center;"><span class="badge" style="background: #E2E8F0; color: #334155;">Pos ${k.pos}</span></td>
+        <td>${escapeHtml(k.sn_terpasang || '-')}</td>
+        <td style="text-align: right; font-weight: 800; color: ${isKritis ? '#DC2626' : 'inherit'};">${k.rtd != null ? k.rtd : '-'}</td>
+        <td style="text-align: right;">${k.pressure != null ? k.pressure : '-'}</td>
+        <td style="text-align: right;">${k.life_km != null ? k.life_km.toLocaleString('id-ID') : '-'}</td>
+        <td style="text-align: right;">${k.umur_hari != null ? k.umur_hari : '-'}</td>
+        <td>${escapeHtml(k.perkiraan_ganti || '-')}</td>
+        <td>${formatDateTime(k.dicatat_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderTeknisProblem(d) {
+  const jenisList = document.getElementById('tek-problem-jenis-list');
+  const posisiList = document.getElementById('tek-problem-posisi-list');
+  const prob = d.problem || { jenis: [], posisi: [] };
+
+  if (jenisList) {
+    const maxJenis = Math.max(...(prob.jenis || []).map(j => j.jumlah || 0), 1);
+    jenisList.innerHTML = (prob.jenis && prob.jenis.length > 0)
+      ? prob.jenis.map(j => `
+        <div class="bar-row">
+          <div style="font-size: 13px; font-weight: 600; color: #1E293B;">${escapeHtml(j.nama || '')}</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${Math.round(((j.jumlah || 0) / maxJenis) * 100)}%; background: #EF4444;"></div></div>
+          <div class="bar-num">${j.jumlah || 0}</div>
+        </div>
+      `).join('')
+      : '<div style="color: var(--text-dim); font-size: 13px; padding: 12px;">Belum ada problem tercatat</div>';
+  }
+
+  if (posisiList) {
+    const maxPos = Math.max(...(prob.posisi || []).map(p => p.jumlah || 0), 1);
+    posisiList.innerHTML = (prob.posisi && prob.posisi.length > 0)
+      ? prob.posisi.map(p => `
+        <div class="bar-row">
+          <div style="font-size: 13px; font-weight: 600; color: #1E293B;">Posisi ${escapeHtml(p.pos || '')}</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${Math.round(((p.jumlah || 0) / maxPos) * 100)}%; background: #F59E0B;"></div></div>
+          <div class="bar-num">${p.jumlah || 0}</div>
+        </div>
+      `).join('')
+      : '<div style="color: var(--text-dim); font-size: 13px; padding: 12px;">Belum ada posisi bermasalah</div>';
+  }
+}
+
+function renderTeknisRiwayat(d) {
+  const tbody = document.getElementById('tek-riwayat-tbody');
+  if (!tbody) return;
+  const list = d.riwayat || [];
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--text-dim);">Belum ada riwayat remove / instal tyre</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td>${formatDateTime(r.at)}</td>
+      <td><strong>${escapeHtml(r.unit_label || r.unit || '-')}</strong></td>
+      <td style="text-align: center;"><span class="badge" style="background: #E2E8F0; color: #334155;">Pos ${r.pos}</span></td>
+      <td>${escapeHtml(r.sn_turun || '-')}</td>
+      <td><span class="badge" style="background: #FEE2E2; color: #991B1B;">${escapeHtml(r.problem || '-')}</span></td>
+      <td>${escapeHtml(r.sn_naik || '-')}</td>
+      <td>${escapeHtml(r.lokasi || '-')}</td>
+      <td>${escapeHtml(r.remarks || '-')}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTeknisRepair(d) {
+  const tbody = document.getElementById('tek-repair-tbody');
+  if (!tbody) return;
+  const list = d.repair || [];
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-dim);">Belum ada data repair tyre</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td><strong>${escapeHtml(r.sn || '-')}</strong></td>
+      <td>${escapeHtml(r.merk || '-')}</td>
+      <td>${escapeHtml(r.pattern || r.size || '-')}</td>
+      <td style="text-align: center;"><span class="badge" style="background: #FEF3C7; color: #92400E; font-weight: 700;">${r.jumlah || 0}x</span></td>
+      <td>${formatDateTime(r.terakhir)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTeknisLife(d) {
+  const l = d.life || { rata: 0, jumlah: 0, per_merk: [], per_posisi: [], selesai: [] };
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val != null ? val : '-'; };
+  setEl('tek-life-rata', l.rata != null ? l.rata.toLocaleString('id-ID') : '-');
+  setEl('tek-life-jumlah', l.jumlah || 0);
+  setEl('tek-life-target', (d.target_life_km || 40000).toLocaleString('id-ID'));
+
+  const merkList = document.getElementById('tek-life-merk-list');
+  if (merkList) {
+    const maxM = Math.max(...(l.per_merk || []).map(m => m.rata || 0), 1);
+    merkList.innerHTML = (l.per_merk && l.per_merk.length > 0)
+      ? l.per_merk.map(m => `
+        <div class="bar-row">
+          <div style="font-size: 13px; font-weight: 600; color: #1E293B;">${escapeHtml(m.nama || '')} (${m.jumlah} ban)</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${Math.round(((m.rata || 0) / maxM) * 100)}%; background: #10B981;"></div></div>
+          <div class="bar-num" style="min-width: 70px;">${(m.rata || 0).toLocaleString('id-ID')} KM</div>
+        </div>
+      `).join('')
+      : '<div style="color: var(--text-dim); font-size: 13px; padding: 12px;">Belum ada data per merk</div>';
+  }
+
+  const posList = document.getElementById('tek-life-posisi-list');
+  if (posList) {
+    const maxP = Math.max(...(l.per_posisi || []).map(p => p.rata || 0), 1);
+    posList.innerHTML = (l.per_posisi && l.per_posisi.length > 0)
+      ? posList.map(p => `
+        <div class="bar-row">
+          <div style="font-size: 13px; font-weight: 600; color: #1E293B;">Posisi ${p.pos} (${p.jumlah} ban)</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${Math.round(((p.rata || 0) / maxP) * 100)}%; background: #6366F1;"></div></div>
+          <div class="bar-num" style="min-width: 70px;">${(p.rata || 0).toLocaleString('id-ID')} KM</div>
+        </div>
+      `).join('')
+      : '<div style="color: var(--text-dim); font-size: 13px; padding: 12px;">Belum ada data per posisi</div>';
+  }
+
+  const tbody = document.getElementById('tek-life-tbody');
+  if (tbody) {
+    const selesai = l.selesai || [];
+    if (selesai.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-dim);">Belum ada ban tuntas pakai yang tercatat</td></tr>';
+    } else {
+      tbody.innerHTML = selesai.map(s => `
+        <tr>
+          <td><strong>${escapeHtml(s.sn || '-')}</strong></td>
+          <td>${escapeHtml(s.merk || '')} ${escapeHtml(s.pattern || '')}</td>
+          <td style="text-align: right; font-weight: 700; color: #059669;">${s.life_km != null ? s.life_km.toLocaleString('id-ID') : '-'} KM</td>
+          <td style="text-align: right;">${s.hari != null ? s.hari : '-'}</td>
+          <td style="text-align: center;"><span class="badge" style="background: #E2E8F0; color: #334155;">Pos ${s.pos_terakhir || s.pos || '-'}</span></td>
+          <td><span class="badge" style="background: #FEE2E2; color: #991B1B;">${escapeHtml(s.problem || '-')}</span></td>
+          <td>${formatDateTime(s.turun_at || s.dilepas_at)}</td>
+        </tr>
+      `).join('');
+    }
+  }
+}
+
+function renderTeknisUnit(d) {
+  const sel = document.getElementById('tek-filter-unit');
+  if (!sel) return;
+  const currentVal = sel.value;
+
+  const unitMap = new Map();
+  (d.kondisi || []).forEach(k => { if (k.unit) unitMap.set(k.unit, k.unit_label || k.unit); });
+  (d.riwayat || []).forEach(r => { if (r.unit) unitMap.set(r.unit, r.unit_label || r.unit); });
+
+  let html = '<option value="">-- Pilih Unit --</option>';
+  unitMap.forEach((label, id) => {
+    html += `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
+  });
+  sel.innerHTML = html;
+  if (currentVal && unitMap.has(currentVal)) {
+    sel.value = currentVal;
+    renderTeknisUnitDetail(currentVal);
+  }
+}
+
+function renderTeknisUnitDetail(unitId) {
+  const container = document.getElementById('tek-unit-detail-container');
+  if (!container) return;
+  if (!unitId) {
+    container.innerHTML = `
+      <div class="hampa">
+        <div class="hampa-judul">Silakan pilih unit di atas</div>
+        <div>Pilih unit untuk melihat konfigurasi posisi ban dan riwayat perawatannya.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const d = state.teknisData || {};
+  const unitKondisi = (d.kondisi || []).filter(k => k.unit === unitId);
+  const unitRiwayat = (d.riwayat || []).filter(r => r.unit === unitId);
+
+  let html = `
+    <div class="kartu" style="margin-bottom: 16px;">
+      <div class="kartu-judul" style="margin-bottom: 10px;">Kondisi Posisi Ban Unit: ${escapeHtml(unitId)}</div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: center;">POS</th>
+              <th>SN TERPASANG</th>
+              <th style="text-align: right;">RTD (MM)</th>
+              <th style="text-align: right;">PRESSURE</th>
+              <th style="text-align: right;">KM PAKAI</th>
+              <th>PERKIRAAN GANTI</th>
+              <th>TERAKHIR DIUKUR</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${unitKondisi.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-dim);">Belum ada data inspeksi untuk unit ini</td></tr>' : unitKondisi.map(k => `
+              <tr class="${k.kritis ? 'kritis' : ''}">
+                <td style="text-align: center;"><span class="badge" style="background: #E2E8F0; color: #334155;">Pos ${k.pos}</span></td>
+                <td><strong>${escapeHtml(k.sn_terpasang || '-')}</strong></td>
+                <td style="text-align: right; font-weight: 700; color: ${k.kritis ? '#DC2626' : 'inherit'};">${k.rtd != null ? k.rtd : '-'}</td>
+                <td style="text-align: right;">${k.pressure != null ? k.pressure : '-'}</td>
+                <td style="text-align: right;">${k.life_km != null ? k.life_km.toLocaleString('id-ID') : '-'}</td>
+                <td>${escapeHtml(k.perkiraan_ganti || '-')}</td>
+                <td>${formatDateTime(k.dicatat_at)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="kartu">
+      <div class="kartu-judul" style="margin-bottom: 10px;">Riwayat Remove / Instal Unit: ${escapeHtml(unitId)}</div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>TANGGAL</th>
+              <th style="text-align: center;">POS</th>
+              <th>SN TURUN</th>
+              <th>PROBLEM</th>
+              <th>SN NAIK</th>
+              <th>LOKASI</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${unitRiwayat.length === 0 ? '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-dim);">Belum ada riwayat bongkar-pasang untuk unit ini</td></tr>' : unitRiwayat.map(r => `
+              <tr>
+                <td>${formatDateTime(r.at)}</td>
+                <td style="text-align: center;"><span class="badge" style="background: #E2E8F0; color: #334155;">Pos ${r.pos}</span></td>
+                <td>${escapeHtml(r.sn_turun || '-')}</td>
+                <td><span class="badge" style="background: #FEE2E2; color: #991B1B;">${escapeHtml(r.problem || '-')}</span></td>
+                <td>${escapeHtml(r.sn_naik || '-')}</td>
+                <td>${escapeHtml(r.lokasi || '-')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+// =========================================================================
+// KOREKSI HM & KM CONTROLLERS
+// =========================================================================
+
+function populateMeterUnitSelects() {
+  const hmSel = document.getElementById('koreksi-hm-unit-select');
+  const kmSel = document.getElementById('koreksi-km-unit-select');
+  const units = (state.units || []).filter(u => u.unit_id && u.unit_id !== 'OTHERS' && u.unit_id !== 'WORKSHOP');
+
+  const options = '<option value="">-- Pilih Unit --</option>' +
+    units.map(u => `<option value="${escapeHtml(u.unit_id)}">${escapeHtml(u.unit_name || u.unit_id)} (${escapeHtml(u.unit_id)})</option>`).join('');
+
+  if (hmSel && hmSel.options.length <= 1) {
+    hmSel.innerHTML = options;
+    if (state.koreksiHmUnit) hmSel.value = state.koreksiHmUnit;
+  }
+  if (kmSel && kmSel.options.length <= 1) {
+    kmSel.innerHTML = options;
+    if (state.koreksiKmUnit) kmSel.value = state.koreksiKmUnit;
+  }
+}
+
+function renderKoreksiHm() {
+  populateMeterUnitSelects();
+  if (state.koreksiHmUnit) {
+    loadKoreksiHmData(state.koreksiHmUnit);
+  }
+}
+
+function renderKoreksiKm() {
+  populateMeterUnitSelects();
+  if (state.koreksiKmUnit) {
+    loadKoreksiKmData(state.koreksiKmUnit);
+  }
+}
+
+async function loadKoreksiHmData(unitId) {
+  const content = document.getElementById('koreksi-hm-content');
+  if (!unitId) {
+    if (content) content.style.display = 'none';
+    return;
+  }
+  if (content) content.style.display = 'block';
+
+  const tbody = document.getElementById('koreksi-hm-table-body');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-dim);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat riwayat HM unit...</td></tr>';
+
+  try {
+    const res = await api('riwayatHmUnit', { unit_id: unitId });
+    const data = res?.data || res;
+    state.koreksiHmData = data;
+
+    // Render Acuan
+    const acuanCard = document.getElementById('koreksi-hm-acuan-card');
+    if (acuanCard) {
+      if (data && data.acuan) {
+        acuanCard.innerHTML = `
+          <div style="font-size: 14px; font-weight: 800; color: #0369A1; margin-bottom: 4px;">
+            <i class="fa-solid fa-circle-check"></i> Acuan HM Terkini: ${data.acuan.hm}
+          </div>
+          <div style="font-size: 12.5px; color: #0284C7; line-height: 1.5;">
+            Tercatat pada <b>${formatDateTime(data.acuan.at)}</b> ${data.acuan.oleh ? 'oleh ' + escapeHtml(data.acuan.oleh) : ''} ${data.acuan.wo_number ? '· ' + escapeHtml(data.acuan.wo_number) : ''}<br>
+            WO berikutnya pada unit ini harus ber-HM sama atau lebih besar dari angka acuan ini.
+          </div>
+        `;
+      } else {
+        acuanCard.innerHTML = `
+          <div style="font-size: 13.5px; color: #0369A1;">
+            <i class="fa-solid fa-info-circle"></i> Belum ada bacaan HM untuk unit ini. Angka valid pertama yang dimasukkan akan menjadi acuan dasar.
+          </div>
+        `;
+      }
+    }
+
+    // Render Bacaan Table
+    if (tbody) {
+      const bacaan = data?.bacaan || [];
+      if (bacaan.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-dim);">Belum ada data bacaan HM untuk unit ini</td></tr>';
+      } else {
+        tbody.innerHTML = bacaan.map(b => {
+          const janggal = b.janggal;
+          let badge = '<span class="badge" style="background: #D1FAE5; color: #065F46;">NORMAL</span>';
+          if (janggal === 'melompat') badge = '<span class="tag tag-melompat">MELOMPAT</span>';
+          else if (janggal === 'mundur') badge = '<span class="tag tag-mundur">MUNDUR</span>';
+
+          return `
+            <tr class="${janggal || ''}">
+              <td><strong>${escapeHtml(b.wo_number || b.wo_id || '-')}</strong></td>
+              <td>${formatDateTime(b.at)}</td>
+              <td><span class="badge" style="background: #E0E7FF; color: #3730A3;">${escapeHtml(b.section || '-')}</span></td>
+              <td>${escapeHtml(b.oleh_nama || b.oleh || '-')}</td>
+              <td style="text-align: right; font-weight: 800; font-size: 14px;">${b.hm != null ? b.hm : '-'}</td>
+              <td>${badge}</td>
+              <td style="text-align: center;">
+                <button type="button" class="btn btn-secondary btn-perbaiki-meter" data-jenis="hm" data-wo="${escapeHtml(b.wo_id || '')}" data-wono="${escapeHtml(b.wo_number || '')}" data-nilai="${b.hm != null ? b.hm : ''}" style="padding: 4px 10px; font-size: 11.5px;">
+                  <i class="fa-solid fa-pen-to-square"></i> Perbaiki
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        attachMeterTableListeners();
+      }
+    }
+  } catch (err) {
+    console.error('Error loadKoreksiHmData:', err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#DC2626;">Gagal memuat: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function loadKoreksiKmData(unitId) {
+  const content = document.getElementById('koreksi-km-content');
+  if (!unitId) {
+    if (content) content.style.display = 'none';
+    return;
+  }
+  if (content) content.style.display = 'block';
+
+  const tbody = document.getElementById('koreksi-km-table-body');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-dim);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat riwayat KM unit...</td></tr>';
+
+  try {
+    const res = await api('riwayatKmUnit', { unit_id: unitId });
+    const data = res?.data || res;
+    state.koreksiKmData = data;
+
+    // Render Acuan
+    const acuanCard = document.getElementById('koreksi-km-acuan-card');
+    if (acuanCard) {
+      if (data && data.acuan) {
+        acuanCard.innerHTML = `
+          <div style="font-size: 14px; font-weight: 800; color: #0369A1; margin-bottom: 4px;">
+            <i class="fa-solid fa-circle-check"></i> Acuan KM Terkini: ${data.acuan.km}
+          </div>
+          <div style="font-size: 12.5px; color: #0284C7; line-height: 1.5;">
+            Tercatat pada <b>${formatDateTime(data.acuan.at)}</b> ${data.acuan.oleh ? 'oleh ' + escapeHtml(data.acuan.oleh) : ''} ${data.acuan.wo_number ? '· ' + escapeHtml(data.acuan.wo_number) : ''}<br>
+            WO berikutnya pada unit ini harus ber-KM sama atau lebih besar dari angka acuan ini.
+          </div>
+        `;
+      } else {
+        acuanCard.innerHTML = `
+          <div style="font-size: 13.5px; color: #0369A1;">
+            <i class="fa-solid fa-info-circle"></i> Belum ada bacaan KM untuk unit ini. Angka valid pertama yang dimasukkan akan menjadi acuan dasar.
+          </div>
+        `;
+      }
+    }
+
+    // Render Bacaan Table
+    if (tbody) {
+      const bacaan = data?.bacaan || [];
+      if (bacaan.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-dim);">Belum ada data bacaan KM untuk unit ini</td></tr>';
+      } else {
+        tbody.innerHTML = bacaan.map(b => {
+          const janggal = b.janggal;
+          let badge = '<span class="badge" style="background: #D1FAE5; color: #065F46;">NORMAL</span>';
+          if (janggal === 'melompat') badge = '<span class="tag tag-melompat">MELOMPAT</span>';
+          else if (janggal === 'mundur') badge = '<span class="tag tag-mundur">MUNDUR</span>';
+
+          return `
+            <tr class="${janggal || ''}">
+              <td><strong>${escapeHtml(b.wo_number || b.wo_id || '-')}</strong></td>
+              <td>${formatDateTime(b.at)}</td>
+              <td><span class="badge" style="background: #E0E7FF; color: #3730A3;">${escapeHtml(b.section || '-')}</span></td>
+              <td>${escapeHtml(b.oleh_nama || b.oleh || '-')}</td>
+              <td style="text-align: right; font-weight: 800; font-size: 14px;">${b.km != null ? b.km : '-'}</td>
+              <td>${badge}</td>
+              <td style="text-align: center;">
+                <button type="button" class="btn btn-secondary btn-perbaiki-meter" data-jenis="km" data-wo="${escapeHtml(b.wo_id || '')}" data-wono="${escapeHtml(b.wo_number || '')}" data-nilai="${b.km != null ? b.km : ''}" style="padding: 4px 10px; font-size: 11.5px;">
+                  <i class="fa-solid fa-pen-to-square"></i> Perbaiki
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        attachMeterTableListeners();
+      }
+    }
+  } catch (err) {
+    console.error('Error loadKoreksiKmData:', err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#DC2626;">Gagal memuat: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function attachMeterTableListeners() {
+  document.querySelectorAll('.btn-perbaiki-meter').forEach(btn => {
+    btn.onclick = () => {
+      const jenis = btn.dataset.jenis;
+      const woId = btn.dataset.wo;
+      const woNo = btn.dataset.wono;
+      const nilai = btn.dataset.nilai;
+
+      document.getElementById('modal-km-wo-id').value = woId;
+      document.getElementById('modal-km-jenis').value = jenis;
+      document.getElementById('modal-km-title').textContent = `Perbaiki Bacaan ${jenis.toUpperCase()} (${woNo})`;
+      document.getElementById('modal-km-desc').innerHTML = `Nilai saat ini: <b>${nilai || '-'}</b>. Masukkan nilai yang benar atau kosongkan jika bacaan ini keliru dan ingin dibuang.`;
+      document.getElementById('modal-km-nilai-baru').value = nilai;
+      document.getElementById('modal-km-alasan').value = '';
+
+      const modal = document.getElementById('modal-koreksi-meter');
+      if (modal) modal.style.display = 'flex';
+    };
+  });
+}
+
+function closeModalKoreksiMeter() {
+  const modal = document.getElementById('modal-koreksi-meter');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitModalKoreksiMeter(e) {
+  e.preventDefault();
+  const woId = document.getElementById('modal-km-wo-id').value;
+  const jenis = document.getElementById('modal-km-jenis').value;
+  const nilaiBaru = document.getElementById('modal-km-nilai-baru').value;
+  const alasan = document.getElementById('modal-km-alasan').value;
+
+  if (!alasan || alasan.trim().length < 5) {
+    showToast('⚠️ Alasan koreksi wajib diisi minimal 5 karakter', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-modal-km-simpan');
+  if (btn) btn.disabled = true;
+
+  try {
+    const action = jenis === 'hm' ? 'koreksiHmWo' : 'koreksiKmWo';
+    const payload = jenis === 'hm'
+      ? { wo_id: woId, hm_baru: nilaiBaru, alasan: alasan }
+      : { wo_id: woId, km_baru: nilaiBaru, alasan: alasan };
+
+    const res = await api(action, payload);
+    if (res && res.success) {
+      showToast('✅ Koreksi meter berhasil disimpan!', 'success');
+      closeModalKoreksiMeter();
+      if (jenis === 'hm' && state.koreksiHmUnit) loadKoreksiHmData(state.koreksiHmUnit);
+      if (jenis === 'km' && state.koreksiKmUnit) loadKoreksiKmData(state.koreksiKmUnit);
+    } else {
+      showToast('❌ Gagal mengoreksi meter: ' + (res?.error?.message || res?.error || 'Kesalahan sistem'), 'danger');
+    }
+  } catch (err) {
+    showToast('❌ Kesalahan jaringan: ' + err.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function submitGantiPanelHm(e) {
+  e.preventDefault();
+  const unitId = state.koreksiHmUnit;
+  if (!unitId) {
+    showToast('⚠️ Pilih unit terlebih dahulu!', 'warning');
+    return;
+  }
+  const nilai = document.getElementById('gp-hm-nilai').value;
+  const at = document.getElementById('gp-hm-at').value;
+  const alasan = document.getElementById('gp-hm-alasan').value;
+
+  if (nilai === '' || !at || !alasan) {
+    showToast('⚠️ Semua kolom ganti panel wajib diisi!', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit-gp-hm');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await api('gantiPanelHm', {
+      unit_id: unitId,
+      hm_baru: nilai,
+      berlaku_at: at,
+      alasan: alasan
+    });
+
+    if (res && res.success) {
+      showToast('✅ Penggantian panel HM berhasil dicatat!', 'success');
+      document.getElementById('form-ganti-panel-hm').reset();
+      loadKoreksiHmData(unitId);
+    } else {
+      showToast('❌ Gagal mencatat ganti panel: ' + (res?.error?.message || res?.error || 'Kesalahan sistem'), 'danger');
+    }
+  } catch (err) {
+    showToast('❌ Kesalahan jaringan: ' + err.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function submitGantiPanelKm(e) {
+  e.preventDefault();
+  const unitId = state.koreksiKmUnit;
+  if (!unitId) {
+    showToast('⚠️ Pilih unit terlebih dahulu!', 'warning');
+    return;
+  }
+  const nilai = document.getElementById('gp-km-nilai').value;
+  const at = document.getElementById('gp-km-at').value;
+  const alasan = document.getElementById('gp-km-alasan').value;
+
+  if (nilai === '' || !at || !alasan) {
+    showToast('⚠️ Semua kolom ganti panel wajib diisi!', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit-gp-km');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await api('gantiPanelKm', {
+      unit_id: unitId,
+      km_baru: nilai,
+      berlaku_at: at,
+      alasan: alasan
+    });
+
+    if (res && res.success) {
+      showToast('✅ Penggantian panel KM berhasil dicatat!', 'success');
+      document.getElementById('form-ganti-panel-km').reset();
+      loadKoreksiKmData(unitId);
+    } else {
+      showToast('❌ Gagal mencatat ganti panel: ' + (res?.error?.message || res?.error || 'Kesalahan sistem'), 'danger');
+    }
+  } catch (err) {
+    showToast('❌ Kesalahan jaringan: ' + err.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// =========================================================================
+// REPORTS & PAYROLL CONTROLLERS
+// =========================================================================
+
+function renderReports() {
+  const monthInput = document.getElementById('report-month-input');
+  if (monthInput && !monthInput.value) {
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    monthInput.value = `${now.getFullYear()}-${mm}`;
+  }
+
+  const startInput = document.getElementById('report-date-start');
+  const endInput = document.getElementById('report-date-end');
+  if (startInput && !startInput.value) {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    startInput.value = firstDay.toISOString().split('T')[0];
+    endInput.value = lastDay.toISOString().split('T')[0];
+  }
+}
+
+function setReportFilterType(type) {
+  state.reportsFilterType = type;
+  document.getElementById('btn-report-toggle-month')?.classList.toggle('active', type === 'month');
+  document.getElementById('btn-report-toggle-range')?.classList.toggle('active', type === 'range');
+
+  const pMonth = document.getElementById('report-panel-month');
+  const pRange = document.getElementById('report-panel-range');
+  if (pMonth) pMonth.style.display = type === 'month' ? 'block' : 'none';
+  if (pRange) pRange.style.display = type === 'range' ? 'grid' : 'none';
+
+  document.getElementById('report-result-box')?.classList.remove('show');
+  document.getElementById('report-error-box')?.classList.remove('show');
+}
+
+async function generatePayrollReport() {
+  const btn = document.getElementById('btn-generate-report');
+  const errBox = document.getElementById('report-error-box');
+  const resBox = document.getElementById('report-result-box');
+
+  if (errBox) { errBox.classList.remove('show'); errBox.textContent = ''; }
+  if (resBox) { resBox.classList.remove('show'); }
+
+  const section = document.getElementById('report-section-select')?.value || 'all';
+  const filterType = state.reportsFilterType || 'month';
+  let year = null, month = null, startDate = null, endDate = null;
+
+  if (filterType === 'month') {
+    const monthVal = document.getElementById('report-month-input')?.value;
+    if (!monthVal) {
+      if (errBox) { errBox.textContent = 'Pilih bulan penggajian terlebih dahulu!'; errBox.classList.add('show'); }
+      return;
+    }
+    const [y, m] = monthVal.split('-');
+    year = parseInt(y, 10);
+    month = parseInt(m, 10);
+  } else {
+    startDate = document.getElementById('report-date-start')?.value;
+    endDate = document.getElementById('report-date-end')?.value;
+    if (!startDate || !endDate) {
+      if (errBox) { errBox.textContent = 'Isi tanggal mulai dan tanggal selesai!'; errBox.classList.add('show'); }
+      return;
+    }
+    if (startDate > endDate) {
+      if (errBox) { errBox.textContent = 'Tanggal mulai harus lebih awal daripada tanggal selesai!'; errBox.classList.add('show'); }
+      return;
+    }
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Menghitung & Membuat File Excel...';
+  }
+
+  try {
+    const payload = {
+      filter_type: filterType,
+      year: year,
+      month: month,
+      start_date: startDate,
+      end_date: endDate,
+      section: section
+    };
+
+    const res = await api('generate_payroll_report', payload);
+    if (res && res.success && res.result) {
+      const d = res.result;
+      state.lastReportResult = d;
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setEl('rep-stat-wo', (d.summary?.total_wos || 0).toLocaleString('id-ID'));
+      setEl('rep-stat-points', (d.summary?.total_points || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setEl('rep-stat-idr', 'Rp ' + Math.round(d.summary?.total_idr || 0).toLocaleString('id-ID'));
+
+      const spreadLink = document.getElementById('rep-link-spreadsheet');
+      if (spreadLink) {
+        if (d.download_url) {
+          spreadLink.href = d.download_url;
+          spreadLink.style.display = 'inline-flex';
+        } else {
+          spreadLink.style.display = 'none';
+        }
+      }
+
+      if (resBox) resBox.classList.add('show');
+      showToast('✅ Laporan payroll berhasil dibuat!', 'success');
+    } else {
+      const msg = res?.error?.message || res?.error || 'Gagal membuat laporan payroll';
+      if (errBox) {
+        errBox.textContent = '❌ ' + msg;
+        errBox.classList.add('show');
+      }
+      showToast('⚠️ ' + msg, 'warning');
+    }
+  } catch (err) {
+    console.error('generatePayrollReport error:', err);
+    if (errBox) {
+      errBox.textContent = '❌ Terjadi kesalahan: ' + err.message;
+      errBox.classList.add('show');
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Laporan Payroll';
+    }
+  }
+}
+
+function downloadPayrollReport() {
+  const d = state.lastReportResult;
+  if (!d) {
+    showToast('⚠️ Buat laporan terlebih dahulu sebelum mengunduh', 'warning');
+    return;
+  }
+
+  if (d.file_b64) {
+    try {
+      const byteCharacters = atob(d.file_b64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = d.filename || 'Payroll_Report.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('📥 Berkas Excel berhasil diunduh!', 'success');
+      return;
+    } catch (err) {
+      console.warn('Direct b64 download error, falling back to link:', err);
+    }
+  }
+
+  if (d.download_url) {
+    window.open(d.download_url, '_blank');
+  } else {
+    showToast('⚠️ Berkas tidak tersedia untuk diunduh langsung', 'warning');
+  }
 }

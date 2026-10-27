@@ -1,7 +1,10 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
 import { dataTeknisTyre } from '../../domain/kueriTeknisTyre.js';
 import { DuniaTyre } from './DuniaTyre.js';
+import { pakaiAppsScript } from '../../lib/backendConfig.js';
+import { dataTeknisTyreAppsScript } from '../../backends/appscript/data.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +38,13 @@ export default async function Teknis() {
     mingguan: [],
   };
   try {
-    data = await dataTeknisTyre(aku);
+    if (pakaiAppsScript()) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get('mar_token')?.value;
+      data = await dataTeknisTyreAppsScript(token);
+    } else {
+      data = await dataTeknisTyre(aku);
+    }
   } catch (err) {
     console.error('Galat memuat data teknis tyre:', err);
   }

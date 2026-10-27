@@ -1,7 +1,10 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { akuServer } from '../../lib/sesi.js';
 import { riwayatUnit, unitBermeter, type JenisMeter } from '../../domain/meter.js';
 import { LayarKoreksi } from './LayarKoreksi.js';
+import { pakaiAppsScript } from '../../lib/backendConfig.js';
+import { unitBermeterAppsScript, riwayatMeterAppsScript } from '../../backends/appscript/data.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,10 +52,22 @@ export default async function Koreksi({
   let unit: any[] = [];
   let riwayat: any = null;
   try {
-    [unit, riwayat] = await Promise.all([
-      unitBermeter(aku.tenantId),
-      sah ? riwayatUnit(aku.tenantId, unitId, jenis) : Promise.resolve(null),
-    ]);
+    if (pakaiAppsScript()) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get('mar_token')?.value;
+      const daftarUnit = await unitBermeterAppsScript(token);
+      unit = daftarUnit;
+      if (sah) {
+        const u = daftarUnit.find((it) => it.id === unitId || it.kode === String(sp.unit));
+        const unitKode = u ? u.kode : String(unitId);
+        riwayat = await riwayatMeterAppsScript(token, unitKode, jenis);
+      }
+    } else {
+      [unit, riwayat] = await Promise.all([
+        unitBermeter(aku.tenantId),
+        sah ? riwayatUnit(aku.tenantId, unitId, jenis) : Promise.resolve(null),
+      ]);
+    }
   } catch (err) {
     console.error('Galat memuat unit koreksi meter:', err);
   }

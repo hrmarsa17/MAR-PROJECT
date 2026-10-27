@@ -16,18 +16,49 @@ export interface GasResponse<T = unknown> {
  * 1. Hanya mengakses endpoint APPSCRIPT_URL yang ditentukan.
  * 2. Tidak menulis/mengubah data jika dipanggil dalam konteks pembacaan.
  */
+const ROUTER_ACTIONS = new Set([
+  'dataDashboardTeknis',
+  'dataDashboardField',
+  'riwayatHmUnit',
+  'riwayatKmUnit',
+  'koreksiHmWo',
+  'koreksiKmWo',
+  'gantiPanelHm',
+  'gantiPanelKm',
+]);
+
 export async function panggilAppsScript<T = any>(
   token: string | null | undefined,
   action: string,
   data?: unknown,
   opId?: string,
 ): Promise<GasResponse<T>> {
-  const body = JSON.stringify({
-    token: token || undefined,
-    action,
-    data: data || {},
-    op_id: opId || undefined,
-  });
+  const isRouterAction = ROUTER_ACTIONS.has(action);
+
+  let body: string;
+  let headers: Record<string, string>;
+
+  if (isRouterAction) {
+    const form = new URLSearchParams();
+    form.append('action', action);
+    form.append(
+      'data',
+      JSON.stringify({
+        token: token || undefined,
+        ...(typeof data === 'object' && data ? data : {}),
+      }),
+    );
+    body = form.toString();
+    headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+  } else {
+    body = JSON.stringify({
+      token: token || undefined,
+      action,
+      data: data || {},
+      op_id: opId || undefined,
+    });
+    headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -36,9 +67,7 @@ export async function panggilAppsScript<T = any>(
   try {
     const res = await fetch(targetUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
+      headers,
       body,
       signal: controller.signal,
       cache: 'no-store',

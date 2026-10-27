@@ -4,6 +4,8 @@ import type { KartuApproval } from '../../domain/kueriApproval.js';
 import type { KartuTransfer } from '../../domain/kueriTransfer.js';
 import type { KartuMekanik, RingkasMonitoring } from '../../domain/kueriMonitoring.js';
 import type { KartuWoMekanik, TabWoMekanik } from '../../domain/kueriWoMekanik.js';
+import type { DataTeknisTyre } from '../../domain/kueriTeknisTyre.js';
+import type { JenisMeter, RiwayatMeter } from '../../domain/meter.js';
 
 
 import { normalisasiSection, SECTIONS_BAKU_KMB } from '../../domain/sections.js';
@@ -311,14 +313,40 @@ export async function handleDataAppsScript(
   }
 
   if (jenis === 'monitoring') {
+    const asParam = url.searchParams.get('as');
     const dimintaTab = url.searchParams.get('tab') ?? 'assigned';
     const tab: TabWoMekanik =
       dimintaTab === 'pending_approval' || dimintaTab === 'done'
         ? dimintaTab
         : 'assigned';
 
+    let tokenToUse = token;
+    let targetName = aku.nama;
+    let targetMechId = aku.mechanicId;
+
+    if (asParam) {
+      try {
+        const monRes = await panggilAppsScript(token, 'pull_monitoring');
+        const mechanics = (monRes.result as any)?.mechanics || [];
+        const match = mechanics.find((m: any, idx: number) => {
+          const rawId = Number(String(m.id || '').replace(/\D/g, '')) || idx + 1;
+          return String(rawId) === String(asParam) ||
+                 String(m.id).toLowerCase() === String(asParam).toLowerCase() ||
+                 String(m.mechanic_id || '').toLowerCase() === String(asParam).toLowerCase() ||
+                 String(m.token || '').toLowerCase() === String(asParam).toLowerCase();
+        });
+        if (match && match.token) {
+          tokenToUse = match.token;
+          targetName = match.name || targetName;
+          targetMechId = Number(String(match.id || '').replace(/\D/g, '')) || Number(asParam) || targetMechId;
+        }
+      } catch (err) {
+        console.warn('Gagal mencari token mekanik untuk asParam:', asParam, err);
+      }
+    }
+
     // Untuk tampilan LayarMekanik (daftar WO mekanik), panggil pull_my_wos
-    const gasRes = await panggilAppsScript(token, 'pull_my_wos');
+    const gasRes = await panggilAppsScript(tokenToUse, 'pull_my_wos');
     const rawList = Array.isArray((gasRes.result as any)?.wos)
       ? (gasRes.result as any).wos
       : Array.isArray(gasRes.result)
@@ -342,6 +370,12 @@ export async function handleDataAppsScript(
 
       const rawId = Number(String(w.id || '').replace(/\D/g, '')) || idx + 1;
 
+      const timList = Array.isArray(w.team) && w.team.length > 0 ? w.team.map((t: any, tidx: number) => ({
+        mechanicId: Number(String(t.mechanic_id || t.id || tidx + 1).replace(/\D/g, '')) || tidx + 1,
+        nama: String(t.name || t.mechanic_name || 'Mekanik'),
+        akuSendiri: Boolean(t.is_me || (String(t.name || '').toLowerCase() === String(targetName || '').toLowerCase())),
+      })) : [{ mechanicId: targetMechId, nama: targetName, akuSendiri: true }];
+
       return {
         id: rawId,
         woNumber: String(w.wo_number || w.id || `WO-${rawId}`),
@@ -356,13 +390,13 @@ export async function handleDataAppsScript(
         keterangan: w.keterangan ? String(w.keterangan) : null,
         hourMeter: w.hour_meter != null ? Number(w.hour_meter) : null,
         kilometers: w.kilometers != null ? Number(w.kilometers) : null,
-        partCategory: w.part_type || w.partCategory || null,
+        partCategory: w.part_type || w.part_category || w.partCategory || null,
         safetyIncident: Boolean(w.safety_incident),
-        woGroupId: null,
-        woGroupMode: null,
-        grupTotal: null,
-        grupSelesai: null,
-        tim: [{ mechanicId: aku.mechanicId, nama: aku.nama, akuSendiri: true }],
+        woGroupId: w.wo_group_id ? String(w.wo_group_id) : null,
+        woGroupMode: w.wo_group_mode ? String(w.wo_group_mode) : null,
+        grupTotal: w.grup_total != null ? Number(w.grup_total) : null,
+        grupSelesai: w.grup_selesai != null ? Number(w.grup_selesai) : null,
+        tim: timList,
         bolehKirim: st === 'pending_mechanic_work',
         catatanTransfer: w.transfer_note ? String(w.transfer_note) : null,
       };
@@ -377,15 +411,25 @@ export async function handleDataAppsScript(
     const daftar = allWos.filter((w) => w.statusGroup === tab);
 
     return {
-      sebagai: aku.mechanicId,
-      sendiri: true,
-      orang: { nama: aku.nama },
+      sebagai: asParam ? targetMechId : aku.mechanicId,
+      sendiri: !asParam,
+      orang: { nama: targetName },
       tab,
       hitung,
       daftar,
       bekal: [],
       detail: {},
     };
+  }
+
+  if (jenis === 'teknis') {
+    return await dataTeknisTyreAppsScript(token);
+  }
+
+  if (jenis === 'meter') {
+    const unit = url.searchParams.get('unit') || '';
+    const tipe = (url.searchParams.get('tipe') || 'HM').toUpperCase() as JenisMeter;
+    return await riwayatMeterAppsScript(token, unit, tipe);
   }
 
   return null;
@@ -440,6 +484,210 @@ export async function pullMonitoringAppsScript(
         periodeLabel: 'Periode Berjalan',
       },
       kartu: [],
+    };
+  }
+}
+
+/**
+ * Mengambil data Dashboard Teknis Tyre via Google Apps Script.
+ */
+export async function dataTeknisTyreAppsScript(
+  token: string | null | undefined,
+  demo = false,
+): Promise<DataTeknisTyre> {
+  try {
+    const gasRes = await panggilAppsScript(token, 'dataDashboardTeknis', { demo });
+    const res = (gasRes.result as any) ?? gasRes.data ?? {};
+
+    return {
+      ringkas: {
+        unitTercatat: Number(res.ringkas?.unit ?? res.ringkas?.unitTercatat ?? 0),
+        posisiTercatat: Number(res.ringkas?.posisi ?? res.ringkas?.posisiTercatat ?? 0),
+        barisInspeksi: Number(res.ringkas?.baris_inspeksi ?? res.ringkas?.barisInspeksi ?? 0),
+        barisRemove: Number(res.ringkas?.baris_removeinstal ?? res.ringkas?.barisRemove ?? 0),
+        barisRepair: Number(res.ringkas?.baris_repair ?? res.ringkas?.barisRepair ?? 0),
+      },
+      kondisi: (res.kondisi || []).map((k: any, idx: number) => ({
+        unitId: Number(String(k.unit || k.unit_id || idx + 1).replace(/\D/g, '')) || idx + 1,
+        unitNama: String(k.unit_nama || k.unit || ''),
+        pos: Number(k.pos || 0),
+        rtd: k.rtd != null ? Number(k.rtd) : null,
+        jejakRtd: Array.isArray(k.titik)
+          ? k.titik.map((t: any) => Number(t.rtd || t))
+          : Array.isArray(k.jejakRtd) ? k.jejakRtd : [],
+        pressure: k.pressure != null ? Number(k.pressure) : null,
+        dicatatAt: String(k.dicatat_at || k.at || ''),
+        snTerpasang: k.sn_terpasang || k.sn || null,
+        lifeKm: k.life_km != null ? Number(k.life_km) : null,
+        umurHari: k.umur_hari != null ? Number(k.umur_hari) : null,
+        sisaKm: k.sisa_km != null ? Number(k.sisa_km) : null,
+        perkiraanGanti: k.perkiraan_ganti || k.perkiraan || null,
+        kritis: Boolean(k.kritis),
+      })),
+      problemJenis: Array.isArray(res.problem?.jenis)
+        ? res.problem.jenis.map((p: any) => ({
+            label: String(p.label || p.problem || ''),
+            jumlah: Number(p.jumlah || p.count || 0),
+          }))
+        : [],
+      problemPosisi: Array.isArray(res.problem?.posisi)
+        ? res.problem.posisi.map((p: any) => ({
+            label: String(p.label || p.pos || ''),
+            jumlah: Number(p.jumlah || p.count || 0),
+          }))
+        : [],
+      riwayat: (res.riwayat || []).map((r: any, idx: number) => ({
+        at: String(r.at || r.dicatat_at || ''),
+        unitId: Number(String(r.unit_id || r.unit || idx + 1).replace(/\D/g, '')) || idx + 1,
+        unitNama: String(r.unit_nama || r.unit || ''),
+        pos: Number(r.pos || 0),
+        removeSn: r.remove_sn || null,
+        problem: r.problem || r.remove_problem || null,
+        remarks: r.remarks || r.remove_remarks || null,
+        instalSn: r.instal_sn || null,
+        lokasi: r.lokasi || null,
+      })),
+      repair: (res.repair || []).map((rp: any) => ({
+        sn: String(rp.sn || ''),
+        merk: rp.merk ? String(rp.merk) : null,
+        pattern: rp.pattern ? String(rp.pattern) : null,
+        size: rp.size ? String(rp.size) : null,
+        jumlah: Number(rp.jumlah || 0),
+        terakhir: String(rp.terakhir || rp.at || ''),
+      })),
+      life: {
+        selesai: (res.life?.selesai || []).map((s: any) => ({
+          sn: String(s.sn || ''),
+          pos: Number(s.pos || 0),
+          merk: s.merk ? String(s.merk) : null,
+          pattern: s.pattern ? String(s.pattern) : null,
+          size: s.size ? String(s.size) : null,
+          lifeKm: Number(s.life_km || s.lifeKm || 0),
+          hari: Number(s.hari || 0),
+          problem: s.problem || null,
+          dilepasAt: String(s.turun_at || s.dilepasAt || ''),
+        })),
+        rataRata: res.life?.rata != null ? Number(res.life.rata) : (res.life?.rataRata != null ? Number(res.life.rataRata) : null),
+        jumlah: Number(res.life?.jumlah || 0),
+        target: res.life?.target != null ? Number(res.life.target) : null,
+        rataMerk: (res.life?.per_merk || res.life?.rataMerk || []).map((m: any) => ({
+          label: String(m.nama || m.label || ''),
+          nilai: Number(m.rata ?? m.nilai ?? 0),
+          sampel: Number(m.jumlah ?? m.sampel ?? 0),
+        })),
+        rataPosisi: (res.life?.per_posisi || res.life?.rataPosisi || []).map((p: any) => ({
+          label: String(p.pos || p.label || ''),
+          nilai: Number(p.rata ?? p.nilai ?? 0),
+          sampel: Number(p.jumlah ?? p.sampel ?? 0),
+        })),
+      },
+      mingguan: (res.mingguan || []).map((m: any) => ({
+        label: String(m.label || ''),
+        inspeksi: Number(m.inspeksi || 0),
+        removeInstal: Number(m.removeinstal || m.removeInstal || 0),
+        problem: Number(m.problem || 0),
+      })),
+      rtdKritis: res.rtd_kritis != null ? Number(res.rtd_kritis) : 3,
+      targetLifeKm: res.target_life_km != null ? Number(res.target_life_km) : 40000,
+    };
+  } catch (e) {
+    console.error('Galat dataTeknisTyreAppsScript:', e);
+    return {
+      ringkas: { unitTercatat: 0, posisiTercatat: 0, barisInspeksi: 0, barisRemove: 0, barisRepair: 0 },
+      kondisi: [],
+      problemJenis: [],
+      problemPosisi: [],
+      riwayat: [],
+      repair: [],
+      life: { selesai: [], rataRata: null, jumlah: 0, target: null, rataMerk: [], rataPosisi: [] },
+      mingguan: [],
+      rtdKritis: 3,
+      targetLifeKm: 40000,
+    };
+  }
+}
+
+/**
+ * Mengambil daftar unit yang memiliki meter dari katalog Apps Script.
+ */
+export async function unitBermeterAppsScript(
+  token: string | null | undefined,
+): Promise<{ id: number; kode: string; nama: string }[]> {
+  try {
+    const gasRes = await panggilAppsScript(token, 'pull_create_refs');
+    const refs = (gasRes.result as any)?.refs ?? gasRes.result ?? {};
+    const units = Array.isArray(refs?.units) ? refs.units : [];
+    return units
+      .filter((u: any) => !u.is_virtual)
+      .map((u: any, idx: number) => ({
+        id: Number(u.unit_id || u.id) || idx + 1,
+        kode: String(u.unit_id || u.code || ''),
+        nama: String(u.unit_name || u.name || u.unit_id || ''),
+      }));
+  } catch (e) {
+    console.error('Galat unitBermeterAppsScript:', e);
+    return [];
+  }
+}
+
+/**
+ * Mengambil riwayat bacaan HM / KM unit via Google Apps Script.
+ */
+export async function riwayatMeterAppsScript(
+  token: string | null | undefined,
+  unitIdOrCode: string | number,
+  jenis: JenisMeter,
+): Promise<RiwayatMeter> {
+  const isKm = jenis === 'KM';
+  const action = isKm ? 'riwayatKmUnit' : 'riwayatHmUnit';
+  try {
+    const gasRes = await panggilAppsScript(token, action, { unit_id: String(unitIdOrCode) });
+    const res = (gasRes.result as any) ?? gasRes.data ?? {};
+
+    const acuan = res.acuan ? {
+      nilai: Number(res.acuan.nilai || 0),
+      at: res.acuan.at
+        ? (typeof res.acuan.at === 'number' ? new Date(res.acuan.at).toISOString() : String(res.acuan.at))
+        : '',
+      oleh: String(res.acuan.oleh_nama || res.acuan.oleh || ''),
+      woNumber: String(res.acuan.wo_number || res.acuan.wo_id || ''),
+      dariPanel: Boolean(res.acuan.panel || res.acuan.dariPanel),
+    } : null;
+
+    const panel = (res.panel || []).map((p: any) => ({
+      nilai: Number(p.nilai ?? p.value_after ?? 0),
+      at: p.at
+        ? (typeof p.at === 'number' ? new Date(p.at).toISOString() : String(p.at))
+        : '',
+      alasan: String(p.alasan || p.reason || 'Penggantian panel'),
+      oleh: p.oleh ? String(p.oleh) : null,
+    }));
+
+    const bacaan = (res.bacaan || []).map((b: any) => ({
+      woId: Number(String(b.wo_id || b.id || 0).replace(/\D/g, '')) || 0,
+      woNumber: String(b.wo_number || b.id || ''),
+      at: b.at
+        ? (typeof b.at === 'number' ? new Date(b.at).toISOString() : String(b.at))
+        : '',
+      section: b.section ? String(b.section) : null,
+      oleh: b.oleh_nama || b.oleh ? String(b.oleh_nama || b.oleh) : null,
+      nilai: Number(b.nilai ?? b[jenis.toLowerCase()] ?? 0),
+      janggal: String(b.janggal || ''),
+    }));
+
+    return {
+      acuan,
+      panel,
+      bacaan,
+      ambangLompat: isKm ? 20000 : 2000,
+    };
+  } catch (e) {
+    console.error(`Galat riwayatMeterAppsScript (${action}):`, e);
+    return {
+      acuan: null,
+      panel: [],
+      bacaan: [],
+      ambangLompat: isKm ? 20000 : 2000,
     };
   }
 }
