@@ -2307,9 +2307,17 @@ export async function loginWithToken(token) {
         role: tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic')),
         section: tokenRecord.section || 'vessel,maintenance'
       };
+    } else {
+      user = {
+        ...user,
+        id: user.id || user.mechanic_id || tokenRecord.mechanic_id,
+        mechanic_id: user.mechanic_id || user.id || tokenRecord.mechanic_id,
+        name: user.name || user.mechanic_name || tokenRecord.name || tokenRecord.mechanic_name,
+        role: user.role || tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'))
+      };
     }
   } else {
-    user = state.mechanics.find(m => (m.id || m.mechanic_id || '').toLowerCase() === cleanToken.toLowerCase());
+    user = state.mechanics.find(m => (m.id || m.mechanic_id || '').toLowerCase() === cleanToken.toLowerCase() || (m.token || m.offline_token || '').toLowerCase() === cleanToken.toLowerCase());
   }
 
   // Fallback temporary user
@@ -2320,6 +2328,11 @@ export async function loginWithToken(token) {
       name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : (state.currentSystem === 'SUM' ? 'User SUM' : 'User KMB'),
       role: cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : 'mechanic')
     };
+  }
+
+  // Guarantee valid role (never empty string)
+  if (!user.role) {
+    user.role = (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'));
   }
 
   state.currentUser = user;
@@ -3370,10 +3383,14 @@ function renderDashboard() {
 }
 
 function renderMonitoring() {
-  const isMechanicMode = (state.currentUser?.role || '').toLowerCase() === 'mechanic' || state.viewAsMechanic !== null;
+  const role = (state.currentUser?.role || '').toLowerCase();
+  const isSupervisorRole = role === 'supervisor' || role === 'superintendent' || state.currentUser?.id === 'SPV-001' || state.currentUser?.mechanic_id === 'SPV-001';
+  const isMechanicMode = !isSupervisorRole || state.viewAsMechanic !== null;
   const banner = document.getElementById('mon-viewing-as-banner');
   const supervisorPanel = document.getElementById('mon-supervisor-panel');
   const mechanicSubview = document.getElementById('mon-subview-mechanic-work');
+  const loadingEl = document.getElementById('mon-loading-spinner');
+  if (loadingEl) loadingEl.style.display = 'none';
 
   if (state.viewAsMechanic) {
     if (banner) {
