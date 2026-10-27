@@ -24,6 +24,20 @@ Formatnya:
 
 ---
 
+### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
+- Berubah:
+  - Mengeksekusi sinkronisasi data snapshot awal dari Google Apps Script KMB Project ke skema cermin Supabase `kmb_projek` melalui [`scripts/sinkron-kmb-projek-cermin.mjs`](file:///d:/marbaru/MARProject/scripts/sinkron-kmb-projek-cermin.mjs).
+  - Mengisi data tabel cermin Supabase:
+    - `kmb_projek.config_units`: 28 unit
+    - `kmb_projek.config_components`: 276 komponen
+    - `kmb_projek.config_mechanics`: 21 mekanik & supervisor
+    - `kmb_projek.api_tokens`: 21 token akses aktif
+    - `kmb_projek.config_factors`: 6 faktor pengali jabatan & rate
+    - `kmb_projek.work_orders`: 15 work order aktif & pending approval
+    - `kmb_projek.work_orders_archive`: 51 work order riwayat arsip
+  - Menjalankan Uji Kembar (*Twin Test*) Tahap 4 untuk aksi baca (`ping` token supervisor, `ping` token mekanik, katalog unit, dan daftar mekanik): hasil JSON dari Supabase `kmb_projek` 100% identik dengan GAS.
+- Belum selesai / berikutnya: Menyiapkan pemantauan cermin harian (Tahap 2 evaluasi 7 hari) dan pengujian aksi baca `pull_create_refs` & `pull_monitoring` dari Worker.
+
 ### 2026-10-27 · Raka (+ Antigravity) · kmb-projek & bersama (2)
 - Berubah:
   - Menyelesaikan inventaris lengkap perilaku per aksi untuk Rumah KMB Project di [`docs/INVENTARIS-KMB-PROJEK.md`](file:///d:/marbaru/MARProject/docs/INVENTARIS-KMB-PROJEK.md) mencakup 20 aksi, payload, format JSON, pesan error persis huruf demi huruf, baris sheet, dan rumus hitung poin/rupiah.
