@@ -77,72 +77,23 @@ export function CariMekanik({
             : `Tidak ditemukan mekanik dengan nama tersebut.`}
         </div>
       ) : (
-        <div className="mekanik-grid">
+        <div className="mechanic-grid">
           {hasil.map((m) => (
             <article className="mechanic-card" key={m.id}>
-              <div className="mekanik-head">
-                <div className="mechanic-avatar">{m.nama.charAt(0).toUpperCase()}</div>
-                <div style={{ minWidth: 0 }}>
-                  <div className="mekanik-nama">{m.nama}</div>
-                  <div className="mekanik-kode">
-                    {m.kode}
-                    {m.section && <span className="badge badge-blue">{m.section.toUpperCase()}</span>}
-                    {m.akun_uji && (
-                      <span
-                        className="badge badge-warning"
-                        title="Akun uji — disembunyikan dari dropdown & tidak dihitung payroll/peringkat"
-                      >UJI</span>
-                    )}
-                  </div>
+              <div className="mechanic-avatar">{m.nama.charAt(0).toUpperCase()}</div>
+              <div className="mechanic-card-info">
+                <div className="mechanic-card-name">{m.nama}</div>
+                <div className="mechanic-card-id">
+                  {m.kode} {m.section && `• ${m.section.toUpperCase()}`}
+                </div>
+                <div className="mekanik-angka" style={{ marginTop: '8px' }}>
+                  <span className="badge badge-grey">📝 {m.perlu_diisi}</span>
+                  <span className="badge badge-amber">⏳ {m.menunggu_l1 + m.menunggu_l2}</span>
+                  <span className="badge badge-success">✅ {m.approved}</span>
                 </div>
               </div>
-
-              {/* Empat penghitung pipeline, urutan sama dengan KMB V2. */}
-              <div className="mekanik-angka">
-                <span className="badge badge-grey" title="Perlu diisi">📝 {m.perlu_diisi}</span>
-                <span className="badge badge-amber" title="Menunggu L1">⏳ L1 {m.menunggu_l1}</span>
-                <span className="badge badge-purple" title="Menunggu L2">⏳ L2 {m.menunggu_l2}</span>
-                <span className="badge badge-success" title="Approved periode ini">✅ {m.approved}</span>
-              </div>
-
-              {bisaKelolaToken && (
-                m.token ? (
-                  <div className="mekanik-token">
-                    <input
-                      readOnly
-                      value={m.token}
-                      title="Token login mekanik"
-                      aria-label={`Token ${m.nama}`}
-                      onClick={(e) => e.currentTarget.select()}
-                    />
-                    <button
-                      type="button"
-                      className="btn-secondary btn-sm"
-                      onClick={() => void salin(m)}
-                    >
-                      {tersalin === m.id ? '✅ Tersalin' : '📋 Copy Token'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="kabar kabar-awas" style={{ marginTop: 8, fontSize: '0.75rem' }}>
-                    ⚠️ Belum ada token. Terbitkan lewat{' '}
-                    <code>npm run token {m.kode}</code>
-                  </div>
-                )
-              )}
-
-              {/* "Buka →" — pengganti impersonate (`openAs`, MechanicDashboard.html:449).
-                  Di KMB V2 tombol ini hanya ada bila mekaniknya punya token, karena
-                  ia bekerja dengan membuka URL bertoken orang itu. Di sini ia
-                  memakai sesi approver sendiri (`?as=`), jadi mekanik yang BELUM
-                  punya token pun tetap bisa dibuka — justru orang itulah yang paling
-                  butuh dibantu dari layar ini. */}
-              {/* `btn` ikut disebut: gaya dasar tombol di berkas ini terpasang
-                  pada `button, .btn`, jadi <a> tanpa kelas itu hanya mewarisi
-                  warnanya — tanpa padding, radius, maupun tinggi. */}
-              <Link className="btn btn-gelap btn-sm mekanik-buka" href={`/monitoring?as=${m.id}`}>
-                Buka →
-              </Link>
+              <div className="mechanic-card-arrow">→</div>
+              <Link className="mechanic-card-link" href={`/monitoring?as=${m.id}`}></Link>
             </article>
           ))}
         </div>

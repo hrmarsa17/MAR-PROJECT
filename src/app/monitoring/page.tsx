@@ -78,42 +78,27 @@ export default async function Monitoring({
 
   return (
     <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">📊 Monitoring Mekanik</h1>
-        <p className="page-subtitle">
-          Pencapaian &amp; progres WO tiap mekanik, berikut tokennya.
-          Tekan <b>Copy Token</b> untuk mekanik yang lupa tokennya, atau{' '}
-          <b>Buka</b> untuk melihat WO-nya.
-        </p>
-      </div>
-
-      {galatKoneksi && (
-        <div className="kabar kabar-awas" style={{ marginBottom: '1.25rem' }}>
-          ⚠️ {galatKoneksi}
-        </div>
-      )}
-
-
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-value">{ringkas.mekanik}</div>
-          <div className="stat-label">👷 Mekanik</div>
-        </div>
-        <div className="stat-card biru">
-          <div className="stat-value">{ringkas.perlu_diisi}</div>
-          <div className="stat-label">📝 Perlu diisi</div>
-        </div>
-        <div className="stat-card ungu">
-          <div className="stat-value">{ringkas.menunggu_approval}</div>
-          <div className="stat-label">⏳ Menunggu approval</div>
-        </div>
-        <div className="stat-card hijau">
-          <div className="stat-value">{ringkas.approved}</div>
-          {/* KMB V2 menulis "Approved (semua waktu)" di sini padahal angkanya
-              periode berjalan (MechanicService.js:216). Labelnya yang salah,
-              bukan angkanya — jadi labelnya yang diperbaiki. */}
-          <div className="stat-label">✅ Approved</div>
-          <div className="stat-subtitle">{ringkas.periodeLabel}</div>
+      <div className="selector-header">
+        <h1 className="page-title">📊 Mechanic Activity Report</h1>
+        <p className="selector-subtitle">Track and submit your assigned work</p>
+        <div className="stat-grid" style={{ marginTop: '20px' }}>
+          <div className="stat-card">
+            <div className="stat-value">{ringkas.mekanik}</div>
+            <div className="stat-label">👷 Mekanik</div>
+          </div>
+          <div className="stat-card biru">
+            <div className="stat-value">{ringkas.perlu_diisi}</div>
+            <div className="stat-label">📝 Perlu diisi</div>
+          </div>
+          <div className="stat-card ungu">
+            <div className="stat-value">{ringkas.menunggu_approval}</div>
+            <div className="stat-label">⏳ Menunggu approval</div>
+          </div>
+          <div className="stat-card hijau">
+            <div className="stat-value">{ringkas.approved}</div>
+            <div className="stat-label">✅ Approved</div>
+            <div className="stat-subtitle">{ringkas.periodeLabel}</div>
+          </div>
         </div>
       </div>
 
