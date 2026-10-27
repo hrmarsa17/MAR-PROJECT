@@ -15,7 +15,7 @@ export async function identitasDariTokenAppsScript(
     throw tidakBerhak('Token tidak dikenal atau tidak berlaku');
   }
 
-  const res = await panggilAppsScript(token.trim(), 'ping');
+  const res = await panggilAppsScript(token.trim(), 'ping', {}, undefined, sistem);
 
   if (!res.success) {
     throw tidakBerhak(res.error || 'Token tidak dikenal atau tidak berlaku di Google Apps Script');

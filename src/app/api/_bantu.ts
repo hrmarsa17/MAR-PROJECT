@@ -22,7 +22,14 @@ export async function tokenDari(req: Request): Promise<string | null> {
 
 export async function akuDari(req: Request): Promise<Identitas> {
   const token = await tokenDari(req);
-  return identitasDariToken(token);
+  const url = new URL(req.url);
+  const sistem =
+    req.headers.get('x-mar-system') ||
+    req.headers.get('x-mar-tenant') ||
+    url.searchParams.get('system') ||
+    url.searchParams.get('tenant') ||
+    undefined;
+  return identitasDariToken(token, sistem);
 }
 
 /**

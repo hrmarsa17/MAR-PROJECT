@@ -28,143 +28,95 @@ const OID_INT8 = 20;
  * sebanding. Lebih baik berhenti di sini dengan pesan yang menyebutkan apa yang
  * harus dilakukan.
  */
-const alamat = process.env['DATABASE_URL'] || (process.env.CI || process.env.CF_PAGES ? 'postgres://ci:ci@127.0.0.1:5432/ci' : undefined);
-if (!alamat) {
-  throw new Error(
-    'DATABASE_URL belum diisi. Basis data TIDAK ditebak — port 5432 di mesin ' +
-    'pengembangan ini milik instans lain.\n' +
-    '  • Next.js & vitest memuat .env sendiri.\n' +
-    "  • Skrip `npx tsx` harus mengimpor './muat-env.js' SEBELUM src/lib/db.js.",
-  );
-}
+function buatKoneksi(url: string) {
+  try {
+    new URL(url);
+  } catch {
+    const samar = url.replace(/:\/\/([^:@/]*):[^@/]*@/, '://$1:***@');
+    throw new Error(
+      `DATABASE_URL bukan alamat yang sah: "${samar}"\n` +
+      '  • Bentuknya: postgresql://pengguna:sandi@host:porta/nama_basis_data\n' +
+      '  • Kata sandi bersimbol harus di-URL-encode (@ jadi %40, ! jadi %21).',
+    );
+  }
 
-/**
- * ── ALAMAT YANG ADA TAPI BUKAN ALAMAT ───────────────────────────────────────
- *
- * `postgres()` melempar `TypeError: Invalid URL` beserta sebelas baris jejak ke
- * dalam node_modules. Yang membacanya sedang menjalankan sebuah perintah, bukan
- * sedang memperbaiki postgres.js, dan tidak ada satu kata pun di sana yang
- * menyebut DATABASE_URL.
- *
- * Yang paling sering: tempat isian yang ikut terketik apa adanya — `<PROD>`,
- * `<connection string>`, `$DATABASE_URL` yang tidak pernah terisi. Itu terjadi
- * persis pada perintah yang ditempel dari dokumen, yaitu perintah yang paling
- * jarang dijalankan dan paling tidak dihafal.
- *
- * Alamatnya DISAMARKAN sebelum dicetak. Ia biasanya masih berisi kata sandi
- * produksi, dan galat cenderung berakhir tersalin ke tempat lain.
- */
-try {
-  new URL(alamat);
-} catch {
-  const samar = alamat.replace(/:\/\/([^:@/]*):[^@/]*@/, '://$1:***@');
-  throw new Error(
-    `DATABASE_URL bukan alamat yang sah: "${samar}"\n` +
-    '  • Kalau itu terlihat seperti tempat isian (<PROD>, <connection string>),\n' +
-    '    ia memang belum diganti dengan alamat yang sesungguhnya.\n' +
-    '  • Bentuknya: postgresql://pengguna:sandi@host:porta/nama_basis_data\n' +
-    '  • Kata sandi bersimbol harus di-URL-encode (@ jadi %40, ! jadi %21).',
-  );
-}
+  const modeTransaksi = /:6543\//.test(url);
+  const tanpaServer = modeTransaksi;
 
-/**
- * ── SATU PROSES YANG HIDUP TERUS, ATAU BANYAK YANG SEKEJAP ──────────────────
- *
- * Kolam koneksi disetel berbeda tergantung di mana ia berjalan, dan selisihnya
- * bukan penyetelan halus — ia menentukan apakah sistem masih bisa menyambung
- * saat ramai.
- *
- * Di server sendiri (Docker, `npm start`, `npm run dev`): SATU proses melayani
- * semua orang. Sepuluh koneksi dipakai bersama, dibuka sekali, hidup terus.
- *
- * Pada runtime serverless atau saat memakai pooler transaksi, tiap proses dapat
- * membuka kolamnya sendiri. Karena itu kolam diperkecil dan prepared statement
- * dimatikan untuk pooler transaksi.
- *
- * `prepare: false` WAJIB saat lewat pooler MODE TRANSAKSI: pernyataan yang
- * sudah disiapkan terikat pada satu koneksi, sementara mode transaksi
- * memindahkan transaksi antar koneksi. Tanpa ini, galatnya muncul belakangan,
- * sesekali, dan berbunyi seperti masalah lain sama sekali.
- *
- * ── YANG MENENTUKAN ADALAH PORTA, BUKAN NAMA HOST ───────────────────────────
- * Supabase memberi TIGA alamat, dan dua di antaranya ber-host pooler:
- *
- *   db.xxx.supabase.co:5432            langsung. IPv6 saja sejak Jan 2024.
- *   ...pooler.supabase.com:5432        mode SESI. IPv4. Koneksi dipegang utuh,
- *                                      prepared statement jalan seperti biasa.
- *   ...pooler.supabase.com:6543        mode TRANSAKSI. IPv4. Yang butuh
- *                                      prepare:false dan kolam kecil.
- *
- * Baris ini sempat memperlakukan SEMUA host pooler sebagai mode transaksi —
- * dan itu keliru: session pooler adalah satu-satunya jalan bagi jaringan yang
- * hanya punya IPv4, tapi ia tidak menuntut pembatasan apa pun.
- */
-const modeTransaksi = /:6543\//.test(alamat);
-const tanpaServer = modeTransaksi;
+  const kolamDiminta = Number(process.env['DB_POOL_MAX']?.trim());
+  const kolam = Number.isInteger(kolamDiminta) && kolamDiminta > 0
+    ? kolamDiminta
+    : (tanpaServer ? 1 : 10);
 
-/**
- * DB_POOL_MAX yang KOSONG berarti tidak disebut, bukan berarti nol.
- *
- * Sebelumnya baris ini berbunyi `Number(process.env['DB_POOL_MAX'] ?? bawaan)`.
- * `??` hanya mundur ke bawaan saat nilainya null atau undefined — sementara
- * `Number('')` adalah **0**, dan kolam berisi nol koneksi tidak melayani
- * siapa pun.
- *
- * Nilai kosong dapat muncul saat environment variable dibuat dari template.
- * Menekan deploy tanpa mengisinya adalah hal yang wajar dilakukan — dan
- * bawaannya yang sudah benar tidak boleh terbuang karenanya.
- *
- * Nilai yang tidak masuk akal (nol, minus, bukan angka) diperlakukan sama:
- * kembali ke bawaan, bukan diteruskan ke postgres.js.
- */
-const kolamDiminta = Number(process.env['DB_POOL_MAX']?.trim());
-const kolam = Number.isInteger(kolamDiminta) && kolamDiminta > 0
-  ? kolamDiminta
-  : (tanpaServer ? 1 : 10);
-
-export const sql = postgres(
-  alamat,
-  {
-    max: kolam,
-    idle_timeout: 20,
-    prepare: !modeTransaksi,
-    onnotice: () => {},
-    types: {
-      /**
-       * bigint dibaca sebagai number, bukan string.
-       *
-       * Bawaannya string, demi ketelitian — dan itu melahirkan kebohongan tipe
-       * yang tidak bisa ditangkap TypeScript: sebuah fungsi boleh menyatakan
-       * mengembalikan `{ id: number }` sementara isinya `"5"`. Nilainya
-       * menyeberang batas basis data tanpa tipe, jadi kompiler tidak punya
-       * apa pun untuk diperiksa. Ketahuannya baru di ujung, saat Zod menolak
-       * `woId: "5"` dan tombol Setujui gagal tanpa sebab yang kelihatan.
-       *
-       * Aman untuk data sebesar ini: 100 WO/hari selama 100 tahun pun masih
-       * jauh di bawah batas bilangan bulat JavaScript. Dan kalau suatu hari
-       * asumsi itu patah, ia patah dengan NYARING — bukan diam-diam kehilangan
-       * angka terakhir.
-       */
-      bigint: {
-        to: OID_INT8,
-        from: [OID_INT8],
-        serialize: (x: number | string) => String(x),
-        parse: (x: string) => {
-          const n = Number(x);
-          if (!Number.isSafeInteger(n)) {
-            throw new Error(
-              `bigint ${x} melampaui batas aman bilangan JavaScript — ` +
-                `ubah penanganannya sebelum angka ini dipakai`,
-            );
-          }
-          return n;
+  return postgres(
+    url,
+    {
+      max: kolam,
+      idle_timeout: 20,
+      prepare: !modeTransaksi,
+      onnotice: () => {},
+      types: {
+        bigint: {
+          to: OID_INT8,
+          from: [OID_INT8],
+          serialize: (x: number | string) => String(x),
+          parse: (x: string) => {
+            const n = Number(x);
+            if (!Number.isSafeInteger(n)) {
+              throw new Error(
+                `bigint ${x} melampaui batas aman bilangan JavaScript — ` +
+                  `ubah penanganannya sebelum angka ini dipakai`,
+              );
+            }
+            return n;
+          },
         },
       },
     },
-  },
-);
+  );
+}
 
-export type Sql = typeof sql;
+const poolMap = new Map<string, ReturnType<typeof postgres>>();
+
+/**
+ * Mendapatkan koneksi SQL spesifik tenant ('KMB' atau 'SUM') atau fallback default.
+ */
+export function dapatkanSql(sistemAtauTenant?: string | null): Sql {
+  const s = sistemAtauTenant?.toUpperCase();
+  let url: string | undefined;
+
+  if (s === 'SUM') {
+    url = process.env['DATABASE_URL_SUM'] || process.env['DATABASE_URL'];
+  } else if (s === 'KMB') {
+    url = process.env['DATABASE_URL_KMB'] || process.env['DATABASE_URL'];
+  } else {
+    url = process.env['DATABASE_URL_KMB'] || process.env['DATABASE_URL'];
+  }
+
+  if (!url) {
+    url = process.env['DATABASE_URL'] || (process.env.CI || process.env.CF_PAGES ? 'postgres://ci:ci@127.0.0.1:5432/ci' : undefined);
+  }
+
+  if (!url) {
+    throw new Error(
+      `DATABASE_URL belum diisi untuk sistem ${s || 'DEFAULT'}. Basis data TIDAK ditebak.\n` +
+      '  • Konfigurasikan DATABASE_URL_KMB atau DATABASE_URL_SUM di environment variable.',
+    );
+  }
+
+  if (!poolMap.has(url)) {
+    poolMap.set(url, buatKoneksi(url));
+  }
+
+  return poolMap.get(url)!;
+}
+
+// Instance default untuk backward compatibility
+export const sql = dapatkanSql('KMB');
+export const sqlKmb = dapatkanSql('KMB');
+export const sqlSum = process.env['DATABASE_URL_SUM'] ? dapatkanSql('SUM') : sql;
+
+export type Sql = ReturnType<typeof postgres>;
 
 /**
  * Tipe transaksi diambil dari yang diekspor postgres.js.

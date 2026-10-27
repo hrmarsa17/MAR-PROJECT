@@ -1,4 +1,4 @@
-import { sql, type Tx } from '../../lib/db.js';
+import { sql, dapatkanSql, type Tx } from '../../lib/db.js';
 import { tidakBerhak } from '../../lib/errors.js';
 import type { Identitas } from '../../lib/auth.js';
 
@@ -8,11 +8,20 @@ import type { Identitas } from '../../lib/auth.js';
 export async function identitasDariTokenSupabase(
   token: string | null | undefined,
   tx?: Tx,
+  sistem?: string | null,
 ): Promise<Identitas> {
   if (!token || token.trim().length < 8) {
     throw tidakBerhak('Token tidak dikenal atau tidak berlaku');
   }
-  const q = tx ?? sql;
+  const tokenClean = token.trim().toLowerCase();
+  const s = sistem?.toUpperCase();
+  let targetSql = sql;
+  if (s === 'SUM' || tokenClean.startsWith('sum-') || tokenClean.startsWith('sum_')) {
+    targetSql = dapatkanSql('SUM');
+  } else if (s === 'KMB' || tokenClean.startsWith('kmb-') || tokenClean.startsWith('kmb_')) {
+    targetSql = dapatkanSql('KMB');
+  }
+  const q = tx ?? targetSql;
   const baris = await q<
     {
       mechanic_id: number; tenant_id: number; tenant_code: string; name: string; role: string;

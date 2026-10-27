@@ -71,17 +71,10 @@ export async function identitasDariToken(
   const sistem = typeof sistemAtauTx === 'string' ? sistemAtauTx : undefined;
   const tx = typeof sistemAtauTx === 'object' ? sistemAtauTx : undefined;
 
-  // Routing by sistem
-  if (sistem === 'KMB' || sistem === 'SUM') {
-    // Google Sheets backend
+  if (pakaiAppsScript()) {
     return identitasDariTokenAppsScript(token, sistem);
   }
-
-  // PKMB atau default: Supabase (hybrid)
-  if (pakaiAppsScript()) {
-    return identitasDariTokenAppsScript(token);
-  }
-  return identitasDariTokenSupabase(token, tx);
+  return identitasDariTokenSupabase(token, tx, sistem);
 }
 
 /** Pembanding waktu-tetap untuk nilai rahasia yang panjangnya sama. */

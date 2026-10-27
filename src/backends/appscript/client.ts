@@ -32,6 +32,7 @@ export async function panggilAppsScript<T = any>(
   action: string,
   data?: unknown,
   opId?: string,
+  sistem?: string,
 ): Promise<GasResponse<T>> {
   const isRouterAction = ROUTER_ACTIONS.has(action);
 
@@ -45,6 +46,7 @@ export async function panggilAppsScript<T = any>(
       'data',
       JSON.stringify({
         token: token || undefined,
+        system: sistem || undefined,
         ...(typeof data === 'object' && data ? data : {}),
       }),
     );
@@ -53,6 +55,7 @@ export async function panggilAppsScript<T = any>(
   } else {
     body = JSON.stringify({
       token: token || undefined,
+      system: sistem || undefined,
       action,
       data: data || {},
       op_id: opId || undefined,
@@ -62,7 +65,7 @@ export async function panggilAppsScript<T = any>(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 45000);
-  const targetUrl = dapatkanAppscriptUrl(token);
+  const targetUrl = dapatkanAppscriptUrl(token, sistem);
 
   try {
     const res = await fetch(targetUrl, {

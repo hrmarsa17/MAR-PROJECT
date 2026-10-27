@@ -20,7 +20,7 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="brand-title">Mechanic Activity Report</span>
-            <span class="brand-badge" id="project-badge">PROJEK KMB</span>
+            <span class="brand-badge" id="project-badge" style="cursor: pointer; user-select: none;" title="Klik untuk beralih sistem (KMB / SUM)">PROJEK KMB</span>
           </div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
             <i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i>
@@ -876,18 +876,28 @@
       <div class="gate-icon">
         <i class="fa-solid fa-key" style="color: #fff;"></i>
       </div>
-      <h2 class="gate-title">KMB PORTAL GATE</h2>
+      <h2 class="gate-title">MAR PORTAL GATE</h2>
       <p class="gate-desc">
-        Masukkan Token Akses Anda untuk membuka sistem MAR Projek KMB. Sistem akan mengenali profil, hak akses, dan tarif Anda secara otomatis.
+        Pilih sistem projek dan masukkan Token Akses Anda. Sistem akan mengenali profil, hak akses, dan tarif Anda secara otomatis.
       </p>
 
+      <!-- System Selector (KMB / SUM) -->
+      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;">
+        <button type="button" class="btn" id="gate-sys-kmb" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #10B981; color: #fff; border: 1px solid #10B981; cursor: pointer;">
+          Projek KMB
+        </button>
+        <button type="button" class="btn" id="gate-sys-sum" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; cursor: pointer;">
+          Projek SUM
+        </button>
+      </div>
+
       <div style="margin-bottom: 20px;">
-        <input type="text" class="form-control" id="input-token" placeholder="Contoh: 52fdb552231348ffb14a" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
+        <input type="text" class="form-control" id="input-token" placeholder="Ketik token (contoh: sum-... atau kmb-...)" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
         <div id="gate-error-msg" style="color: var(--accent-red); font-size: 12px; margin-top: 8px; display: none;"></div>
       </div>
 
       <button class="btn btn-primary" id="btn-enter-gate" style="width: 100%; padding: 14px; font-size: 15px;">
-        <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem KMB
+        <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem
       </button>
 
       <!-- Quick Test Tokens -->
@@ -897,16 +907,16 @@
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <button type="button" class="btn btn-secondary quick-token-btn" data-token="52fdb552231348ffb14a" style="padding: 8px 12px; font-size: 12px; justify-content: space-between;">
-            <span><i class="fa-solid fa-user-shield" style="color: #60A5FA;"></i> <strong>L1 Test (Supervisor)</strong></span>
+            <span><i class="fa-solid fa-user-shield" style="color: #60A5FA;"></i> <strong>L1 Test (Supervisor KMB)</strong></span>
             <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim);">52fdb...14a</span>
           </button>
-          <button type="button" class="btn btn-secondary quick-token-btn" data-token="token-budi-002" style="padding: 8px 12px; font-size: 12px; justify-content: space-between;">
-            <span><i class="fa-solid fa-wrench" style="color: #34D399;"></i> <strong>Mekanik KMB</strong></span>
-            <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim);">Ahmad Fauzi</span>
-          </button>
           <button type="button" class="btn btn-secondary quick-token-btn" data-token="97a47ff4c7e443f2a550" style="padding: 8px 12px; font-size: 12px; justify-content: space-between; background: #ECFDF5; border-color: #A7F3D0;">
-            <span><i class="fa-solid fa-screwdriver-wrench" style="color: #059669;"></i> <strong>Gusti Raka Pamungkas (Live)</strong></span>
-            <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: #047857;">VES-012 (12 WO)</span>
+            <span><i class="fa-solid fa-screwdriver-wrench" style="color: #059669;"></i> <strong>Gusti Raka Pamungkas (KMB)</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: #047857;">VES-012</span>
+          </button>
+          <button type="button" class="btn btn-secondary quick-token-btn" data-token="sum-mekanik-01" style="padding: 8px 12px; font-size: 12px; justify-content: space-between; background: #EFF6FF; border-color: #BFDBFE;">
+            <span><i class="fa-solid fa-wrench" style="color: #2563EB;"></i> <strong>Mekanik Projek SUM</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: #1D4ED8;">sum-mekanik-01</span>
           </button>
         </div>
       </div>

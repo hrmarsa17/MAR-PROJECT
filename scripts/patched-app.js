@@ -1742,6 +1742,18 @@ const DEFAULT_REJECTED_WOS = [
 // APPLICATION STATE
 // =========================================================================
 const state = {
+  currentSystem: (function() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const sys = params.get('system') || params.get('tenant');
+      if (sys && sys.toUpperCase() === 'SUM') return 'SUM';
+      const tok = params.get('token') || localStorage.getItem('kmb_portal_token') || '';
+      if (tok.toLowerCase().startsWith('sum-') || tok.toLowerCase().startsWith('sum_')) return 'SUM';
+      const savedSys = localStorage.getItem('mar_current_system');
+      if (savedSys && savedSys.toUpperCase() === 'SUM') return 'SUM';
+    } catch (_) {}
+    return 'KMB';
+  })(),
   currentUser: null,
   activeToken: null,
   units: [...FALLBACK_UNITS],
@@ -1790,7 +1802,8 @@ const state = {
 // INITIALIZATION
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-  document.title = 'KMB PORTAL - Mechanic Activity Report';
+  document.title = `${state.currentSystem === 'SUM' ? 'SUM' : 'KMB'} PORTAL - Mechanic Activity Report`;
+  updateSystemBadge();
   loadCachedSpreadsheetData();
   initStorage();
   initEventListeners();
@@ -1801,6 +1814,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================================================
 // API CLIENT (Cloudflare Worker Proxy -> Google Apps Script / Sheets)
 // =========================================================================
+const GAS_FALLBACK_URLS = {
+  KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec",
+  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec"
+};
+
 const ROUTER_ACTIONS = new Set([
   'dataDashboardTeknis', 'dataDashboardField',
   'riwayatHmUnit', 'riwayatKmUnit',
@@ -1810,25 +1828,36 @@ const ROUTER_ACTIONS = new Set([
 
 async function api(action, data = {}, opId = null, customToken = null) {
   const token = customToken || (action === 'pull_my_wos' && state.viewAsMechanic?.token ? state.viewAsMechanic.token : state.activeToken);
+  const currentSystem = (function() {
+    if (token) {
+      const t = String(token).trim().toLowerCase();
+      if (t.startsWith('sum-') || t.startsWith('sum_') || t === 'sum') return 'SUM';
+    }
+    return state.currentSystem || 'KMB';
+  })();
   const isRouter = ROUTER_ACTIONS.has(action);
 
   if (isRouter) {
-    const payloadData = { token, ...data };
+    const payloadData = { token, system: currentSystem, ...data };
     const body = new URLSearchParams({
       action: action,
+      system: currentSystem,
       data: JSON.stringify(payloadData)
     }).toString();
 
     try {
       const res = await fetch('/api/gas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-MAR-System': currentSystem
+        },
         body: body
       });
       return await res.json();
     } catch (err) {
       try {
-        const gasUrl = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec";
+        const gasUrl = GAS_FALLBACK_URLS[currentSystem] || GAS_FALLBACK_URLS.KMB;
         const directRes = await fetch(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1848,6 +1877,7 @@ async function api(action, data = {}, opId = null, customToken = null) {
 
   const payload = {
     token: token,
+    system: currentSystem,
     action: action,
     data: data,
     op_id: autoOpId
@@ -1856,14 +1886,17 @@ async function api(action, data = {}, opId = null, customToken = null) {
   try {
     const res = await fetch('/api/gas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MAR-System': currentSystem
+      },
       body: JSON.stringify(payload)
     });
     return await res.json();
   } catch (err) {
     // Direct GAS fallback if proxy is unreachable
     try {
-      const gasUrl = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec";
+      const gasUrl = GAS_FALLBACK_URLS[currentSystem] || GAS_FALLBACK_URLS.KMB;
       const directRes = await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -2191,8 +2224,75 @@ function checkAuth() {
   }
 }
 
+export function updateSystemBadge() {
+  const sys = (state.currentSystem || 'KMB').toUpperCase();
+  const badge = document.getElementById('project-badge');
+  if (badge) {
+    badge.textContent = `PROJEK ${sys}`;
+    if (sys === 'SUM') {
+      badge.style.background = '#2563EB';
+      badge.style.color = '#FFFFFF';
+    } else {
+      badge.style.background = '#10B981';
+      badge.style.color = '#FFFFFF';
+    }
+  }
+
+  // Update gate buttons if present
+  const kmbBtn = document.getElementById('gate-sys-kmb');
+  const sumBtn = document.getElementById('gate-sys-sum');
+  if (kmbBtn && sumBtn) {
+    if (sys === 'SUM') {
+      sumBtn.style.background = '#2563EB';
+      sumBtn.style.color = '#fff';
+      sumBtn.style.borderColor = '#2563EB';
+      kmbBtn.style.background = '#F3F4F6';
+      kmbBtn.style.color = '#374151';
+      kmbBtn.style.borderColor = '#D1D5DB';
+    } else {
+      kmbBtn.style.background = '#10B981';
+      kmbBtn.style.color = '#fff';
+      kmbBtn.style.borderColor = '#10B981';
+      sumBtn.style.background = '#F3F4F6';
+      sumBtn.style.color = '#374151';
+      sumBtn.style.borderColor = '#D1D5DB';
+    }
+  }
+
+  const gateTitle = document.querySelector('.gate-title');
+  if (gateTitle) {
+    gateTitle.textContent = `${sys} PORTAL GATE`;
+  }
+  const btnEnter = document.getElementById('btn-enter-gate');
+  if (btnEnter) {
+    btnEnter.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem ${sys}`;
+  }
+}
+
+export function switchSystem(nextSys) {
+  state.currentSystem = nextSys.toUpperCase();
+  localStorage.setItem('mar_current_system', state.currentSystem);
+  const url = new URL(window.location);
+  url.searchParams.set('system', state.currentSystem);
+  window.history.replaceState({}, '', url);
+  updateSystemBadge();
+  document.title = `${state.currentSystem} PORTAL - Mechanic Activity Report`;
+  showToast(`Beralih ke sistem ${state.currentSystem}. Menyinkronkan data terbaru...`, 'info');
+  syncFromSpreadsheet(true);
+}
+
 export async function loginWithToken(token) {
   const cleanToken = String(token).trim();
+
+  // Auto-detect system from token prefix
+  if (cleanToken.toLowerCase().startsWith('sum-') || cleanToken.toLowerCase().startsWith('sum_')) {
+    state.currentSystem = 'SUM';
+    localStorage.setItem('mar_current_system', 'SUM');
+  } else if (cleanToken.toLowerCase().startsWith('kmb-')) {
+    state.currentSystem = 'KMB';
+    localStorage.setItem('mar_current_system', 'KMB');
+  }
+  updateSystemBadge();
 
   // 1. First resolve from local TOKENS / state for instant UI rendering
   const tokenRecord = TOKENS.find(t => (t.token || t.offline_token || '').toLowerCase() === cleanToken.toLowerCase());
@@ -2203,7 +2303,7 @@ export async function loginWithToken(token) {
       user = {
         id: tokenRecord.mechanic_id,
         mechanic_id: tokenRecord.mechanic_id,
-        name: tokenRecord.name || tokenRecord.mechanic_name || (cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB'),
+        name: tokenRecord.name || tokenRecord.mechanic_name || (cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : (state.currentSystem === 'SUM' ? 'User SUM' : 'User KMB')),
         role: tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic')),
         section: tokenRecord.section || 'vessel,maintenance'
       };
@@ -2217,7 +2317,7 @@ export async function loginWithToken(token) {
     user = {
       id: cleanToken,
       mechanic_id: cleanToken,
-      name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB',
+      name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : (state.currentSystem === 'SUM' ? 'User SUM' : 'User KMB'),
       role: cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : 'mechanic')
     };
   }
@@ -2250,6 +2350,11 @@ export async function loginWithToken(token) {
   api('ping').then(res => {
     if (res.success && res.result) {
       const info = res.result;
+      if (info.tenant_code || info.tenant || info.system) {
+        state.currentSystem = (info.tenant_code || info.tenant || info.system).toUpperCase();
+        localStorage.setItem('mar_current_system', state.currentSystem);
+        updateSystemBadge();
+      }
       state.currentUser = {
         id: info.mechanic_id,
         mechanic_id: info.mechanic_id,
@@ -2278,6 +2383,8 @@ export async function loginWithToken(token) {
 function updateUserBar() {
   const u = state.currentUser;
   if (!u) return;
+
+  updateSystemBadge();
 
   const displayName = u.name || u.mechanic_name || 'Mekanik';
   document.getElementById('profile-name').textContent = displayName;
@@ -4747,12 +4854,43 @@ function initEventListeners() {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  document.getElementById('btn-enter-gate').addEventListener('click', () => {
+  const projectBadge = document.getElementById('project-badge');
+  if (projectBadge) {
+    projectBadge.style.cursor = 'pointer';
+    projectBadge.title = 'Klik untuk beralih antara sistem KMB dan SUM';
+    projectBadge.addEventListener('click', () => {
+      const nextSys = state.currentSystem === 'SUM' ? 'KMB' : 'SUM';
+      switchSystem(nextSys);
+    });
+  }
+
+  document.getElementById('gate-sys-kmb')?.addEventListener('click', () => {
+    switchSystem('KMB');
+  });
+  document.getElementById('gate-sys-sum')?.addEventListener('click', () => {
+    switchSystem('SUM');
+  });
+
+  const inputToken = document.getElementById('input-token');
+  if (inputToken) {
+    inputToken.addEventListener('input', (e) => {
+      const val = e.target.value.trim().toLowerCase();
+      if (val.startsWith('sum-') || val.startsWith('sum_')) {
+        state.currentSystem = 'SUM';
+        updateSystemBadge();
+      } else if (val.startsWith('kmb-')) {
+        state.currentSystem = 'KMB';
+        updateSystemBadge();
+      }
+    });
+  }
+
+  document.getElementById('btn-enter-gate')?.addEventListener('click', () => {
     const token = document.getElementById('input-token').value;
     loginWithToken(token);
   });
 
-  document.getElementById('input-token').addEventListener('keypress', (e) => {
+  document.getElementById('input-token')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       loginWithToken(e.target.value);
     }
@@ -4764,7 +4902,7 @@ function initEventListeners() {
     });
   });
 
-  document.getElementById('btn-switch-token').addEventListener('click', logout);
+  document.getElementById('btn-switch-token')?.addEventListener('click', logout);
 
   const btnSyncSheets = document.getElementById('btn-sync-spreadsheet');
   if (btnSyncSheets) {
