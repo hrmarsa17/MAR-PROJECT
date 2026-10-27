@@ -2116,9 +2116,9 @@ function updateEngineStatusBadge(connected) {
   const el = document.getElementById('engine-status');
   if (!el) return;
   if (connected) {
-    el.innerHTML = '<i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i> SPREADSHEET LIVE (Google Sheets)';
+    el.innerHTML = '<i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i> SUPABASE LIVE (PostgreSQL)';
   } else {
-    el.innerHTML = '<i class="fa-solid fa-circle" style="color: #F59E0B; font-size: 8px;"></i> SPREADSHEET (Offline Cache)';
+    el.innerHTML = '<i class="fa-solid fa-circle" style="color: #F59E0B; font-size: 8px;"></i> SUPABASE (Offline Cache)';
   }
 }
 
@@ -2129,7 +2129,7 @@ function updateSyncIndicator(loading) {
     btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> <span class="hide-mobile">Syncing...</span>';
     btn.disabled = true;
   } else {
-    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> <span class="hide-mobile">Sync Sheets</span>';
+    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> <span class="hide-mobile">Sync Supabase</span>';
     btn.disabled = false;
   }
 }
@@ -3344,11 +3344,11 @@ function renderDashboard() {
   const statPtsEl = document.getElementById('stat-total-points');
   if (statPtsEl) statPtsEl.textContent = totalApprovedPts.toFixed(2);
   const statIncEl = document.getElementById('stat-incentive-preview');
-  if (statIncEl) statIncEl.textContent = `Live Sheets: Rp ${totalApprovedIdr.toLocaleString('id-ID')}`;
+  if (statIncEl) statIncEl.textContent = `Live Supabase: Rp ${totalApprovedIdr.toLocaleString('id-ID')}`;
 
   const periodeEl = document.getElementById('dashboard-periode-str');
   if (periodeEl) {
-    periodeEl.textContent = `📅 Periode: ${overall.periode || '26 Okt – 25 Nov 2026'} (Live Google Sheets)`;
+    periodeEl.textContent = `📅 Periode: ${overall.periode || '26 Okt – 25 Nov 2026'} (Live Supabase)`;
   }
 
   const tbody = document.getElementById('dashboard-recent-wo-body');
