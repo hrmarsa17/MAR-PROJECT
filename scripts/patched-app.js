@@ -4913,12 +4913,6 @@ function initEventListeners() {
     }
   });
 
-  document.querySelectorAll('.quick-token-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      loginWithToken(btn.dataset.token);
-    });
-  });
-
   document.getElementById('btn-switch-token')?.addEventListener('click', logout);
 
   const btnSyncSheets = document.getElementById('btn-sync-spreadsheet');
