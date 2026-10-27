@@ -2230,9 +2230,13 @@ export async function loginWithToken(token) {
 
   updateUserBar();
   hideGateOverlay();
-  renderDashboard();
-  renderApprovals();
-  renderMonitoring();
+  if ((user.role || 'mechanic').toLowerCase() === 'mechanic') {
+    switchTab('monitoring');
+  } else {
+    renderDashboard();
+    renderApprovals();
+    renderMonitoring();
+  }
 
   // Reset initial joblist user
   if (state.joblists.length > 0 && (!state.joblists[0].team || !state.joblists[0].team[0])) {
@@ -2254,9 +2258,13 @@ export async function loginWithToken(token) {
       };
       updateUserBar();
       showToast(`Terhubung sebagai ${info.name} (${(info.role || 'user').toUpperCase()}) via Google Sheets!`, 'success');
-      renderApprovals();
-      renderDashboard();
-      renderMonitoring();
+      if ((info.role || 'mechanic').toLowerCase() === 'mechanic') {
+        switchTab('monitoring');
+      } else {
+        renderApprovals();
+        renderDashboard();
+        renderMonitoring();
+      }
     }
   });
 
@@ -2278,10 +2286,22 @@ function updateUserBar() {
   roleBadge.className = `user-role-badge role-${roleName}`;
 
   document.getElementById('user-profile-bar').style.display = 'flex';
-  document.getElementById('portal-nav').style.display = 'block';
+  
+  const isMechanic = roleName === 'mechanic';
+  const navEl = document.getElementById('portal-nav');
+  if (navEl) {
+    navEl.style.display = isMechanic ? 'none' : 'block';
+  }
 
   const isSupervisor = roleName === 'supervisor' || roleName === 'superintendent' || u.id === 'SPV-001';
-  document.getElementById('nav-tab-approvals').style.display = isSupervisor ? 'flex' : 'none';
+  const apprTab = document.getElementById('nav-tab-approvals');
+  if (apprTab) {
+    apprTab.style.display = isSupervisor ? 'flex' : 'none';
+  }
+
+  if (isMechanic) {
+    switchTab('monitoring');
+  }
 }
 
 function showGateOverlay() {
@@ -4550,6 +4570,10 @@ window.copyMechanicToken = async function(token, btnId) {
 
 
 function switchTab(tabName) {
+  const isMechanic = (state.currentUser?.role || '').toLowerCase() === 'mechanic';
+  if (isMechanic && tabName !== 'monitoring') {
+    tabName = 'monitoring';
+  }
   state.activeTab = tabName;
 
   document.querySelectorAll('.nav-tab').forEach(t => {
