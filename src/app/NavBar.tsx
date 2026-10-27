@@ -97,16 +97,13 @@ export function NavBar({ aku }: { aku: AksesMenu }) {
    * Urutan sisanya TIDAK diacak. Tangan orang lapangan hafal posisinya.
    */
   const menu: { href: string; label: string; tampil: boolean }[] = [
-    // Tanpa ikon: lima menu lainnya pun tanpa ikon, dan dua yang berbeda
-    // sendiri justru menarik mata ke tempat yang tidak menuntut perhatian.
-    { href: '/performa', label: 'Dashboard Performa', tampil: aku.bolehLihat.performa },
-    { href: '/teknis', label: 'Dashboard Teknis', tampil: aku.bolehLihat.teknis },
+    { href: '/performa', label: 'Dashboard Performa', tampil: aku.bolehLihat.performa && approver },
+    { href: '/teknis', label: 'Dashboard Teknis', tampil: aku.bolehLihat.teknis && approver },
     { href: '/wo/baru', label: 'Create WO', tampil: true },
     { href: '/monitoring', label: 'Monitoring', tampil: true },
     { href: '/approval', label: 'Approvals', tampil: approver },
     { href: '/koreksi', label: 'Koreksi Meter', tampil: approver },
-    { href: '/reports', label: 'Reports', tampil: aku.bolehLihat.report },
-    // Paling kanan, sesudah semua menu kerja: Admin bukan pekerjaan harian.
+    { href: '/reports', label: 'Reports', tampil: aku.bolehLihat.report && approver },
     { href: '/admin', label: 'Admin', tampil: aku.bolehAdmin === true },
   ];
 
