@@ -2913,42 +2913,74 @@ function renderJoblists() {
       const uId = u.unit_id || u.id;
       const uName = u.unit_name || u.name;
       const uModel = u.unit_model ? ` · ${u.unit_model.toUpperCase()}` : '';
-      const sel = String(uId) === String(b.unitId) ? 'selected' : '';
+      const sel = String(uId).trim().toUpperCase() === String(b.unitId || '').trim().toUpperCase() ? 'selected' : '';
       unitOptions += `<option value="${uId}" ${sel}>${uName}${uModel}</option>`;
     });
 
-    const availableComps = getAvailableComponents(b.unitId, b.section);
-    let compOptions = '<option value="">-- Component --</option>';
+    // 1. Available Components (depends on unitId)
+    const availableComps = b.unitId ? getAvailableComponents(b.unitId, b.section) : [];
+    // Auto-select if only 1 component available and not yet selected or invalid
+    if (b.unitId && availableComps.length === 1 && !b.component) {
+      b.component = availableComps[0];
+    }
+    if (b.component && !availableComps.includes(b.component)) {
+      b.component = availableComps.length === 1 ? availableComps[0] : '';
+    }
+
+    const isCompDisabled = isLockedJob || !b.unitId || availableComps.length === 0;
+    const compPlaceholder = !b.unitId ? '-- Pilih Unit Terlebih Dahulu --' : '-- Component --';
+    let compOptions = `<option value="">${compPlaceholder}</option>`;
     availableComps.forEach(c => {
       const sel = c === b.component ? 'selected' : '';
       compOptions += `<option value="${c}" ${sel}>${c}</option>`;
     });
 
-    const availableSubs = getAvailableSubComponents(b.component, b.section, b.unitId);
-    let subOptions = '<option value="">-- Sub Component --</option>';
+    // 2. Available Sub Components (depends on component & unitId)
+    const availableSubs = (b.unitId && b.component) ? getAvailableSubComponents(b.component, b.section, b.unitId) : [];
+    if (b.component && availableSubs.length === 1 && !b.subComponent) {
+      b.subComponent = availableSubs[0];
+    }
+    if (b.subComponent && !availableSubs.includes(b.subComponent)) {
+      b.subComponent = availableSubs.length === 1 ? availableSubs[0] : '';
+    }
+
+    const isSubDisabled = isLockedJob || !b.component || availableSubs.length === 0;
+    const subPlaceholder = !b.component ? '-- Pilih Component Terlebih Dahulu --' : '-- Sub Component --';
+    let subOptions = `<option value="">${subPlaceholder}</option>`;
     availableSubs.forEach(s => {
       const sel = s === b.subComponent ? 'selected' : '';
       subOptions += `<option value="${s}" ${sel}>${s}</option>`;
     });
 
-    const availableJobs = getAvailableJobs(b.component, b.subComponent, b.section, b.unitId);
-    let jobOptions = '<option value="">-- Job --</option>';
+    // 3. Available Jobs (depends on subComponent, component & unitId)
+    const availableJobs = (b.unitId && b.component && b.subComponent)
+      ? getAvailableJobs(b.component, b.subComponent, b.section, b.unitId)
+      : [];
+    if (b.subComponent && availableJobs.length === 1 && !b.jobId) {
+      b.jobId = availableJobs[0].job_id || availableJobs[0].id;
+    }
+    if (b.jobId && !availableJobs.some(j => String(j.job_id || j.id).trim() === String(b.jobId).trim())) {
+      b.jobId = availableJobs.length === 1 ? (availableJobs[0].job_id || availableJobs[0].id) : '';
+    }
+
+    const isJobDisabled = isLockedJob || !b.subComponent || availableJobs.length === 0;
+    const jobPlaceholder = !b.subComponent ? '-- Pilih Sub Component Terlebih Dahulu --' : '-- Job --';
+    let jobOptions = `<option value="">${jobPlaceholder}</option>`;
     availableJobs.forEach(j => {
       const jId = j.job_id || j.id;
       const jDesc = j.job_description;
       const jHours = j.plan_hours ? `${j.plan_hours} jam` : '';
       const jPts = j.base_point ? ` · ${j.base_point} pts` : '';
-      const jModelTag = (!b.unitId && j.unit_model) ? ` [${j.unit_model.toUpperCase()}]` : '';
-      const label = `${jDesc} (${jHours}${jPts})${jModelTag}`;
-      const sel = String(jId) === String(b.jobId) ? 'selected' : '';
+      const label = `${jDesc} (${jHours}${jPts})`;
+      const sel = String(jId).trim() === String(b.jobId || '').trim() ? 'selected' : '';
       jobOptions += `<option value="${jId}" ${sel}>${label}</option>`;
     });
 
     // Model compatibility warning if a mismatched job is somehow selected
     let modelWarningHtml = '';
     if (!b.others && b.unitId && b.jobId) {
-      const selectedUnit = state.units.find(u => (u.unit_id || u.id) === b.unitId);
-      const selectedJob = state.components.find(j => (j.job_id || j.id) === b.jobId);
+      const selectedUnit = state.units.find(u => String(u.unit_id || u.id).trim().toUpperCase() === String(b.unitId).trim().toUpperCase());
+      const selectedJob = state.components.find(j => String(j.job_id || j.id).trim() === String(b.jobId).trim());
       if (selectedUnit && selectedJob) {
         const uModel = (selectedUnit.unit_model || '').trim().toLowerCase();
         const jModel = (selectedJob.unit_model || '').trim().toLowerCase();
@@ -2975,7 +3007,7 @@ function renderJoblists() {
           </div>
           <div class="form-group">
             <label class="form-label">Component <span class="wajib">*</span></label>
-            <select class="form-control field-component" data-idx="${index}" ${isLockedJob ? 'disabled' : ''}>
+            <select class="form-control field-component" data-idx="${index}" ${isCompDisabled ? 'disabled' : ''}>
               ${compOptions}
             </select>
           </div>
@@ -2984,13 +3016,13 @@ function renderJoblists() {
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Sub Component <span class="wajib">*</span></label>
-            <select class="form-control field-sub-comp" data-idx="${index}" ${isLockedJob ? 'disabled' : ''}>
+            <select class="form-control field-sub-comp" data-idx="${index}" ${isSubDisabled ? 'disabled' : ''}>
               ${subOptions}
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">Job <span class="wajib">*</span></label>
-            <select class="form-control field-job" data-idx="${index}" ${isLockedJob ? 'disabled' : ''}>
+            <select class="form-control field-job" data-idx="${index}" ${isJobDisabled ? 'disabled' : ''}>
               ${jobOptions}
             </select>
             ${isLockedJob ? '<p class="tanda-kunci">🔒 Job dikunci oleh grup — hapus joblist lain untuk mengubah</p>' : ''}
@@ -3134,13 +3166,15 @@ function computeBlockPreviewData(b) {
     ufStr = uf > 0 ? `${uf.toFixed(2)}x (Manual)` : '-';
     targetStr = target > 0 ? `${target.toFixed(1)} jam` : '-';
   } else {
-    const job = state.components.find(j => (j.job_id || j.id) === b.jobId);
+    const job = state.components.find(j => String(j.job_id || j.id).trim() === String(b.jobId || '').trim());
     if (job) {
       base = parseFloat(job.base_point) || parseFloat(job.base_points) || 0;
       target = parseFloat(job.plan_hours) || parseFloat(job.target_hours) || 0;
       targetStr = target > 0 ? `${target.toFixed(1)} jam` : '-';
     }
-    const unit = state.units.find(u => (u.unit_id || u.id) === b.unitId);
+    const unit = state.units.find(u =>
+      String(u.unit_id || u.id || '').trim().toUpperCase() === String(b.unitId || '').trim().toUpperCase()
+    );
     if (unit) {
       uf = parseFloat(unit.unit_factor) || 1.0;
       ufStr = `${uf.toFixed(2)}x`;
@@ -3161,6 +3195,9 @@ function computeBlockPreviewData(b) {
 
   if (base > 0 && wcFactor !== null && uf > 0) {
     const est = base * uf * wcFactor;
+    estStr = `${est.toFixed(2)} points`;
+  } else if (base > 0 && uf > 0) {
+    const est = base * uf;
     estStr = `${est.toFixed(2)} points`;
   }
 
@@ -3243,14 +3280,44 @@ function attachBlockEventListeners() {
   document.querySelectorAll('.field-unit').forEach(sel => {
     sel.onchange = () => {
       const idx = parseInt(sel.dataset.idx, 10);
-      state.joblists[idx].unitId = sel.value;
-      state.joblists[idx].component = '';
-      state.joblists[idx].subComponent = '';
-      state.joblists[idx].jobId = '';
+      const b = state.joblists[idx];
+      b.unitId = sel.value;
+
+      // Smart Cascade down
+      const validComps = b.unitId ? getAvailableComponents(b.unitId, b.section) : [];
+      if (validComps.length === 1) {
+        b.component = validComps[0];
+      } else if (!validComps.includes(b.component)) {
+        b.component = '';
+        b.subComponent = '';
+        b.jobId = '';
+      }
+
+      if (b.component) {
+        const validSubs = getAvailableSubComponents(b.component, b.section, b.unitId);
+        if (validSubs.length === 1) {
+          b.subComponent = validSubs[0];
+        } else if (!validSubs.includes(b.subComponent)) {
+          b.subComponent = '';
+          b.jobId = '';
+        }
+      }
+
+      if (b.subComponent) {
+        const validJobs = getAvailableJobs(b.component, b.subComponent, b.section, b.unitId);
+        if (validJobs.length === 1) {
+          b.jobId = validJobs[0].job_id || validJobs[0].id;
+        } else if (!validJobs.some(j => String(j.job_id || j.id).trim() === String(b.jobId).trim())) {
+          b.jobId = '';
+        }
+      }
 
       if (state.grupMode === 'unit' && idx === 0) {
         for (let i = 1; i < state.joblists.length; i++) {
           state.joblists[i].unitId = sel.value;
+          state.joblists[i].component = b.component;
+          state.joblists[i].subComponent = b.subComponent;
+          state.joblists[i].jobId = b.jobId;
         }
       }
       renderJoblists();
@@ -3260,13 +3327,31 @@ function attachBlockEventListeners() {
   document.querySelectorAll('.field-component').forEach(sel => {
     sel.onchange = () => {
       const idx = parseInt(sel.dataset.idx, 10);
-      state.joblists[idx].component = sel.value;
-      state.joblists[idx].subComponent = '';
-      state.joblists[idx].jobId = '';
+      const b = state.joblists[idx];
+      b.component = sel.value;
+
+      const validSubs = (b.unitId && b.component) ? getAvailableSubComponents(b.component, b.section, b.unitId) : [];
+      if (validSubs.length === 1) {
+        b.subComponent = validSubs[0];
+      } else if (!validSubs.includes(b.subComponent)) {
+        b.subComponent = '';
+        b.jobId = '';
+      }
+
+      if (b.subComponent) {
+        const validJobs = getAvailableJobs(b.component, b.subComponent, b.section, b.unitId);
+        if (validJobs.length === 1) {
+          b.jobId = validJobs[0].job_id || validJobs[0].id;
+        } else if (!validJobs.some(j => String(j.job_id || j.id).trim() === String(b.jobId).trim())) {
+          b.jobId = '';
+        }
+      }
 
       if (state.grupMode === 'job' && idx === 0) {
         for (let i = 1; i < state.joblists.length; i++) {
           state.joblists[i].component = sel.value;
+          state.joblists[i].subComponent = b.subComponent;
+          state.joblists[i].jobId = b.jobId;
         }
       }
       renderJoblists();
@@ -3276,12 +3361,22 @@ function attachBlockEventListeners() {
   document.querySelectorAll('.field-sub-comp').forEach(sel => {
     sel.onchange = () => {
       const idx = parseInt(sel.dataset.idx, 10);
-      state.joblists[idx].subComponent = sel.value;
-      state.joblists[idx].jobId = '';
+      const b = state.joblists[idx];
+      b.subComponent = sel.value;
+
+      const validJobs = (b.unitId && b.component && b.subComponent)
+        ? getAvailableJobs(b.component, b.subComponent, b.section, b.unitId)
+        : [];
+      if (validJobs.length === 1) {
+        b.jobId = validJobs[0].job_id || validJobs[0].id;
+      } else if (!validJobs.some(j => String(j.job_id || j.id).trim() === String(b.jobId).trim())) {
+        b.jobId = '';
+      }
 
       if (state.grupMode === 'job' && idx === 0) {
         for (let i = 1; i < state.joblists.length; i++) {
           state.joblists[i].subComponent = sel.value;
+          state.joblists[i].jobId = b.jobId;
         }
       }
       renderJoblists();
@@ -3291,7 +3386,8 @@ function attachBlockEventListeners() {
   document.querySelectorAll('.field-job').forEach(sel => {
     sel.onchange = () => {
       const idx = parseInt(sel.dataset.idx, 10);
-      state.joblists[idx].jobId = sel.value;
+      const b = state.joblists[idx];
+      b.jobId = sel.value;
 
       if (state.grupMode === 'job' && idx === 0) {
         for (let i = 1; i < state.joblists.length; i++) {

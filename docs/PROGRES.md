@@ -26,6 +26,28 @@ Formatnya:
 
 ### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
+  - Mengimplementasikan full smart cascading pada form Create WO (Unit -> Component -> Sub Component -> Job):
+    1. Auto-select otomatis jika pilihan pada level berikutnya hanya ada 1 (contoh: Unit DLCD/SDVS langsung auto-select Component; Component ber-sub tunggal langsung auto-select Sub Component).
+    2. Dependent dropdowns dinonaktifkan (disabled) secara bertingkat dengan label instruksi jelas sebelum dropdown induk dipilih.
+    3. Pilihan yang valid tetap dipertahankan saat induk diganti (tidak asal di-reset kosong jika masih kompatibel).
+    4. Memperbaiki perhitungan Unit Factor (1.00x) dan kalkulasi Estimated Points di box Preview secara real-time.
+    5. Re-pack worker.js.
+- Belum selesai / berikutnya:
+  - Deploy worker.js terbaru ke Cloudflare Workers.
+
+### 2026-10-27 · Raka (+ opencode) · bersama
+- Berubah:
+  - Membuat fondasi folder tiga rumah: `workers/kmb/`, `workers/kmb-projek/`, `workers/sum/`, `db/kmb/`, `db/sum/`, `pwa/kmb/`, `pwa/kmb-projek/`, `pwa/sum/`.
+  - Menyiapkan repo untuk pemisahan backend dan PWA per rumah sesuai AGENTS.md §6.
+  - Menyusun `docs/STRUKTUR-RUMAH.md` memetakan file mana milik rumah mana.
+  - Menyusun `docs/PANDUAN-GABRIEL.md` berisi panduan setup langkah demi langkah untuk Gabriel (KMB V2 & SUM V2).
+  - Mulai memindahkan KMB Project: `worker.js`, `src/app/`, `src/backends/`, `wrangler.toml`, `tsconfig.json`, `next.config.ts` ke `workers/kmb-projek/`.
+- Belum selesai / berikutnya:
+  - Gabriel membuat skema `kmb` dan `sum` serta memindahkan PWA masing-masing.
+  - Penyesuaian akhir import shared di root.
+
+### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
+- Berubah:
   - Memperbaiki pengisian dropdown Create WO (Rekondisi & Maintenance) agar tidak lagi kosong:
     1. Bump cache version ke kmb_gas_refs_v9 dan otomatis purge cache usang (v8/v7) di browser klien.
     2. Menambahkan validasi integritas cache sebelum dipakai (hasRekondisi, validasi count komponen).
