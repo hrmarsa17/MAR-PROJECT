@@ -26,6 +26,19 @@ Formatnya:
 
 ### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
+  - **STOP & EVALUASI KEPATUHAN PINDAHKAN DULU, PERBAIKI NANTI (AGENTS.md §1 & §2):**
+    1. **Kesalahan Teridentifikasi:** Dropdown *Team Composition* pada layar Create WO menampilkan imbuhan grade/golongan `(1a)` di samping nama mekanik (contoh: `Afid Irham (1a)`).
+    2. **Akar Masalah:**
+       - Template option di `patched-app.js` menyisipkan `${name}${pos ? ` (${pos})` : ''}`.
+       - Kolom `golongan` pada `kmb_projek.config_mechanics` di Supabase sempat terisi `'1a'` dan diekspos melalui RPC `kmb_create_refs`.
+       - **Koreksi Fatal:** Sistem penilaian dan grading `(1a, 1b, 2a, dst)` adalah milik **Rumah SUM V2**, bukan milik KMB Project. Di Google Spreadsheet dan GAS asli KMB Project, dropdown mekanik sama sekali tidak memiliki label golongan dan murni hanya menampilkan nama mekanik.
+    3. **Tindakan:** Menghentikan sementara pekerjaan baru dan mencatat temuan ini secara formal di `docs/BUG-DICATAT.md` (Entri #6) agar menjadi pengingat keras untuk pekerjaan selanjutnya.
+- Belum selesai / berikutnya:
+  - Kembalikan dropdown *Team Composition* di `scripts/patched-app.js` dan `worker.js` menjadi 100% murni nama mekanik tanpa embel-embel grade `(${pos})`, persis 1:1 seperti GAS dan Spreadsheet KMB.
+  - Bersihkan eksposur `golongan` di skema `kmb_projek` / RPC `kmb_create_refs` agar data SUM tidak bocor ke rumah KMB.
+
+### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
+- Berubah:
   - Mengimplementasikan full smart cascading pada form Create WO (Unit -> Component -> Sub Component -> Job):
     1. Auto-select otomatis jika pilihan pada level berikutnya hanya ada 1 (contoh: Unit DLCD/SDVS langsung auto-select Component; Component ber-sub tunggal langsung auto-select Sub Component).
     2. Dependent dropdowns dinonaktifkan (disabled) secara bertingkat dengan label instruksi jelas sebelum dropdown induk dipilih.
