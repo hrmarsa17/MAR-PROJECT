@@ -1804,6 +1804,7 @@ const state = {
 document.addEventListener('DOMContentLoaded', () => {
   document.title = `${state.currentSystem === 'SUM' ? 'SUM' : 'KMB'} PORTAL - Mechanic Activity Report`;
   updateSystemBadge();
+  updateEngineStatusBadge(true);
   loadCachedSpreadsheetData();
   initStorage();
   initEventListeners();
@@ -1812,7 +1813,54 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================================================
-// API CLIENT (Cloudflare Worker Proxy -> Google Apps Script / Sheets)
+// DUAL-ENGINE SWITCHER (Supabase Singapore <-> Google Sheets / Apps Script)
+// =========================================================================
+export function getActiveEngine() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const qEng = (urlParams.get('engine') || '').toUpperCase();
+  if (qEng === 'SPREADSHEET' || qEng === 'SHEETS' || qEng === 'GAS') {
+    return 'SPREADSHEET';
+  }
+  if (qEng === 'SUPABASE' || qEng === 'POSTGRES') {
+    return 'SUPABASE';
+  }
+  const stored = (localStorage.getItem('kmb_active_engine') || 'SUPABASE').toUpperCase();
+  if (stored === 'SPREADSHEET' || stored === 'SHEETS' || stored === 'GAS') {
+    return 'SPREADSHEET';
+  }
+  return 'SUPABASE';
+}
+
+export function setActiveEngine(newEngine, doSync = true) {
+  const eng = (newEngine || 'SUPABASE').toUpperCase() === 'SPREADSHEET' ? 'SPREADSHEET' : 'SUPABASE';
+  localStorage.setItem('kmb_active_engine', eng);
+
+  // Sync URL parameter without reload
+  const url = new URL(window.location);
+  url.searchParams.set('engine', eng.toLowerCase());
+  window.history.replaceState({}, '', url);
+
+  updateEngineStatusBadge(true);
+
+  if (eng === 'SUPABASE') {
+    showToast('🚀 Beralih ke Database Supabase Singapore (Sub-50ms)!', 'success');
+  } else {
+    showToast('📊 Beralih ke Google Spreadsheet Live (Google Apps Script)!', 'info');
+  }
+
+  if (doSync && state.activeToken) {
+    syncFromSpreadsheet(true);
+  }
+}
+
+export function toggleEngine() {
+  const cur = getActiveEngine();
+  const next = cur === 'SUPABASE' ? 'SPREADSHEET' : 'SUPABASE';
+  setActiveEngine(next, true);
+}
+
+// =========================================================================
+// API CLIENT (Cloudflare Worker Proxy -> Supabase / Google Apps Script)
 // =========================================================================
 const GAS_FALLBACK_URLS = {
   KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec",
@@ -1835,22 +1883,25 @@ async function api(action, data = {}, opId = null, customToken = null) {
     }
     return state.currentSystem || 'KMB';
   })();
+  const activeEngine = getActiveEngine();
   const isRouter = ROUTER_ACTIONS.has(action);
 
   if (isRouter) {
-    const payloadData = { token, system: currentSystem, ...data };
+    const payloadData = { token, system: currentSystem, engine: activeEngine, ...data };
     const body = new URLSearchParams({
       action: action,
       system: currentSystem,
+      engine: activeEngine,
       data: JSON.stringify(payloadData)
     }).toString();
 
     try {
-      const res = await fetch('/api/gas', {
+      const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'X-MAR-System': currentSystem
+          'X-MAR-System': currentSystem,
+          'X-Active-Engine': activeEngine
         },
         body: body
       });
@@ -1878,17 +1929,19 @@ async function api(action, data = {}, opId = null, customToken = null) {
   const payload = {
     token: token,
     system: currentSystem,
+    engine: activeEngine,
     action: action,
     data: data,
     op_id: autoOpId
   };
 
   try {
-    const res = await fetch('/api/gas', {
+    const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-MAR-System': currentSystem
+        'X-MAR-System': currentSystem,
+        'X-Active-Engine': activeEngine
       },
       body: JSON.stringify(payload)
     });
@@ -2099,12 +2152,16 @@ export async function syncFromSpreadsheet(manual = false) {
     renderMonitoring();
 
     if (manual) {
-      showToast('✅ Berhasil menyinkronkan data dengan Google Spreadsheet!', 'success');
+      if (getActiveEngine() === 'SUPABASE') {
+        showToast('✅ Berhasil menyinkronkan data dengan Supabase Singapore (PostgreSQL)!', 'success');
+      } else {
+        showToast('✅ Berhasil menyinkronkan data dengan Google Spreadsheet!', 'success');
+      }
     }
   } catch (err) {
     console.error('Spreadsheet sync error:', err);
     if (manual) {
-      showToast('⚠️ Gagal terhubung ke Google Spreadsheet: ' + err.message, 'warning');
+      showToast('⚠️ Gagal terhubung: ' + err.message, 'warning');
     }
   } finally {
     state.isSyncing = false;
@@ -2112,24 +2169,79 @@ export async function syncFromSpreadsheet(manual = false) {
   }
 }
 
-function updateEngineStatusBadge(connected) {
+export function updateEngineStatusBadge(connected = true) {
+  const eng = getActiveEngine();
   const el = document.getElementById('engine-status');
-  if (!el) return;
-  if (connected) {
-    el.innerHTML = '<i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i> SUPABASE LIVE (PostgreSQL)';
+  const btn = document.getElementById('btn-engine-toggle');
+  const gateBtn = document.getElementById('gate-engine-toggle');
+  const userEngineLabel = document.getElementById('user-engine-label');
+  const syncLabel = document.getElementById('sync-label');
+
+  if (eng === 'SUPABASE') {
+    if (el) {
+      el.innerHTML = connected
+        ? '<i class="fa-solid fa-bolt" style="color: #10B981; font-size: 8px;"></i> SUPABASE LIVE (PostgreSQL)'
+        : '<i class="fa-solid fa-circle" style="color: #F59E0B; font-size: 8px;"></i> SUPABASE (Offline Cache)';
+    }
+    if (btn) {
+      btn.style.background = '#ECFDF5';
+      btn.style.borderColor = '#A7F3D0';
+      btn.style.color = '#065F46';
+      btn.title = 'Sedang menggunakan Database Supabase Singapore (Sub-50ms). Klik untuk ganti ke Google Spreadsheet.';
+      const switchTag = btn.querySelector('.switch-tag');
+      if (switchTag) {
+        switchTag.textContent = '⇄ Ke Sheets';
+        switchTag.style.color = '#059669';
+        switchTag.style.background = 'rgba(16,185,129,0.15)';
+      }
+    }
+    if (gateBtn) {
+      gateBtn.innerHTML = '⚡ Supabase Live (Postgres) <span style="font-size: 10px; opacity: 0.8;">⇄ Ke Sheets</span>';
+      gateBtn.style.background = '#ECFDF5';
+      gateBtn.style.borderColor = '#A7F3D0';
+      gateBtn.style.color = '#065F46';
+    }
+    if (userEngineLabel) userEngineLabel.textContent = 'Ke Sheets';
+    if (syncLabel) syncLabel.textContent = 'Sync Supabase';
   } else {
-    el.innerHTML = '<i class="fa-solid fa-circle" style="color: #F59E0B; font-size: 8px;"></i> SUPABASE (Offline Cache)';
+    if (el) {
+      el.innerHTML = connected
+        ? '<i class="fa-solid fa-table" style="color: #2563EB; font-size: 8px;"></i> SPREADSHEET LIVE (Google Sheets)'
+        : '<i class="fa-solid fa-circle" style="color: #F59E0B; font-size: 8px;"></i> SHEETS (Offline Cache)';
+    }
+    if (btn) {
+      btn.style.background = '#EFF6FF';
+      btn.style.borderColor = '#BFDBFE';
+      btn.style.color = '#1E40AF';
+      btn.title = 'Sedang menggunakan Google Spreadsheet Live. Klik untuk ganti ke Supabase.';
+      const switchTag = btn.querySelector('.switch-tag');
+      if (switchTag) {
+        switchTag.textContent = '⇄ Ke Supabase';
+        switchTag.style.color = '#2563EB';
+        switchTag.style.background = 'rgba(37,99,235,0.15)';
+      }
+    }
+    if (gateBtn) {
+      gateBtn.innerHTML = '📊 Google Sheets Live <span style="font-size: 10px; opacity: 0.8;">⇄ Ke Supabase</span>';
+      gateBtn.style.background = '#EFF6FF';
+      gateBtn.style.borderColor = '#BFDBFE';
+      gateBtn.style.color = '#1E40AF';
+    }
+    if (userEngineLabel) userEngineLabel.textContent = 'Ke Supabase';
+    if (syncLabel) syncLabel.textContent = 'Sync Sheets';
   }
 }
 
 function updateSyncIndicator(loading) {
   const btn = document.getElementById('btn-sync-spreadsheet');
   if (!btn) return;
+  const isSupabase = getActiveEngine() === 'SUPABASE';
+  const label = isSupabase ? 'Sync Supabase' : 'Sync Sheets';
   if (loading) {
     btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> <span class="hide-mobile">Syncing...</span>';
     btn.disabled = true;
   } else {
-    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> <span class="hide-mobile">Sync Supabase</span>';
+    btn.innerHTML = `<i class="fa-solid fa-rotate"></i> <span class="hide-mobile" id="sync-label">${label}</span>`;
     btn.disabled = false;
   }
 }
@@ -4870,6 +4982,12 @@ function initEventListeners() {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
+
+  // Dual-Engine Switchers (Supabase Singapore <-> Google Spreadsheet)
+  document.getElementById('btn-engine-toggle')?.addEventListener('click', toggleEngine);
+  document.getElementById('engine-status')?.addEventListener('click', toggleEngine);
+  document.getElementById('btn-engine-switch-user')?.addEventListener('click', toggleEngine);
+  document.getElementById('gate-engine-toggle')?.addEventListener('click', toggleEngine);
 
   const projectBadge = document.getElementById('project-badge');
   if (projectBadge) {

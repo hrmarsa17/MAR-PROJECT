@@ -22,9 +22,11 @@
             <span class="brand-title">Mechanic Activity Report</span>
             <span class="brand-badge" id="project-badge" style="cursor: pointer; user-select: none;" title="Klik untuk beralih sistem (KMB / SUM)">PROJEK KMB</span>
           </div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
-            <i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i>
-            <span id="engine-status"><i class="fa-solid fa-circle" style="color: #10B981; font-size: 8px;"></i> SUPABASE LIVE (PostgreSQL)</span>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px;">
+            <button type="button" id="btn-engine-toggle" class="engine-toggle-badge" title="Klik untuk beralih antara Supabase & Google Spreadsheet" style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 14px; padding: 2px 9px; font-size: 11px; font-weight: 700; color: #065F46; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;">
+              <span id="engine-status"><i class="fa-solid fa-bolt" style="color: #10B981; font-size: 8px;"></i> SUPABASE LIVE (PostgreSQL)</span>
+              <span class="switch-tag" style="font-size: 10px; color: #059669; font-weight: 800; background: rgba(16,185,129,0.15); padding: 1px 5px; border-radius: 8px; margin-left: 2px;">⇄ Ke Sheets</span>
+            </button>
           </div>
         </div>
       </div>
@@ -35,7 +37,9 @@
           <div class="user-name" id="profile-name">Mekanik</div>
           <div class="user-role-badge role-mechanic" id="profile-role">MECHANIC</div>
         </div>
-        <button class="btn-token-switch" id="btn-sync-spreadsheet" title="Tarik data terbaru dari Supabase" style="margin-right: 6px; background: #E8F5E9; border-color: #C8E6C9; color: #2E7D32;"><i class="fa-solid fa-rotate"></i> <span class="hide-mobile">Sync Supabase</span></button><button class="btn-token-switch" id="btn-switch-token" title="Ganti Akun / Token">
+        <button class="btn-token-switch" id="btn-sync-spreadsheet" title="Tarik data terbaru" style="margin-right: 6px; background: #E8F5E9; border-color: #C8E6C9; color: #2E7D32;"><i class="fa-solid fa-rotate"></i> <span class="hide-mobile" id="sync-label">Sync Supabase</span></button>
+        <button class="btn-token-switch" id="btn-engine-switch-user" title="Klik untuk beralih backend database (Supabase / Google Sheets)" style="margin-right: 6px;"><i class="fa-solid fa-database"></i> <span class="hide-mobile" id="user-engine-label">Ke Sheets</span></button>
+        <button class="btn-token-switch" id="btn-switch-token" title="Ganti Akun / Token">
           <i class="fa-solid fa-arrow-right-from-bracket"></i>
           <span class="hide-mobile">Ganti Token</span>
         </button>
@@ -888,12 +892,20 @@
       </p>
 
       <!-- System Selector (KMB / SUM) -->
-      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 12px;">
         <button type="button" class="btn" id="gate-sys-kmb" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #10B981; color: #fff; border: 1px solid #10B981; cursor: pointer;">
           Projek KMB
         </button>
         <button type="button" class="btn" id="gate-sys-sum" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; cursor: pointer;">
           Projek SUM
+        </button>
+      </div>
+
+      <!-- Engine Selector (Supabase / Spreadsheet) -->
+      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 16px;">
+        <span style="font-size: 12px; color: #6B7280; font-weight: 600;">Engine:</span>
+        <button type="button" id="gate-engine-toggle" style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 14px; padding: 3px 12px; font-size: 11px; font-weight: 700; color: #065F46; cursor: pointer; transition: all 0.2s;">
+          ⚡ Supabase Live (Postgres) <span style="font-size: 10px; opacity: 0.8;">⇄ Ke Sheets</span>
         </button>
       </div>
 

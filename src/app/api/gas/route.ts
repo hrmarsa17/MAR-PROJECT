@@ -61,15 +61,29 @@ export async function POST(req: Request) {
       system = headerSystem.toUpperCase();
     }
 
+    const reqUrl = new URL(req.url);
+    const reqEngine = (
+      req.headers.get('x-active-engine') ||
+      reqUrl.searchParams.get('engine') ||
+      data?.engine ||
+      'SUPABASE'
+    ).toUpperCase();
+
+    const isSupabaseSelected =
+      (reqEngine === 'SUPABASE' || reqEngine === 'POSTGRES') &&
+      reqEngine !== 'SPREADSHEET' &&
+      reqEngine !== 'SHEETS' &&
+      reqEngine !== 'GAS';
+
     // =========================================================================
-    // JALUR SUPABASE (Aktif saat BACKEND_DRIVER=supabase)
+    // JALUR SUPABASE (Aktif saat engine=SUPABASE dan saklar aktif)
     // Sesuai Tahap 4: Aksi baca dialihkan ke Supabase Cermin
     // =========================================================================
-    if (!pakaiAppsScript()) {
+    if (isSupabaseSelected && !pakaiAppsScript()) {
       if (action === 'ping' && token) {
         const pingRes = await bacaPingSupabase(token, system);
         return Response.json(pingRes, {
-          headers: { 'Access-Control-Allow-Origin': '*', 'X-MAR-Backend': 'SUPABASE' },
+          headers: { 'Access-Control-Allow-Origin': '*', 'X-MAR-Backend': 'SUPABASE', 'X-Active-Engine': 'SUPABASE' },
         });
       }
 
@@ -143,6 +157,7 @@ export async function POST(req: Request) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'X-MAR-Backend': 'GAS',
+        'X-Active-Engine': 'SPREADSHEET',
       },
     });
   } catch (err: any) {

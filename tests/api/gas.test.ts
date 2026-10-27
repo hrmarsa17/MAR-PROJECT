@@ -87,4 +87,36 @@ describe('POST /api/gas (Dual Engine Gateway)', () => {
     expect(json.source).toBe('SUPABASE');
     expect(json.result.refs.units.length).toBe(1);
   });
+
+  it('beralih langsung ke Google Sheets (GAS) saat X-Active-Engine: SPREADSHEET diminta', async () => {
+    // Mock global fetch for GAS endpoint
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => ({
+      status: 200,
+      json: async () => ({ success: true, source: 'SPREADSHEET', result: { ping: 'ok from sheets' } }),
+    })) as any;
+
+    try {
+      const req = new Request('http://localhost/api/gas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Active-Engine': 'SPREADSHEET',
+        },
+        body: JSON.stringify({ token: '52fdb552231348ffb14a', action: 'ping' }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('X-Active-Engine')).toBe('SPREADSHEET');
+      expect(res.headers.get('X-MAR-Backend')).toBe('GAS');
+
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.source).toBe('SPREADSHEET');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
+

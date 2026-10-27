@@ -2,9 +2,20 @@ import fs from 'fs';
 
 let workerCode = fs.readFileSync('worker.js', 'utf8');
 
-// 1. Update Dual-Engine Router in worker.js
-const oldHandlerStart = "    if (pathname === 'api/gas' && request.method === 'POST') {";
-const oldHandlerEnd = "        return new Response(gasJson, {\n          status: gasRes.status,\n          headers: {\n            'Content-Type': 'application/json; charset=utf-8',\n            'Cache-Control': 'no-cache, no-store, must-revalidate',\n            'Access-Control-Allow-Origin': '*',\n            'X-Target-System': targetSystem\n          }\n        });";
+// Normalize line endings
+workerCode = workerCode.replace(/\r\n/g, '\n');
+
+// 1. Locate the entire /api/gas POST block up to `// Serve CSS`
+const startMarker = "    if (pathname === 'api/gas' && request.method === 'POST') {";
+const endMarker = "    // Serve CSS";
+
+const startIdx = workerCode.indexOf(startMarker);
+const endIdx = workerCode.indexOf(endMarker);
+
+if (startIdx === -1 || endIdx === -1) {
+  console.error('❌ Could not locate /api/gas or Serve CSS marker:', { startIdx, endIdx });
+  process.exit(1);
+}
 
 const newRouterCode = `    if (pathname === 'api/gas' && request.method === 'POST') {
       try {
@@ -48,11 +59,23 @@ const newRouterCode = `    if (pathname === 'api/gas' && request.method === 'POS
         const supabaseUrl = env?.SUPABASE_URL || 'https://sptgqsjgszwbreikxdph.supabase.co';
         const supabaseKey = env?.SUPABASE_ANON_KEY || 'sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3';
 
+        // DETEKSI ENGINE PILIHAN USER (Bisa di-switch kapan saja via UI badge atau query ?engine=...)
+        const reqEngine = (
+          request.headers.get('x-active-engine') ||
+          url.searchParams.get('engine') ||
+          parsedData.engine ||
+          env?.STORAGE_MODE ||
+          'SUPABASE'
+        ).toUpperCase();
+
+        const isSupabaseSelected = (reqEngine === 'SUPABASE' || reqEngine === 'POSTGRES') && (reqEngine !== 'SPREADSHEET' && reqEngine !== 'SHEETS' && reqEngine !== 'GAS');
+
         // =========================================================================
         // SUPABASE DUAL-ENGINE READ ROUTER (KMB Project)
         // Sub-50ms reads from live Supabase Singapore
+        // Aktif bila engine adalah SUPABASE
         // =========================================================================
-        if (targetSystem === 'KMB' && supabaseUrl && supabaseKey) {
+        if (isSupabaseSelected && targetSystem === 'KMB' && supabaseUrl && supabaseKey) {
           const supaHeaders = {
             'apikey': supabaseKey,
             'Authorization': 'Bearer ' + supabaseKey,
@@ -129,6 +152,10 @@ const newRouterCode = `    if (pathname === 'api/gas' && request.method === 'POS
           }
         }
 
+        // =========================================================================
+        // GOOGLE SPREADSHEET / APPS SCRIPT LIVE ROUTER
+        // Langsung ke Google Sheets saat SPREADSHEET dipilih atau jika fallback
+        // =========================================================================
         const targetGasUrl = targetSystem === 'SUM'
           ? (env?.APPSCRIPT_URL_SUM || GAS_URLS.SUM)
           : (env?.APPSCRIPT_URL_KMB || env?.APPSCRIPT_URL || GAS_URLS.KMB);
@@ -146,25 +173,27 @@ const newRouterCode = `    if (pathname === 'api/gas' && request.method === 'POS
             'Content-Type': 'application/json; charset=utf-8',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Access-Control-Allow-Origin': '*',
-            'X-Active-Engine': 'GAS',
+            'X-Active-Engine': isSupabaseSelected ? 'SUPABASE_FALLBACK_SPREADSHEET' : 'SPREADSHEET',
             'X-Target-System': targetSystem
           }
-        });`;
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+    }
 
-// Normalize line endings to LF for replacement
-const normalizedWorker = workerCode.replace(/\r\n/g, '\n');
-const startIdx = normalizedWorker.indexOf("    if (pathname === 'api/gas' && request.method === 'POST') {");
-const endTarget = "        return new Response(gasJson, {\n          status: gasRes.status,\n          headers: {\n            'Content-Type': 'application/json; charset=utf-8',\n            'Cache-Control': 'no-cache, no-store, must-revalidate',\n            'Access-Control-Allow-Origin': '*',\n            'X-Target-System': targetSystem\n          }\n        });";
-const endIdx = normalizedWorker.indexOf(endTarget);
+`;
 
-if (startIdx >= 0 && endIdx >= 0) {
-  const before = normalizedWorker.slice(0, startIdx);
-  const after = normalizedWorker.slice(endIdx + endTarget.length);
-  workerCode = before + newRouterCode + after;
-  console.log('✅ Successfully replaced /api/gas handler with Supabase Dual-Engine Router!');
-} else {
-  console.error('❌ Could not locate /api/gas block:', { startIdx, endIdx });
-}
+const before = workerCode.slice(0, startIdx);
+const after = workerCode.slice(endIdx);
+workerCode = before + newRouterCode + after;
+console.log('✅ Successfully replaced /api/gas handler with Dual-Engine Dynamic Router!');
 
 // 2. Pack assets from built-index.html, built-style.css, patched-app.js
 const html = fs.readFileSync('scripts/built-index.html', 'utf8');
@@ -182,4 +211,4 @@ workerCode = workerCode.replace(/'style\.css':\s*"[\s\S]*?",\s*'app\.js'/, `'sty
 workerCode = workerCode.replace(/'app\.js':\s*"[\s\S]*?",\s*'data\.js'/, `'app.js': ${jsonApp},\n  'data.js'`);
 
 fs.writeFileSync('worker.js', workerCode, 'utf8');
-console.log('🎉 Successfully created and packed final worker.js with Supabase Engine!');
+console.log('🎉 Successfully created and packed final worker.js with Dynamic Dual-Engine Switcher!');
