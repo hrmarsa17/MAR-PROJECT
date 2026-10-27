@@ -116,7 +116,8 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
 - **Token hanya diperiksa di server** (GAS atau Worker). Frontend tidak boleh membawa daftar token milik siapa pun.
 - Rahasia disimpan di **Cloudflare secrets** (`wrangler secret put`) atau **GitHub Actions secrets**. File `.env` tidak pernah di-commit.
 - Sebelum commit, periksa diff-mu. Pastikan tidak ada token, email orang, atau alamat database lengkap di dalamnya.
-- Token lama milik pengguna dipertahankan apa adanya, kecuali token yang pernah bocor. Token yang bocor wajib diganti.
+- Token lama milik pengguna dipertahankan apa adanya.
+- **Keputusan Gabriel, 27 Okt 2026:** repo boleh tetap publik, dan token serta data yang sudah ada di repo boleh tetap di tempatnya. Jangan mengganti token atau menghapus data itu atas inisiatif sendiri. Larangan di bagian ini berlaku untuk penambahan baru.
 
 ---
 

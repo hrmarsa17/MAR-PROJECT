@@ -16,9 +16,6 @@ Formatnya:
 
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
-| Jadikan repo privat (Settings → General → Danger Zone) | bersama | Gabriel | **mendesak** |
-| Keluarkan data produksi (token, nama, dan email mekanik) dari kode frontend dan bundle. Frontend tidak boleh membawa token siapa pun | kmb-projek | Raka | **mendesak** |
-| Ganti semua token yang pernah tersimpan di repo | kmb-projek | Gabriel + Raka | **mendesak** |
 | Konfirmasi region Supabase adalah Singapura | bersama | Gabriel | |
 | Konfirmasi bahwa spreadsheet `1qHjfIUT…` milik SUM V2 (script `1k_A_KER…`) | sum | Gabriel | |
 | Pindahkan kode MARProject ke cabang arsip, lalu bentuk susunan tiga rumah | bersama | Gabriel + Raka | |
@@ -26,6 +23,10 @@ Formatnya:
 | Inventaris perilaku per aksi | setiap rumah | pemegang rumah | |
 
 ---
+
+### 2026-10-27 · Gabriel + Claude · bersama (2)
+- Berubah: mencatat keputusan Gabriel bahwa repo tetap publik dan token yang ada tetap dipakai. Tiga tugas mendesak soal repo privat, data di bundle, dan penggantian token dihapus dari daftar tugas terbuka. `AGENTS.md` §4 dan `docs/KEPUTUSAN.md` disesuaikan.
+- Berikutnya: inventaris perilaku per rumah.
 
 ### 2026-10-27 · Gabriel + Claude · bersama
 - Berubah: menambah `AGENTS.md`, `CLAUDE.md`, `docs/KEPUTUSAN.md`, `docs/SAKLAR.md`, `docs/PROGRES.md`, dan `docs/BUG-DICATAT.md`. Tidak ada kode yang diubah.

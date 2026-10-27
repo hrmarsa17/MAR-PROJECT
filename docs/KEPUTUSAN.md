@@ -19,7 +19,8 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 | Okt 2026 | **Pindahkan dulu, perbaiki nanti.** Perilaku setiap sistem disalin persis, termasuk bug-nya. | Risiko terkecil untuk sistem yang dipakai menggaji orang. |
 | Okt 2026 | **Tiga rumah**, yaitu KMB V2, KMB Project, dan SUM V2, masing-masing dengan frontend dan backend sendiri. Raka memegang KMB Project. Gabriel memegang KMB V2 dan SUM V2. | Isolasi: perubahan di satu rumah tidak bisa menimpa rumah lain. |
 | Okt 2026 | Frontend setiap rumah adalah salinan 1:1 dari PWA lama rumah itu. | Mekanik tidak perlu belajar aplikasi baru. |
-| Okt 2026 | Token lama milik pengguna dipertahankan persis, kecuali token yang pernah bocor. | Mekanik tidak perlu mengetik apa pun saat pindah. |
+| Okt 2026 | Token lama milik pengguna dipertahankan persis. | Mekanik tidak perlu mengetik apa pun saat pindah. |
+| 27 Okt 2026 | Repo tetap publik. Token dan data yang sudah ada di repo tetap dipakai dan tidak diganti. | Keputusan Gabriel, yang menjamin keamanannya. |
 | Okt 2026 | **Model dua cabang dengan saklar per rumah** (lihat `docs/SAKLAR.md`). WO lama diselesaikan di GAS, WO baru lahir di Supabase. | Tidak ada WO yang dipindah di tengah jalan. |
 | Okt 2026 | Data hanya mengalir satu arah, dari spreadsheet ke Supabase. | Dua buku yang sama-sama ditulisi adalah sumber selisih. |
 | Okt 2026 | Riwayat payroll diimpor ke Supabase. File payroll yang sudah dibayar diimpor terpisah lalu dikunci. | Payroll bulan lalu harus bisa ditarik ulang tanpa angkanya berubah. |
