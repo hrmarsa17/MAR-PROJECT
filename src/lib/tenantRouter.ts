@@ -17,7 +17,7 @@ export interface TenantConfig {
 const TENANT_CONFIGS: Record<string, TenantConfig> = {
   KMB: {
     code: 'KMB',
-    name: 'KMB — Mechanic Activity Report',
+    name: 'KMB — KMB Project',
     homePath: '/monitoring',
     isActive: true,
   },
