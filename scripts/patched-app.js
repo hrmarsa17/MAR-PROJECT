@@ -3528,6 +3528,18 @@ function renderMechanicWoGrid() {
   container.innerHTML = html;
 }
 
+function formatJamMenit(h) {
+  h = parseFloat(h) || 0;
+  var j = Math.floor(h);
+  var m = Math.round((h - j) * 60);
+  if (m === 60) { j++; m = 0; }
+  if (j > 0 && m > 0) return j + ' jam ' + m + ' menit';
+  if (j > 0) return j + ' jam';
+  if (m > 0) return m + ' menit';
+  return '0 menit';
+}
+window.formatJamMenit = formatJamMenit;
+
 function renderWoCardHtml(wo, nomor) {
   const isIncident = (wo.safety_incident === true || wo.safety_incident === 'true');
   const st = String(wo.status || '');
