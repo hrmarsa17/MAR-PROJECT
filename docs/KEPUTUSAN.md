@@ -15,7 +15,7 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 | Okt 2026 | **Satu alamat untuk semua pengguna.** Perusahaan, site, dan peran ditentukan oleh token. Tidak ada nama perusahaan di alamat. | Tidak perlu pindah alamat lagi setelah tahap penyatuan. |
 | Okt 2026 | Staging berada di `staging.abadiops.com`. | Untuk uji tanpa menyentuh produksi. |
 | Okt 2026 | Akun GitHub, Cloudflare, dan Supabase atas nama kawanabadigrup, dipakai bersama oleh Gabriel dan Raka. | Diterima. Penanda siapa yang mengerjakan dibuat lewat `git config user.name`, awalan pesan commit, dan `docs/PROGRES.md`. |
-| Okt 2026 | Project Supabase: `sptgqsjgszwbreikxdph`. Region wajib Singapura (**perlu dikonfirmasi**). | Dekat dengan pengguna. Region tidak bisa diubah setelah project dibuat. |
+| Okt 2026 | Project Supabase: `sptgqsjgszwbreikxdph`. Region Singapura (**terkonfirmasi `ap-southeast-1`**). | Dekat dengan pengguna. Region tidak bisa diubah setelah project dibuat. |
 | Okt 2026 | **Pindahkan dulu, perbaiki nanti.** Perilaku setiap sistem disalin persis, termasuk bug-nya. | Risiko terkecil untuk sistem yang dipakai menggaji orang. |
 | Okt 2026 | **Tiga rumah**, yaitu KMB V2, KMB Project, dan SUM V2, masing-masing dengan frontend dan backend sendiri. Raka memegang KMB Project. Gabriel memegang KMB V2 dan SUM V2. | Isolasi: perubahan di satu rumah tidak bisa menimpa rumah lain. |
 | Okt 2026 | Frontend setiap rumah adalah salinan 1:1 dari PWA lama rumah itu. | Mekanik tidak perlu belajar aplikasi baru. |

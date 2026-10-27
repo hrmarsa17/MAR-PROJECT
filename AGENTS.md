@@ -85,7 +85,7 @@ Tiap rumah punya frontend dan backend sendiri.
 | Pemegang | Gabriel | **Raka** | Gabriel |
 | Frontend asal (PWA) | `mar-offline` | `mar-projek-offline` | `mar-sum-offline` |
 | Backend sekarang (GAS `/exec`) | `AKfycbwlwlQv…` | `AKfycbxh4086…` | `AKfycbzB5EUJ…` |
-| Spreadsheet | `1ehnxDlv…` | `1lnJo74O…` | `1qHjfIUT…` (perlu dikonfirmasi: script `1k_A_KER…`) |
+| Spreadsheet | `1ehnxDlv…` | `1lnJo74O…` | `1qHjfIUT…` (terkonfirmasi: script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Backend yang disiapkan | Supabase skema `kmb` | skema `kmb_projek` | skema `sum` |
 
 Aturan rumah:
