@@ -1050,6 +1050,47 @@
     </div>
   </div>
 
+  <!-- MODAL APPROVE WO (L1 & L2: safety incident & redo) -->
+  <div class="modal-backdrop" id="approveModal" onclick="if(event.target===this)window.closeApproveModal()">
+    <div class="modal" style="max-width: 480px; width: 100%;">
+      <div class="modal-header">
+        <div class="modal-title">✓ Approve Work Order</div>
+        <button type="button" class="modal-close" onclick="window.closeApproveModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 0.4rem; color: #374151; font-size: 15px;">
+          WO: <strong id="approveWoNumber">-</strong>
+        </p>
+        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: #6b7280;" id="approveLevelText">-</p>
+
+        <div id="approveKeteranganBlock" style="margin-bottom: 1rem; text-align: left; background: #f9fafb; padding: 0.75rem; border-radius: 6px; border: 1px solid #e5e7eb; display: none;">
+          <div style="font-weight: 700; font-size: 0.75rem; text-transform: uppercase; color: #6b7280; margin-bottom: 0.25rem;">📝 KETERANGAN:</div>
+          <div id="approveKeteranganText" style="color: #4b5563; font-size: 0.875rem; white-space: pre-wrap; line-height: 1.4;"></div>
+        </div>
+
+        <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 1rem; background: #fef2f2; border: 2px solid #fecaca; border-radius: 8px; cursor: pointer; user-select: none;">
+          <input type="checkbox" id="approveSafetyCheck" style="margin-top: 0.2rem; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: #dc2626;">
+          <span style="font-size: 0.875rem; color: #991b1b; line-height: 1.4;">
+            <strong style="display: block; font-size: 14px;">⚠️ Ada safety incident pada WO ini</strong>
+            <span id="approveSafetyHint" style="display: block; font-weight: 400; margin-top: 0.25rem; font-size: 12px; color: #b91c1c;"></span>
+          </span>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 1rem; background: #fffbeb; border: 2px solid #fde68a; border-radius: 8px; cursor: pointer; margin-top: 0.75rem; user-select: none;">
+          <input type="checkbox" id="approveMtbfRedoCheck" style="margin-top: 0.2rem; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: #d97706;">
+          <span style="font-size: 0.875rem; color: #92400e; line-height: 1.4;">
+            <strong style="display: block; font-size: 14px;">🔧 Pekerjaan ini REDO (perbaikan ulang)</strong>
+            <span id="approveMtbfHint" style="display: block; font-weight: 400; margin-top: 0.25rem; font-size: 12px; color: #b45309;"></span>
+          </span>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel-modal" onclick="window.closeApproveModal()">Batal</button>
+        <button type="button" class="btn-save" id="approveConfirmBtn" style="background: #4F633F;" onclick="window.confirmApproveWO()">✓ Konfirmasi Approve</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 

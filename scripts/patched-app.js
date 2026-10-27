@@ -2159,6 +2159,8 @@ function transformGasWo(w, defaultStatus) {
     location: w.location || 'workshop',
     work_condition: w.work_condition || 'normal',
     keterangan: w.keterangan || '',
+    safety_incident: (w.safety_incident === true || String(w.safety_incident).toLowerCase() === 'true'),
+    mtbf_redo_status: w.mtbf_redo_status || w.mtbf_status || 'first_time',
     base_points: Number(w.base_points || 0),
     unit_factor: Number(w.unit_factor || 1),
     actual_hours: Number(w.actual_hours || 0),
@@ -4445,37 +4447,166 @@ window.holdWo = function(woId) {
   showToast('WO ' + woId + ' ditahan sementara.', 'warning');
 };
 
-window.approveWo = async function(woNumber) {
+let currentApproveWo = null;
+
+window.approveWo = function(woNumber) {
   const role = (state.currentUser?.role || 'supervisor').toLowerCase();
   const isSuperintendent = role === 'superintendent' || role === 'manager';
-  const wo = state.workOrders.find(w => w.id === woNumber) || 
-             state.pendingL2Wos?.find(w => w.id === woNumber) || 
-             state.pendingL1Wos?.find(w => w.id === woNumber);
-  const woIdToSend = wo?.raw_id || woNumber;
+  
+  const wo = (state.workOrders || []).find(w => String(w.id) === String(woNumber) || String(w.wo_number) === String(woNumber)) || 
+             (state.pendingL2Wos || []).find(w => String(w.id) === String(woNumber) || String(w.wo_number) === String(woNumber)) || 
+             (state.pendingL1Wos || []).find(w => String(w.id) === String(woNumber) || String(w.wo_number) === String(woNumber));
+
+  if (!wo) {
+    showToast('WO ' + woNumber + ' tidak ditemukan.', 'warning');
+    return;
+  }
+  currentApproveWo = wo;
+
+  const modal = document.getElementById('approveModal');
+  if (!modal) {
+    console.error('#approveModal not found');
+    return;
+  }
+
+  const woNumEl = document.getElementById('approveWoNumber');
+  if (woNumEl) woNumEl.textContent = wo.wo_number || wo.id || woNumber;
+
+  const lvlEl = document.getElementById('approveLevelText');
+  if (lvlEl) {
+    lvlEl.textContent = isSuperintendent
+      ? 'Approval Final (Layer 2) — poin akan dihitung & didistribusikan.'
+      : 'Approval Level 1 — WO akan diteruskan ke Layer 2.';
+  }
+
+  const ketBlock = document.getElementById('approveKeteranganBlock');
+  const ketText = document.getElementById('approveKeteranganText');
+  const ketContent = (wo.keterangan || wo.notes || wo.Keterangan || '').trim();
+  if (ketBlock && ketText) {
+    if (ketContent) {
+      ketText.textContent = ketContent;
+      ketBlock.style.display = 'block';
+    } else {
+      ketBlock.style.display = 'none';
+    }
+  }
+
+  const sHint = document.getElementById('approveSafetyHint');
+  if (sHint) {
+    sHint.textContent = isSuperintendent
+      ? 'Jika dicentang, poin WO ini otomatis menjadi 0.'
+      : 'Centang sebagai info ke layer berikutnya bahwa terjadi insiden. Poin belum dipotong di tahap ini.';
+  }
+  const sCheck = document.getElementById('approveSafetyCheck');
+  if (sCheck) {
+    sCheck.checked = (wo.safety_incident === true || String(wo.safety_incident).toLowerCase() === 'true');
+  }
+
+  const rHint = document.getElementById('approveMtbfHint');
+  if (rHint) {
+    rHint.textContent = isSuperintendent
+      ? 'Jika REDO, poin dikali faktor redo. Jika first-time, dikali faktor first-time (lihat Config_Factors).'
+      : 'Tandai jika ini pekerjaan ulang (info untuk Layer 2). Keputusan final di Layer 2.';
+  }
+  const rCheck = document.getElementById('approveMtbfRedoCheck');
+  if (rCheck) {
+    rCheck.checked = (wo.mtbf_redo_status === 'redo' || wo.mtbf_status === 'redo');
+  }
+
+  const btnConfirm = document.getElementById('approveConfirmBtn');
+  if (btnConfirm) {
+    btnConfirm.disabled = false;
+    btnConfirm.textContent = '✓ Konfirmasi Approve';
+  }
+
+  modal.classList.add('show');
+};
+
+window.closeApproveModal = function() {
+  const modal = document.getElementById('approveModal');
+  if (modal) modal.classList.remove('show');
+  currentApproveWo = null;
+};
+
+window.confirmApproveWO = async function() {
+  if (!currentApproveWo) return;
+  const wo = currentApproveWo;
+  const woNumber = wo.wo_number || wo.id;
+  const woIdToSend = wo.raw_id || wo.id || woNumber;
+  const role = (state.currentUser?.role || 'supervisor').toLowerCase();
+  const isSuperintendent = role === 'superintendent' || role === 'manager';
   const action = isSuperintendent ? 'approve_l2' : 'approve_l1';
+
+  const sCheck = document.getElementById('approveSafetyCheck');
+  const safetyIncident = sCheck ? sCheck.checked : false;
+
+  const rCheck = document.getElementById('approveMtbfRedoCheck');
+  const mtbfStatus = (rCheck && rCheck.checked) ? 'redo' : 'first_time';
+
+  const btnConfirm = document.getElementById('approveConfirmBtn');
+  if (btnConfirm) {
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = '⏳ Mengesahkan...';
+  }
+
   showToast('⏳ Mengirim persetujuan ' + woNumber + ' ke Google Spreadsheet...', 'info');
 
-  const res = await api(action, { wo_id: woIdToSend });
-  if (res.success) {
-    if (isSuperintendent) {
-      showToast('✅ WO ' + woNumber + ' disetujui penuh (Approved) di Google Spreadsheet!', 'success');
-      if (wo) wo.status = 'APPROVED';
-      state.pendingL2Wos = (state.pendingL2Wos || []).filter(w => w.id !== woNumber);
-      if (wo && !state.approvedWos.some(w => w.id === wo.id)) state.approvedWos.unshift(wo);
+  try {
+    const res = await api(action, {
+      wo_id: woIdToSend,
+      safety_incident: safetyIncident,
+      mtbf_status: mtbfStatus,
+      notes: ''
+    });
+
+    if (res && res.success) {
+      window.closeApproveModal();
+      if (isSuperintendent) {
+        let msg = '✅ WO ' + woNumber + ' disetujui penuh (Approved) di Google Spreadsheet!';
+        if (safetyIncident) msg += ' (⚠️ Safety Incident: Poin = 0)';
+        if (mtbfStatus === 'redo') msg += ' (🔧 REDO)';
+        showToast(msg, 'success');
+        if (wo) wo.status = 'APPROVED';
+        wo.safety_incident = safetyIncident;
+        wo.mtbf_redo_status = mtbfStatus;
+        state.pendingL2Wos = (state.pendingL2Wos || []).filter(w => (String(w.id) !== String(wo.id) && String(w.wo_number) !== String(woNumber)));
+        if (!state.approvedWos.some(w => (String(w.id) === String(wo.id) || String(w.wo_number) === String(woNumber)))) {
+          state.approvedWos.unshift(wo);
+        }
+      } else {
+        let msg = '✅ WO ' + woNumber + ' disetujui di Google Spreadsheet! (Lanjut ke Superintendent L2)';
+        if (safetyIncident) msg += ' (⚠️ Dicatat Insiden)';
+        if (mtbfStatus === 'redo') msg += ' (🔧 Ditandai REDO)';
+        showToast(msg, 'success');
+        if (wo) wo.status = 'PENDING_L2';
+        wo.safety_incident = safetyIncident;
+        wo.mtbf_redo_status = mtbfStatus;
+        state.pendingL1Wos = (state.pendingL1Wos || []).filter(w => (String(w.id) !== String(wo.id) && String(w.wo_number) !== String(woNumber)));
+        if (!state.pendingL2Wos.some(w => (String(w.id) === String(wo.id) || String(w.wo_number) === String(woNumber)))) {
+          state.pendingL2Wos.unshift(wo);
+        }
+      }
+      state.selectedWoIds.delete(woNumber);
+      state.selectedWoIds.delete(wo.id);
+      updateBulkApproveBtn();
+      saveCachedSpreadsheetData();
+      renderApprovals();
+      renderDashboard();
+      renderMonitoring();
     } else {
-      showToast('✅ WO ' + woNumber + ' disetujui di Google Spreadsheet! (Lanjut ke Superintendent L2)', 'success');
-      if (wo) wo.status = 'PENDING_L2';
-      state.pendingL1Wos = (state.pendingL1Wos || []).filter(w => w.id !== woNumber);
-      if (wo && !state.pendingL2Wos.some(w => w.id === wo.id)) state.pendingL2Wos.unshift(wo);
+      const errMsg = (res && res.error && res.error.message) || (res && res.error) || 'Gagal menyetujui';
+      showToast('❌ Gagal menyetujui: ' + errMsg, 'danger');
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '✓ Konfirmasi Approve';
+      }
     }
-    state.selectedWoIds.delete(woNumber);
-    updateBulkApproveBtn();
-    saveCachedSpreadsheetData();
-    renderApprovals();
-    renderDashboard();
-    renderMonitoring();
-  } else {
-    showToast('❌ Gagal menyetujui: ' + (res.error || 'Server error'), 'danger');
+  } catch (err) {
+    showToast('❌ Kesalahan jaringan: ' + err.message, 'danger');
+    if (btnConfirm) {
+      btnConfirm.disabled = false;
+      btnConfirm.textContent = '✓ Konfirmasi Approve';
+    }
   }
 };
 
