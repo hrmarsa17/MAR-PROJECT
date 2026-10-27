@@ -78,6 +78,7 @@ export function muatEnv(): void {
     /* .env tetap dibaca sesudahnya, untuk kunci yang tidak ada di .env.jauh.
        Yang sudah terisi tidak ditimpa, jadi .env.jauh tetap menang. */
   }
+  bacaKe(resolve(process.cwd(), '.env.local'));
   bacaKe(resolve(process.cwd(), '.env'));
 }
 

@@ -22,6 +22,60 @@ export async function identitasDariTokenSupabase(
     targetSql = dapatkanSql('KMB');
   }
   const q = tx ?? targetSql;
+
+  // Coba resolusi dari skema cermin kmb_projek terlebih dahulu
+  try {
+    const supaRows = await q<
+      {
+        user_id: string;
+        name: string;
+        role: string;
+        email: string | null;
+        section: string | null;
+      }[]
+    >`
+      SELECT t.user_id, t.name, t.role, m.email, m.section
+        FROM kmb_projek.api_tokens t
+        LEFT JOIN kmb_projek.config_mechanics m ON t.user_id = m.mechanic_id
+       WHERE t.token = ${token.trim()}
+         AND t.status = 'ACTIVE'
+       LIMIT 1
+    `;
+
+    if (supaRows[0]) {
+      const sr = supaRows[0];
+      const peranRaw = sr.role?.toLowerCase() || 'mechanic';
+      let peran: Identitas['peran'] = 'mechanic';
+      if (peranRaw === 'superintendent' || peranRaw === 'manager' || peranRaw === 'l2') {
+        peran = 'superintendent';
+      } else if (peranRaw === 'supervisor' || peranRaw === 'planner' || peranRaw === 'l1' || peranRaw === 'foreman') {
+        peran = 'supervisor';
+      }
+      const isL2 = peran === 'superintendent';
+      const isL1 = peran === 'supervisor';
+
+      const numMatch = sr.user_id?.match(/\d+/);
+      const rawId = numMatch ? parseInt(numMatch[0], 10) : 1;
+      const mechanicId = Number.isSafeInteger(rawId) && rawId > 0 ? rawId : 1;
+
+      return {
+        mechanicId,
+        tenantId: s === 'SUM' ? 2 : 1,
+        tenantCode: s || 'KMB',
+        nama: sr.name,
+        peran,
+        bolehLihat: {
+          performa: isL2 || isL1,
+          teknis: isL2 || isL1,
+          report: isL2 || isL1,
+        },
+        bolehAdmin: isL2,
+      };
+    }
+  } catch (_) {
+    // Abaikan dan coba kueri skema alternatif di bawah
+  }
+
   const baris = await q<
     {
       mechanic_id: number; tenant_id: number; tenant_code: string; name: string; role: string;

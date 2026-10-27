@@ -17,6 +17,12 @@ import {
 } from '../../domain/kueriWoMekanik.js';
 import { bekalForm, detailUntukWo } from '../../domain/kueriDetailForm.js';
 
+import {
+  bacaCreateRefsSupabase,
+  bacaMonitoringSupabase,
+  bacaMyWosSupabase,
+} from '../../lib/supabaseCerminReader.js';
+
 /**
  * Handler utama pembacaan data via database PostgreSQL / Supabase.
  */
@@ -30,10 +36,24 @@ export async function handleDataSupabase(
       return aku;
     case 'antrean':
       return await antreanApproval(aku);
-    case 'wo_saya':
+    case 'wo_saya': {
+      try {
+        const wos = await bacaMyWosSupabase(String(aku.mechanicId), aku.tenantCode);
+        if (wos.success && wos.result?.wos) {
+          return wos.result.wos;
+        }
+      } catch (_) {}
       return await woSaya(aku);
-    case 'katalog':
+    }
+    case 'katalog': {
+      try {
+        const refs = await bacaCreateRefsSupabase(aku.tenantCode);
+        if (refs.success && refs.result?.refs) {
+          return refs.result.refs;
+        }
+      } catch (_) {}
       return await katalog(aku);
+    }
 
     case 'approval': {
       if (aku.peran === 'mechanic') throw tidakBerhak('Layar ini untuk L1 dan L2.');
@@ -57,6 +77,13 @@ export async function handleDataSupabase(
     }
 
     case 'monitoring': {
+      try {
+        const mon = await bacaMonitoringSupabase(aku.tenantCode);
+        if (mon.success && mon.result) {
+          return mon.result;
+        }
+      } catch (_) {}
+
       const minta = url.searchParams.get('as');
       const sebagai = aku.peran === 'mechanic'
         ? aku.mechanicId
