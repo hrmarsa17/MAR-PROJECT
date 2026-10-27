@@ -92,33 +92,36 @@ BEGIN
     FROM kmb_projek.config_components c
     WHERE c.status = 'ACTIVE';
 
-    -- Jobs per section
+    -- Jobs per section (1:1 GAS format from catalog_jobs)
     SELECT coalesce(json_agg(json_build_object(
-        'job_code', c.component_id,
-        'job_name', c.name,
-        'target_hours', 4
-    )), '[]'::json)
+        'job_id', j.job_id,
+        'unit_model', j.unit_model,
+        'component', j.component,
+        'sub_component', j.sub_component,
+        'job_description', j.job_description,
+        'plan_hours', j.plan_hours,
+        'base_point', j.base_point,
+        'job_type', j.job_type
+    ) ORDER BY j.component, j.sub_component, j.job_description), '[]'::json)
     INTO v_jobs_field
-    FROM kmb_projek.config_components c
-    WHERE c.status = 'ACTIVE' AND (c.section = 'field' OR c.section IS NULL);
+    FROM kmb_projek.catalog_jobs j
+    WHERE j.section = 'maintenance' AND j.status = 'ACTIVE';
+
+    SELECT '[]'::json INTO v_jobs_workshop;
 
     SELECT coalesce(json_agg(json_build_object(
-        'job_code', c.component_id,
-        'job_name', c.name,
-        'target_hours', 4
-    )), '[]'::json)
-    INTO v_jobs_workshop
-    FROM kmb_projek.config_components c
-    WHERE c.status = 'ACTIVE' AND c.section = 'workshop';
-
-    SELECT coalesce(json_agg(json_build_object(
-        'job_code', c.component_id,
-        'job_name', c.name,
-        'target_hours', 4
-    )), '[]'::json)
+        'job_id', j.job_id,
+        'unit_model', j.unit_model,
+        'component', j.component,
+        'sub_component', j.sub_component,
+        'job_description', j.job_description,
+        'plan_hours', j.plan_hours,
+        'base_point', j.base_point,
+        'job_type', j.job_type
+    ) ORDER BY j.component, j.sub_component, j.job_description), '[]'::json)
     INTO v_jobs_vessel
-    FROM kmb_projek.config_components c
-    WHERE c.status = 'ACTIVE' AND c.section = 'vessel';
+    FROM kmb_projek.catalog_jobs j
+    WHERE j.section = 'vessel' AND j.status = 'ACTIVE';
 
     -- Factors
     SELECT coalesce(json_agg(json_build_object(
@@ -134,7 +137,7 @@ BEGIN
         'source', 'SUPABASE',
         'result', json_build_object(
             'refs', json_build_object(
-                'sections', json_build_array('maintenance', 'vessel', 'field', 'workshop'),
+                'sections', json_build_array('vessel', 'maintenance'),
                 'units', coalesce(v_units, '[]'::json),
                 'mechanics', coalesce(v_mechs, '[]'::json),
                 'components', coalesce(v_comps, '[]'::json),
@@ -142,7 +145,11 @@ BEGIN
                 'jobs_workshop', v_jobs_workshop,
                 'jobs_vessel', v_jobs_vessel,
                 'factors', v_factors,
-                'work_conditions', json_build_array('NORMAL', 'OVERTIME', 'EMERGENCY')
+                'work_conditions', json_build_array(
+                    json_build_object('key', 'normal', 'label', 'Shift 1', 'factor', 1),
+                    json_build_object('key', 'difficult', 'label', 'Shift 2', 'factor', 1.1),
+                    json_build_object('key', 'extreme', 'label', 'Kondisi Ekstrim', 'factor', 1.2)
+                )
             ),
             'pulled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF')
         )
