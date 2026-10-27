@@ -1881,7 +1881,7 @@ async function api(action, data = {}, opId = null, customToken = null) {
 // Load cached refs from previous session
 function loadCachedSpreadsheetData() {
   try {
-    const cached = localStorage.getItem('kmb_gas_refs_v7') || localStorage.getItem('kmb_gas_refs_v6');
+    const cached = localStorage.getItem('kmb_gas_refs_v8') || localStorage.getItem('kmb_gas_refs_v7');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed.units) && parsed.units.length > 0) state.units = parsed.units;
@@ -1904,7 +1904,7 @@ function loadCachedSpreadsheetData() {
 
 function saveCachedSpreadsheetData() {
   try {
-    localStorage.setItem('kmb_gas_refs_v7', JSON.stringify({
+    localStorage.setItem('kmb_gas_refs_v8', JSON.stringify({
       units: state.units,
       mechanics: state.mechanics,
       components: state.components,
@@ -2430,23 +2430,39 @@ function setupModelPembuatanHandlers() {
   document.getElementById('btn-submit-all-wos').addEventListener('click', submitAllWorkOrders);
 }
 
-// Filter unit list per section using Spreadsheet units
-function getAvailableUnits(section, showAll) {
-  if (showAll) return state.units;
+// Filter unit list per section using Spreadsheet units, optionally filtered by locked job
+function getAvailableUnits(section, showAll, lockedJobId) {
+  let units = showAll ? [...state.units] : [];
   const sec = (section || '').toLowerCase();
-  if (sec === 'rekondisi') {
-    return state.units.filter(u => {
-      const scope = (u.unit_scope || '').toLowerCase();
-      const model = (u.unit_model || '').toLowerCase();
-      return scope.includes('vessel') || model.includes('vessel') || model.includes('dolly') || (!scope && !model);
-    });
-  } else {
-    return state.units.filter(u => {
-      const scope = (u.unit_scope || '').toLowerCase();
-      const model = (u.unit_model || '').toLowerCase();
-      return scope.includes('maintenance') || model.includes('hauler') || model.includes('engine') || model.includes('transmission');
-    });
+  if (!showAll) {
+    if (sec === 'rekondisi') {
+      units = state.units.filter(u => {
+        const scope = (u.unit_scope || '').toLowerCase();
+        const model = (u.unit_model || '').toLowerCase();
+        return scope.includes('vessel') || model.includes('vessel') || model.includes('dolly') || (!scope && !model);
+      });
+    } else {
+      units = state.units.filter(u => {
+        const scope = (u.unit_scope || '').toLowerCase();
+        const model = (u.unit_model || '').toLowerCase();
+        return scope.includes('maintenance') || model.includes('hauler') || model.includes('engine') || model.includes('transmission') || (!scope && !model);
+      });
+    }
   }
+
+  if (lockedJobId) {
+    const job = state.components.find(j => (j.job_id || j.id) === lockedJobId);
+    if (job && job.unit_model) {
+      const jm = job.unit_model.trim().toLowerCase();
+      const filtered = units.filter(u => {
+        const um = (u.unit_model || '').trim().toLowerCase();
+        return !um || um === jm;
+      });
+      if (filtered.length > 0) units = filtered;
+    }
+  }
+
+  return units;
 }
 
 // Distinct components available
@@ -2458,7 +2474,10 @@ function getAvailableComponents(unitId, section) {
   const unit = state.units.find(u => (u.unit_id || u.id) === unitId);
   if (unit && unit.unit_model) {
     const cleanModel = unit.unit_model.trim().toLowerCase();
-    const filtered = jobs.filter(j => (j.unit_model || '').trim().toLowerCase() === cleanModel);
+    const filtered = jobs.filter(j => {
+      const jm = (j.unit_model || '').trim().toLowerCase();
+      return !jm || jm === cleanModel;
+    });
     if (filtered.length > 0) jobs = filtered;
   }
   const comps = [...new Set(jobs.map(j => j.component).filter(Boolean))].sort();
@@ -2466,26 +2485,46 @@ function getAvailableComponents(unitId, section) {
 }
 
 // Distinct sub components available
-function getAvailableSubComponents(componentName, section) {
+function getAvailableSubComponents(componentName, section, unitId) {
   if (!componentName) return [];
   const isRekondisi = (section || '').toLowerCase() === 'rekondisi';
   const targetSection = isRekondisi ? 'rekondisi' : 'maintenance';
-  const filtered = state.components.filter(j => j.section === targetSection && j.component === componentName);
-  return [...new Set(filtered.map(j => j.sub_component).filter(Boolean))].sort();
+  let jobs = state.components.filter(j => j.section === targetSection && j.component === componentName);
+  const unit = state.units.find(u => (u.unit_id || u.id) === unitId);
+  if (unit && unit.unit_model) {
+    const cleanModel = unit.unit_model.trim().toLowerCase();
+    const filtered = jobs.filter(j => {
+      const jm = (j.unit_model || '').trim().toLowerCase();
+      return !jm || jm === cleanModel;
+    });
+    if (filtered.length > 0) jobs = filtered;
+  }
+  return [...new Set(jobs.map(j => j.sub_component).filter(Boolean))].sort();
 }
 
 // Distinct jobs available
-function getAvailableJobs(componentName, subComponentName, section) {
+function getAvailableJobs(componentName, subComponentName, section, unitId) {
   if (!componentName) return [];
   const isRekondisi = (section || '').toLowerCase() === 'rekondisi';
   const targetSection = isRekondisi ? 'rekondisi' : 'maintenance';
-  return state.components.filter(j => {
+  let jobs = state.components.filter(j => {
     if (j.section !== targetSection) return false;
     if (subComponentName) {
       return j.component === componentName && j.sub_component === subComponentName;
     }
     return j.component === componentName;
   });
+
+  const unit = state.units.find(u => (u.unit_id || u.id) === unitId);
+  if (unit && unit.unit_model) {
+    const cleanModel = unit.unit_model.trim().toLowerCase();
+    const filtered = jobs.filter(j => {
+      const jm = (j.unit_model || '').trim().toLowerCase();
+      return !jm || jm === cleanModel;
+    });
+    if (filtered.length > 0) jobs = filtered;
+  }
+  return jobs;
 }
 
 // RENDER ALL JOBLIST CARDS
@@ -2571,7 +2610,8 @@ function renderJoblists() {
     `;
 
     // Catalog Cascades
-    const availableUnits = getAvailableUnits(b.section, state.tampilSemuaUnit);
+    const lockedJobId = (state.grupMode === 'job' && state.joblists[0]?.jobId) || '';
+    const availableUnits = getAvailableUnits(b.section, state.tampilSemuaUnit, lockedJobId);
     let unitOptions = '<option value="">-- Pilih Unit --</option>';
     availableUnits.forEach(u => {
       const uId = u.unit_id || u.id;
@@ -2588,24 +2628,44 @@ function renderJoblists() {
       compOptions += `<option value="${c}" ${sel}>${c}</option>`;
     });
 
-    const availableSubs = getAvailableSubComponents(b.component, b.section);
+    const availableSubs = getAvailableSubComponents(b.component, b.section, b.unitId);
     let subOptions = '<option value="">-- Sub Component --</option>';
     availableSubs.forEach(s => {
       const sel = s === b.subComponent ? 'selected' : '';
       subOptions += `<option value="${s}" ${sel}>${s}</option>`;
     });
 
-    const availableJobs = getAvailableJobs(b.component, b.subComponent, b.section);
+    const availableJobs = getAvailableJobs(b.component, b.subComponent, b.section, b.unitId);
     let jobOptions = '<option value="">-- Job --</option>';
     availableJobs.forEach(j => {
       const jId = j.job_id || j.id;
       const jDesc = j.job_description;
       const jHours = j.plan_hours ? `${j.plan_hours} jam` : '';
       const jPts = j.base_point ? ` · ${j.base_point} pts` : '';
-      const label = `${jDesc} (${jHours}${jPts})`;
+      const jModelTag = (!b.unitId && j.unit_model) ? ` [${j.unit_model.toUpperCase()}]` : '';
+      const label = `${jDesc} (${jHours}${jPts})${jModelTag}`;
       const sel = String(jId) === String(b.jobId) ? 'selected' : '';
       jobOptions += `<option value="${jId}" ${sel}>${label}</option>`;
     });
+
+    // Model compatibility warning if a mismatched job is somehow selected
+    let modelWarningHtml = '';
+    if (!b.others && b.unitId && b.jobId) {
+      const selectedUnit = state.units.find(u => (u.unit_id || u.id) === b.unitId);
+      const selectedJob = state.components.find(j => (j.job_id || j.id) === b.jobId);
+      if (selectedUnit && selectedJob) {
+        const uModel = (selectedUnit.unit_model || '').trim().toLowerCase();
+        const jModel = (selectedJob.unit_model || '').trim().toLowerCase();
+        if (uModel && jModel && uModel !== jModel) {
+          modelWarningHtml = `
+            <div style="background: #FEE2E2; border: 1px solid #F87171; color: #991B1B; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size: 16px; color: #DC2626;"></i>
+              <span>Perhatian: Job "${selectedJob.job_description || selectedJob.component}" (${jModel}) tidak cocok dengan unit ${b.unitId} (${uModel})! Harap pilih job yang sesuai unit.</span>
+            </div>
+          `;
+        }
+      }
+    }
 
     const catalogHtml = `
       <div class="catalog-cascade-box" id="catalog-box-${index}" style="${b.others ? 'display:none;' : 'display:block;'}">
@@ -2640,6 +2700,7 @@ function renderJoblists() {
             ${isLockedJob ? '<p class="tanda-kunci">🔒 Job dikunci oleh grup — hapus joblist lain untuk mengubah</p>' : ''}
           </div>
         </div>
+        ${modelWarningHtml}
       </div>
     `;
 
@@ -3027,6 +3088,16 @@ async function submitAllWorkOrders() {
       if (!b.jobId) {
         showToast(`Joblist #${n}: Harap pilih Job!`, 'warning');
         return;
+      }
+      const selectedUnit = state.units.find(u => (u.unit_id || u.id) === b.unitId);
+      const selectedJob = state.components.find(j => (j.job_id || j.id) === b.jobId);
+      if (selectedUnit && selectedJob) {
+        const uModel = (selectedUnit.unit_model || '').trim().toLowerCase();
+        const jModel = (selectedJob.unit_model || '').trim().toLowerCase();
+        if (uModel && jModel && uModel !== jModel) {
+          showToast(`Joblist #${n}: Job "${selectedJob.job_description || selectedJob.component}" (${jModel}) tidak cocok dengan unit ${b.unitId} (${uModel})! Harap pilih job yang sesuai model unit.`, 'danger');
+          return;
+        }
       }
     }
 
