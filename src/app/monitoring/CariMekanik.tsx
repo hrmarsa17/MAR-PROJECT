@@ -86,7 +86,7 @@ export function CariMekanik({
                 <div className="mechanic-card-id">
                   {m.kode} {m.section && `• ${m.section.toUpperCase()}`}
                 </div>
-                <div className="mekanik-angka" style={{ marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginTop: '8px' }}>
                   <span className="badge badge-grey">📝 {m.perlu_diisi}</span>
                   <span className="badge badge-amber">⏳ {m.menunggu_l1 + m.menunggu_l2}</span>
                   <span className="badge badge-success">✅ {m.approved}</span>

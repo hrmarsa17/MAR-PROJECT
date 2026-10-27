@@ -688,7 +688,7 @@ textarea { min-height: 64px; resize: vertical; }
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--spacing-md);
 }
-.mechanic-card { padding: var(--spacing-md); display: flex; align-items: center; gap: 0.75rem; cursor: pointer; position: relative; }
+.mechanic-card { padding: var(--spacing-md); display: flex; align-items: center; gap: 1rem; cursor: pointer; position: relative; }
 .mechanic-card:hover { border-color: var(--primary); transform: translateY(-2px); }
 .mechanic-avatar {
   width: 48px; height: 48px;
@@ -698,11 +698,12 @@ textarea { min-height: 64px; resize: vertical; }
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  font-size: 18px;
 }
-.mechanic-card-info { flex: 1; overflow: hidden; }
-.mechanic-card-name { font-weight: 700; font-size: 1rem; color: #1a202c; margin-bottom: 2px; }
-.mechanic-card-id { font-size: 0.75rem; color: var(--text-secondary); }
-.mechanic-card-arrow { color: #cbd5e0; font-size: 20px; flex-shrink: 0; }
+.mechanic-card-info { flex: 1; min-width: 0; }
+.mechanic-card-name { font-weight: 700; font-size: 1rem; color: #1a202c; margin: 0; line-height: 1.2; }
+.mechanic-card-id { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 8px; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.mechanic-card-arrow { color: #cbd5e0; font-size: 20px; flex-shrink: 0; transition: color 0.2s; }
 .mechanic-card:hover .mechanic-card-arrow { color: var(--primary); }
 .mechanic-card-link { position: absolute; inset: 0; z-index: 1; }
 
