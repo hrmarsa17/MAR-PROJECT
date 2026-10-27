@@ -24,6 +24,18 @@ Formatnya:
 
 ---
 
+### 2026-10-27 · Raka (+ opencode) · bersama
+- Berubah:
+  - Membuat fondasi folder tiga rumah: `workers/kmb/`, `workers/kmb-projek/`, `workers/sum/`, `db/kmb/`, `db/sum/`, `pwa/kmb/`, `pwa/kmb-projek/`, `pwa/sum/`.
+  - Menyiapkan repo untuk pemisahan backend dan PWA per rumah sesuai AGENTS.md §6.
+  - Menyusun `docs/STRUKTUR-RUMAH.md` memetakan file mana milik rumah mana.
+  - Mulai memindahkan KMB Project: `worker.js`, `src/app/`, `src/backends/`, `wrangler.toml`, `tsconfig.json`, `next.config.ts` ke `workers/kmb-projek/`.
+- Belum selesai / berikutnya:
+  - **Issue**: Kode shared (`src/lib/`, `src/domain/`, `src/pwa/`) perlu di-extract atau dibuat relatif import yang benar. Perlu keputusan apakah frontend Next.js milik KMB Project saja atau shared.
+  - Pindahkan `db/kmb_projek/` ke `db/` (sudah benar).
+  - Siapkan skema database untuk `kmb` dan `sum` (Gabriel).
+  - Tentukan monorepo strategy: `package.json` shared vs per rumah.
+
 ### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
   - Menyinkronkan seluruh 1.533 katalog pekerjaan (`jobs_vessel` 276 baris & `jobs_field` 1.257 baris) dari Google Spreadsheet ke tabel Supabase `kmb_projek.catalog_jobs` dengan kunci komposit `(job_id, section)`.
