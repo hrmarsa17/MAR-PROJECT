@@ -20,9 +20,22 @@ Formatnya:
 | Konfirmasi bahwa spreadsheet `1qHjfIUT…` milik SUM V2 (script `1k_A_KER…`) | sum | Gabriel + Raka | **selesai** (terkonfirmasi script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Pindahkan kode MARProject ke cabang arsip, lalu bentuk susunan tiga rumah | bersama | Gabriel + Raka | **arsip selesai** (`archive/marproject`), susunan tiga rumah disiapkan |
 | Buat project Supabase untuk staging | bersama | Gabriel + Raka | menunggu pembuatan/koneksi project web console |
-| Inventaris perilaku per aksi | setiap rumah | pemegang rumah | **kmb-projek selesai** (`docs/INVENTARIS-KMB-PROJEK.md`), kmb & sum menunggu Gabriel |
+| Inventaris perilaku per aksi | setiap rumah | pemegang rumah | **kmb-projek selesai** (`docs/INVENTARIS-KMB-PROJEK.md`), **sum versi 1** (`docs/INVENTARIS-SUM.md`), kmb menunggu Gabriel |
+| SUM: buat akun layanan Google (baca-saja), bagikan spreadsheet SUM sebagai Viewer | sum | Gabriel | langkah ada di `db/sum/README.md` |
+| SUM: jalankan `db/sum/cermin_sheet.sql` di Supabase SQL Editor | sum | Gabriel | |
+| SUM: sinkron pertama (`--kering` dulu), cocokkan jumlah baris 19 sheet | sum | Gabriel | |
+| SUM: pelajari `readSheetAsObjects` dan versi aktif 4 fungsi kembar, sebelum aksi baca pertama dipindah | sum | Gabriel | |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · sum
+- Berubah:
+  - Menambah `docs/INVENTARIS-SUM.md` versi 1: 19 sheet, 26 aksi (13 baca, 13 tulis) beserta gerbang peran dan sheet yang disentuh, 5 peran, halaman web, 4 pemicu terjadwal, Script Properties, rumus poin dan rupiah, nomor WO, dan zona waktu. Disusun dari kode `MAR-SUM-v2` commit `89edc5a`.
+  - Menambah `db/sum/cermin_sheet.sql`: skema `sum` berisi 19 tabel cermin mentah (`nilai` = baris persis seperti `getValues()`), plus `cermin_header`, `cermin_log`, dan `cermin_meta`. Belum dijalankan di Supabase.
+  - Menambah `tools/sum/sinkron-cermin.mjs`: membaca sheet lewat Google Sheets API memakai akun layanan baca-saja, lalu menulis ke skema `sum`. Ada mode `--kering`. Sintaks sudah dicek dan konversi tanggal WIB ke UTC lulus 4 uji. **Belum pernah dijalankan** terhadap spreadsheet sungguhan.
+  - Menambah `db/sum/README.md`: alasan cermin mentah, langkah penyiapan, dan cara menjalankan.
+  - Saklar SUM tetap `gas`. GAS dan spreadsheet tidak disentuh.
+- Belum selesai / berikutnya: empat tugas SUM di daftar tugas terbuka.
 
 ### 2026-10-27 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
