@@ -25,8 +25,20 @@ Formatnya:
 | SUM: jalankan `db/sum/cermin_sheet.sql` di Supabase SQL Editor | sum | Gabriel | |
 | SUM: sinkron pertama (`--kering` dulu), cocokkan jumlah baris 19 sheet | sum | Gabriel | |
 | SUM: pelajari `readSheetAsObjects` dan versi aktif 4 fungsi kembar, sebelum aksi baca pertama dipindah | sum | Gabriel | |
+| SUM: deploy `workers/sum` ke alamat uji (`npx wrangler login --device`, lalu `npx wrangler deploy`) | sum | Gabriel | langkah ada di `workers/sum/README.md` |
+| SUM: uji dengan token sungguhan untuk kelima peran | sum | Gabriel | |
+| Pintu `abadiops.com`: sambungkan rumah SUM. Alamat itu sekarang menyajikan portal KMB Project | bersama | Gabriel + Raka | |
+| SUM: tombol serah-terima token di PWA lama dan pembaca `#token=` di PWA baru | sum | Gabriel | sebelum mekanik dipindah |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · sum (2)
+- Berubah:
+  - Tahap 3 (Pintu) untuk SUM. Menambah `pwa/sum/`: salinan 1:1 PWA `mar-sum-offline` v45. Hanya empat baris yang diubah: alamat API di `app.js:8` dan `sw.js:20` menjadi `./api`, serta versi v45 menjadi v46.
+  - Menambah `workers/sum/` (Worker `abadiops-sum`): menyajikan PWA dan meneruskan setiap panggilan API apa adanya ke GAS SUM. Tidak ada logika bisnis, saklar tetap `gas`. Buat WO, approve, dan semua aksi lain tetap dikerjakan GAS.
+  - Diuji lokal dengan `wrangler dev`. Semua file PWA tersaji 200 tanpa redirect. Uji kembar API dengan token palsu (`ping`, `create_wo`, token kosong, body bukan JSON): jawaban lewat Worker identik dengan jawaban langsung GAS. Kalau GAS tidak terjangkau, Worker menjawab teks biasa (502), sehingga PWA tetap menahan kiriman di antrean.
+  - Belum di-deploy ke Cloudflare. Belum diuji dengan token sungguhan.
+- Belum selesai / berikutnya: deploy ke alamat uji, uji token sungguhan, sambungkan ke pintu `abadiops.com` bersama Raka.
 
 ### 2026-10-28 · Gabriel (+ Claude) · sum
 - Berubah:
