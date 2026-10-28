@@ -22,7 +22,8 @@ Formatnya:
 | KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | **token lama selesai dibuang** 28 Okt malam. Token uji baru belum dimasukkan; opsional, kalau Raka perlu akun uji |
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | **selesai** 28 Okt malam: 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001). Diverifikasi lewat `kmb_ping`: keempat token lama tidak ada lagi di cermin |
 | Deploy ketiga Worker sesudah pull: `project-kmb` (akar repo), `abadiops-sum` (`workers/sum`), `abadiops-kmb` (`workers/kmb`). Pastikan dulu Raka tidak punya deploy `project-kmb` yang lebih baru dan belum di-push | bersama | Gabriel | `project-kmb` **sudah live** 28 Okt malam (diverifikasi: pintu menjawab tenant `KMB_V2`, portal memuat `serahkanKeRumah`). `abadiops-sum` dan `abadiops-kmb` **sudah live** 28 Okt malam (diverifikasi lewat IP Cloudflare: pembaca `#token=` ada) |
-| **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | **diputuskan** 28 Okt malam: pilihan A, `sum.abadiops.com` dan `kmb.abadiops.com`. Konfigurasi siap di `workers/sum`, `workers/kmb`, dan `worker.js`. Tinggal deploy ulang ketiga Worker: kedua rumah dulu, lalu `project-kmb` |
+| **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | `sum.abadiops.com` dan `kmb.abadiops.com` **sudah live** 28 Okt malam (diverifikasi: terbuka dari jaringan Gabriel, pembaca `#token=` ada, `sum.abadiops.com/api` sampai ke GAS SUM). Pintu `abadiops.com` sudah mengantar ke sana |
+| KMB Project ke `projekkmb.abadiops.com`: (1) dashboard Cloudflare → Workers & Pages → `project-kmb` → Settings → Domains & Routes → Add → Custom domain → `projekkmb.abadiops.com`; (2) sesudah itu deploy `project-kmb` dari akar repo. Jangan menambah `routes` di `wrangler.toml` tanpa mencantumkan `abadiops.com` juga | kmb-projek | Gabriel | kode siap 28 Okt malam; menunggu domain dan deploy |
 | KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | **selesai** 28 Okt malam. Diverifikasi dari luar: 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu |
 | Pintu: uji di browser (jendela penyamaran) dengan token uji SUM, KMB V2, KMB Project, token kembar, dan token palsu | bersama | Gabriel | sesudah deploy |
 | KMB Project: definisi `kmb_projek.catalog_jobs` dimasukkan ke `cermin_sheet.sql` dan diisi lewat skrip sinkron (bug #15) | kmb-projek | Raka | |
@@ -54,6 +55,22 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · kmb-projek (projekkmb.abadiops.com; abadiops.com hanya pintu)
+- Berubah:
+  - Deploy ulang ketiga Worker oleh Gabriel. `sum.abadiops.com` dan `kmb.abadiops.com` terpasang sebagai custom domain dan diverifikasi.
+  - Pintu `abadiops.com` mengantar ke alamat baru. Sempat terlihat masih versi lama karena dicek sebelum deploy selesai; dicek ulang sudah benar.
+  - Keputusan Gabriel: KMB Project di `projekkmb.abadiops.com`, `abadiops.com` hanya pintu.
+    - `worker.js`: `ALAMAT_RUMAH.KMB_PROJEK`, dan pintu mengirim `alamat_rumah` untuk KMB Project juga.
+    - `scripts/patched-app.js`:
+      - `ALAMAT_APLIKASI_RUMAH`, nama baru untuk `ALAMAT_RUMAH_LAIN`.
+      - Pengguna diantar hanya kalau host halaman berbeda dengan alamat rumahnya.
+      - `checkAuth()` membaca `#token=` (didahulukan, lalu dihapus dari alamat).
+    - `worker.js` dirakit ulang (`index.html`, `style.css`, `data.js` tidak berubah). `--dry-run` lulus.
+  - `wrangler.toml` (akar dan `workers/kmb-projek`): peringatan agar tidak menambah `routes` tanpa mencantumkan `abadiops.com`, karena domain dipasang lewat dashboard.
+- Belum selesai / berikutnya:
+  - Gabriel: tambah custom domain `projekkmb.abadiops.com` lewat dashboard, lalu deploy `project-kmb`.
+  - Lalu uji pengantaran di browser untuk ketiga rumah.
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (langkah 1–2 + alamat aplikasi rumah)
 - Berubah:

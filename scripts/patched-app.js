@@ -2381,7 +2381,16 @@ function checkAuth() {
   const tokenFromUrl = urlParams.get('token');
   const tokenFromStorage = localStorage.getItem('kmb_portal_token');
 
-  const tokenToUse = tokenFromUrl || tokenFromStorage;
+  // Serah-terima dari pintu abadiops.com (#token=…). Token langsung dihapus dari alamat
+  // dan didahulukan, karena itu login yang baru saja dilakukan di pintu (bug #11).
+  let tokenFromHash = '';
+  const cocokHash = /(?:^#|&)token=([^&]+)/.exec(window.location.hash || '');
+  if (cocokHash) {
+    try { tokenFromHash = decodeURIComponent(cocokHash[1]).trim(); } catch (_) {}
+    try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
+  }
+
+  const tokenToUse = tokenFromHash || tokenFromUrl || tokenFromStorage;
 
   if (tokenToUse) {
     loginWithToken(tokenToUse);
@@ -2424,9 +2433,10 @@ export function switchSystem(nextSys) {
   updateSystemBadge();
 }
 
-// Aplikasi rumah lain (pintu, bug #11). Worker mengirim `alamat_rumah`; daftar ini
+// Aplikasi tiap rumah (pintu, bug #11). Worker mengirim `alamat_rumah`; daftar ini
 // cadangan kalau ping dijawab GAS langsung karena Worker tak terjangkau.
-const ALAMAT_RUMAH_LAIN = {
+const ALAMAT_APLIKASI_RUMAH = {
+  KMB: 'https://projekkmb.abadiops.com/',
   SUM: 'https://sum.abadiops.com/',
   KMB_V2: 'https://kmb.abadiops.com/'
 };
@@ -2466,11 +2476,12 @@ export async function loginWithToken(token, isAutoAuth = false) {
     if (res && res.success && res.result) {
       const info = res.result;
 
-      // PINTU (docs/KEPUTUSAN.md 28 Okt): token SUM V2 / KMB V2 diantar ke aplikasi
-      // rumahnya sendiri beserta tokennya. Portal ini hanya untuk KMB Project (bug #11).
-      const alamatRumahLain = info.alamat_rumah || ALAMAT_RUMAH_LAIN[String(info.tenant_code || '').toUpperCase()];
-      if (alamatRumahLain) {
-        serahkanKeRumah(alamatRumahLain, cleanToken);
+      // PINTU (docs/KEPUTUSAN.md 28 Okt): pengguna diantar ke aplikasi rumahnya sendiri
+      // beserta tokennya, kecuali halaman ini memang sudah aplikasi rumahnya (KMB Project
+      // di projekkmb.abadiops.com). Bug #11.
+      const alamatRumah = info.alamat_rumah || ALAMAT_APLIKASI_RUMAH[String(info.tenant_code || '').toUpperCase()];
+      if (alamatRumah && new URL(alamatRumah).host !== window.location.host) {
+        serahkanKeRumah(alamatRumah, cleanToken);
         return true;
       }
 

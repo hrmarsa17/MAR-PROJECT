@@ -2,6 +2,11 @@ name = "project-kmb"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
+# Domain: abadiops.com (pintu) dan projekkmb.abadiops.com (aplikasi KMB Project) dipasang
+# lewat dashboard Cloudflare, bukan di file ini. JANGAN menambah `routes` di sini tanpa
+# mencantumkan KEDUANYA: wrangler bisa melepas domain yang tidak tercantum, dan pintu
+# abadiops.com ikut mati.
+
 [vars]
 STORAGE_MODE = "SUPABASE"
 SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"

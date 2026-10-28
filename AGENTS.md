@@ -87,9 +87,9 @@ Tiap rumah punya frontend dan backend sendiri.
 | Backend sekarang (GAS `/exec`) | `AKfycbwlwlQv…` | `AKfycbxh4086…` | `AKfycbzB5EUJ…` |
 | Spreadsheet | `1ehnxDlv…` | `1lnJo74O…` | `1qHjfIUT…` (terkonfirmasi: script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Backend yang disiapkan | Supabase skema `kmb` | skema `kmb_projek` | skema `sum` |
-| Aplikasi sekarang | `kmb.abadiops.com` (sementara juga `abadiops-kmb.kawanabadigrup.workers.dev`) | `abadiops.com` (Worker `project-kmb`) | `sum.abadiops.com` (sementara juga `abadiops-sum.kawanabadigrup.workers.dev`) |
+| Aplikasi sekarang | `kmb.abadiops.com` (sementara juga `abadiops-kmb.kawanabadigrup.workers.dev`) | `projekkmb.abadiops.com` (Worker `project-kmb`, yang juga melayani pintu `abadiops.com`) | `sum.abadiops.com` (sementara juga `abadiops-sum.kawanabadigrup.workers.dev`) |
 
-**Pintu** (sementara ada di Worker `project-kmb`, lihat `docs/KEPUTUSAN.md` 28 Okt): token dicek ke GAS ketiga rumah sekaligus. Cocok di satu rumah: pengguna KMB Project tetap di portal, sedangkan pengguna SUM V2 dan KMB V2 diantar ke aplikasi rumahnya dengan `#token=`. Cocok di lebih dari satu rumah: ditolak, tidak ditebak. Selain ping, Worker KMB Project hanya bicara dengan GAS KMB Project.
+**Pintu** (sementara ada di Worker `project-kmb`, lihat `docs/KEPUTUSAN.md` 28 Okt): token dicek ke GAS ketiga rumah sekaligus. Cocok di satu rumah: pengguna diantar ke aplikasi rumahnya (`projekkmb.abadiops.com`, `sum.abadiops.com`, atau `kmb.abadiops.com`) dengan `#token=`. `abadiops.com` hanya pintu. Cocok di lebih dari satu rumah: ditolak, tidak ditebak. Selain ping, Worker KMB Project hanya bicara dengan GAS KMB Project.
 
 Aturan rumah:
 1. **Frontend adalah salinan 1:1 dari PWA lama rumah itu.** Cara paling aman: pakai file PWA lama apa adanya, dan ubah hanya alamat API serta tombol serah-terima token. Kalau frontend dibangun ulang, hasilnya wajib identik dengan PWA lama (layar, alur, field, dan pesan) dan dibandingkan berdampingan. Ukuran "identik" ada di PWA lama, bukan di rumah lain.
