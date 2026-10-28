@@ -54,14 +54,20 @@ Formatnya:
   - **Perbaikan:**
     1. worker.js & workers/kmb-projek/worker.js:
        - Ekstraksi bodySystem diperluas membaca peek.system dan params.get('system').
-       - Pengenalan otomatis token SUM (4651ebd7272e4aae939b, 4738b90a197443aaa410, prefix sum).
+       - Pengenalan otomatis token SUM (`4651ebd7272e4aae939b`, 4738b90a197443aaa410, prefix sum).
        - isSupabaseSelected dikunci khusus targetSystem === 'KMB'. Untuk SUM, seluruh aksi dialirkan 100% langsung ke SUM GAS (AKfycbzB5EUJ…).
     2. scripts/patched-app.js:
-       - api() kini menyematkan parameter query &system= dan header X-MAR-System: currentSystem.
+       - api() kini menyematkan parameter query &system=${currentSystem.toLowerCase()} dan header X-MAR-System: currentSystem.
        - Menghapus pembersihan destruktif mar_current_system di initStorage().
-       - Kunci cache dan work orders di-scope per tenant (mar_gas_refs__v1 dan mar_work_orders_).
+       - Kunci cache dan work orders di-scope per tenant (mar_gas_refs_${currentSys}_v1 dan mar_work_orders_${currentSys}).
        - loginWithToken() mengosongkan state in-memory saat berpindah tenant agar tidak ada data unit/mekanik KMB yang bocor ke sesi SUM.
        - Badge sistem dan indikator engine menampilkan PROJEK SUM (biru) dan SPREADSHEET LIVE (Google Sheets) untuk SUM.
+  - **Catatan untuk Gabriel (Perbedaan Form Create WO SUM V2 vs KMB Project):**
+    - Saat login dengan token SUM V2 (`4651ebd7272e4aae939b`), backend kini sudah 100% menarik data monitoring, unit, dan mekanik dari GAS SUM.
+    - Namun, form Create WO di `abadiops.com` saat ini masih menyajikan antarmuka KMB Project (3 model pembuatan: Bebas/Unit/Job, pembagian section Rekondisi/Maintenance, dan unit Vessel).
+    - Di sistem asli SUM V2 (`docs/INVENTARIS-SUM.md` & `pwa/sum/index.html`), SUM tidak punya section dan form Create WO-nya ringkas 2 level (Kategori Pekerjaan → Komponen Dump Truck → Work Condition → Lokasi Bengkel/Lapangan → Tim Mekanik).
+    - PWA asli SUM V2 versi 46 sudah siap 1:1 di folder `pwa/sum/` dan telah dideploy Gabriel ke `https://abadiops-sum.kawanabadigrup.workers.dev`.
+    - Dicatat di Bug #11 (`docs/BUG-DICATAT.md`). Menunggu keputusan Gabriel untuk pemisahan frontend di pintu utama `abadiops.com` saat menyajikan rumah SUM.
 - Belum selesai / berikutnya:
   - Menunggu verifikasi visual dari pengguna saat login di abadiops.com dengan token SUM.
 
