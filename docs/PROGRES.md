@@ -33,13 +33,21 @@ Formatnya:
 | KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
-| KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | langkah ada di `workers/kmb/README.md` |
+| KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | **selesai** 28 Okt: `https://abadiops-kmb.kawanabadigrup.workers.dev` |
+| Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | |
 | KMB V2: uji dengan token sungguhan untuk ketiga peran (mechanic, supervisor, superintendent) | kmb | Gabriel | |
 | Pintu `abadiops.com`: sambungkan rumah KMB V2 | bersama | Gabriel + Raka | |
 | KMB V2: inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · kmb (2)
+- Berubah:
+  - Worker `abadiops-kmb` di-deploy Gabriel ke `https://abadiops-kmb.kawanabadigrup.workers.dev` (versi `5f1b2647`), memakai API token kawanabadigrup yang sama dengan SUM.
+  - Diuji terhadap versi tayang: `/api/sehat` ok. Ke-7 file PWA tersaji 200 tanpa redirect. Uji kembar dengan token palsu (`ping`, `pull_my_wos`, `create_wo`, token kosong, body bukan JSON): identik dengan jawaban langsung GAS KMB V2. Waktu jawab 3–5 detik.
+  - Pemisahan rumah terkonfirmasi: `abadiops-sum` menjawab `X-Abadi-Rumah: sum`, sedangkan `abadiops-kmb` menjawab `kmb`. API token Cloudflare hanya kunci unggah kode, sedangkan data tiap rumah dipisahkan oleh Worker, alamat GAS, dan `ApiTokens` masing-masing.
+- Belum selesai / berikutnya: uji token sungguhan di kedua alamat uji, lalu penyambungan ke pintu `abadiops.com` bersama Raka.
 
 ### 2026-10-28 · Raka (+ opencode) · bersama
 - Berubah:

@@ -43,7 +43,9 @@ Service worker PWA hanya menangani permintaan GET, sedangkan semua panggilan API
   GAS hanya menolak token palsu itu. Tidak ada data yang dibaca atau ditulis.
 - **Perilaku saat GAS tidak terjangkau** sama dengan rumah SUM (kodenya sama): Worker menjawab `GAS_TIDAK_TERJANGKAU` (502, teks biasa), sehingga PWA tetap menahan kiriman di antrean.
 
-Belum diuji: versi yang sudah di-deploy, dan aksi dengan token sungguhan.
+**Versi tayang** (`https://abadiops-kmb.kawanabadigrup.workers.dev`, di-deploy 28 Okt 2026): uji kembar yang sama lulus, dan semua file PWA tersaji 200 tanpa redirect.
+
+Belum diuji: aksi dengan token sungguhan (perlu Gabriel).
 
 ## Deploy ke alamat uji (Gabriel)
 
