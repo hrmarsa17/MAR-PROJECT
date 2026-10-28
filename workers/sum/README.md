@@ -44,13 +44,25 @@ Belum diuji: aksi dengan token sungguhan (perlu Gabriel), dan versi yang sudah d
 
 ## Deploy ke alamat uji (Gabriel)
 
-Dari folder repo, di PowerShell:
+Laptop Gabriel juga dipakai untuk Rembes, yang login wrangler-nya memakai akun Cloudflare **pribadi**. Supaya dua akun itu tidak tercampur, deploy Abadi Operation memakai **API token** kawanabadigrup, bukan `wrangler login`. Login Rembes tidak disentuh.
+
+`wrangler.toml` juga mengunci `account_id` kawanabadigrup. Kalau yang aktif ternyata akun lain, deploy akan ditolak, bukan dikirim ke akun yang salah.
+
+**Membuat API token (sekali saja):**
+1. Di dash.cloudflare.com, login sebagai kawanabadigrup, lalu buka ikon profil → **My Profile → API Tokens → Create Token**.
+2. Pilih template **Edit Cloudflare Workers**.
+3. Di **Account Resources**, pilih akun kawanabadigrup. Di **Zone Resources**, pilih zona `abadiops.com`.
+4. Klik **Continue to summary → Create Token**, lalu salin tokennya. Token hanya ditampilkan sekali. Simpan di password manager, jangan di chat atau di repo.
+
+**Deploy**, di PowerShell:
 
 ```powershell
 cd C:\dev\abadiops\workers\sum
-npx wrangler login --device     # login akun Cloudflare kawanabadigrup (masukkan kode di browser)
-npx wrangler deploy             # mencetak alamat https://abadiops-sum.<subdomain>.workers.dev
+$env:CLOUDFLARE_API_TOKEN = "<token kawanabadigrup>"   # hanya berlaku di jendela PowerShell ini
+npx wrangler deploy                                     # mencetak alamat https://abadiops-sum.<subdomain>.workers.dev
 ```
+
+Kelak CI memakai token yang sama, disimpan sebagai GitHub Actions secret `CLOUDFLARE_API_TOKEN`.
 
 Cek sehatnya di `https://abadiops-sum.<subdomain>.workers.dev/api/sehat`. Jawabannya harus `{"ok":true,"rumah":"sum","saklar":"gas","jalur":"gas"}`.
 

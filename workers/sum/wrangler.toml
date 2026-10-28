@@ -6,6 +6,11 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
 
+# Akun Cloudflare kawanabadigrup. Dikunci supaya deploy tidak pernah nyasar ke akun lain
+# yang kebetulan sedang login di laptop (misalnya akun pribadi untuk Rembes). Kalau login
+# yang aktif bukan kawanabadigrup, deploy ditolak, tidak dikirim ke akun yang salah.
+account_id = "9273ece6d47a3bb103159295c10ce9e6"
+
 # File PWA SUM (salinan 1:1 dari mar-sum-offline v45, hanya alamat API yang diganti).
 # html_handling "none": /index.html disajikan langsung (200, tanpa redirect), sama seperti
 # GitHub Pages. Service worker PWA menyimpan ./index.html ke cache dan memakainya saat
