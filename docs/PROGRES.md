@@ -5,6 +5,17 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · kmb-projek (bug #17: angka contoh palsu dan label sumber)
+- Berubah:
+  - Temuan Gabriel: dashboard portal menampilkan TOTAL WO 81, sedangkan web GAS 835, dengan label "Live Supabase". Dicek: datanya memang dari GAS (approved 55, pending 26, dan poin 198.69 sama persis). Label itu hanya membaca pilihan engine di browser, dan saklar tidak terlibat.
+  - `scripts/patched-app.js`:
+    - Angka contoh tertanam (`|| 7/3/21/13/58`, poin 20.20, Rp 52.520, periode contoh) diganti 0 atau "—".
+    - Label sumber = `state.sumberData`, diisi dari `source` pada jawaban monitoring (Supabase membawa `source: 'SUPABASE'`, GAS tidak).
+  - `scripts/built-index.html`: angka awal statis menjadi 0, teks contoh menjadi "—", dan subtitel TOTAL WO menjadi "Pending + disetujui" (81 = 26 + 55).
+  - Diuji di `wrangler dev`: aset sah dan tanpa token, import cocok, token palsu ditolak, tidak ada angka contoh tersisa.
+  - Temuan sampingan: API GAS KMB Project punya aksi `list_tokens`. Mungkin bisa dipakai untuk pengecekan token kembar harian (lihat tabel tugas).
+- Belum selesai / berikutnya: angka "semua WO sepanjang waktu" yang 1:1 dengan web GAS butuh aksi API baru di GAS; dicatat untuk sesudah migrasi (bug #17).
+
 ### 2026-10-29 · Gabriel (+ Claude) · kmb-projek (bug #16: hardcode di portal dibuang)
 - Berubah (keputusan Gabriel: tertanam di kode = hardcode = haram; dikerjakan malam ini atas permintaan Gabriel, bukan menunggu Raka):
   - `scripts/patched-app.js`: `DEFAULT_MECHANICS_LIST` (20 mekanik asli beserta tokennya) dikosongkan. `DEFAULT_MONITORING_OVERALL` (angka contoh palsu, misalnya pending L2 21) diganti nol.
@@ -52,7 +63,7 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | KMB TRA (KMB V2): uji dengan token sungguhan untuk ketiga peran, lewat `abadiops.com` | kmb | Gabriel | |
 | KMB TRA (KMB V2): inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
 | KMB TRA (KMB V2): pindahkan halaman web GAS secara 1:1, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
-| Pengecekan token kembar otomatis setiap hari untuk semua rumah, dengan peringatan | bersama | Gabriel + Raka | pintu sudah menolak token kembar saat login; pengecekan harian butuh akun layanan Google |
+| Pengecekan token kembar otomatis setiap hari untuk semua rumah, dengan peringatan | bersama | Gabriel + Raka | pintu sudah menolak token kembar saat login; pengecekan harian butuh daftar token semua rumah. Cara yang mungkin: akun layanan Google, atau aksi API GAS `list_tokens` yang ada di KMB Project (perlu dicek siapa yang boleh memanggilnya, dan apakah rumah lain punya aksi yang sama) |
 | Project Supabase untuk staging | bersama | Gabriel + Raka | menunggu |
 | Rumah baru `kmbbupr` (PT KMB di site BUPR): satu baris `RUMAH` di `workers/pintu/wrangler.toml`, ditambah Worker dan PWA rumahnya | bersama | Gabriel + Raka | sesudah migrasi |
 

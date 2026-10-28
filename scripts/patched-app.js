@@ -2039,6 +2039,8 @@ export async function syncFromSpreadsheet(manual = false) {
     api('pull_monitoring').then(monRes => {
       if (monRes.success && monRes.result) {
         state.monitoringData = monRes.result;
+        // Jawaban RPC Supabase membawa source: 'SUPABASE'; jawaban GAS tidak (bug #17).
+        state.sumberData = monRes.source === 'SUPABASE' ? 'Live Supabase' : 'Google Sheets';
         renderDashboard();
         renderMonitoring();
         renderApprovals();
@@ -3672,9 +3674,9 @@ function renderDashboard() {
 
   const overall = state.monitoringData?.overall || DEFAULT_MONITORING_OVERALL;
 
-  const totalWoCount = (overall.pending_mechanic_work || 7) + (overall.pending_l1 || 3) + (overall.pending_l2 || 21) + (overall.approved || 13);
-  const approvedWoCount = overall.approved || 13;
-  const pendingWoCount = (overall.pending_mechanic_work || 7) + (overall.pending_l1 || 3) + (overall.pending_l2 || 21);
+  const totalWoCount = ((Number(overall.pending_mechanic_work) || 0)) + ((Number(overall.pending_l1) || 0)) + ((Number(overall.pending_l2) || 0)) + ((Number(overall.approved) || 0));
+  const approvedWoCount = (Number(overall.approved) || 0);
+  const pendingWoCount = ((Number(overall.pending_mechanic_work) || 0)) + ((Number(overall.pending_l1) || 0)) + ((Number(overall.pending_l2) || 0));
 
   let totalApprovedPts = 0;
   let totalApprovedIdr = 0;
@@ -3684,8 +3686,8 @@ function renderDashboard() {
       totalApprovedIdr += Number(w.final_idr) || 0;
     });
   } else {
-    totalApprovedPts = overall.total_poin || 20.20;
-    totalApprovedIdr = 52520;
+    totalApprovedPts = (Number(overall.total_poin) || 0);
+    totalApprovedIdr = null; // rupiah belum diketahui tanpa daftar WO approved (bug #17)
   }
 
   const statTotalEl = document.getElementById('stat-total-wo');
@@ -3697,14 +3699,15 @@ function renderDashboard() {
   const statPtsEl = document.getElementById('stat-total-points');
   if (statPtsEl) statPtsEl.textContent = totalApprovedPts.toFixed(2);
   const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
-  const engineLabel = currentSys === 'SUM' ? 'Google Sheets' : (getActiveEngine() === 'SUPABASE' ? 'Live Supabase' : 'Google Sheets');
+  // Label sumber = asal data yang sebenarnya, bukan pilihan engine di browser (bug #17).
+  const engineLabel = currentSys === 'SUM' ? 'Google Sheets' : (state.sumberData || 'Google Sheets');
 
   const statIncEl = document.getElementById('stat-incentive-preview');
-  if (statIncEl) statIncEl.textContent = `${engineLabel}: Rp ${totalApprovedIdr.toLocaleString('id-ID')}`;
+  if (statIncEl) statIncEl.textContent = `${engineLabel}: ${totalApprovedIdr === null ? 'Rp —' : 'Rp ' + totalApprovedIdr.toLocaleString('id-ID')}`;
 
   const periodeEl = document.getElementById('dashboard-periode-str');
   if (periodeEl) {
-    periodeEl.textContent = `📅 Periode: ${overall.periode || '26 Okt – 25 Nov 2026'} (${engineLabel})`;
+    periodeEl.textContent = `📅 Periode: ${overall.periode || '—'} (${engineLabel})`;
   }
 
   const tbody = document.getElementById('dashboard-recent-wo-body');
@@ -3771,24 +3774,24 @@ function renderMonitoring() {
   const overall = state.monitoringData?.overall || DEFAULT_MONITORING_OVERALL;
 
   const kpiWork = document.getElementById('mon-kpi-work');
-  if (kpiWork) kpiWork.textContent = overall.pending_mechanic_work || 7;
+  if (kpiWork) kpiWork.textContent = (Number(overall.pending_mechanic_work) || 0);
   const kpiL1 = document.getElementById('mon-kpi-l1');
-  if (kpiL1) kpiL1.textContent = overall.pending_l1 || 3;
+  if (kpiL1) kpiL1.textContent = (Number(overall.pending_l1) || 0);
   const kpiL2 = document.getElementById('mon-kpi-l2');
-  if (kpiL2) kpiL2.textContent = overall.pending_l2 || 21;
+  if (kpiL2) kpiL2.textContent = (Number(overall.pending_l2) || 0);
   const kpiAppr = document.getElementById('mon-kpi-approved');
-  if (kpiAppr) kpiAppr.textContent = overall.approved || 13;
+  if (kpiAppr) kpiAppr.textContent = (Number(overall.approved) || 0);
 
   const periodeEl = document.getElementById('monitoring-periode-str');
   if (periodeEl) {
-    periodeEl.textContent = `Periode: ${overall.periode || '26 Okt – 25 Nov 2026'} (Live Google Sheets)`;
+    periodeEl.textContent = `Periode: ${overall.periode || '—'} (${state.sumberData || 'Google Sheets'})`;
   }
 
   const countMech = document.getElementById('mon-count-mechanics');
   if (countMech) countMech.textContent = (state.monitoringData?.mechanics || DEFAULT_MECHANICS_LIST).length;
 
   const countWos = document.getElementById('mon-count-all-wos');
-  if (countWos) countWos.textContent = state.workOrders.length || 58;
+  if (countWos) countWos.textContent = state.workOrders.length;
 
   const btnMech = document.getElementById('mon-subtab-mechanics-btn');
   const btnWos = document.getElementById('mon-subtab-wos-btn');
