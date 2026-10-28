@@ -1745,12 +1745,9 @@ const state = {
   currentSystem: (function() {
     try {
       const savedSys = localStorage.getItem('mar_current_system');
-      if (savedSys && savedSys.toUpperCase() === 'SUM') {
-        localStorage.removeItem('mar_current_system');
-        localStorage.removeItem('kmb_work_orders');
-      }
+      if (savedSys) return savedSys.toUpperCase();
     } catch (_) {}
-    return 'KMB';
+    return 'MAR';
   })(),
   currentUser: null,
   activeToken: null,
@@ -1800,7 +1797,7 @@ const state = {
 // INITIALIZATION
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-  document.title = 'KMB PORTAL - Mechanic Activity Report';
+  document.title = 'MAR PORTAL - Mechanic Activity Report';
   updateSystemBadge();
   updateEngineStatusBadge(true);
   loadCachedSpreadsheetData();
@@ -1873,7 +1870,7 @@ const ROUTER_ACTIONS = new Set([
 
 async function api(action, data = {}, opId = null, customToken = null) {
   const token = customToken || (action === 'pull_my_wos' && state.viewAsMechanic?.token ? state.viewAsMechanic.token : state.activeToken);
-  const currentSystem = 'KMB';
+  const currentSystem = (state.currentSystem || localStorage.getItem('mar_current_system') || (String(token || '').toLowerCase().startsWith('sum') ? 'SUM' : 'KMB')).toUpperCase();
   const activeEngine = getActiveEngine();
   const isRouter = ROUTER_ACTIONS.has(action);
 
@@ -2341,11 +2338,11 @@ function checkAuth() {
 }
 
 export function updateSystemBadge() {
-  state.currentSystem = 'KMB';
+  const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'MAR').toUpperCase();
   const badge = document.getElementById('project-badge');
   if (badge) {
-    badge.textContent = 'PROJEK KMB';
-    badge.style.background = '#10B981';
+    badge.textContent = currentSys === 'SUM' ? 'PROJEK SUM' : (currentSys === 'KMB' ? 'PROJEK KMB' : currentSys);
+    badge.style.background = currentSys === 'SUM' ? '#3B82F6' : '#10B981';
     badge.style.color = '#FFFFFF';
     badge.style.cursor = 'default';
     badge.removeAttribute('title');
@@ -2353,17 +2350,18 @@ export function updateSystemBadge() {
 
   const gateTitle = document.querySelector('.gate-title');
   if (gateTitle) {
-    gateTitle.textContent = 'KMB PORTAL GATE';
+    gateTitle.textContent = 'MAR PORTAL GATE';
   }
   const btnEnter = document.getElementById('btn-enter-gate');
   if (btnEnter) {
-    btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem KMB';
+    btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Aplikasi';
   }
 }
 
 export function switchSystem(nextSys) {
-  state.currentSystem = 'KMB';
-  localStorage.setItem('mar_current_system', 'KMB');
+  const sys = (nextSys || 'MAR').toUpperCase();
+  state.currentSystem = sys;
+  localStorage.setItem('mar_current_system', sys);
   updateSystemBadge();
 }
 
@@ -2400,8 +2398,10 @@ export async function loginWithToken(token, isAutoAuth = false) {
         section: info.section || 'vessel,maintenance'
       };
 
-      state.currentSystem = 'KMB';
-      localStorage.setItem('mar_current_system', 'KMB');
+      const tenantCode = (info.tenant_code || info.tenantCode || info.tenant || (cleanToken.toLowerCase().startsWith('sum') ? 'SUM' : 'KMB')).toUpperCase();
+      state.currentSystem = tenantCode;
+      localStorage.setItem('mar_current_system', tenantCode);
+      localStorage.setItem('mar_auth_token', cleanToken);
       state.currentUser = user;
       state.activeToken = cleanToken;
       localStorage.setItem('kmb_portal_token', cleanToken);
@@ -2411,7 +2411,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
       window.history.replaceState({}, '', url);
 
       updateUserBar();
-      showModeChoice(user.name, info.tenantCode || 'KMB', user.role);
+      showModeChoice(user.name, tenantCode, user.role);
 
       if (user.role === 'mechanic') {
         switchTab('monitoring');
@@ -2445,8 +2445,10 @@ export async function loginWithToken(token, isAutoAuth = false) {
         section: tokenRecord.section || matchedMech?.section || 'vessel,maintenance'
       };
 
-      state.currentSystem = 'KMB';
-      localStorage.setItem('mar_current_system', 'KMB');
+      const tenantCode = cleanToken.toLowerCase().startsWith('sum') ? 'SUM' : 'KMB';
+      state.currentSystem = tenantCode;
+      localStorage.setItem('mar_current_system', tenantCode);
+      localStorage.setItem('mar_auth_token', cleanToken);
       state.currentUser = user;
       state.activeToken = cleanToken;
       localStorage.setItem('kmb_portal_token', cleanToken);
@@ -2456,7 +2458,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
       window.history.replaceState({}, '', url);
 
       updateUserBar();
-      showModeChoice(user.name, 'KMB', user.role);
+      showModeChoice(user.name, tenantCode, user.role);
     }
 
     // 3. Token asal / tidak dikenal: JANGAN PINDAH LAYAR, beri notifikasi error di login
@@ -5132,7 +5134,9 @@ function initEventListeners() {
   const inputToken = document.getElementById('input-token');
   if (inputToken) {
     inputToken.addEventListener('input', (e) => {
-      state.currentSystem = 'KMB';
+      const val = (e.target.value || '').trim().toLowerCase();
+      if (val.startsWith('sum-') || val.startsWith('sum_')) state.currentSystem = 'SUM';
+      else if (val.startsWith('kmb-') || val.startsWith('kmb_')) state.currentSystem = 'KMB';
       updateSystemBadge();
       inputToken.style.borderColor = '';
       const errEl = document.getElementById('gate-error-msg');
@@ -6267,7 +6271,13 @@ function selectMode(mode) {
     showToast(`Mode PWA aktif. Data akan disimpan offline.`, 'info');
     syncFromSpreadsheet(false);
   } else if (mode === 'web') {
-    window.location.href = '/monitoring';
+    const tok = state.activeToken || localStorage.getItem('mar_auth_token') || localStorage.getItem('kmb_portal_token') || '';
+    const sys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'MAR').toUpperCase();
+    localStorage.setItem('mar_auth_token', tok);
+    localStorage.setItem('mar_current_system', sys);
+    document.cookie = `mar_token=${encodeURIComponent(tok)}; path=/; SameSite=Lax`;
+    document.cookie = `mar_tenant=${encodeURIComponent(sys)}; path=/; SameSite=Lax`;
+    window.location.href = `/monitoring?token=${encodeURIComponent(tok)}&tenant=${encodeURIComponent(sys)}`;
   }
 }
 

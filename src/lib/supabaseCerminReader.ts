@@ -19,43 +19,151 @@ export interface PingResult {
   source: 'SUPABASE';
 }
 
-export async function bacaPingSupabase(token: string, sistem = 'KMB'): Promise<PingResult> {
+export async function bacaPingSupabase(token: string, sistem = 'MAR'): Promise<PingResult> {
+  const cleanToken = token.trim();
   const sql = dapatkanSql(sistem);
-  const rows = await sql<
-    {
-      token: string;
-      role: string;
-      name: string;
-      user_id: string;
-      email: string | null;
-      section: string | null;
-    }[]
-  >`
-    SELECT t.token, t.role, t.name, t.user_id, m.email, m.section
-      FROM kmb_projek.api_tokens t
-      LEFT JOIN kmb_projek.config_mechanics m ON t.user_id = m.mechanic_id
-     WHERE t.token = ${token.trim()}
-       AND t.status = 'ACTIVE'
-     LIMIT 1
-  `;
 
-  const r = rows[0];
-  if (!r) {
-    return { success: false, result: null, source: 'SUPABASE' };
-  }
+  // 1. Coba di kmb_projek.api_tokens
+  try {
+    const rows = await sql<
+      {
+        token: string;
+        role: string;
+        name: string;
+        user_id: string;
+        email: string | null;
+        section: string | null;
+      }[]
+    >`
+      SELECT t.token, t.role, t.name, t.user_id, m.email, m.section
+        FROM kmb_projek.api_tokens t
+        LEFT JOIN kmb_projek.config_mechanics m ON t.user_id = m.mechanic_id
+       WHERE t.token = ${cleanToken}
+         AND t.status = 'ACTIVE'
+       LIMIT 1
+    `;
 
-  return {
-    success: true,
-    result: {
-      mechanic_id: r.user_id || '',
-      name: r.name || '',
-      role: r.role || 'mechanic',
-      email: r.email || '',
-      section: r.section || '',
-      tenant_code: sistem.toUpperCase()
-    },
-    source: 'SUPABASE'
-  };
+    if (rows[0]) {
+      const r = rows[0];
+      return {
+        success: true,
+        result: {
+          mechanic_id: r.user_id || '',
+          name: r.name || '',
+          role: r.role || 'mechanic',
+          email: r.email || '',
+          section: r.section || '',
+          tenant_code: 'KMB'
+        },
+        source: 'SUPABASE'
+      };
+    }
+  } catch (_) {}
+
+  // 2. Coba di sum schema (relasional)
+  try {
+    const sumRows = await sql<
+      {
+        token: string;
+        role: string;
+        name: string;
+        mechanic_code: string;
+        email: string | null;
+      }[]
+    >`
+      SELECT t.token, m.role, m.name, m.mechanic_code, m.email
+        FROM sum.api_tokens t
+        JOIN sum.mechanics m ON m.id = t.mechanic_id
+       WHERE t.token = ${cleanToken}
+         AND t.is_active = true
+       LIMIT 1
+    `;
+
+    if (sumRows[0]) {
+      const r = sumRows[0];
+      return {
+        success: true,
+        result: {
+          mechanic_id: r.mechanic_code || '',
+          name: r.name || '',
+          role: r.role || 'mechanic',
+          email: r.email || '',
+          section: 'field',
+          tenant_code: 'SUM'
+        },
+        source: 'SUPABASE'
+      };
+    }
+  } catch (_) {}
+
+  // 3. Coba di sum schema (cermin jsonb)
+  try {
+    const cerminRows = await sql<
+      { data: { token?: string; user_id?: string; name?: string; role?: string; status?: string } }[]
+    >`
+      SELECT data FROM sum.api_tokens 
+       WHERE (data->>'token') = ${cleanToken} 
+         AND (data->>'status') = 'ACTIVE' 
+       LIMIT 1
+    `;
+
+    if (cerminRows[0]?.data) {
+      const d = cerminRows[0].data;
+      return {
+        success: true,
+        result: {
+          mechanic_id: d.user_id || '',
+          name: d.name || '',
+          role: d.role || 'mechanic',
+          email: '',
+          section: 'field',
+          tenant_code: 'SUM'
+        },
+        source: 'SUPABASE'
+      };
+    }
+  } catch (_) {}
+
+  // 4. Coba di public schema api_tokens (relasional)
+  try {
+    const pubRows = await sql<
+      {
+        mechanic_code: string;
+        name: string;
+        role: string;
+        email: string | null;
+        tenant_code: string;
+      }[]
+    >`
+      SELECT m.mechanic_code, m.name, m.role::text, m.email, tn.code::text AS tenant_code
+        FROM api_tokens t
+        JOIN mechanics m ON m.id = t.mechanic_id
+        JOIN tenants tn ON tn.id = t.tenant_id
+       WHERE t.token = ${cleanToken}
+         AND t.is_active = true
+         AND (t.expires_at IS NULL OR t.expires_at > now())
+         AND m.is_active = true
+       LIMIT 1
+    `;
+
+    if (pubRows[0]) {
+      const r = pubRows[0];
+      return {
+        success: true,
+        result: {
+          mechanic_id: r.mechanic_code || '',
+          name: r.name || '',
+          role: r.role || 'mechanic',
+          email: r.email || '',
+          section: '',
+          tenant_code: r.tenant_code?.toUpperCase() || 'MAR'
+        },
+        source: 'SUPABASE'
+      };
+    }
+  } catch (_) {}
+
+  return { success: false, result: null, source: 'SUPABASE' };
 }
 
 export async function bacaCreateRefsSupabase(sistem = 'KMB') {

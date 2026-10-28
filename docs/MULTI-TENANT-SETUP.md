@@ -318,4 +318,22 @@ Berikut adalah daftar token uji yang sudah terdaftar di database dan spreadsheet
 | **SUM** | Mekanik Tyre | Dani Pratama | `sum-dani01234` | [`db/dummy-sum.sql`](file:///d:/marbaru/MARProject/db/dummy-sum.sql#L313) |
 
 ---
+
+## 8. Alur Universal Login Gate & Mode Akses (PWA vs Web)
+
+Mulai 28 Oktober 2026, antarmuka portal login mengadopsi **Universal Login Gate** (`MAR PORTAL GATE`):
+1. **Netralitas Tampilan**: Halaman login tidak menampilkan nama sistem/rumah spesifik (KMB / SUM / Project) maupun selector manual. Seluruh identitas tenant ditentukan oleh token yang dimasukkan.
+2. **Multi-Schema Token Resolution**:
+   - `bacaPingSupabase()` dan `identitasDariTokenSupabase()` memeriksa token secara berurutan:
+     1. Skema cermin `kmb_projek.api_tokens`.
+     2. Skema relasional `sum.api_tokens` atau cermin `sum`.
+     3. Tabel relasional `public.api_tokens` (terhubung ke tabel `tenants` & `mechanics`).
+3. **Pilihan Mode Akses**:
+   - Setelah token diverifikasi valid, gate menampilkan kartu pilihan:
+     - **📱 Mode PWA (Offline-First)**: Menjalankan aplikasi lapangan dengan penyimpanan lokal offline.
+     - **💻 Mode Web Normal**: Mengarahkan pengguna ke `/monitoring?token=<TOKEN>&tenant=<TENANT>` (Next.js web portal) dengan sinkronisasi cookie dan localStorage.
+4. **Sinkronisasi State**:
+   - Token dan tenant yang terverifikasi disimpan ke `mar_auth_token` dan `mar_current_system` secara dinamis sesuai tenant pengguna.
+
+---
 *Dokumen ini dibuat secara otomatis untuk memastikan kesinambungan arsitektur MAR Project. Jika ada perubahan skema database atau penambahan driver baru, selalu perbarui dokumen ini bersamaan dengan migrasi SQL.*

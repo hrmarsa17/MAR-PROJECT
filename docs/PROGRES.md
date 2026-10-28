@@ -44,6 +44,40 @@ Formatnya:
 
 ---
 
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Universal Login Gate)
+- Berubah:
+  - Universal Branding & State Portal (scripts/built-index.html, scripts/patched-app.js):
+    - Mengganti teks KMB PORTAL GATE menjadi MAR PORTAL GATE dan title menjadi MAR PORTAL - Mechanic Activity Report.
+    - Menyembunyikan label engine toggle (#btn-engine-toggle, #btn-engine-switch-user) dan menetralkan nama section filter di report.
+    - Mengubah tombol login menjadi Masuk ke Aplikasi.
+    - Mengganti hardcode state.currentSystem = 'KMB' dan localStorage.setItem('mar_current_system', 'KMB') menjadi dinamis sesuai tenant_code dari respon server atau prefix token (SUM, KMB, dll.).
+  - Resolusi Token Multi-Skema (src/backends/supabase/auth.ts, workers/kmb-projek/src/backends/supabase/auth.ts, src/lib/supabaseCerminReader.ts):
+    - bacaPingSupabase diperluas agar menyelesaikan token dari kmb_projek.api_tokens, skema relasional sum.api_tokens / cermin sum, dan tabel public.api_tokens.
+    - identitasDariTokenSupabase memeriksa tabel token public, fallback sum, dan fallback kmb_projek.
+    - Validasi sistem disesuaikan agar gate universal menerima token SUM dan KMB tanpa terblokir sistem default.
+  - Alur PWA vs Web Normal:
+    - Di loginWithToken: setelah token valid, menampilkan modal pilihan mode (showModeChoice).
+    - Tombol PWA: menutup gate dan memuat dashboard/monitoring PWA offline-first.
+    - Tombol Web: mengarahkan ke /monitoring?token=...&tenant=... sekaligus menyinkronkan token dan tenant ke cookies & localStorage.
+- Belum selesai / berikutnya: pengujian login gate dengan token SUM di browser laptop.
+
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Universal Login Gate)
+- Berubah:
+  - Universal Branding & State Portal (`scripts/built-index.html`, `scripts/patched-app.js`):
+    - Mengganti teks `KMB PORTAL GATE` menjadi `MAR PORTAL GATE` dan title menjadi `MAR PORTAL - Mechanic Activity Report`.
+    - Menyembunyikan label engine toggle (`#btn-engine-toggle`, `#btn-engine-switch-user`) dan menetralkan nama section filter di report.
+    - Mengubah tombol login menjadi `Masuk ke Aplikasi`.
+    - Mengganti hardcode `state.currentSystem = 'KMB'` dan `localStorage.setItem('mar_current_system', 'KMB')` menjadi dinamis sesuai `tenant_code` dari respon server atau prefix token (`SUM`, `KMB`, dll.).
+  - Resolusi Token Multi-Skema (`src/backends/supabase/auth.ts`, `workers/kmb-projek/src/backends/supabase/auth.ts`, `src/lib/supabaseCerminReader.ts`):
+    - `bacaPingSupabase` diperluas agar menyelesaikan token dari `kmb_projek.api_tokens`, skema relasional `sum.api_tokens` / cermin `sum`, dan tabel `public.api_tokens`.
+    - `identitasDariTokenSupabase` memeriksa tabel token `public`, fallback `sum`, dan fallback `kmb_projek`.
+    - Validasi sistem `if (s && s !== 'MAR' && tenantFromDb !== s)` disesuaikan agar gate universal menerima token SUM dan KMB tanpa terblokir sistem default.
+  - Alur PWA vs Web Normal:
+    - Di `loginWithToken`: setelah token valid, menampilkan modal pilihan mode (`showModeChoice`).
+    - Tombol PWA: menutup gate dan memuat dashboard/monitoring PWA offline-first.
+    - Tombol Web: mengarahkan ke `/monitoring?token=...&tenant=...` sekaligus menyinkronkan token dan tenant ke cookies & `localStorage`.
+- Belum selesai / berikutnya: pengujian login gate dengan token SUM di browser laptop.
+
 ### 2026-10-28 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
   - Perbaikan validasi token di login gate PWA KMB Project (`scripts/patched-app.js`, `worker.js`, `workers/kmb-projek/worker.js`) (Bug #10):
@@ -84,6 +118,23 @@ Formatnya:
   - Tambah UI pemilihan mode akses (PWA vs Web Normal) di halaman monitoring/home.
   - Jalankan migrasi `db/kmb_projek/migration_20261028_drop_golongan.sql` di Supabase SQL editor production.
 
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Universal Login Gate)
+- Berubah:
+  - Universal Branding & State Portal (`scripts/built-index.html`, `scripts/patched-app.js`):
+    - Mengganti teks `KMB PORTAL GATE` menjadi `MAR PORTAL GATE` dan title menjadi `MAR PORTAL - Mechanic Activity Report`.
+    - Menyembunyikan label engine toggle (`#btn-engine-toggle`, `#btn-engine-switch-user`) dan menetralkan nama section filter di report.
+    - Mengubah tombol login menjadi `Masuk ke Aplikasi`.
+    - Mengganti hardcode `state.currentSystem = 'KMB'` dan `localStorage.setItem('mar_current_system', 'KMB')` menjadi dinamis sesuai `tenant_code` dari respon server atau prefix token (`SUM`, `KMB`, dll.).
+  - Resolusi Token Multi-Skema (`src/backends/supabase/auth.ts`, `workers/kmb-projek/src/backends/supabase/auth.ts`, `src/lib/supabaseCerminReader.ts`):
+    - `bacaPingSupabase` diperluas agar menyelesaikan token dari `kmb_projek.api_tokens`, skema relasional `sum.api_tokens` / cermin `sum`, dan tabel `public.api_tokens`.
+    - `identitasDariTokenSupabase` memeriksa tabel token `public`, fallback `sum`, dan fallback `kmb_projek`.
+    - Validasi sistem `if (s && s !== 'MAR' && tenantFromDb !== s)` disesuaikan agar gate universal menerima token SUM dan KMB tanpa terblokir sistem default.
+  - Alur PWA vs Web Normal:
+    - Di `loginWithToken`: setelah token valid, menampilkan modal pilihan mode (`showModeChoice`).
+    - Tombol PWA: menutup gate dan memuat dashboard/monitoring PWA offline-first.
+    - Tombol Web: mengarahkan ke `/monitoring?token=...&tenant=...` sekaligus menyinkronkan token dan tenant ke cookies & `localStorage`.
+- Belum selesai / berikutnya: pengujian login gate dengan token SUM di browser laptop.
+
 ### 2026-10-28 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
   - Perbaiki Bug #9 (Pelanggaran Isolasi Rumah §2 & Kebocoran Rute Data SUM):
@@ -117,6 +168,23 @@ Formatnya:
 - Belum selesai / berikutnya:
   - Kunci `worker.js` KMB Project agar 100% terisolasi ke KMB (hapus `GAS_URLS.SUM`, hapus event switch sistem, hapus pembacaan state `mar_current_system === 'SUM'`).
   - Bersihkan label golongan `(1a)` pada dropdown tim mekanik form Create WO dan RPC `kmb_create_refs` (Bug #6).
+
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Universal Login Gate)
+- Berubah:
+  - Universal Branding & State Portal (`scripts/built-index.html`, `scripts/patched-app.js`):
+    - Mengganti teks `KMB PORTAL GATE` menjadi `MAR PORTAL GATE` dan title menjadi `MAR PORTAL - Mechanic Activity Report`.
+    - Menyembunyikan label engine toggle (`#btn-engine-toggle`, `#btn-engine-switch-user`) dan menetralkan nama section filter di report.
+    - Mengubah tombol login menjadi `Masuk ke Aplikasi`.
+    - Mengganti hardcode `state.currentSystem = 'KMB'` dan `localStorage.setItem('mar_current_system', 'KMB')` menjadi dinamis sesuai `tenant_code` dari respon server atau prefix token (`SUM`, `KMB`, dll.).
+  - Resolusi Token Multi-Skema (`src/backends/supabase/auth.ts`, `workers/kmb-projek/src/backends/supabase/auth.ts`, `src/lib/supabaseCerminReader.ts`):
+    - `bacaPingSupabase` diperluas agar menyelesaikan token dari `kmb_projek.api_tokens`, skema relasional `sum.api_tokens` / cermin `sum`, dan tabel `public.api_tokens`.
+    - `identitasDariTokenSupabase` memeriksa tabel token `public`, fallback `sum`, dan fallback `kmb_projek`.
+    - Validasi sistem `if (s && s !== 'MAR' && tenantFromDb !== s)` disesuaikan agar gate universal menerima token SUM dan KMB tanpa terblokir sistem default.
+  - Alur PWA vs Web Normal:
+    - Di `loginWithToken`: setelah token valid, menampilkan modal pilihan mode (`showModeChoice`).
+    - Tombol PWA: menutup gate dan memuat dashboard/monitoring PWA offline-first.
+    - Tombol Web: mengarahkan ke `/monitoring?token=...&tenant=...` sekaligus menyinkronkan token dan tenant ke cookies & `localStorage`.
+- Belum selesai / berikutnya: pengujian login gate dengan token SUM di browser laptop.
 
 ### 2026-10-28 · Raka (+ Antigravity) · kmb-projek (dan bersama)
 - Berubah:

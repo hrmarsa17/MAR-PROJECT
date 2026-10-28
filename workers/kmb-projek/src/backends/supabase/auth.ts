@@ -76,6 +76,31 @@ export async function identitasDariTokenSupabase(
     // Abaikan dan coba kueri skema alternatif di bawah
   }
 
+  // Coba resolusi dari skema sum jika token sum
+  try {
+    const sumRows = await q<{ mechanic_id: number; tenant_id: number; name: string; role: string; }[]>`
+      SELECT t.mechanic_id, t.tenant_id, m.name, m.role::text
+        FROM sum.api_tokens t
+        JOIN sum.mechanics m ON m.id = t.mechanic_id
+       WHERE t.token = ${token.trim()} AND t.is_active LIMIT 1
+    `;
+    if (sumRows[0]) {
+      const sr = sumRows[0];
+      const peran = (sr.role?.toLowerCase() || 'mechanic') as Identitas['peran'];
+      const isL2 = peran === 'superintendent';
+      return {
+        mechanicId: Number(sr.mechanic_id),
+        tenantId: Number(sr.tenant_id || 2),
+        tenantCode: 'SUM',
+        nama: sr.name,
+        peran,
+        bolehLihat: { performa: true, teknis: true, report: true },
+        bolehAdmin: isL2,
+      };
+    }
+  } catch (_) {
+  }
+
   const baris = await q<
     {
       mechanic_id: number; tenant_id: number; tenant_code: string; name: string; role: string;
