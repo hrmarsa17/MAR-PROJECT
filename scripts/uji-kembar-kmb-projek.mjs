@@ -10,9 +10,9 @@
  *
  * Pemakaian:
  *   KMBP_UJI_SPV_TOKEN=<token uji supervisor KMB Project> node scripts/uji-kembar-kmb-projek.mjs
- *   PINTU_URL=https://abadiops.com (bawaan)
+ *   PINTU_URL=https://kmbprojek.abadiops.com (bawaan; abadiops.com sekarang pintu, tanpa /api/gas)
  */
-const PINTU_URL = process.env.PINTU_URL || 'https://abadiops.com';
+const PINTU_URL = process.env.PINTU_URL || 'https://kmbprojek.abadiops.com';
 const GAS_URL = process.env.APPSCRIPT_URL_KMB || 'https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec';
 const TOKEN = process.env.KMBP_UJI_SPV_TOKEN;
 if (!TOKEN) {

@@ -39,6 +39,39 @@ Supaya pekerjaan tidak saling menimpa atau menumpuk:
 - Awali pesan commit dengan nama rumahnya: `[kmb] …`, `[kmb-projek] …`, `[sum] …`, atau `[bersama] …`.
 - Di `docs/PROGRES.md`, selalu tulis nama orangnya.
 
+## 0a. Koridor cara kerja (wajib untuk semua AI, termasuk AI Raka)
+
+Cara kerja yang terbukti 28–29 Okt 2026. Ikuti seperti aturan, bukan saran.
+
+1. **Fakta, bukan dugaan.** Setiap klaim tentang produksi (isi sheet, domain, deploy, data) dibuktikan dulu lewat ping, fetch, DNS, atau dashboard. Dalam laporan, pisahkan yang terverifikasi dari yang dugaan. Contoh nyata 28 Okt:
+   - "Token diterima GAS" belum tentu berarti token ada di sheet yang kita kira.
+   - "Deploy berhasil" belum tentu berarti domain itu dilayani Worker tersebut.
+2. **Uji sebelum push.**
+   - `node --check` dan `npx wrangler deploy --dry-run`.
+   - `wrangler dev` di porta yang bebas: cek dulu dengan `netstat -ano`, dan matikan sisa `wrangler dev` lama.
+   - Uji kembar terhadap GAS untuk aksi yang menyentuh data, dan PGlite untuk SQL.
+3. **Push ke `main` = deploy produksi** (`project-mar` → `kmbprojek.abadiops.com`).
+   - Sesudah push, pantau sampai versi baru tayang, lalu verifikasi.
+   - Perubahan yang bergantung pada sesuatu di luar kode (domain, DNS, SQL, isi sheet) **baru di-push setelah hal itu terbukti ada**. Insiden 28 Okt terjadi karena aturan ini dilanggar.
+4. **Urutan tanpa putus.** Untuk perubahan yang dirasakan pengguna, siapkan tujuan dulu, baru alihkan. Alamat lama dipertahankan sampai tidak ada lagi yang merujuk ke sana. Rencanakan urutannya dan beri tahu Gabriel sebelum langkah yang menyentuh pengguna.
+5. **Isolasi rumah.** Worker rumah hanya bicara dengan GAS dan skema rumahnya sendiri. Satu-satunya bagian lintas rumah adalah pintu (`workers/pintu/`, bagian bersama).
+6. **HARAM hardcode** (§5).
+   - Data hidup tidak ditulis di kode, dan konfigurasi disimpan di satu tempat.
+   - Token hanya lewat environment. Di keluaran, token disamarkan (4 karakter + "…").
+   - Token tidak pernah masuk repo, dokumen, maupun pesan commit.
+7. **Kecil dan bisa dibalik.** Satu commit untuk satu maksud, dengan pesan `[rumah] ringkasan` (ditambah baris Co-Authored-By kalau dikerjakan AI). Jangan menulis ulang seluruh file orang lain. Generator yang menimpa file, misalnya `scripts/update-worker-engine.mjs`, tidak dipakai.
+8. **Perkakas di Windows.**
+   - Jangan memakai `sed -i` di Git Bash untuk file repo, karena seluruh akhiran baris file ikut berubah.
+   - `node -e` memotong backslash, jadi skrip dengan regex ditulis sebagai file.
+   - `worker.js` dirakit dengan `scripts/pack-final-worker.mjs`. Literal `style.css` dikembalikan kalau isinya tidak berubah, dan kedua `worker.js` harus identik.
+9. **SQL.**
+   - File disimpan di `db/<skema>/`, aman dijalankan ulang, dan mencocokkan setepat mungkin (token lewat md5, bukan nilai mentah).
+   - Diuji di PGlite, lalu dijalankan Gabriel di SQL Editor dan diverifikasi dari luar.
+10. **Keputusan milik Gabriel.** Nama, alamat, arsitektur, uang, dan apa pun yang mengubah perilaku pengguna: tanya dulu, lalu catat di `docs/KEPUTUSAN.md`. Jangan membatalkan keputusan yang sudah ada.
+11. **Jujur dan tercatat.**
+    - Laporkan yang gagal apa adanya. Kalau ternyata salah, koreksi secara terbuka di `docs/PROGRES.md`.
+    - Sebelum push, setiap sesi wajib menulis entri di `docs/PROGRES.md`. Temuan dicatat di `docs/BUG-DICATAT.md`, keputusan di `docs/KEPUTUSAN.md`.
+
 ---
 
 ## 1. Aturan utama: PINDAHKAN DULU, PERBAIKI NANTI
@@ -142,9 +175,9 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
 
 ---
 
-## 6. Keadaan repo saat ini (27 Okt 2026)
+## 6. Keadaan repo (diperbarui 29 Okt 2026)
 
-Repo ini belum berbentuk tiga rumah. Isinya sekarang:
+Repo ini sedang menuju susunan tiga rumah. Yang sudah berbentuk rumah: `workers/pintu/` (pintu `abadiops.com`), `workers/sum/` + `pwa/sum/` (`sum.abadiops.com`), dan `workers/kmb/` + `pwa/kmb/` (`kmbtra.abadiops.com`). KMB Project masih berada di akar (`worker.js`, `scripts/`) dengan salinan di `workers/kmb-projek/`, dan tayang di `kmbprojek.abadiops.com`. Serah terima terbaru: `docs/SERAH-TERIMA-2026-10-29.md`. Selain itu:
 - Kode **MARProject** (Next.js) di `src/`, `db/`, `tests/`, dan `scripts/`. Awalnya dibuat untuk KMB V2, sekarang dipakai sebagai dasar kerja KMB Project.
 - **`worker.js`**: hasil build untuk Worker `project-kmb` (lihat `wrangler.toml`), yang bekerja dengan GAS **KMB Project**. Isinya juga memuat pintu ketiga rumah.
   - ⚠️ **PUSH KE `main` = DEPLOY PRODUKSI.** Worker **`project-mar`** (aplikasi KMB Project di `kmbprojek.abadiops.com`) terhubung ke GitHub `kawanabadigrup/Project-KMB` (Workers Builds): setiap push ke `main` di-build dan tayang dalam beberapa menit. Terbukti 28 Okt malam, dan sempat menimbulkan insiden (lihat `docs/PROGRES.md`). `npx wrangler deploy` dari akar repo justru masuk ke Worker `project-kmb`, yang tidak punya domain dan tidak dipakai. Pintu (`abadiops-pintu`) dan rumah lain di-deploy manual dari foldernya. Jadi uji dulu dengan `wrangler dev`, dan push perubahan yang bergantung pada hal di luar kode (domain, DNS, SQL) hanya **sesudah** hal itu terbukti ada.

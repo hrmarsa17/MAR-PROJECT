@@ -5,6 +5,16 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · bersama (serah terima ke Raka)
+- Berubah:
+  - **Langkah 8 selesai:** Gabriel menguji di browser (Chrome dengan secure DNS), dan semua token dikenali serta diantar ke rumahnya. Pindah ke pintu netral tuntas.
+  - Baru: `docs/SERAH-TERIMA-2026-10-29.md`, yang merangkum semua yang ditambah, diubah, dan dibuang 28–29 Okt, beserta tugas Raka.
+  - Baru: `AGENTS.md` §0a, koridor cara kerja untuk semua AI termasuk AI Raka. Baru juga `GEMINI.md`, yang menunjuk ke `AGENTS.md`.
+  - Tabel "Tugas terbuka" dirapikan: hanya tugas yang masih terbuka, dikelompokkan per pemegang.
+  - `scripts/uji-kembar-kmb-projek.mjs`: alamat bawaan menjadi `https://kmbprojek.abadiops.com`, karena `abadiops.com` sekarang pintu.
+  - Catatan DNS: provider internet di jaringan Gabriel mencegat DNS (`*.workers.dev` diblokir, dan jawaban "tidak ada" tersimpan sampai 30 menit). Pengujian lancar dengan Chrome → Settings → Privacy and security → Security → Use secure DNS (Cloudflare).
+- Belum selesai / berikutnya: tabel tugas terbuka (bagian Raka di atas).
+
 ### YYYY-MM-DD · Nama (+ AI) · rumah
 - Berubah: …
 - Belum selesai / berikutnya: …
@@ -14,45 +24,29 @@ Formatnya:
 
 ## Tugas terbuka
 
+Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. Dirapikan 29 Okt 2026 untuk serah terima ke Raka (lihat `docs/SERAH-TERIMA-2026-10-29.md`).
+
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
-| Pintu: pengecekan token kembar otomatis setiap hari untuk ketiga rumah, dengan peringatan | bersama | Gabriel + Raka | lihat `docs/KEPUTUSAN.md` 28 Okt. Saat login, pintu sudah menolak token kembar (28 Okt malam). Pengecekan harian masih butuh daftar token ketiga rumah (akun layanan Google) |
-| KMB Project: hapus salinan 4 akun uji KMB V2 (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`) dari data token KMB Project. Kalau perlu akun uji, buat sendiri dengan token berbeda | kmb-projek | Gabriel (+ Claude), menggantikan Raka | **kode dan sheet selesai** 28 Okt malam (pilihan C). Keempat token lama kini hanya dikenali KMB V2 (`scripts/buat-token-tiga-rumah.mjs --cek`). Sisa: SQL dan deploy di baris bawah |
-| KMB Project: buang hardcode yang tersisa (bug #16): `TOKENS`/`MECHANICS` di `data.js` dan `DEFAULT_MECHANICS_LIST` di `scripts/patched-app.js` | kmb-projek | Raka (+ keputusan Gabriel) | mengubah login luring dan tampilan awal portal |
-| KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | **token lama selesai dibuang** 28 Okt malam. Token uji baru belum dimasukkan; opsional, kalau Raka perlu akun uji |
-| KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | **selesai** 28 Okt malam: 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001). Diverifikasi lewat `kmb_ping`: keempat token lama tidak ada lagi di cermin |
-| Deploy ketiga Worker | bersama | Gabriel | `abadiops-sum` dan `abadiops-kmb` **live** (`sum.abadiops.com`, `kmb.abadiops.com`). `abadiops.com` dilayani Worker **`project-mar`**, yang ter-deploy otomatis dari GitHub `main` (Workers Builds, repo `kawanabadigrup/Project-KMB`). Worker `project-kmb` tidak punya domain dan tidak dipakai |
-| **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | `sum.abadiops.com` dan `kmb.abadiops.com` **sudah live** 28 Okt malam (diverifikasi: terbuka dari jaringan Gabriel, pembaca `#token=` ada, `sum.abadiops.com/api` sampai ke GAS SUM). Pintu `abadiops.com` sudah mengantar ke sana |
-| **Pindah ke pintu netral, urut** (keputusan 28 Okt malam):<br>1. `project-mar` → Domains → Add Domain `kmbprojek.abadiops.com`. Kalau muncul "No zones match": DNS `AAAA kmbprojek 100::` (Proxied), lalu Add Route `kmbprojek.abadiops.com/*`.<br>2. Deploy `workers/kmb`: menambah `kmbtra.abadiops.com`; `kmb.abadiops.com` tetap.<br>3. Deploy `workers/pintu` (`abadiops-pintu`, workers.dev dulu).<br>4. Claude memverifikasi 1–3.<br>5. Pindahkan `abadiops.com`: hapus dari `project-mar`, lalu tambahkan di `abadiops-pintu`.<br>6. Claude memverifikasi, lalu merapikan aplikasi KMB Project (`worker.js`): ping hanya ke GAS KMB Project (1:1 dan isolasi), alamat cadangan `kmbtra`/`sum`. Push = deploy otomatis `project-mar`.<br>7. Lepas `kmb.abadiops.com` dari `workers/kmb`, lalu deploy.<br>8. Uji di browser lewat `abadiops.com` untuk ketiga rumah. | bersama | Gabriel + Claude | **1–5 selesai** 28 Okt malam dan diverifikasi: `kmbprojek` dan `kmbtra` terbuka, `abadiops.com` = pintu (token uji SUM ke `sum`, KMB TRA ke `kmbtra`, palsu ditolak). **6** tayang (dipantau: `kmbprojek` menjalankan `b2097cc` ±2 menit sesudah push). **7** selesai 29 Okt (`kmb.abadiops.com` dilepas, DNS-nya sudah tidak ada). **Sisa: 8, uji browser oleh Gabriel** |
-| KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | **selesai** 28 Okt malam. Diverifikasi dari luar: 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu |
-| Pintu: uji di browser (jendela penyamaran) dengan token uji SUM, KMB V2, KMB Project, token kembar, dan token palsu | bersama | Gabriel | sesudah deploy |
-| KMB Project: definisi `kmb_projek.catalog_jobs` dimasukkan ke `cermin_sheet.sql` dan diisi lewat skrip sinkron (bug #15) | kmb-projek | Raka | |
-| KMB Project: cermin diperbarui terus-menerus, lalu uji kembar per aksi (`scripts/uji-kembar-kmb-projek.mjs`). Aksi yang lulus dimasukkan ke `AKSI_SUPABASE_LULUS_KEMBAR` di `worker.js` | kmb-projek | Raka | sekarang 0 aksi lulus |
-| KMB Project: setel `KMBP_UJI_SPV_TOKEN` (token baru SPV-001) sebelum menjalankan `scripts/sinkron-kmb-projek-cermin.mjs`, `scripts/uji-live-supabase-backend.mjs`, `scripts/verify-sum-kmb-isolation.mjs` | kmb-projek | Raka | |
-| Konfirmasi region Supabase adalah Singapura | bersama | Gabriel + Raka | **selesai** (terkonfirmasi `ap-southeast-1` = Singapura) |
-| Konfirmasi bahwa spreadsheet `1qHjfIUT…` milik SUM V2 (script `1k_A_KER…`) | sum | Gabriel + Raka | **selesai** (terkonfirmasi script `1k_A_KER…` di `MAR-SUM-v2`) |
-| Pindahkan kode MARProject ke cabang arsip, lalu bentuk susunan tiga rumah | bersama | Gabriel + Raka | **arsip selesai** (`archive/marproject`), susunan tiga rumah disiapkan |
-| Buat project Supabase untuk staging | bersama | Gabriel + Raka | menunggu pembuatan/koneksi project web console |
-| Inventaris perilaku per aksi | setiap rumah | pemegang rumah | **kmb-projek selesai** (`docs/INVENTARIS-KMB-PROJEK.md`), **sum versi 1** (`docs/INVENTARIS-SUM.md`), kmb menunggu Gabriel |
+| Setel env `KMBP_UJI_SPV_TOKEN` dan `SUM_UJI_TOKEN` (nilainya dari Gabriel, jangan ditulis di repo). Token uji baru KMB Project belum dimasukkan ke sheet `ApiTokens` | kmb-projek | Raka + Gabriel | |
+| Bug #16: buang hardcode yang tersisa (`DEFAULT_MECHANICS_LIST` di `scripts/patched-app.js`, `TOKENS`/`MECHANICS` di `data.js`) | kmb-projek | Raka (+ keputusan Gabriel) | mengubah login luring dan tampilan awal portal |
+| Buang sisa kode pengantaran di portal (`serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, blok antar di `loginWithToken`) | kmb-projek | Raka | sudah mati sejak 29 Okt |
+| Bug #15: definisi `kmb_projek.catalog_jobs` ke `cermin_sheet.sql`, diisi lewat skrip sinkron | kmb-projek | Raka | |
+| Bug #12: cermin diperbarui terus-menerus, uji kembar per aksi (`scripts/uji-kembar-kmb-projek.mjs`), aksi yang lulus dimasukkan ke `AKSI_SUPABASE_LULUS_KEMBAR` | kmb-projek | Raka | 0 aksi lulus |
+| Perbarui atau pensiunkan `scripts/verify-sum-kmb-isolation.mjs` (menguji perilaku lama: Worker KMB Project melayani SUM) | kmb-projek | Raka | |
+| Worker `project-kmb` tidak dipakai: hapus, dan/atau samakan `name` di `wrangler.toml` akar dengan `project-mar` | kmb-projek | Raka + Gabriel | |
 | SUM: buat akun layanan Google (baca-saja), bagikan spreadsheet SUM sebagai Viewer | sum | Gabriel | langkah ada di `db/sum/README.md` |
-| SUM: jalankan `db/sum/cermin_sheet.sql` di Supabase SQL Editor | sum | Gabriel | |
-| SUM: sinkron pertama (`--kering` dulu), cocokkan jumlah baris 19 sheet | sum | Gabriel | |
+| SUM: jalankan `db/sum/cermin_sheet.sql`, lalu sinkron pertama (`--kering` dulu) dan cocokkan jumlah baris 19 sheet | sum | Gabriel | |
 | SUM: pelajari `readSheetAsObjects` dan versi aktif 4 fungsi kembar, sebelum aksi baca pertama dipindah | sum | Gabriel | |
-| SUM: deploy `workers/sum` ke alamat uji memakai API token kawanabadigrup (`CLOUDFLARE_API_TOKEN`, lalu `npx wrangler deploy`). Jangan `wrangler login`: laptop Gabriel masih login ke akun Cloudflare pribadi untuk Rembes | sum | Gabriel | **selesai** 28 Okt: `https://abadiops-sum.kawanabadigrup.workers.dev` |
-| SUM: uji dengan token sungguhan untuk kelima peran | sum | Gabriel | |
-| Pintu `abadiops.com`: sambungkan rumah SUM. Alamat itu sekarang menyajikan portal KMB Project | bersama | Gabriel + Raka | **kode selesai** 28 Okt malam: pengguna SUM diantar ke `abadiops-sum`. Menunggu deploy |
-| SUM: tombol serah-terima token di PWA lama dan pembaca `#token=` di PWA baru | sum | Gabriel | pembaca `#token=` **selesai** di `pwa/sum` dan `pwa/kmb` (28 Okt malam). Tombol di PWA lama belum. Sebelum mekanik dipindah |
-| SUM: pindahkan 7 halaman web GAS secara 1:1 ke Abadi (dashboard, buat WO, My Work, approval, cancel, laporan/payroll, whoami), lalu tutup halaman web GAS | sum | Gabriel | **wajib sebelum saklar SUM dinyalakan** |
-| KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | **selesai** 28 Okt |
-| KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
-| KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
-| KMB Project: perbaiki gate login agar token asal tidak otomatis lolos ke tab mekanik (Bug #10) | kmb-projek | Raka | **selesai** 28 Okt |
-| KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | **selesai** 28 Okt: `https://abadiops-kmb.kawanabadigrup.workers.dev` |
-| Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | 4 token kembar KMB V2 ↔ KMB Project **diselesaikan dengan pilihan C** (28 Okt), tinggal langkah manual di atas. **Kode pintu selesai** 28 Okt malam: ketiga rumah dicek sekaligus, aturan "jangan menebak" terpasang. Menunggu deploy |
-| KMB V2: uji dengan token sungguhan untuk ketiga peran (mechanic, supervisor, superintendent) | kmb | Gabriel | |
-| Pintu `abadiops.com`: sambungkan rumah KMB V2 | bersama | Gabriel + Raka | **kode selesai** 28 Okt malam: pengguna KMB V2 diantar ke `abadiops-kmb`. Menunggu deploy |
-| KMB V2: inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
-| KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
+| SUM: uji dengan token sungguhan untuk kelima peran, lewat `abadiops.com` | sum | Gabriel | |
+| SUM: tombol serah-terima token di PWA lama (pembaca `#token=` di PWA baru sudah ada) | sum | Gabriel | sebelum mekanik dipindah |
+| SUM: pindahkan 7 halaman web GAS secara 1:1, lalu tutup halaman web GAS | sum | Gabriel | **wajib sebelum saklar SUM dinyalakan** |
+| KMB TRA (KMB V2): uji dengan token sungguhan untuk ketiga peran, lewat `abadiops.com` | kmb | Gabriel | |
+| KMB TRA (KMB V2): inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
+| KMB TRA (KMB V2): pindahkan halaman web GAS secara 1:1, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
+| Pengecekan token kembar otomatis setiap hari untuk semua rumah, dengan peringatan | bersama | Gabriel + Raka | pintu sudah menolak token kembar saat login; pengecekan harian butuh akun layanan Google |
+| Project Supabase untuk staging | bersama | Gabriel + Raka | menunggu |
+| Rumah baru `kmbbupr` (PT KMB di site BUPR): satu baris `RUMAH` di `workers/pintu/wrangler.toml`, ditambah Worker dan PWA rumahnya | bersama | Gabriel + Raka | sesudah migrasi |
 
 ---
 
