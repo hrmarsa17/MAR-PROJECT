@@ -883,37 +883,58 @@
   <!-- ==================== TOKEN LOGIN GATE OVERLAY ==================== -->
   <div class="gate-overlay" id="gate-overlay">
     <div class="gate-card">
-      <div class="gate-icon">
-        <i class="fa-solid fa-key" style="color: #fff;"></i>
-      </div>
-      <h2 class="gate-title">MAR PORTAL GATE</h2>
-      <p class="gate-desc">
-        Pilih sistem projek dan masukkan Token Akses Anda. Sistem akan mengenali profil, hak akses, dan tarif Anda secara otomatis.
-      </p>
+      <!-- Step 1: Input Token -->
+      <div id="gate-step-token">
+        <div class="gate-icon">
+          <i class="fa-solid fa-key" style="color: #fff;"></i>
+        </div>
+        <h2 class="gate-title">MAR Login</h2>
+        <p class="gate-desc">
+          Masukkan Token Akses Anda. Sistem akan mengenali tenant, profil, hak akses, dan tarif secara otomatis.
+        </p>
 
-      <!-- System Badge -->
-      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 12px;">
-        <span class="btn" id="gate-sys-kmb" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #10B981; color: #fff; border: 1px solid #10B981; cursor: default;">
-          Projek KMB
-        </span>
-      </div>
+        <div style="margin-bottom: 20px;">
+          <input type="text" class="form-control" id="input-token" placeholder="Ketik token akses" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
+          <div id="gate-error-msg" style="color: var(--accent-red); font-size: 12px; margin-top: 8px; display: none;"></div>
+        </div>
 
-      <!-- Engine Selector (Supabase / Spreadsheet) -->
-      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 16px;">
-        <span style="font-size: 12px; color: #6B7280; font-weight: 600;">Engine:</span>
-        <button type="button" id="gate-engine-toggle" style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 14px; padding: 3px 12px; font-size: 11px; font-weight: 700; color: #065F46; cursor: pointer; transition: all 0.2s;">
-          ⚡ Supabase Live (Postgres) <span style="font-size: 10px; opacity: 0.8;">⇄ Ke Sheets</span>
+        <button class="btn btn-primary" id="btn-enter-gate" style="width: 100%; padding: 14px; font-size: 15px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk
         </button>
       </div>
 
-      <div style="margin-bottom: 20px;">
-        <input type="text" class="form-control" id="input-token" placeholder="Ketik token (contoh: kmb-... atau token mekanik)" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
-        <div id="gate-error-msg" style="color: var(--accent-red); font-size: 12px; margin-top: 8px; display: none;"></div>
-      </div>
+      <!-- Step 2: Pilih Mode Akses (PWA vs Web) -->
+      <div id="gate-step-mode" style="display: none;">
+        <div class="gate-icon" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+          <i class="fa-solid fa-check" style="color: #fff;"></i>
+        </div>
+        <h2 class="gate-title" style="margin-bottom: 0.5rem;">Pilih Mode Akses</h2>
+        <p class="gate-desc" style="font-size: 14px; margin-bottom: 1rem;">
+          <strong id="gate-tenant-display"></strong> • <span id="gate-peran-display"></span>
+        </p>
 
-      <button class="btn btn-primary" id="btn-enter-gate" style="width: 100%; padding: 14px; font-size: 15px;">
-        <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem
-      </button>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button type="button" id="btn-mode-pwa" style="display: flex; align-items: center; gap: 1rem; justify-content: center; padding: 1rem; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s;">
+            <span style="font-size: 1.5rem;">📱</span>
+            <div style="text-align: left;">
+              <div>PWA (Offline-First)</div>
+              <div style="font-size: 12px; opacity: 0.9;">Untuk HP/komputer tanpa internet</div>
+            </div>
+          </button>
+
+          <button type="button" id="btn-mode-web" style="display: flex; align-items: center; gap: 1rem; justify-content: center; padding: 1rem; background: #F3F4F6; color: #1F2937; border: 2px solid #E5E7EB; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s;">
+            <span style="font-size: 1.5rem;">💻</span>
+            <div style="text-align: left;">
+              <div>Web Normal</div>
+              <div style="font-size: 12px; opacity: 0.7;">Hubungan langsung ke backend</div>
+            </div>
+          </button>
+        </div>
+
+        <p style="font-size: 12px; color: #6B7280; text-align: center; margin-top: 1rem;">
+          <button type="button" id="btn-mode-back" style="background: none; border: none; color: #0369A1; cursor: pointer; font-weight: 600; text-decoration: underline;">← Kembali</button>
+        </p>
+      </div>
     </div>
   </div>
 

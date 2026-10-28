@@ -2411,7 +2411,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
       window.history.replaceState({}, '', url);
 
       updateUserBar();
-      hideGateOverlay();
+      showModeChoice(user.name, info.tenantCode || 'KMB', user.role);
 
       if (user.role === 'mechanic') {
         switchTab('monitoring');
@@ -2456,20 +2456,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
       window.history.replaceState({}, '', url);
 
       updateUserBar();
-      hideGateOverlay();
-
-      if (user.role === 'mechanic') {
-        switchTab('monitoring');
-      } else {
-        renderDashboard();
-        renderApprovals();
-        renderMonitoring();
-        switchTab('dashboard');
-      }
-
-      showToast(`Terhubung (Offline) sebagai ${user.name}!`, 'info');
-      syncFromSpreadsheet(false);
-      return true;
+      showModeChoice(user.name, 'KMB', user.role);
     }
 
     // 3. Token asal / tidak dikenal: JANGAN PINDAH LAYAR, beri notifikasi error di login
@@ -2489,10 +2476,10 @@ export async function loginWithToken(token, isAutoAuth = false) {
     showGateError('Gagal memverifikasi token: ' + (err.message || 'Koneksi error'));
     return false;
   } finally {
-    if (btnEnter) {
-      btnEnter.disabled = false;
-      btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem';
-    }
+  if (btnEnter) {
+    btnEnter.disabled = false;
+    btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk';
+  }
   }
 }
 
@@ -6218,39 +6205,89 @@ async function generatePayrollReport() {
 }
 
 function downloadPayrollReport() {
-  const d = state.lastReportResult;
-  if (!d) {
-    showToast('⚠️ Buat laporan terlebih dahulu sebelum mengunduh', 'warning');
-    return;
-  }
+   const d = state.lastReportResult;
+   if (!d) {
+     showToast('⚠️ Buat laporan terlebih dahulu sebelum mengunduh', 'warning');
+     return;
+   }
 
-  if (d.file_b64) {
-    try {
-      const byteCharacters = atob(d.file_b64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = d.filename || 'Payroll_Report.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('📥 Berkas Excel berhasil diunduh!', 'success');
-      return;
-    } catch (err) {
-      console.warn('Direct b64 download error, falling back to link:', err);
-    }
-  }
+   if (d.file_b64) {
+     try {
+       const byteCharacters = atob(d.file_b64);
+       const byteNumbers = new Array(byteCharacters.length);
+       for (let i = 0; i < byteCharacters.length; i++) {
+         byteNumbers[i] = byteCharacters.charCodeAt(i);
+       }
+       const byteArray = new Uint8Array(byteNumbers);
+       const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = d.filename || 'Payroll_Report.xlsx';
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       showToast('📥 Berkas Excel berhasil diunduh!', 'success');
+       return;
+     } catch (err) {
+       console.warn('Direct b64 download error, falling back to link:', err);
+     }
+   }
 
-  if (d.download_url) {
-    window.open(d.download_url, '_blank');
-  } else {
-    showToast('⚠️ Berkas tidak tersedia untuk diunduh langsung', 'warning');
+   if (d.download_url) {
+     window.open(d.download_url, '_blank');
+   } else {
+     showToast('⚠️ Berkas tidak tersedia untuk diunduh langsung', 'warning');
+   }
+}
+
+function showModeChoice(userName, tenantCode, peran) {
+  const stepToken = document.getElementById('gate-step-token');
+  const stepMode = document.getElementById('gate-step-mode');
+  if (stepToken) stepToken.style.display = 'none';
+  if (stepMode) {
+    stepMode.style.display = 'block';
+    document.getElementById('gate-tenant-display').textContent = tenantCode || 'MAR';
+    document.getElementById('gate-peran-display').textContent = peran ? peran.charAt(0).toUpperCase() + peran.slice(1) : 'Mechanic';
   }
 }
+
+function selectMode(mode) {
+  if (mode === 'pwa') {
+    hideGateOverlay();
+    if (state.currentUser?.role === 'mechanic') {
+      switchTab('monitoring');
+    } else {
+      renderDashboard();
+      renderApprovals();
+      renderMonitoring();
+      switchTab('dashboard');
+    }
+    showToast(`Mode PWA aktif. Data akan disimpan offline.`, 'info');
+    syncFromSpreadsheet(false);
+  } else if (mode === 'web') {
+    window.location.href = '/monitoring';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btnModePwa = document.getElementById('btn-mode-pwa');
+  const btnModeWeb = document.getElementById('btn-mode-web');
+  const btnModeBack = document.getElementById('btn-mode-back');
+  
+  if (btnModePwa) {
+    btnModePwa.addEventListener('click', () => selectMode('pwa'));
+  }
+  if (btnModeWeb) {
+    btnModeWeb.addEventListener('click', () => selectMode('web'));
+  }
+  if (btnModeBack) {
+    btnModeBack.addEventListener('click', () => {
+      document.getElementById('gate-step-token').style.display = 'block';
+      document.getElementById('gate-step-mode').style.display = 'none';
+      const inp = document.getElementById('input-token');
+      if (inp) inp.focus();
+    });
+  }
+});
