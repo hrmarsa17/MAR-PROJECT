@@ -29,8 +29,13 @@ Formatnya:
 | SUM: uji dengan token sungguhan untuk kelima peran | sum | Gabriel | |
 | Pintu `abadiops.com`: sambungkan rumah SUM. Alamat itu sekarang menyajikan portal KMB Project | bersama | Gabriel + Raka | |
 | SUM: tombol serah-terima token di PWA lama dan pembaca `#token=` di PWA baru | sum | Gabriel | sebelum mekanik dipindah |
+| SUM: pindahkan 7 halaman web GAS secara 1:1 ke Abadi (dashboard, buat WO, My Work, approval, cancel, laporan/payroll, whoami), lalu tutup halaman web GAS | sum | Gabriel | **wajib sebelum saklar SUM dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · sum (4)
+- Berubah: mencatat keputusan Gabriel di `docs/KEPUTUSAN.md`. Selama migrasi tetap dua link per rumah: PWA lapangan dan halaman web menu lengkap. Halaman web tetap di GAS sampai dipindah 1:1, dan wajib sudah dipindah sebelum saklar dinyalakan. Ide satu aplikasi offline-first dengan menu lengkap masuk daftar "setelah ketiga rumah selesai pindah". Berlaku juga untuk rumah kmb dan kmb-projek.
+- Belum selesai / berikutnya: uji token sungguhan di alamat uji SUM.
 
 ### 2026-10-28 · Gabriel (+ Claude) · sum (3)
 - Berubah:

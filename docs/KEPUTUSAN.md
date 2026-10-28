@@ -25,6 +25,7 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 | Okt 2026 | Data hanya mengalir satu arah, dari spreadsheet ke Supabase. | Dua buku yang sama-sama ditulisi adalah sumber selisih. |
 | Okt 2026 | Riwayat payroll diimpor ke Supabase. File payroll yang sudah dibayar diimpor terpisah lalu dikunci. | Payroll bulan lalu harus bisa ditarik ulang tanpa angkanya berubah. |
 | Okt 2026 | Bukti pembayaran (file ekspor payroll dan spreadsheet utama ketiga rumah) dipindahkan kepemilikannya ke akun Google kawanabadigrup. | Supaya bukti tidak ikut hilang kalau akun pribadi hilang. |
+| 28 Okt 2026 | **Selama migrasi tetap dua link per rumah:** PWA untuk lapangan (offline-first, menu terbatas) dan halaman web untuk menu lengkap. Halaman web tetap di alamat GAS sampai dipindah 1:1, dan **wajib sudah dipindah sebelum saklar rumah itu dinyalakan**. | Menyatukan menu adalah perubahan perilaku, bukan pemindahan. Halaman web GAS menulis langsung ke spreadsheet, jadi tidak bisa melayani WO yang lahir di Supabase. |
 
 ## Tahapan per rumah
 
@@ -40,7 +41,8 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 
 1. Bug dibereskan per rumah, dimulai dari SUM V2.
 2. Penyatuan pelan-pelan, satu perilaku per kali, dijaga oleh uji patokan ketiga rumah.
-3. Modul baru masuk: PA, MTBF, dan logistik.
+3. **Satu aplikasi offline-first dengan menu lengkap untuk semua peran**, menggantikan dua link (PWA lapangan dan halaman web). Ide Gabriel, 28 Okt 2026.
+4. Modul baru masuk: PA, MTBF, dan logistik.
 
 ## Belum diputuskan (menunggu Gabriel)
 
