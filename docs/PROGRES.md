@@ -33,6 +33,11 @@ Formatnya:
 | KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
+| KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | langkah ada di `workers/kmb/README.md` |
+| KMB V2: uji dengan token sungguhan untuk ketiga peran (mechanic, supervisor, superintendent) | kmb | Gabriel | |
+| Pintu `abadiops.com`: sambungkan rumah KMB V2 | bersama | Gabriel + Raka | |
+| KMB V2: inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
+| KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
 
@@ -45,7 +50,7 @@ Formatnya:
   - Catat keputusan di `docs/KEPUTUSAN.md`: Token unik global, login tanpa pilih sistem.
 - Belum selesai / berikutnya:
   - Tambah UI pemilihan mode akses (PWA vs Web Normal) di halaman monitoring/home.
-  - Commit dan push perubahan Bug #6 + Zero-Select Login.
+  - Jalankan migrasi `db/kmb_projek/migration_20261028_drop_golongan.sql` di Supabase SQL editor production.
 
 ### 2026-10-28 · Raka (+ Antigravity) · kmb-projek
 - Berubah:
@@ -56,13 +61,22 @@ Formatnya:
     - Menjalankan `scripts/pack-final-worker.mjs` untuk mengemas ulang `worker.js` dan menyinkronkan ke `workers/kmb-projek/worker.js`.
 - Belum selesai / berikutnya:
   - Jalankan migrasi `db/kmb_projek/migration_20261028_drop_golongan.sql` di Supabase SQL editor production untuk menyelesaikan Bug #6 di sisi basis data.
+
+### 2026-10-28 · Raka (+ opencode) · kmb-projek
 - Berubah:
   - Perbaiki Bug #6: hapus kolom `golongan` dari `kmb_projek.config_mechanics` dan field `position` dari RPC `kmb_create_refs`. Dropdown mekanik Create WO sekarang 100% murni nama tanpa label golongan, sesuai GAS asli KMB Project.
   - Buat migrasi `db/kmb_projek/migration_20261028_drop_golongan.sql` untuk drop kolom dari DB production.
   - Update skema `db/kmb_projek/cermin_sheet.sql` dan RPC `db/kmb_projek/rpc_baca.sql`.
 - Belum selesai / berikutnya:
   - Jalankan migrasi di Supabase production.
-  - Kunci `worker.js` KMB Project agar 100% terisolasi ke KMB (Bug #9).
+
+### 2026-10-28 · Gabriel (+ Claude) · kmb
+- Berubah:
+  - Tahap 3 (Pintu) untuk KMB V2, dengan pola yang sama seperti rumah SUM. Menambah `pwa/kmb/`: salinan 1:1 PWA `mar-offline` v91. Hanya empat baris yang diubah: alamat API di `app.js:6` dan `sw.js:25` menjadi `./api`, serta versi v91 menjadi v92. File lainnya identik byte demi byte.
+  - Menambah `workers/kmb/` (Worker `abadiops-kmb`): menyajikan PWA dan meneruskan setiap panggilan API apa adanya ke GAS KMB V2. Akun kawanabadigrup dikunci, saklar tetap `gas`. Kodenya sama dengan Worker SUM.
+  - Diuji lokal dengan `wrangler dev`. Ke-7 file PWA tersaji 200 tanpa redirect. Uji kembar dengan token palsu (`ping`, `pull_my_wos`, `create_wo`, token kosong, body bukan JSON): jawaban lewat Worker identik dengan jawaban langsung GAS KMB V2. `wrangler deploy --dry-run` valid.
+  - Belum di-deploy. Belum diuji dengan token sungguhan.
+- Belum selesai / berikutnya: deploy ke alamat uji, uji token sungguhan, inventaris dan cermin KMB V2.
 
 ### 2026-10-28 · Raka (+ Antigravity & opencode) · kmb-projek
 - Berubah:
