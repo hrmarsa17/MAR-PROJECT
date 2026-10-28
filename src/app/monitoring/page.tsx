@@ -98,24 +98,51 @@ export default async function Monitoring({
   return (
     <div className="container">
       {/* Mode akses: PWA vs Web Normal */}
-      <div style={modePilih}>
-        <span style={modeLabel}>Pilih mode akses</span>
-        <div style={modeOpsi}>
+      <div style={{ background: 'var(--primary-soft)', borderRadius: 'var(--radius-md)', padding: '1.5rem', marginBottom: '2rem', border: '2px solid var(--primary)' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ background: 'white', padding: '0.4rem 0.8rem', borderRadius: '50%' }}>📱</span>
+          Pilih mode akses
+        </h3>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+          Token Anda: <code style={{ fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>{aku.nama}</code> • Tenant: <strong>{aku.tenantCode}</strong>
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <button
             type="button"
-            style={modeBtnSuara('pwa')}
             onClick={() => window.location.href = '/pwa'}
+            style={{
+              padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', border: '3px solid var(--primary)',
+              background: 'linear-gradient(135deg, var(--primary-soft) 0%, #e3f2ed 100%)', color: 'var(--primary)',
+              cursor: 'pointer', fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+              boxShadow: '0 4px 12px rgba(45, 106, 79, 0.15)', transition: 'all 0.2s', flex: '1', minWidth: '200px'
+            }}
           >
-            📱 PWA (Offline-first)
+            <span style={{ fontSize: '1.5rem' }}>📱</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 800 }}>PWA (Offline-first)</div>
+              <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Untuk HP lapangan</div>
+            </div>
           </button>
           <button
             type="button"
-            style={modeBtnSuara('web')}
             onClick={() => window.location.href = '/monitoring'}
+            style={{
+              padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', border: '3px solid var(--border-subtle)',
+              background: 'var(--bg-surface)', color: 'var(--text-main)', cursor: 'pointer',
+              fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+              boxShadow: 'var(--shadow-card)', transition: 'all 0.2s', flex: '1', minWidth: '200px'
+            }}
           >
-            💻 Web Normal
+            <span style={{ fontSize: '1.5rem' }}>💻</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 800 }}>Web Normal</div>
+              <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Untuk laptop/PC</div>
+            </div>
           </button>
         </div>
+        <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+          Mode PWA menyimpan data offline, Web Normal terhubung langsung ke backend.
+        </p>
       </div>
 
       {aku.peran !== 'mechanic' && (
