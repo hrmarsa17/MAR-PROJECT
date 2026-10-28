@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS kmb_projek.config_mechanics (
     email TEXT,
     role TEXT NOT NULL DEFAULT 'mechanic',
     status TEXT NOT NULL DEFAULT 'ACTIVE',
-    golongan TEXT DEFAULT '1a',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

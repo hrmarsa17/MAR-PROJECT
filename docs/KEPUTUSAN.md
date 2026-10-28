@@ -26,6 +26,7 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 | Okt 2026 | Riwayat payroll diimpor ke Supabase. File payroll yang sudah dibayar diimpor terpisah lalu dikunci. | Payroll bulan lalu harus bisa ditarik ulang tanpa angkanya berubah. |
 | Okt 2026 | Bukti pembayaran (file ekspor payroll dan spreadsheet utama ketiga rumah) dipindahkan kepemilikannya ke akun Google kawanabadigrup. | Supaya bukti tidak ikut hilang kalau akun pribadi hilang. |
 | 28 Okt 2026 | **Selama migrasi tetap dua link per rumah:** PWA untuk lapangan (offline-first, menu terbatas) dan halaman web untuk menu lengkap. Halaman web tetap di alamat GAS sampai dipindah 1:1, dan **wajib sudah dipindah sebelum saklar rumah itu dinyalakan**. | Menyatukan menu adalah perubahan perilaku, bukan pemindahan. Halaman web GAS menulis langsung ke spreadsheet, jadi tidak bisa melayani WO yang lahir di Supabase. |
+| 28 Okt 2026 | **Login Zero-Select Tenant (Token Unik):** Halaman login (`/masuk`) tidak lagi menampilkan pilihan sistem/rumah (KMB / SUM / KMB Project). Token bersifat unik secara global. Backend Pintu otomatis mendeteksi rumah dari token di seluruh skema database. Setelah login, user memilih mode akses: **PWA (Offline-First)** atau **Web Normal (Live/GAS)**. | Menyederhanakan UX login mekanik. Menghindari kesalahan input sistem manual. |
 
 ## Tahapan per rumah
 

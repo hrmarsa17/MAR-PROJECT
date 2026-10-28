@@ -75,8 +75,7 @@ BEGIN
     SELECT json_agg(json_build_object(
         'mechanic_id', m.mechanic_id,
         'mechanic_name', m.name,
-        'section', m.section,
-        'position', coalesce(m.golongan, 'senior')
+        'section', m.section
     ) ORDER BY m.mechanic_id)
     INTO v_mechs
     FROM kmb_projek.config_mechanics m

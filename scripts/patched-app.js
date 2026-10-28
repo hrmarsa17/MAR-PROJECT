@@ -1744,13 +1744,11 @@ const DEFAULT_REJECTED_WOS = [
 const state = {
   currentSystem: (function() {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const sys = params.get('system') || params.get('tenant');
-      if (sys && sys.toUpperCase() === 'SUM') return 'SUM';
-      const tok = params.get('token') || localStorage.getItem('kmb_portal_token') || '';
-      if (tok.toLowerCase().startsWith('sum-') || tok.toLowerCase().startsWith('sum_')) return 'SUM';
       const savedSys = localStorage.getItem('mar_current_system');
-      if (savedSys && savedSys.toUpperCase() === 'SUM') return 'SUM';
+      if (savedSys && savedSys.toUpperCase() === 'SUM') {
+        localStorage.removeItem('mar_current_system');
+        localStorage.removeItem('kmb_work_orders');
+      }
     } catch (_) {}
     return 'KMB';
   })(),
@@ -1802,7 +1800,7 @@ const state = {
 // INITIALIZATION
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-  document.title = `${state.currentSystem === 'SUM' ? 'SUM' : 'KMB'} PORTAL - Mechanic Activity Report`;
+  document.title = 'KMB PORTAL - Mechanic Activity Report';
   updateSystemBadge();
   updateEngineStatusBadge(true);
   loadCachedSpreadsheetData();
@@ -1863,8 +1861,7 @@ export function toggleEngine() {
 // API CLIENT (Cloudflare Worker Proxy -> Supabase / Google Apps Script)
 // =========================================================================
 const GAS_FALLBACK_URLS = {
-  KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec",
-  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec"
+  KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec"
 };
 
 const ROUTER_ACTIONS = new Set([
@@ -1876,13 +1873,7 @@ const ROUTER_ACTIONS = new Set([
 
 async function api(action, data = {}, opId = null, customToken = null) {
   const token = customToken || (action === 'pull_my_wos' && state.viewAsMechanic?.token ? state.viewAsMechanic.token : state.activeToken);
-  const currentSystem = (function() {
-    if (token) {
-      const t = String(token).trim().toLowerCase();
-      if (t.startsWith('sum-') || t.startsWith('sum_') || t === 'sum') return 'SUM';
-    }
-    return state.currentSystem || 'KMB';
-  })();
+  const currentSystem = 'KMB';
   const activeEngine = getActiveEngine();
   const isRouter = ROUTER_ACTIONS.has(action);
 
@@ -2066,7 +2057,7 @@ export async function syncFromSpreadsheet(manual = false) {
           name: String(m.mechanic_name || m.name || '').trim(),
           mechanic_name: String(m.mechanic_name || m.name || '').trim(),
           section: String(m.section || '').trim().toLowerCase(),
-          position: String(m.position || m.jabatan_aktual || 'junior').trim()
+          position: String(m.position || m.jabatan_aktual || '').trim()
         }));
       }
       const allJobs = [];
@@ -2350,73 +2341,36 @@ function checkAuth() {
 }
 
 export function updateSystemBadge() {
-  const sys = (state.currentSystem || 'KMB').toUpperCase();
+  state.currentSystem = 'KMB';
   const badge = document.getElementById('project-badge');
   if (badge) {
-    badge.textContent = `PROJEK ${sys}`;
-    if (sys === 'SUM') {
-      badge.style.background = '#2563EB';
-      badge.style.color = '#FFFFFF';
-    } else {
-      badge.style.background = '#10B981';
-      badge.style.color = '#FFFFFF';
-    }
-  }
-
-  // Update gate buttons if present
-  const kmbBtn = document.getElementById('gate-sys-kmb');
-  const sumBtn = document.getElementById('gate-sys-sum');
-  if (kmbBtn && sumBtn) {
-    if (sys === 'SUM') {
-      sumBtn.style.background = '#2563EB';
-      sumBtn.style.color = '#fff';
-      sumBtn.style.borderColor = '#2563EB';
-      kmbBtn.style.background = '#F3F4F6';
-      kmbBtn.style.color = '#374151';
-      kmbBtn.style.borderColor = '#D1D5DB';
-    } else {
-      kmbBtn.style.background = '#10B981';
-      kmbBtn.style.color = '#fff';
-      kmbBtn.style.borderColor = '#10B981';
-      sumBtn.style.background = '#F3F4F6';
-      sumBtn.style.color = '#374151';
-      sumBtn.style.borderColor = '#D1D5DB';
-    }
+    badge.textContent = 'PROJEK KMB';
+    badge.style.background = '#10B981';
+    badge.style.color = '#FFFFFF';
+    badge.style.cursor = 'default';
+    badge.removeAttribute('title');
   }
 
   const gateTitle = document.querySelector('.gate-title');
   if (gateTitle) {
-    gateTitle.textContent = `${sys} PORTAL GATE`;
+    gateTitle.textContent = 'KMB PORTAL GATE';
   }
   const btnEnter = document.getElementById('btn-enter-gate');
   if (btnEnter) {
-    btnEnter.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem ${sys}`;
+    btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem KMB';
   }
 }
 
 export function switchSystem(nextSys) {
-  state.currentSystem = nextSys.toUpperCase();
-  localStorage.setItem('mar_current_system', state.currentSystem);
-  const url = new URL(window.location);
-  url.searchParams.set('system', state.currentSystem);
-  window.history.replaceState({}, '', url);
+  state.currentSystem = 'KMB';
+  localStorage.setItem('mar_current_system', 'KMB');
   updateSystemBadge();
-  document.title = `${state.currentSystem} PORTAL - Mechanic Activity Report`;
-  showToast(`Beralih ke sistem ${state.currentSystem}. Menyinkronkan data terbaru...`, 'info');
-  syncFromSpreadsheet(true);
 }
 
 export async function loginWithToken(token) {
   const cleanToken = String(token).trim();
-
-  // Auto-detect system from token prefix
-  if (cleanToken.toLowerCase().startsWith('sum-') || cleanToken.toLowerCase().startsWith('sum_')) {
-    state.currentSystem = 'SUM';
-    localStorage.setItem('mar_current_system', 'SUM');
-  } else if (cleanToken.toLowerCase().startsWith('kmb-')) {
-    state.currentSystem = 'KMB';
-    localStorage.setItem('mar_current_system', 'KMB');
-  }
+  state.currentSystem = 'KMB';
+  localStorage.setItem('mar_current_system', 'KMB');
   updateSystemBadge();
 
   // 1. First resolve from local TOKENS / state for instant UI rendering
@@ -2428,7 +2382,7 @@ export async function loginWithToken(token) {
       user = {
         id: tokenRecord.mechanic_id,
         mechanic_id: tokenRecord.mechanic_id,
-        name: tokenRecord.name || tokenRecord.mechanic_name || (cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : (state.currentSystem === 'SUM' ? 'User SUM' : 'User KMB')),
+        name: tokenRecord.name || tokenRecord.mechanic_name || (cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB'),
         role: tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic')),
         section: tokenRecord.section || 'vessel,maintenance'
       };
@@ -2450,7 +2404,7 @@ export async function loginWithToken(token) {
     user = {
       id: cleanToken,
       mechanic_id: cleanToken,
-      name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : (state.currentSystem === 'SUM' ? 'User SUM' : 'User KMB'),
+      name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB',
       role: cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : 'mechanic')
     };
   }
@@ -2489,8 +2443,8 @@ export async function loginWithToken(token) {
     if (res.success && res.result) {
       const info = res.result;
       if (info.tenant_code || info.tenant || info.system) {
-        state.currentSystem = (info.tenant_code || info.tenant || info.system).toUpperCase();
-        localStorage.setItem('mar_current_system', state.currentSystem);
+        state.currentSystem = 'KMB';
+        localStorage.setItem('mar_current_system', 'KMB');
         updateSystemBadge();
       }
       state.currentUser = {
@@ -2584,10 +2538,23 @@ function logout() {
 // STORAGE & SEED DATA
 // =========================================================================
 function initStorage() {
+  try {
+    const savedSys = localStorage.getItem('mar_current_system');
+    if (savedSys && savedSys.toUpperCase() === 'SUM') {
+      localStorage.removeItem('mar_current_system');
+      localStorage.removeItem('kmb_work_orders');
+    }
+  } catch (_) {}
   const storedWos = localStorage.getItem('kmb_work_orders');
   if (storedWos) {
     try {
-      state.workOrders = JSON.parse(storedWos);
+      const parsed = JSON.parse(storedWos);
+      state.workOrders = Array.isArray(parsed)
+        ? parsed.filter(wo => !wo?.wo_number?.match(/-[A-Z]$/i) && !String(wo?.unit_id || '').toUpperCase().startsWith('SUM'))
+        : [];
+      if (state.workOrders.length !== parsed.length) {
+        saveWorkOrders();
+      }
     } catch (e) {
       state.workOrders = [];
     }
@@ -3098,9 +3065,8 @@ function renderJoblists() {
       availableMechs.forEach(m => {
         const id = m.id || m.mechanic_id;
         const name = m.name || m.mechanic_name;
-        const pos = m.position || '';
         const sel = String(id) === String(mId) ? 'selected' : '';
-        mechOptions += `<option value="${id}" ${sel}>${name}${pos ? ` (${pos})` : ''}</option>`;
+        mechOptions += `<option value="${id}" ${sel}>${name}</option>`;
       });
 
       teamRows += `
@@ -5129,32 +5095,15 @@ function initEventListeners() {
 
   const projectBadge = document.getElementById('project-badge');
   if (projectBadge) {
-    projectBadge.style.cursor = 'pointer';
-    projectBadge.title = 'Klik untuk beralih antara sistem KMB dan SUM';
-    projectBadge.addEventListener('click', () => {
-      const nextSys = state.currentSystem === 'SUM' ? 'KMB' : 'SUM';
-      switchSystem(nextSys);
-    });
+    projectBadge.style.cursor = 'default';
+    projectBadge.removeAttribute('title');
   }
-
-  document.getElementById('gate-sys-kmb')?.addEventListener('click', () => {
-    switchSystem('KMB');
-  });
-  document.getElementById('gate-sys-sum')?.addEventListener('click', () => {
-    switchSystem('SUM');
-  });
 
   const inputToken = document.getElementById('input-token');
   if (inputToken) {
     inputToken.addEventListener('input', (e) => {
-      const val = e.target.value.trim().toLowerCase();
-      if (val.startsWith('sum-') || val.startsWith('sum_')) {
-        state.currentSystem = 'SUM';
-        updateSystemBadge();
-      } else if (val.startsWith('kmb-')) {
-        state.currentSystem = 'KMB';
-        updateSystemBadge();
-      }
+      state.currentSystem = 'KMB';
+      updateSystemBadge();
     });
   }
 

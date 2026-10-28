@@ -30,17 +30,46 @@ Formatnya:
 | Pintu `abadiops.com`: sambungkan rumah SUM. Alamat itu sekarang menyajikan portal KMB Project | bersama | Gabriel + Raka | |
 | SUM: tombol serah-terima token di PWA lama dan pembaca `#token=` di PWA baru | sum | Gabriel | sebelum mekanik dipindah |
 | SUM: pindahkan 7 halaman web GAS secara 1:1 ke Abadi (dashboard, buat WO, My Work, approval, cancel, laporan/payroll, whoami), lalu tutup halaman web GAS | sum | Gabriel | **wajib sebelum saklar SUM dinyalakan** |
-| KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | terbuka (pelanggaran isolasi rumah) |
+| KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
+| KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
 
 ---
 
-### 2026-10-28 · Raka (+ opencode) · bersama / kmb-projek
+### 2026-10-28 · Raka (+ opencode) · bersama
 - Berubah:
-  - Perbaiki Bug #8: kembalikan fallback query `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` dengan perlindungan anti cross-tenant. Token dari skema cermin hanya diterima jika prefix `kmb-`.
-  - Perbaiki Bug #7: validasi token prefix harus cocok dengan tenant_code dari database.
-  - Update status Bug #7 dan #8 di `docs/BUG-DICATAT.md`.
+  - Implementasi **Zero-Select Tenant Login**: hapus pemilihan sistem di `/masuk`. Token otomatis dipetakan ke tenant di database.
+  - Update `src/app/masuk/page.tsx`: hapus UI pemilihan sistem, hanya input token.
+  - Update `src/app/api/masuk/route.ts`: hapus param `sistem`, token resolution otomatis.
+  - Update `src/backends/supabase/auth.ts`: pencarian token di `public.api_tokens` dengan join ke `tenants` untuk deteksi tenant otomatis.
+  - Catat keputusan di `docs/KEPUTUSAN.md`: Token unik global, login tanpa pilih sistem.
 - Belum selesai / berikutnya:
+  - Tambah UI pemilihan mode akses (PWA vs Web Normal) di halaman monitoring/home.
+  - Commit dan push perubahan Bug #6 + Zero-Select Login.
+
+### 2026-10-28 · Raka (+ Antigravity) · kmb-projek
+- Berubah:
+  - Perbaiki Bug #9 (Pelanggaran Isolasi Rumah §2 & Kebocoran Rute Data SUM):
+    - Mengunci frontend `scripts/built-index.html` dan `scripts/patched-app.js` 100% murni KMB Project (menghapus tombol gate SUM `#gate-sys-sum`, tooltip switcher `#project-badge`, event listeners beralih sistem, dan fallback `GAS_FALLBACK_URLS.SUM`).
+    - Menambahkan pembersih cache otomatis pada inisialisasi state & storage untuk membuang entri terkontaminasi SUM (`localStorage.mar_current_system === 'SUM'` dan item `kmb_work_orders` berakhiran suffix batch `-A/-U/-V/-W`).
+    - Menghapus routing dan fallback `GAS_URLS.SUM` dari wrapper `worker.js` dan mengunci `targetSystem = 'KMB'` serta `targetGasUrl` hanya ke endpoint GAS KMB Project.
+    - Menjalankan `scripts/pack-final-worker.mjs` untuk mengemas ulang `worker.js` dan menyinkronkan ke `workers/kmb-projek/worker.js`.
+- Belum selesai / berikutnya:
+  - Jalankan migrasi `db/kmb_projek/migration_20261028_drop_golongan.sql` di Supabase SQL editor production untuk menyelesaikan Bug #6 di sisi basis data.
+- Berubah:
+  - Perbaiki Bug #6: hapus kolom `golongan` dari `kmb_projek.config_mechanics` dan field `position` dari RPC `kmb_create_refs`. Dropdown mekanik Create WO sekarang 100% murni nama tanpa label golongan, sesuai GAS asli KMB Project.
+  - Buat migrasi `db/kmb_projek/migration_20261028_drop_golongan.sql` untuk drop kolom dari DB production.
+  - Update skema `db/kmb_projek/cermin_sheet.sql` dan RPC `db/kmb_projek/rpc_baca.sql`.
+- Belum selesai / berikutnya:
+  - Jalankan migrasi di Supabase production.
+  - Kunci `worker.js` KMB Project agar 100% terisolasi ke KMB (Bug #9).
+
+### 2026-10-28 · Raka (+ Antigravity & opencode) · kmb-projek
+- Berubah:
+  - Perbaiki Bug #8: kembalikan fallback query `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` dengan perlindungan anti cross-tenant. Token dari skema cermin hanya diterima jika prefix `kmb-` atau `s === 'KMB'`.
+  - Mengidentifikasi dan mencatat Bug #9 di `docs/BUG-DICATAT.md`: kebocoran rute data SUM pada `worker.js` KMB Project akibat adanya dual-tenant router dan switch system yang melanggar isolasi rumah [AGENTS.md §2].
+- Belum selesai / berikutnya:
+  - Kunci `worker.js` KMB Project agar 100% terisolasi ke KMB (hapus `GAS_URLS.SUM`, hapus event switch sistem, hapus pembacaan state `mar_current_system === 'SUM'`).
   - Bersihkan label golongan `(1a)` pada dropdown tim mekanik form Create WO dan RPC `kmb_create_refs` (Bug #6).
 
 ### 2026-10-28 · Raka (+ Antigravity) · kmb-projek (dan bersama)

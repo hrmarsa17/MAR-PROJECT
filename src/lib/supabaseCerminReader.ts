@@ -73,8 +73,8 @@ export async function bacaCreateRefsSupabase(sistem = 'KMB') {
        WHERE status = 'ACTIVE' 
        ORDER BY component_id
     `,
-    sql<{ mechanic_id: string; name: string; section: string; golongan: string | null }[]>`
-      SELECT mechanic_id, name, section, golongan 
+    sql<{ mechanic_id: string; name: string; section: string }[]>`
+      SELECT mechanic_id, name, section 
         FROM kmb_projek.config_mechanics 
        WHERE role = 'mechanic' AND status = 'ACTIVE' 
        ORDER BY mechanic_id
@@ -101,8 +101,7 @@ export async function bacaCreateRefsSupabase(sistem = 'KMB') {
         mechanics: mechanics.map(m => ({
           mechanic_id: m.mechanic_id,
           mechanic_name: m.name,
-          section: m.section,
-          position: m.golongan || 'senior'
+          section: m.section
         })),
         components: components.map(c => ({
           component_no: c.component_id,

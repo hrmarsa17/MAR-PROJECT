@@ -20,7 +20,7 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="brand-title">Mechanic Activity Report</span>
-            <span class="brand-badge" id="project-badge" style="cursor: pointer; user-select: none;" title="Klik untuk beralih sistem (KMB / SUM)">PROJEK KMB</span>
+            <span class="brand-badge" id="project-badge" style="user-select: none;">PROJEK KMB</span>
           </div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px;">
             <button type="button" id="btn-engine-toggle" class="engine-toggle-badge" title="Klik untuk beralih antara Supabase & Google Spreadsheet" style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 14px; padding: 2px 9px; font-size: 11px; font-weight: 700; color: #065F46; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;">
@@ -891,14 +891,11 @@
         Pilih sistem projek dan masukkan Token Akses Anda. Sistem akan mengenali profil, hak akses, dan tarif Anda secara otomatis.
       </p>
 
-      <!-- System Selector (KMB / SUM) -->
+      <!-- System Badge -->
       <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 12px;">
-        <button type="button" class="btn" id="gate-sys-kmb" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #10B981; color: #fff; border: 1px solid #10B981; cursor: pointer;">
+        <span class="btn" id="gate-sys-kmb" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #10B981; color: #fff; border: 1px solid #10B981; cursor: default;">
           Projek KMB
-        </button>
-        <button type="button" class="btn" id="gate-sys-sum" style="padding: 6px 18px; font-weight: 700; border-radius: 20px; font-size: 13px; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; cursor: pointer;">
-          Projek SUM
-        </button>
+        </span>
       </div>
 
       <!-- Engine Selector (Supabase / Spreadsheet) -->
@@ -910,7 +907,7 @@
       </div>
 
       <div style="margin-bottom: 20px;">
-        <input type="text" class="form-control" id="input-token" placeholder="Ketik token (contoh: sum-... atau kmb-...)" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
+        <input type="text" class="form-control" id="input-token" placeholder="Ketik token (contoh: kmb-... atau token mekanik)" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 1px;">
         <div id="gate-error-msg" style="color: var(--accent-red); font-size: 12px; margin-top: 8px; display: none;"></div>
       </div>
 
