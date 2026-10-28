@@ -120,12 +120,19 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
 - Rahasia disimpan di **Cloudflare secrets** (`wrangler secret put`) atau **GitHub Actions secrets**. File `.env` tidak pernah di-commit.
 - Sebelum commit, periksa diff-mu. Pastikan tidak ada token, email orang, atau alamat database lengkap di dalamnya.
 - Token lama milik pengguna dipertahankan apa adanya.
-- **Keputusan Gabriel, 27 Okt 2026:** repo boleh tetap publik, dan token serta data yang sudah ada di repo boleh tetap di tempatnya. Jangan mengganti token atau menghapus data itu atas inisiatif sendiri. Larangan di bagian ini berlaku untuk penambahan baru.
+- **Keputusan Gabriel, 27 Okt 2026:** repo boleh tetap publik, dan token serta data yang sudah ada di repo boleh tetap di tempatnya. Jangan mengganti token atau menghapus data itu atas inisiatif sendiri. Larangan di bagian ini berlaku untuk penambahan baru. Pengecualian: untuk kode, aturan **haram hardcode** (§5) juga berlaku pada yang sudah ada, dan dibuang bertahap oleh pemilik rumahnya (bug #16).
 
 ---
 
 ## 5. Garis merah
 
+- **HARAM hardcode** (keputusan Gabriel, 28 Okt 2026). Data yang hidup di spreadsheet atau database **tidak boleh ditulis sebagai nilai tetap** di kode, skrip, uji, bundle, maupun dokumen. Itu mencakup token, daftar token, peran, ID, nama, dan email mekanik, unit, katalog, dan tarif. Data itu bertambah dan berubah, jadi salinannya di kode pasti basi, dan bisa membuka pintu yang seharusnya tertutup. Kejadian 28 Okt: token uji yang ditulis di bundel dan kode KMB Project berujung pada 4 token kembar dan peran yang dikunci ke token.
+  - Baca dari sumbernya: GAS rumah itu, Supabase, atau environment.
+  - Rumah sebuah token ditentukan pintu (ping ke ketiga GAS), **bukan** daftar token di kode.
+  - Uji memakai token palsu (`uji-palsu-…`) atau environment (`KMBP_UJI_SPV_TOKEN`, `SUM_UJI_TOKEN`).
+  - Token baru dibuat dan dicek dengan `scripts/buat-token-tiga-rumah.mjs`, yang bertanya langsung ke ketiga rumah. Token yang dicetaknya tidak boleh di-commit.
+  - Alamat GAS dan alamat aplikasi rumah adalah konfigurasi, bukan data. Simpan di satu tempat (`wrangler.toml`, `GAS_URLS` di `worker.js`), jangan disebar.
+  - Hardcode yang masih tersisa dicatat di `docs/BUG-DICATAT.md` #16 dan dibuang oleh pemilik rumahnya.
 - **Jangan `clasp push` ke GAS produksi**, dan **jangan membuat deployment GAS baru**. Alamat `/exec` setiap GAS harus tetap sama selama masa peralihan.
 - **Jangan menulis ke spreadsheet** dari sistem baru.
 - **Jangan mengubah rumus poin atau rupiah**, dan jangan "membetulkan" angka apa pun. Keputusan bisnis dan angka uang ada di tangan **Gabriel**.

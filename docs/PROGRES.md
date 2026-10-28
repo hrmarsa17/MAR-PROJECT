@@ -17,8 +17,9 @@ Formatnya:
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
 | Pintu: pengecekan token kembar otomatis setiap hari untuk ketiga rumah, dengan peringatan | bersama | Gabriel + Raka | lihat `docs/KEPUTUSAN.md` 28 Okt. Saat login, pintu sudah menolak token kembar (28 Okt malam). Pengecekan harian masih butuh daftar token ketiga rumah (akun layanan Google) |
-| KMB Project: hapus salinan 4 akun uji KMB V2 (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`) dari data token KMB Project. Kalau perlu akun uji, buat sendiri dengan token berbeda | kmb-projek | Gabriel (+ Claude), menggantikan Raka | **kode selesai** 28 Okt (pilihan C). Sisa langkah manual: lihat 4 baris di bawah |
-| KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | |
+| KMB Project: hapus salinan 4 akun uji KMB V2 (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`) dari data token KMB Project. Kalau perlu akun uji, buat sendiri dengan token berbeda | kmb-projek | Gabriel (+ Claude), menggantikan Raka | **kode dan sheet selesai** 28 Okt malam (pilihan C). Keempat token lama kini hanya dikenali KMB V2 (`scripts/buat-token-tiga-rumah.mjs --cek`). Sisa: SQL dan deploy di baris bawah |
+| KMB Project: buang hardcode yang tersisa (bug #16): `TOKENS`/`MECHANICS` di `data.js` dan `DEFAULT_MECHANICS_LIST` di `scripts/patched-app.js` | kmb-projek | Raka (+ keputusan Gabriel) | mengubah login luring dan tampilan awal portal |
+| KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | **token lama selesai dibuang** 28 Okt malam. Token uji baru belum dimasukkan; opsional, kalau Raka perlu akun uji |
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | aman diulang |
 | Deploy ketiga Worker sesudah pull: `project-kmb` (akar repo), `abadiops-sum` (`workers/sum`), `abadiops-kmb` (`workers/kmb`). Pastikan dulu Raka tidak punya deploy `project-kmb` yang lebih baru dan belum di-push | bersama | Gabriel | **mendesak**: membawa pilihan C, gerbang tahap 4 (bug #12), pintu tiga rumah (bug #11), dan RPC bertoken (bug #13) |
 | KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | bug #13, aman diulang |
@@ -52,6 +53,22 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · bersama (haram hardcode + alat token tiga rumah)
+- Berubah:
+  - Aturan **HARAM hardcode** (keputusan Gabriel): `AGENTS.md` §5 dan `docs/KEPUTUSAN.md`.
+  - Baru: `scripts/buat-token-tiga-rumah.mjs`. Skrip ini membuat token hex 20 yang dicek langsung ke GAS ketiga rumah, atau dengan `--cek` memeriksa token yang sudah ada. Tidak ada daftar token di repo, jadi token yang bertambah besok ikut terperiksa.
+    - Cek 28 Okt malam: keempat token uji lama kini hanya dikenali KMB V2.
+    - Ketiga token uji baru belum terdaftar di rumah mana pun.
+  - Hardcode yang dibuang:
+    - Daftar token SUM di `worker.js` (`isKnownSumToken`) dan `scripts/patched-app.js` (`tenantCode`). Rumah ditentukan pintu.
+    - Token uji SUM di `scripts/verify-sum-kmb-isolation.mjs`, sekarang dari environment `SUM_UJI_TOKEN`.
+    - `scripts/sum-monitoring.json`: salinan 40 token dan nama mekanik SUM, tidak dipakai di mana pun, bisa dipulihkan dari git.
+    - Token di `docs/PROGRES.md` dan `docs/INVENTARIS-KMB-PROJEK.md` disamarkan.
+  - Pencocokan ApiTokens ketiga rumah dari tangkapan layar Gabriel, hanya untuk diketahui dan tidak ditulis di mana pun:
+    - Tidak ada token kembar selain 3 akun uji KMB V2 ↔ KMB Project, dan ketiganya sudah dibereskan di sheet.
+    - `mechanic_id` yang sama di dua rumah dengan token berbeda (misalnya `SUPT-001`, `SPV-002`) tidak masalah.
+- Belum selesai / berikutnya: bug #16, hardcode yang tersisa di portal KMB Project (Raka, perlu keputusan Gabriel).
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (pintu tiga rumah + serah-terima token + RPC bertoken)
 - Berubah:
@@ -125,7 +142,7 @@ Formatnya:
   - **Perbaikan:**
     1. worker.js & workers/kmb-projek/worker.js:
        - Ekstraksi bodySystem diperluas membaca peek.system dan params.get('system').
-       - Pengenalan otomatis token SUM (`4651ebd7272e4aae939b`, 4738b90a197443aaa410, prefix sum).
+       - Pengenalan otomatis token SUM (`4651…`, 4738…, prefix sum).
        - isSupabaseSelected dikunci khusus targetSystem === 'KMB'. Untuk SUM, seluruh aksi dialirkan 100% langsung ke SUM GAS (AKfycbzB5EUJ…).
     2. scripts/patched-app.js:
        - api() kini menyematkan parameter query &system=${currentSystem.toLowerCase()} dan header X-MAR-System: currentSystem.
@@ -134,7 +151,7 @@ Formatnya:
        - loginWithToken() mengosongkan state in-memory saat berpindah tenant agar tidak ada data unit/mekanik KMB yang bocor ke sesi SUM.
        - Badge sistem dan indikator engine menampilkan PROJEK SUM (biru) dan SPREADSHEET LIVE (Google Sheets) untuk SUM.
   - **Catatan untuk Gabriel (Perbedaan Form Create WO SUM V2 vs KMB Project):**
-    - Saat login dengan token SUM V2 (`4651ebd7272e4aae939b`), backend kini sudah 100% menarik data monitoring, unit, dan mekanik dari GAS SUM.
+    - Saat login dengan token SUM V2 (`4651…`), backend kini sudah 100% menarik data monitoring, unit, dan mekanik dari GAS SUM.
     - Namun, form Create WO di `abadiops.com` saat ini masih menyajikan antarmuka KMB Project (3 model pembuatan: Bebas/Unit/Job, pembagian section Rekondisi/Maintenance, dan unit Vessel).
     - Di sistem asli SUM V2 (`docs/INVENTARIS-SUM.md` & `pwa/sum/index.html`), SUM tidak punya section dan form Create WO-nya ringkas 2 level (Kategori Pekerjaan → Komponen Dump Truck → Work Condition → Lokasi Bengkel/Lapangan → Tim Mekanik).
     - PWA asli SUM V2 versi 46 sudah siap 1:1 di folder `pwa/sum/` dan telah dideploy Gabriel ke `https://abadiops-sum.kawanabadigrup.workers.dev`.
@@ -146,7 +163,7 @@ Formatnya:
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Penyambungan Multi-GAS Token Resolver untuk SUM V2)
 - Berubah:
   - Multi-GAS Token Resolver (`worker.js`, `workers/kmb-projek/worker.js`):
-    - **Penyebab masalah:** Worker `abadiops.com` sebelumnya hanya memeriksa Supabase `kmb_ping` lalu fallback ke `GAS_EXEC_URL` KMB Project (`AKfycbxh4086…`). Saat token SUM V2 (`4651ebd7272e4aae939b` milik SPV-000 L1 Supervisor) dimasukkan, KMB GAS menolak dengan pesan *"Token tidak dikenal / nonaktif"*.
+    - **Penyebab masalah:** Worker `abadiops.com` sebelumnya hanya memeriksa Supabase `kmb_ping` lalu fallback ke `GAS_EXEC_URL` KMB Project (`AKfycbxh4086…`). Saat token SUM V2 (`4651…` milik SPV-000 L1 Supervisor) dimasukkan, KMB GAS menolak dengan pesan *"Token tidak dikenal / nonaktif"*.
     - **Perilaku baru:**
       - Merestrukturisasi blok `action === 'ping'` di `worker.js` agar berdiri sendiri sebelum pengecekan engine (`isSupabaseSelected && targetSystem === 'KMB'`). Sebelumnya, jika `targetSystem` awal adalah SUM atau belum disetel, blok ping terlewati dan langsung jatuh ke forwarding KMB default.
       - Menambahkan header `X-Active-Engine` pada `Access-Control-Allow-Headers` preflight OPTIONS `/api/gas` agar browser tidak memblokir request karena CORS.

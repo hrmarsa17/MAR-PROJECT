@@ -96,7 +96,7 @@ Dokumen ini adalah **kontrak inventaris resmi** untuk seluruh aksi backend, form
           "id": "VES-012",
           "name": "Gusti Raka Pamungkas",
           "section": "vessel",
-          "token": "97a47ff4c7e443f2a550",
+          "token": "97a4…",
           "pending_mechanic_work": 2,
           "pending_l1": 0,
           "pending_l2": 0,

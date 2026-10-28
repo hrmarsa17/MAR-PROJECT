@@ -2484,7 +2484,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
         section: info.section || 'vessel,maintenance'
       };
 
-      const tenantCode = (info.tenant_code || info.tenantCode || info.tenant || (cleanToken.toLowerCase().startsWith('sum') || cleanToken === '4651ebd7272e4aae939b' || cleanToken === '4738b90a197443aaa410' ? 'SUM' : 'KMB')).toUpperCase();
+      const tenantCode = (info.tenant_code || info.tenantCode || info.tenant || (cleanToken.toLowerCase().startsWith('sum') ? 'SUM' : 'KMB')).toUpperCase();
 
       if (state.currentSystem !== tenantCode) {
         state.units = [];

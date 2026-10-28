@@ -1,15 +1,22 @@
 import worker from '../worker.js';
 
+// Token uji SUM dan KMB Project TIDAK ditulis di repo (haram hardcode, AGENTS.md §5).
+const SUM_UJI_TOKEN = process.env.SUM_UJI_TOKEN;
+if (!SUM_UJI_TOKEN || !process.env.KMBP_UJI_SPV_TOKEN) {
+  console.error('❌ Setel SUM_UJI_TOKEN (token uji SUM) dan KMBP_UJI_SPV_TOKEN (token uji supervisor KMB Project) di environment.');
+  process.exit(1);
+}
+
 async function runTests() {
   console.log('=== STARTING TENANT ISOLATION TESTS ===\n');
 
   // Test 1: ping with SUM token
-  console.log('1. Testing ping with SUM token (4651ebd7272e4aae939b)...');
+  console.log('1. Testing ping with SUM token (SUM_UJI_TOKEN)...');
   const pingSumReq = new Request('https://abadiops.com/api/gas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      token: '4651ebd7272e4aae939b',
+      token: SUM_UJI_TOKEN,
       action: 'ping'
     })
   });
@@ -32,7 +39,7 @@ async function runTests() {
       'X-MAR-System': 'SUM'
     },
     body: JSON.stringify({
-      token: '4651ebd7272e4aae939b',
+      token: SUM_UJI_TOKEN,
       system: 'SUM',
       action: 'pull_monitoring',
       data: {}
@@ -61,7 +68,7 @@ async function runTests() {
       'X-MAR-System': 'SUM'
     },
     body: JSON.stringify({
-      token: '4651ebd7272e4aae939b',
+      token: SUM_UJI_TOKEN,
       system: 'SUM',
       action: 'pull_create_refs',
       data: {}
