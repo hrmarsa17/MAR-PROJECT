@@ -122,10 +122,6 @@ export async function identitasDariTokenSupabase(
 
   const tenantFromDb = r.tenant_code.toUpperCase();
 
-  if (s && s !== 'MAR' && tenantFromDb !== s) {
-    throw tidakBerhak('Token tidak dikenal atau tidak berlaku');
-  }
-
   void q`UPDATE api_tokens SET last_used_at = now() WHERE token = ${cleanToken}`.catch(() => {});
 
   const peran = r.role as Identitas['peran'];
