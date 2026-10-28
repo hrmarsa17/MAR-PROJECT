@@ -101,13 +101,22 @@ export default {
 
         const isSupabaseSelected = (targetSystem === 'KMB') && (reqEngine === 'SUPABASE' || reqEngine === 'POSTGRES') && (reqEngine !== 'SPREADSHEET' && reqEngine !== 'SHEETS' && reqEngine !== 'GAS');
 
+        // TAHAP 4 (docs/KEPUTUSAN.md): aksi baca hanya dilayani dari Supabase kalau sudah lulus
+        // uji kembar (scripts/uji-kembar-kmb-projek.mjs). Uji 28 Okt: ping, pull_monitoring,
+        // pull_create_refs, dan pull_my_wos belum sama dengan GAS, jadi semuanya ke GAS dulu.
+        // Tambahkan nama aksi ke sini satu per satu setelah lulus.
+        // ?uji=supabase memaksa jalur Supabase, khusus untuk uji kembar.
+        const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
+        const ujiSupabase = url.searchParams.get('uji') === 'supabase';
+        const bolehSupabase = (aksi) => ujiSupabase || AKSI_SUPABASE_LULUS_KEMBAR.has(aksi);
+
         // =========================================================================
         // UNIVERSAL TOKEN RESOLVER (Gate Verification: KMB Supabase -> KMB GAS -> SUM GAS)
         // Berjalan independen sebelum router engine agar dapat mengenali rumah token
         // =========================================================================
         if (action === 'ping' && tok) {
           // 1. Coba Supabase (KMB Project) jika bukan request eksplisit SUM
-          if (supabaseUrl && supabaseKey && reqSystem !== 'SUM' && !isKnownSumToken) {
+          if (bolehSupabase('ping') && supabaseUrl && supabaseKey && reqSystem !== 'SUM' && !isKnownSumToken) {
             try {
               const r = await fetch(supabaseUrl + '/rest/v1/rpc/kmb_ping', {
                 method: 'POST',
@@ -206,7 +215,7 @@ export default {
         // Sub-50ms reads from live Supabase Singapore
         // Aktif bila engine adalah SUPABASE
         // =========================================================================
-        if (isSupabaseSelected && targetSystem === 'KMB' && supabaseUrl && supabaseKey) {
+        if (isSupabaseSelected && bolehSupabase(action) && targetSystem === 'KMB' && supabaseUrl && supabaseKey) {
           const supaHeaders = {
             'apikey': supabaseKey,
             'Authorization': 'Bearer ' + supabaseKey,
@@ -287,7 +296,7 @@ export default {
             'Content-Type': 'application/json; charset=utf-8',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Access-Control-Allow-Origin': '*',
-            'X-Active-Engine': (targetSystem === 'KMB' && isSupabaseSelected) ? 'SUPABASE_FALLBACK_SPREADSHEET' : 'SPREADSHEET',
+            'X-Active-Engine': (targetSystem === 'KMB' && isSupabaseSelected && bolehSupabase(action)) ? 'SUPABASE_FALLBACK_SPREADSHEET' : 'SPREADSHEET',
             'X-Target-System': targetSystem
           }
         });

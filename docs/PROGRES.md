@@ -20,7 +20,8 @@ Formatnya:
 | KMB Project: hapus salinan 4 akun uji KMB V2 (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`) dari data token KMB Project. Kalau perlu akun uji, buat sendiri dengan token berbeda | kmb-projek | Gabriel (+ Claude), menggantikan Raka | **kode selesai** 28 Okt (pilihan C). Sisa langkah manual: lihat 4 baris di bawah |
 | KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | |
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | aman diulang |
-| KMB Project: deploy `project-kmb` dari akar repo, sesudah pull. Pastikan dulu Raka tidak punya deploy yang lebih baru dan belum di-push | kmb-projek | Raka atau Gabriel | |
+| KMB Project: deploy `project-kmb` dari akar repo, sesudah pull. Pastikan dulu Raka tidak punya deploy yang lebih baru dan belum di-push | kmb-projek | Raka atau Gabriel | **mendesak**: membawa pilihan C dan gerbang tahap 4 (bug #12) |
+| KMB Project: cermin diperbarui terus-menerus, lalu uji kembar per aksi (`scripts/uji-kembar-kmb-projek.mjs`). Aksi yang lulus dimasukkan ke `AKSI_SUPABASE_LULUS_KEMBAR` di `worker.js` | kmb-projek | Raka | sekarang 0 aksi lulus |
 | KMB Project: setel `KMBP_UJI_SPV_TOKEN` (token baru SPV-001) sebelum menjalankan `scripts/sinkron-kmb-projek-cermin.mjs`, `scripts/uji-live-supabase-backend.mjs`, `scripts/verify-sum-kmb-isolation.mjs` | kmb-projek | Raka | |
 | Konfirmasi region Supabase adalah Singapura | bersama | Gabriel + Raka | **selesai** (terkonfirmasi `ap-southeast-1` = Singapura) |
 | Konfirmasi bahwa spreadsheet `1qHjfIUT…` milik SUM V2 (script `1k_A_KER…`) | sum | Gabriel + Raka | **selesai** (terkonfirmasi script `1k_A_KER…` di `MAR-SUM-v2`) |
@@ -48,6 +49,16 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · kmb-projek (uji kembar baca + gerbang tahap 4)
+- Berubah:
+  - Baru: `scripts/uji-kembar-kmb-projek.mjs`. Skrip ini mengirim permintaan yang sama seperti frontend ke jalur Supabase dan jalur GAS, lalu membandingkan isinya. Baris dicocokkan per kunci, bukan per urutan, dan token tidak dicetak. Hasil 28 Okt (token uji SPV lama): `ping` beda tipis (Supabase menambah `section`), sedangkan `pull_monitoring` dan `pull_create_refs` **jauh berbeda** (bug #12). `pull_my_wos` sama, tapi hanya karena jatuh ke GAS.
+  - `worker.js` dan `workers/kmb-projek/worker.js`: gerbang tahap 4. Supabase hanya melayani aksi yang ada di `AKSI_SUPABASE_LULUS_KEMBAR`, yang sekarang masih kosong. `?uji=supabase` memaksa jalur Supabase, khusus untuk uji kembar. Diuji di `wrangler dev`: jalur bawaan frontend kini dijawab GAS (pending L2 19, approved 44), jalur `?uji=supabase` tetap Supabase (0 dan 1), login token SUM lewat pintu tetap jalan, token palsu tetap ditolak.
+  - `scripts/sinkron-kmb-projek-cermin.mjs`: tidak lagi membuat token tiruan `kmb-<id>` (bug #14).
+  - `docs/BUG-DICATAT.md`: #12, #13, dan #14.
+- Belum selesai / berikutnya:
+  - Deploy `project-kmb`, supaya gerbang ini dan pilihan C berlaku di `abadiops.com`. Selama belum di-deploy, supervisor KMB Project di sana melihat 0 pending.
+  - Raka: cermin perlu diperbarui terus-menerus (bukan sinkron manual), lalu jalankan uji kembar per aksi. Aksi yang lulus dimasukkan ke `AKSI_SUPABASE_LULUS_KEMBAR`.
 
 ### 2026-10-28 · Gabriel (+ Claude) · kmb-projek (pilihan C: hapus salinan token uji KMB V2)
 - Berubah:

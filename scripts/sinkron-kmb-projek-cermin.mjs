@@ -98,7 +98,10 @@ async function sinkronisasi() {
         const mechId = m.id;
         const name = m.name;
         const section = m.section || 'maintenance';
-        const token = m.token || `kmb-${mechId.toLowerCase()}`;
+        // Token persis dari GAS. Mekanik yang di GAS tidak punya token, di sini juga tidak.
+        // (Dulu dibuatkan `kmb-<id>`: tidak 1:1, mudah ditebak, dan awalan `kmb-` milik KMB V2.
+        // Lihat docs/BUG-DICATAT.md #14.)
+        const token = String(m.token || '').trim() || null;
         const email = `${mechId.toLowerCase()}@kmb.local`;
 
         // Simpan ke config_mechanics
@@ -109,13 +112,15 @@ async function sinkronisasi() {
           SET name = EXCLUDED.name, section = EXCLUDED.section, token = EXCLUDED.token
         `;
 
-        // Simpan ke api_tokens
-        await sql`
-          INSERT INTO kmb_projek.api_tokens (token, role, user_id, name, status)
-          VALUES (${token}, 'mechanic', ${mechId}, ${name}, 'ACTIVE')
-          ON CONFLICT (token) DO UPDATE
-          SET user_id = EXCLUDED.user_id, name = EXCLUDED.name
-        `;
+        // Simpan ke api_tokens (hanya kalau GAS memang memberi token)
+        if (token) {
+          await sql`
+            INSERT INTO kmb_projek.api_tokens (token, role, user_id, name, status)
+            VALUES (${token}, 'mechanic', ${mechId}, ${name}, 'ACTIVE')
+            ON CONFLICT (token) DO UPDATE
+            SET user_id = EXCLUDED.user_id, name = EXCLUDED.name
+          `;
+        }
       }
 
       // Ambil profil Supervisor persis dari GAS ping
