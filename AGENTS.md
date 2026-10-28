@@ -87,7 +87,7 @@ Tiap rumah punya frontend dan backend sendiri.
 | Backend sekarang (GAS `/exec`) | `AKfycbwlwlQv…` | `AKfycbxh4086…` | `AKfycbzB5EUJ…` |
 | Spreadsheet | `1ehnxDlv…` | `1lnJo74O…` | `1qHjfIUT…` (terkonfirmasi: script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Backend yang disiapkan | Supabase skema `kmb` | skema `kmb_projek` | skema `sum` |
-| Aplikasi sekarang | `kmb.abadiops.com` (sementara juga `abadiops-kmb.kawanabadigrup.workers.dev`) | `projekkmb.abadiops.com` (Worker `project-kmb`, yang juga melayani pintu `abadiops.com`) | `sum.abadiops.com` (sementara juga `abadiops-sum.kawanabadigrup.workers.dev`) |
+| Aplikasi sekarang | `kmb.abadiops.com` (sementara juga `abadiops-kmb.kawanabadigrup.workers.dev`) | `abadiops.com` untuk sementara; `projekkmb.abadiops.com` menyusul. Worker di balik `abadiops.com` belum teridentifikasi; Worker `project-kmb` tidak punya domain | `sum.abadiops.com` (sementara juga `abadiops-sum.kawanabadigrup.workers.dev`) |
 
 **Pintu** (sementara ada di Worker `project-kmb`, lihat `docs/KEPUTUSAN.md` 28 Okt): token dicek ke GAS ketiga rumah sekaligus. Cocok di satu rumah: pengguna diantar ke aplikasi rumahnya (`projekkmb.abadiops.com`, `sum.abadiops.com`, atau `kmb.abadiops.com`) dengan `#token=`. `abadiops.com` hanya pintu. Cocok di lebih dari satu rumah: ditolak, tidak ditebak. Selain ping, Worker KMB Project hanya bicara dengan GAS KMB Project.
 
@@ -147,6 +147,7 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
 Repo ini belum berbentuk tiga rumah. Isinya sekarang:
 - Kode **MARProject** (Next.js) di `src/`, `db/`, `tests/`, dan `scripts/`. Awalnya dibuat untuk KMB V2, sekarang dipakai sebagai dasar kerja KMB Project.
 - **`worker.js`**: hasil build untuk Worker `project-kmb` (lihat `wrangler.toml`), yang bekerja dengan GAS **KMB Project**. Isinya juga memuat pintu ketiga rumah.
+  - ⚠️ **Dugaan kuat (28 Okt malam): push ke `main` bisa langsung tayang di `abadiops.com`.** Kode baru muncul di sana tanpa deploy manual, sedangkan Worker `project-kmb` tidak punya domain dan hampir tidak dipanggil. Kemungkinan ada Worker lain yang terhubung ke GitHub. Sampai dipastikan di dashboard, anggap setiap push ke `main` sebagai deploy produksi.
   - Bagian kodenya disunting langsung. `app.js` di dalamnya dirakit dari `scripts/patched-app.js` dengan `scripts/pack-final-worker.mjs`. Perakitan ini mengubah akhiran baris literal `style.css`, jadi kembalikan literal itu kalau isinya tidak berubah.
   - Salin hasilnya ke `workers/kmb-projek/worker.js`; kedua file harus identik.
   - **Jangan jalankan `scripts/update-worker-engine.mjs`** (dipensiunkan 28 Okt): skrip itu menimpa seluruh blok `/api/gas`.

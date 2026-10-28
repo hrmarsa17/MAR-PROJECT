@@ -2436,7 +2436,9 @@ export function switchSystem(nextSys) {
 // Aplikasi tiap rumah (pintu, bug #11). Worker mengirim `alamat_rumah`; daftar ini
 // cadangan kalau ping dijawab GAS langsung karena Worker tak terjangkau.
 const ALAMAT_APLIKASI_RUMAH = {
-  KMB: 'https://projekkmb.abadiops.com/',
+  // DITUNDA sampai projekkmb.abadiops.com terpasang di Worker yang melayani abadiops.com
+  // (lihat docs/PROGRES.md). Selama kosong, pengguna KMB Project tetap di portal ini.
+  KMB: '', // nanti: 'https://projekkmb.abadiops.com/'
   SUM: 'https://sum.abadiops.com/',
   KMB_V2: 'https://kmb.abadiops.com/'
 };
