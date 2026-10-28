@@ -23,7 +23,7 @@ Formatnya:
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | **selesai** 28 Okt malam: 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001). Diverifikasi lewat `kmb_ping`: keempat token lama tidak ada lagi di cermin |
 | Deploy ketiga Worker | bersama | Gabriel | `abadiops-sum` dan `abadiops-kmb` **live** (`sum.abadiops.com`, `kmb.abadiops.com`). `abadiops.com` dilayani Worker **`project-mar`**, yang ter-deploy otomatis dari GitHub `main` (Workers Builds, repo `kawanabadigrup/Project-KMB`). Worker `project-kmb` tidak punya domain dan tidak dipakai |
 | **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | `sum.abadiops.com` dan `kmb.abadiops.com` **sudah live** 28 Okt malam (diverifikasi: terbuka dari jaringan Gabriel, pembaca `#token=` ada, `sum.abadiops.com/api` sampai ke GAS SUM). Pintu `abadiops.com` sudah mengantar ke sana |
-| **Pindah ke pintu netral, urut** (keputusan 28 Okt malam):<br>1. `project-mar` → Domains → Add Domain `kmbprojek.abadiops.com`. Kalau muncul "No zones match": DNS `AAAA kmbprojek 100::` (Proxied), lalu Add Route `kmbprojek.abadiops.com/*`.<br>2. Deploy `workers/kmb`: menambah `kmbtra.abadiops.com`; `kmb.abadiops.com` tetap.<br>3. Deploy `workers/pintu` (`abadiops-pintu`, workers.dev dulu).<br>4. Claude memverifikasi 1–3.<br>5. Pindahkan `abadiops.com`: hapus dari `project-mar`, lalu tambahkan di `abadiops-pintu`.<br>6. Claude memverifikasi, lalu merapikan aplikasi KMB Project (`worker.js`): ping hanya ke GAS KMB Project (1:1 dan isolasi), alamat cadangan `kmbtra`/`sum`. Push = deploy otomatis `project-mar`.<br>7. Lepas `kmb.abadiops.com` dari `workers/kmb`, lalu deploy.<br>8. Uji di browser lewat `abadiops.com` untuk ketiga rumah. | bersama | Gabriel + Claude | kode pintu siap dan teruji lokal 28 Okt malam |
+| **Pindah ke pintu netral, urut** (keputusan 28 Okt malam):<br>1. `project-mar` → Domains → Add Domain `kmbprojek.abadiops.com`. Kalau muncul "No zones match": DNS `AAAA kmbprojek 100::` (Proxied), lalu Add Route `kmbprojek.abadiops.com/*`.<br>2. Deploy `workers/kmb`: menambah `kmbtra.abadiops.com`; `kmb.abadiops.com` tetap.<br>3. Deploy `workers/pintu` (`abadiops-pintu`, workers.dev dulu).<br>4. Claude memverifikasi 1–3.<br>5. Pindahkan `abadiops.com`: hapus dari `project-mar`, lalu tambahkan di `abadiops-pintu`.<br>6. Claude memverifikasi, lalu merapikan aplikasi KMB Project (`worker.js`): ping hanya ke GAS KMB Project (1:1 dan isolasi), alamat cadangan `kmbtra`/`sum`. Push = deploy otomatis `project-mar`.<br>7. Lepas `kmb.abadiops.com` dari `workers/kmb`, lalu deploy.<br>8. Uji di browser lewat `abadiops.com` untuk ketiga rumah. | bersama | Gabriel + Claude | **1–5 selesai** 28 Okt malam dan diverifikasi: `kmbprojek` dan `kmbtra` terbuka, `abadiops.com` = pintu (token uji SUM ke `sum`, KMB TRA ke `kmbtra`, palsu ditolak). **6:** kode di-push (otomatis tayang di `project-mar`). **Sisa: 7 dan 8** |
 | KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | **selesai** 28 Okt malam. Diverifikasi dari luar: 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu |
 | Pintu: uji di browser (jendela penyamaran) dengan token uji SUM, KMB V2, KMB Project, token kembar, dan token palsu | bersama | Gabriel | sesudah deploy |
 | KMB Project: definisi `kmb_projek.catalog_jobs` dimasukkan ke `cermin_sheet.sql` dan diisi lewat skrip sinkron (bug #15) | kmb-projek | Raka | |
@@ -55,6 +55,27 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-29 · Gabriel (+ Claude) · bersama + kmb-projek (pintu live; KMB Project kembali ke rumahnya sendiri)
+- Berubah:
+  - Langkah 1–5 oleh Gabriel:
+    - Custom domain `kmbprojek.abadiops.com` di `project-mar`.
+    - Deploy `abadiops-kmb` (`kmbtra.abadiops.com`) dan `abadiops-pintu`.
+    - `abadiops.com` dilepas dari `project-mar` dan dipasang di `abadiops-pintu`.
+    - Semuanya diverifikasi dari luar.
+  - Saat pindah, `abadiops.com` sempat tanpa Worker beberapa detik. Resolver yang bertanya pada saat itu bisa menyimpan jawaban "tidak ada" sampai sekitar 30 menit.
+  - Langkah 6, aplikasi KMB Project (`worker.js` dan `scripts/patched-app.js`) kembali hanya rumahnya sendiri:
+    - Ping hanya ke GAS KMB Project, sehingga 1:1 dengan PWA lama, terisolasi, dan login kembali cepat.
+    - `GAS_URLS.KMB_V2` dan `GAS_FALLBACK_URLS.KMB_V2` dibuang.
+    - Cadangan ping hanya ke KMB Project.
+    - `ALAMAT_APLIKASI_RUMAH` kosong, sehingga blok pengantaran tidak pernah jalan. Itu sisa kode yang bisa dibuang Raka.
+    - Diuji di `wrangler dev`: token uji SUM, token uji KMB TRA, dan token palsu ditolak dengan pesan asli GAS.
+  - `scripts/buat-token-tiga-rumah.mjs` membaca daftar rumah dari `workers/pintu/wrangler.toml`, jadi rumah baru (misalnya `kmbbupr`) otomatis ikut dicek. Diuji `--cek`: token uji SUM → SUM, KMB TRA → KMB TRA.
+  - Catatan perkakas: `sed -i` di Git Bash mengubah akhiran baris seluruh file (CRLF → LF). Untuk file repo, pakai Node.
+- Belum selesai / berikutnya:
+  - 7: lepas `kmb.abadiops.com` dari `workers/kmb/wrangler.toml`, lalu deploy.
+  - 8: uji di browser lewat `abadiops.com`.
+  - Raka: `git pull`; buang sisa kode pengantaran di portal; bug #16.
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (pintu netral abadiops-pintu + penamaan rumah)
 - Berubah:

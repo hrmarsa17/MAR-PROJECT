@@ -3,8 +3,8 @@
  *
  * Tidak ada daftar token yang ditulis di repo. Setiap token dicek LANGSUNG ke GAS ketiga rumah
  * (ping), jadi token yang bertambah besok ikut terperiksa tanpa mengubah apa pun di sini.
- * Alamat GAS diambil dari GAS_URLS di worker.js (sumber yang sama dengan pintu), kecuali
- * ditimpa environment APPSCRIPT_URL_KMB / APPSCRIPT_URL_SUM / APPSCRIPT_URL_KMB_V2.
+ * Daftar rumah dan alamat GAS diambil dari workers/pintu/wrangler.toml ([vars] RUMAH), sumber yang
+ * sama dengan pintu. Bisa ditimpa environment APPSCRIPT_URL_<KODE> (misalnya APPSCRIPT_URL_SUM).
  *
  * Format token selama migrasi: hex 20 karakter, sama dengan buatan GAS (docs/KEPUTUSAN.md 28 Okt).
  *
@@ -21,13 +21,14 @@
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 
-const worker = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
-const dariWorker = (kunci) => (worker.match(new RegExp(`^\\s*${kunci}: "([^"]+)"`, 'm')) || [])[1];
-const RUMAH = {
-  'KMB Project': process.env.APPSCRIPT_URL_KMB || dariWorker('KMB'),
-  'SUM V2': process.env.APPSCRIPT_URL_SUM || dariWorker('SUM'),
-  'KMB V2': process.env.APPSCRIPT_URL_KMB_V2 || dariWorker('KMB_V2'),
-};
+// Daftar rumah dibaca dari konfigurasi pintu (workers/pintu/wrangler.toml, [vars] RUMAH): satu
+// sumber untuk pintu dan alat ini. Rumah baru (misalnya kmbbupr) otomatis ikut dicek.
+const tomlPintu = readFileSync(new URL('../workers/pintu/wrangler.toml', import.meta.url), 'utf8');
+const RUMAH = {};
+for (const m of tomlPintu.matchAll(/\{\s*kode\s*=\s*"([^"]+)",\s*nama\s*=\s*"([^"]+)",\s*gas\s*=\s*"([^"]+)"/g)) {
+  RUMAH[m[2]] = process.env['APPSCRIPT_URL_' + m[1].toUpperCase()] || m[3];
+}
+if (Object.keys(RUMAH).length < 3) { console.error('❌ Daftar rumah di workers/pintu/wrangler.toml tidak terbaca'); process.exit(1); }
 for (const [nama, url] of Object.entries(RUMAH)) {
   if (!url) { console.error(`❌ Alamat GAS ${nama} tidak ditemukan di worker.js atau environment`); process.exit(1); }
 }

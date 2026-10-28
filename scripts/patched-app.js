@@ -1859,8 +1859,7 @@ export function toggleEngine() {
 // =========================================================================
 const GAS_FALLBACK_URLS = {
   KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec",
-  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec",
-  KMB_V2: "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec"
+  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec"
 };
 
 const ROUTER_ACTIONS = new Set([
@@ -1938,9 +1937,9 @@ async function api(action, data = {}, opId = null, customToken = null) {
     // Direct GAS fallback if proxy is unreachable or blocked
     try {
       if (action === 'ping') {
-        // Cadangan bila Worker tak terjangkau: aturan pintu yang sama dengan Worker
-        // (ketiga rumah sekaligus, jangan menebak). Lihat docs/KEPUTUSAN.md 28 Okt.
-        const rumahCadangan = [['KMB', GAS_FALLBACK_URLS.KMB], ['SUM', GAS_FALLBACK_URLS.SUM], ['KMB_V2', GAS_FALLBACK_URLS.KMB_V2]];
+        // Cadangan bila Worker tak terjangkau: hanya GAS KMB Project (isolasi rumah). Rumah lain
+        // dikenali pintu di abadiops.com, bukan di sini.
+        const rumahCadangan = [['KMB', GAS_FALLBACK_URLS.KMB]];
         const hasilCadangan = await Promise.all(rumahCadangan.map(async ([tenant, gasUrl]) => {
           try {
             const r = await fetch(gasUrl, {
@@ -2433,15 +2432,9 @@ export function switchSystem(nextSys) {
   updateSystemBadge();
 }
 
-// Aplikasi tiap rumah (pintu, bug #11). Worker mengirim `alamat_rumah`; daftar ini
-// cadangan kalau ping dijawab GAS langsung karena Worker tak terjangkau.
-const ALAMAT_APLIKASI_RUMAH = {
-  // DITUNDA sampai projekkmb.abadiops.com terpasang di Worker yang melayani abadiops.com
-  // (lihat docs/PROGRES.md). Selama kosong, pengguna KMB Project tetap di portal ini.
-  KMB: '', // nanti: 'https://projekkmb.abadiops.com/'
-  SUM: 'https://sum.abadiops.com/',
-  KMB_V2: 'https://kmb.abadiops.com/'
-};
+// Aplikasi ini hanya KMB Project; pintu semua rumah ada di abadiops.com (Worker abadiops-pintu).
+// Daftar ini sengaja kosong: tidak ada pengantaran dari sini.
+const ALAMAT_APLIKASI_RUMAH = {};
 
 function serahkanKeRumah(alamat, token) {
   // Sesi portal dibersihkan, supaya membuka abadiops.com lagi tidak memulihkan
@@ -2480,7 +2473,8 @@ export async function loginWithToken(token, isAutoAuth = false) {
 
       // PINTU (docs/KEPUTUSAN.md 28 Okt): pengguna diantar ke aplikasi rumahnya sendiri
       // beserta tokennya, kecuali halaman ini memang sudah aplikasi rumahnya (KMB Project
-      // di projekkmb.abadiops.com). Bug #11.
+      // di kmbprojek.abadiops.com). Bug #11. Sejak pintu pindah ke abadiops-pintu, daftar alamat kosong,
+      // jadi blok ini tidak pernah mengantar (sisa yang bisa dibuang Raka).
       const alamatRumah = info.alamat_rumah || ALAMAT_APLIKASI_RUMAH[String(info.tenant_code || '').toUpperCase()];
       if (alamatRumah && new URL(alamatRumah).host !== window.location.host) {
         serahkanKeRumah(alamatRumah, cleanToken);
