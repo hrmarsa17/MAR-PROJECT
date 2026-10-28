@@ -23,7 +23,7 @@ Formatnya:
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | **selesai** 28 Okt malam: 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001). Diverifikasi lewat `kmb_ping`: keempat token lama tidak ada lagi di cermin |
 | Deploy ketiga Worker | bersama | Gabriel | `abadiops-sum` dan `abadiops-kmb` **live** (`sum.abadiops.com`, `kmb.abadiops.com`). `abadiops.com` dilayani Worker **`project-mar`**, yang ter-deploy otomatis dari GitHub `main` (Workers Builds, repo `kawanabadigrup/Project-KMB`). Worker `project-kmb` tidak punya domain dan tidak dipakai |
 | **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | `sum.abadiops.com` dan `kmb.abadiops.com` **sudah live** 28 Okt malam (diverifikasi: terbuka dari jaringan Gabriel, pembaca `#token=` ada, `sum.abadiops.com/api` sampai ke GAS SUM). Pintu `abadiops.com` sudah mengantar ke sana |
-| KMB Project ke `projekkmb.abadiops.com`: (1) dashboard → Workers & Pages → **`project-mar`** → Settings → Domains & Routes → Add → Custom domain → `projekkmb.abadiops.com`; (2) sesudah domain terbukti ada, isi kembali `ALAMAT_RUMAH.KMB_PROJEK` di `worker.js` dan `ALAMAT_APLIKASI_RUMAH.KMB` di `scripts/patched-app.js`, lalu push (otomatis tayang) | kmb-projek | Gabriel + Claude | pengantaran KMB Project **ditunda** (alamat dikosongkan) sampai langkah (1) selesai |
+| **Pindah ke pintu netral, urut** (keputusan 28 Okt malam):<br>1. `project-mar` → Domains → Add Domain `kmbprojek.abadiops.com`. Kalau muncul "No zones match": DNS `AAAA kmbprojek 100::` (Proxied), lalu Add Route `kmbprojek.abadiops.com/*`.<br>2. Deploy `workers/kmb`: menambah `kmbtra.abadiops.com`; `kmb.abadiops.com` tetap.<br>3. Deploy `workers/pintu` (`abadiops-pintu`, workers.dev dulu).<br>4. Claude memverifikasi 1–3.<br>5. Pindahkan `abadiops.com`: hapus dari `project-mar`, lalu tambahkan di `abadiops-pintu`.<br>6. Claude memverifikasi, lalu merapikan aplikasi KMB Project (`worker.js`): ping hanya ke GAS KMB Project (1:1 dan isolasi), alamat cadangan `kmbtra`/`sum`. Push = deploy otomatis `project-mar`.<br>7. Lepas `kmb.abadiops.com` dari `workers/kmb`, lalu deploy.<br>8. Uji di browser lewat `abadiops.com` untuk ketiga rumah. | bersama | Gabriel + Claude | kode pintu siap dan teruji lokal 28 Okt malam |
 | KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | **selesai** 28 Okt malam. Diverifikasi dari luar: 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu |
 | Pintu: uji di browser (jendela penyamaran) dengan token uji SUM, KMB V2, KMB Project, token kembar, dan token palsu | bersama | Gabriel | sesudah deploy |
 | KMB Project: definisi `kmb_projek.catalog_jobs` dimasukkan ke `cermin_sheet.sql` dan diisi lewat skrip sinkron (bug #15) | kmb-projek | Raka | |
@@ -55,6 +55,22 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · bersama (pintu netral abadiops-pintu + penamaan rumah)
+- Berubah:
+  - Keputusan Gabriel: `abadiops.com` hanya pintu yang netral; rumah: `sum`, `kmbtra` (KMB V2), `kmbprojek` (KMB Project); berikutnya `kmbbupr`.
+  - Baru: `workers/pintu/`, yaitu Worker `abadiops-pintu`.
+    - `src/index.js`: `POST /api/pintu` mengecek token ke GAS semua rumah sekaligus. Cocok satu: diantar. Cocok lebih dari satu: ditolak. Tidak cocok: pesan asli GAS. Ada rumah yang tidak menjawab: "server sibuk".
+    - `public/index.html`: halaman netral "Abadi Operation". Menerima `?token=` (tautan "salin token" dari portal KMB Project) dan `#token=`. Hanya mengingat rumah terakhir, tidak pernah tokennya.
+    - `wrangler.toml`: daftar rumah di `[vars] RUMAH`. Alamat GAS disalin dari `GAS_URLS` di `worker.js`.
+    - Diuji di `wrangler dev`:
+      - Halaman tampil, dan `GET /api/pintu` ditolak (405).
+      - Token uji SUM diantar ke `sum.abadiops.com`, token uji KMB TRA ke `kmbtra.abadiops.com`.
+      - Token palsu dan token kosong ditolak.
+  - `workers/kmb/wrangler.toml`: route `kmbtra.abadiops.com` ditambahkan. `kmb.abadiops.com` sengaja tetap sampai pintu pindah, karena portal di `abadiops.com` masih mengantar ke sana.
+  - Catatan uji: proses `wrangler dev` sisa uji kembar siang tadi masih memegang porta 8797/8798 dan menjawab sebagai rumah lain. Semuanya sudah dimatikan. Kalau uji lokal terasa aneh, cek dulu porta dengan `netstat -ano`.
+  - `worker.js` (KMB Project, deploy otomatis) **sengaja belum diubah**. Alamat baru baru di-push sesudah domainnya terbukti ada (pelajaran insiden).
+- Belum selesai / berikutnya: urutan pindah di tabel tugas.
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (INSIDEN: pengantaran KMB Project ke domain yang belum ada)
 - Kejadian:

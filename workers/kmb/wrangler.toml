@@ -9,7 +9,11 @@ workers_dev = true
 # Alamat utama (keputusan Gabriel 28 Okt malam, pilihan A). *.workers.dev dicegat DNS
 # sebagian provider internet, sedangkan domain sendiri tidak. Cloudflare membuat DNS dan
 # sertifikatnya otomatis. workers.dev tetap aktif sementara untuk perangkat uji.
+# Alamat KMB TRA (keputusan Gabriel 28 Okt malam): kmbtra.abadiops.com. kmb.abadiops.com
+# adalah alamat lama, dipertahankan sampai abadiops.com pindah ke Worker pintu (portal yang
+# sekarang di abadiops.com masih mengantar pengguna KMB V2 ke sana). Hapus sesudahnya.
 routes = [
+  { pattern = "kmbtra.abadiops.com", custom_domain = true },
   { pattern = "kmb.abadiops.com", custom_domain = true }
 ]
 
