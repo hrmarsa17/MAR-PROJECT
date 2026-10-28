@@ -5,6 +5,22 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · bersama (target selesai + panel saklar + serah terima final)
+- Berubah: dokumen saja.
+  - `docs/SAKLAR.md`:
+    - Bagian **Panel saklar di `abadiops.com`**: tersembunyi, kata sandi, peringatan saat maju, mundur sebagai penyelamat tanpa kehilangan data, hanya bergantung pada Cloudflare, gagal membaca berarti `gas`, riwayat perubahan.
+    - Bagian **Target selesai migrasi**: matang, diuji langsung, aman, ada cadangan dan jaring pengaman, tinggal menyalakan saklar.
+  - `docs/KEPUTUSAN.md`: keputusan target selesai dan panel saklar. Nomor 11 (aplikasi KMB Project 1:1 atau portal) ditambahkan dan menunggu Gabriel.
+  - `docs/SERAH-TERIMA-2026-10-29.md` ditulis ulang menjadi versi final:
+    - susunan sekarang dan alur masuk;
+    - ringkasan perubahan 28–29 Okt;
+    - status tiap rumah per tahap;
+    - **urutan kerja 8 langkah sampai go-live**;
+    - tugas kecil yang masih terbuka;
+    - larangan.
+  - Tabel tugas: rencana berurutan ditaruh paling atas.
+- Belum selesai / berikutnya: Raka dan AI-nya melanjutkan dari `docs/SERAH-TERIMA-2026-10-29.md` §5.
+
 ### 2026-10-29 · Gabriel (+ Claude) · bersama (keputusan nomor 10: pilihan di pintu, tanpa layar token lagi)
 - Berubah:
   - **Pintu** (`workers/pintu`):
@@ -78,6 +94,11 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
+| **Rencana migrasi berurutan.** Target selesai: tinggal menyalakan saklar. Urutannya ada di `docs/SERAH-TERIMA-2026-10-29.md` §5 dan `docs/SAKLAR.md` | bersama | Gabriel + Raka | panduan utama |
+| KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | pemindahan domain menunggu keputusan nomor 11 |
+| Cermin terjadwal ketiga rumah (Cron Cloudflare, menyalin setiap sheet termasuk bulan lama), dengan laporan selisih harian; lulus kalau selisihnya nol 7 hari | bersama | Raka + Gabriel | Gabriel: buat akun layanan Google dan bagikan ketiga spreadsheet |
+| Panel saklar di `abadiops.com` sesuai `docs/SAKLAR.md` (tersembunyi, kata sandi, peringatan, mundur sebagai penyelamat, hanya bergantung pada Cloudflare) | bersama | Raka (+ AI) | kata sandi diset Gabriel sebagai *secret*; saklar tetap `gas` |
+| Jaring pengaman: Supabase Pro + keputusan nomor 5, staging, latihan saklar balik di staging | bersama | Gabriel + Raka | sebelum go-live rumah mana pun |
 | Setel env `KMBP_UJI_SPV_TOKEN` dan `SUM_UJI_TOKEN` (nilainya dari Gabriel, jangan ditulis di repo). Token uji baru KMB Project belum dimasukkan ke sheet `ApiTokens` | kmb-projek | Raka + Gabriel | |
 | Buang sisa kode pengantaran di portal (`serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, blok antar di `loginWithToken`) | kmb-projek | Raka | sudah mati sejak 29 Okt |
 | Bug #15: definisi `kmb_projek.catalog_jobs` ke `cermin_sheet.sql`, diisi lewat skrip sinkron | kmb-projek | Raka | |
