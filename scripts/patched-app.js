@@ -2487,7 +2487,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
   } finally {
   if (btnEnter) {
     btnEnter.disabled = false;
-    btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk';
+    btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Aplikasi';
   }
   }
 }
