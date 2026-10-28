@@ -5,11 +5,6 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
-### 2026-10-28 · Gabriel (+ Claude) · bersama (verifikasi token kembar)
-- Berubah: tidak ada kode. Keempat token kembar dibandingkan utuh (20 karakter) antara cadangan KMB V2 (23 Sep) dan `workers/kmb-projek/worker.js`: **sama persis**, dan **keempatnya akun uji KMB V2** ("L2 Test", "L1 Test", "Test Mechanic Field 1", "Test Mechanic tyre 1"). Di data KMB Project, `MECH-003` dan `TYRE-002` hanya ada tokennya, tanpa data mekanik.
-- Koreksi catatan sebelumnya: token `52fd…` memang token uji (L1 Test), jadi label "token uji" di `docs/MULTI-TENANT-SETUP.md` sudah benar. Tidak ada token pengguna sungguhan yang kembar antar-rumah.
-- Belum selesai / berikutnya: persetujuan Gabriel untuk pilihan C (hapus salinan akun uji dari KMB Project).
-
 ### YYYY-MM-DD · Nama (+ AI) · rumah
 - Berubah: …
 - Belum selesai / berikutnya: …
@@ -49,6 +44,11 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · bersama (verifikasi token kembar)
+- Berubah: tidak ada kode. Keempat token kembar dibandingkan utuh (20 karakter) antara cadangan KMB V2 (23 Sep) dan `workers/kmb-projek/worker.js`: **sama persis**, dan **keempatnya akun uji KMB V2** ("L2 Test", "L1 Test", "Test Mechanic Field 1", "Test Mechanic tyre 1"). Di data KMB Project, `MECH-003` dan `TYRE-002` hanya ada tokennya, tanpa data mekanik.
+- Koreksi catatan sebelumnya: token `52fd…` memang token uji (L1 Test), jadi label "token uji" di `docs/MULTI-TENANT-SETUP.md` sudah benar. Tidak ada token pengguna sungguhan yang kembar antar-rumah.
+- Belum selesai / berikutnya: persetujuan Gabriel untuk pilihan C (hapus salinan akun uji dari KMB Project).
 
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Isolasi Data SUM vs KMB & Pemisahan Cache Tenant)
 - Berubah:
