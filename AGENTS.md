@@ -87,7 +87,7 @@ Tiap rumah punya frontend dan backend sendiri.
 | Backend sekarang (GAS `/exec`) | `AKfycbwlwlQv…` | `AKfycbxh4086…` | `AKfycbzB5EUJ…` |
 | Spreadsheet | `1ehnxDlv…` | `1lnJo74O…` | `1qHjfIUT…` (terkonfirmasi: script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Backend yang disiapkan | Supabase skema `kmb` | skema `kmb_projek` | skema `sum` |
-| Alamat aplikasi | `kmbtra.abadiops.com` (sementara juga `kmb.abadiops.com`) | `kmbprojek.abadiops.com` (Worker `project-mar`, deploy otomatis dari GitHub `main`) | `sum.abadiops.com` |
+| Alamat aplikasi | `kmbtra.abadiops.com` | `kmbprojek.abadiops.com` (Worker `project-mar`, deploy otomatis dari GitHub `main`) | `sum.abadiops.com` |
 
 **Pintu**: Worker `abadiops-pintu` (`workers/pintu/`), halaman netral di `abadiops.com` (keputusan 28 Okt). Token dicek ke GAS semua rumah sekaligus. Cocok di satu rumah: pengguna diantar ke aplikasi rumahnya dengan `#token=`. Cocok di lebih dari satu rumah: ditolak, tidak ditebak. Daftar rumah ada di `workers/pintu/wrangler.toml`. Rumah berikutnya: `kmbbupr` (PT KMB di site BUPR), sesudah migrasi. **Live sejak 28 Okt malam.** Aplikasi rumah hanya mengenal tokennya sendiri (1:1 dengan PWA lama); mengenali rumah adalah tugas pintu.
 
