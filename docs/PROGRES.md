@@ -30,8 +30,28 @@ Formatnya:
 | Pintu `abadiops.com`: sambungkan rumah SUM. Alamat itu sekarang menyajikan portal KMB Project | bersama | Gabriel + Raka | |
 | SUM: tombol serah-terima token di PWA lama dan pembaca `#token=` di PWA baru | sum | Gabriel | sebelum mekanik dipindah |
 | SUM: pindahkan 7 halaman web GAS secara 1:1 ke Abadi (dashboard, buat WO, My Work, approval, cancel, laporan/payroll, whoami), lalu tutup halaman web GAS | sum | Gabriel | **wajib sebelum saklar SUM dinyalakan** |
+| KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | terbuka (pelanggaran isolasi rumah) |
+| KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
 
 ---
+
+### 2026-10-28 · Raka (+ opencode) · bersama / kmb-projek
+- Berubah:
+  - Perbaiki Bug #8: kembalikan fallback query `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` dengan perlindungan anti cross-tenant. Token dari skema cermin hanya diterima jika prefix `kmb-`.
+  - Perbaiki Bug #7: validasi token prefix harus cocok dengan tenant_code dari database.
+  - Update status Bug #7 dan #8 di `docs/BUG-DICATAT.md`.
+- Belum selesai / berikutnya:
+  - Bersihkan label golongan `(1a)` pada dropdown tim mekanik form Create WO dan RPC `kmb_create_refs` (Bug #6).
+
+### 2026-10-28 · Raka (+ Antigravity) · kmb-projek (dan bersama)
+- Berubah:
+  - Tarik pembaruan remote dari Gabriel lewat `git pull --rebase` di `main`: menerima fondasi rumah SUM tahap Pintu (`pwa/sum/`, `workers/sum/`, `docs/INVENTARIS-SUM.md`, dan keputusan tetap dua link per rumah di `docs/KEPUTUSAN.md`).
+  - Mengaudit perbaikan kebocoran token cross-tenant (commit `4259f67` / Bug #7).
+  - Merapikan identitas pencatat Bug #7 di `docs/BUG-DICATAT.md` menjadi Raka (+ opencode).
+  - Mencatat temuan bug regresi #8 di `docs/BUG-DICATAT.md`: terhapusnya fallback query `kmb_projek.api_tokens` pada `src/backends/supabase/auth.ts` saat commit `4259f67`.
+- Belum selesai / berikutnya:
+  - Pulihkan resolusi token `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` dengan perlindungan anti cross-tenant.
+  - Bersihkan label golongan `(1a)` pada dropdown tim mekanik form Create WO dan RPC `kmb_create_refs` (Bug #6).
 
 ### 2026-10-28 · Gabriel (+ Claude) · sum (4)
 - Berubah: mencatat keputusan Gabriel di `docs/KEPUTUSAN.md`. Selama migrasi tetap dua link per rumah: PWA lapangan dan halaman web menu lengkap. Halaman web tetap di GAS sampai dipindah 1:1, dan wajib sudah dipindah sebelum saklar dinyalakan. Ide satu aplikasi offline-first dengan menu lengkap masuk daftar "setelah ketiga rumah selesai pindah". Berlaku juga untuk rumah kmb dan kmb-projek.
