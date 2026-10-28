@@ -1,0 +1,31 @@
+# Rumah KMB V2: Worker yang menyajikan PWA KMB V2 dan meneruskan setiap panggilan API ke GAS KMB V2.
+# Rumah: kmb · Pemegang: Gabriel · Tahap 3 (Pintu): 100% diteruskan ke GAS. Saklar: gas.
+# Penjelasan: workers/kmb/README.md
+name = "abadiops-kmb"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+# Akun Cloudflare kawanabadigrup. Dikunci supaya deploy tidak pernah nyasar ke akun lain
+# yang kebetulan sedang login di laptop (misalnya akun pribadi untuk Rembes). Kalau login
+# yang aktif bukan kawanabadigrup, deploy ditolak, tidak dikirim ke akun yang salah.
+account_id = "9273ece6d47a3bb103159295c10ce9e6"
+
+# File PWA KMB V2 (salinan 1:1 dari mar-offline v91, hanya alamat API yang diganti).
+# html_handling "none": /index.html disajikan langsung (200, tanpa redirect), sama seperti
+# GitHub Pages. Service worker PWA menyimpan ./index.html ke cache dan memakainya saat
+# offline; jawaban hasil redirect tidak boleh dipakai untuk navigasi.
+[assets]
+directory = "../../pwa/kmb"
+binding = "ASSETS"
+html_handling = "none"
+not_found_handling = "none"
+
+[vars]
+RUMAH = "kmb"
+SAKLAR = "gas"
+# Web app GAS produksi KMB V2 (script 17sBKK…). Alamat ini juga tertulis di PWA lama.
+GAS_URL = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec"
+
+[observability]
+enabled = true
