@@ -71,6 +71,11 @@ Cara kerja yang terbukti 28–29 Okt 2026. Ikuti seperti aturan, bukan saran.
 11. **Jujur dan tercatat.**
     - Laporkan yang gagal apa adanya. Kalau ternyata salah, koreksi secara terbuka di `docs/PROGRES.md`.
     - Sebelum push, setiap sesi wajib menulis entri di `docs/PROGRES.md`. Temuan dicatat di `docs/BUG-DICATAT.md`, keputusan di `docs/KEPUTUSAN.md`.
+12. **Jalan terus, kecuali di titik henti** (keputusan Gabriel 29 Okt). Semua keputusan rencana sudah diambil (`docs/KEPUTUSAN.md`). Kerjakan rencana tanpa bertanya. Keputusan teknis kecil diambil sendiri dengan pilihan yang paling aman dan paling bisa dibalik, lalu dicatat di `docs/PROGRES.md`. **Berhenti dan tanya Gabriel hanya untuk:**
+    - pembayaran;
+    - **menyalakan** saklar di produksi;
+    - rumus poin atau rupiah;
+    - menghapus data produksi.
 
 ---
 
@@ -128,7 +133,7 @@ Aturan rumah:
 1. **Frontend adalah salinan 1:1 dari PWA lama rumah itu.** Cara paling aman: pakai file PWA lama apa adanya, dan ubah hanya alamat API serta tombol serah-terima token. Kalau frontend dibangun ulang, hasilnya wajib identik dengan PWA lama (layar, alur, field, dan pesan) dan dibandingkan berdampingan. Ukuran "identik" ada di PWA lama, bukan di rumah lain.
 2. **Backend sekarang tetap GAS.** Worker milik rumah meneruskan permintaan ke GAS rumah itu sendiri.
 3. **Backend Supabase disiapkan di skema rumah itu sendiri.** Mulai dari cermin sheet yang persis. Setelah itu aksi dipindah satu per satu, masing-masing setelah lulus **uji kembar**: untuk permintaan yang sama, JSON dari Worker harus sama dengan JSON dari GAS.
-4. **Jangan menyentuh folder, skema, atau GAS milik rumah lain.** Perubahan yang menyentuh lebih dari satu rumah wajib ditulis di `docs/PROGRES.md` dan diketahui pemilik rumah tersebut.
+4. **Jangan menyentuh folder, skema, atau GAS milik rumah lain.** Perubahan yang menyentuh lebih dari satu rumah wajib ditulis di `docs/PROGRES.md` dan diketahui pemilik rumah tersebut. **Pengecualian (keputusan 29 Okt):** untuk menjalankan rencana di `docs/SERAH-TERIMA-2026-10-29.md` §5, Raka dan AI-nya boleh mengerjakan semua rumah dan pintu.
 5. **Bagian bersama** dikerjakan berdua, dan yang lain diberi tahu sebelum diubah: pintu depan, buku tamu kiriman, saklar, CI, dan file ini.
 
 ---

@@ -13,7 +13,7 @@ Untuk Raka dan AI-nya. Baca dari atas sampai bawah sebelum mulai. Rinciannya ada
 | Alamat | Isi | Worker | Kode | Deploy |
 |---|---|---|---|---|
 | `abadiops.com` | **Pintu netral** | `abadiops-pintu` | `workers/pintu/` | manual: `cd workers/pintu; npx wrangler deploy` |
-| `kmbprojek.abadiops.com` | KMB Project (portal buatan Raka) | `project-mar` | `worker.js` di akar + salinan identik `workers/kmb-projek/worker.js` | **otomatis dari push ke `main`** |
+| `kmbprojek.abadiops.com` | KMB Project (portal buatan Raka; diganti salinan 1:1 PWA lama di langkah 1 §5) | `project-mar` | `worker.js` di akar + salinan identik `workers/kmb-projek/worker.js` | **otomatis dari push ke `main`** |
 | `sum.abadiops.com` | SUM V2 (salinan 1:1 PWA lama) | `abadiops-sum` | `workers/sum/`, `pwa/sum/` | manual |
 | `kmbtra.abadiops.com` | KMB V2, PT KMB di site TRA (salinan 1:1 PWA lama) | `abadiops-kmb` | `workers/kmb/`, `pwa/kmb/` | manual |
 | nanti: `kmbbupr.abadiops.com` | PT KMB di site BUPR | — | — | satu baris baru di `RUMAH`, `workers/pintu/wrangler.toml` |
@@ -68,53 +68,95 @@ Rencana yang mengikat (`docs/KEPUTUSAN.md`, `docs/SAKLAR.md`):
 | Panel saklar di `abadiops.com` | belum dibangun (sama untuk semua rumah) | | |
 | 5. Saklar dua cabang | – | – | – |
 
-## 5. Target selesai dan rencana berikutnya
+## 5. Rencana kerja sampai panel saklar jadi (dijalankan tanpa bertanya)
 
-**Target selesai** (keputusan Gabriel 29 Okt, rinciannya di `docs/SAKLAR.md`):
-- Rencananya matang dan sudah **diuji langsung**: staging, uji kembar, uji rekam-putar, dan latihan saklar balik.
-- **Aman, dengan rencana cadangan dan jaring pengaman.**
-- Tinggal **menyalakan saklar**, yaitu tombol visual di `abadiops.com` di alamat yang sedikit tersembunyi dan dilindungi kata sandi, dengan peringatan saat dinyalakan.
-- Saklar juga **penyelamat**: kalau dimatikan saat ada masalah, tidak ada data yang rusak atau hilang.
-- Momen go-live: saklar dinyalakan, lalu operasi ditunggu dan dipantau.
+**Semua keputusan sudah diambil** (`docs/KEPUTUSAN.md`, baris 29 Okt; bagian "Belum diputuskan" kosong). Kerjakan langkah di bawah berurutan. Pindah ke langkah berikutnya hanya kalau syarat **"Selesai kalau"** terpenuhi dan sudah dicatat di `docs/PROGRES.md`. Keputusan teknis kecil diambil sendiri dengan pilihan yang paling aman dan paling bisa dibalik (`AGENTS.md` §0a butir 12).
 
-**Urutan kerja:**
-1. **KMB Project versi 1:1 dari PWA lama.** Pemindahan domainnya menunggu keputusan Gabriel nomor 11.
-   - Sumbernya ada di laptop Gabriel: `MAR github/mar-projek-offline` (cache `mar-projek-v1`, API ke `AKfycbxh4086…`).
-   - Buat `pwa/kmbprojek/` dan `workers/kmbprojek/` dengan resep yang sama seperti `pwa/kmb`, yaitu empat baris yang diubah (lihat `workers/kmb/README.md`).
-   - Tambahkan `ambilTokenSerahan` dan `masukDariPintu` seperti di `pwa/kmb/app.js`, lalu uji di `wrangler dev`.
-2. **Cermin untuk ketiga rumah (tahap 2).**
-   - Gabriel membuat akun layanan Google (baca-saja) dan membagikan ketiga spreadsheet sebagai Viewer.
-   - Bangun sinkron terjadwal (Cron Trigger Cloudflare tiap beberapa menit). Sinkron menyalin **setiap sheet dan setiap baris, termasuk bulan lama**, ke skema rumahnya (`sum`, `kmb`, `kmb_projek`). Arahnya searah, dengan desain cermin mentah seperti SUM (`nilai` + `data` jsonb). Aksi yang diteruskan ke GAS juga langsung menarik WO yang berubah ke cermin.
-   - Laporan selisih harian. Lulus kalau selisihnya nol selama 7 hari.
-   - Cermin KMB Project yang sekarang (#12, #15) diselaraskan atau diganti.
-3. **Uji kembar per aksi baca**, lalu aksi yang lulus dipindah satu per satu (`AKSI_SUPABASE_LULUS_KEMBAR` untuk KMB Project, jalur setara di Worker rumah lain).
-4. **Halaman web 1:1 per rumah** (SUM 7 halaman, KMB TRA, dan KMB Project), supaya "Web" tinggal di `<rumah>.abadiops.com`. Wajib sebelum saklar; halaman web GAS kemudian ditutup atau dibuat hanya-baca.
-5. **Aksi tulis di Supabase** untuk WO baru, dengan uji rekam-putar di staging, buku tamu kiriman di Cloudflare, ID WO beda awalan, dan nomor WO yang tidak bisa kembar (menunggu keputusan nomor 1).
-6. **Panel saklar di `abadiops.com`** sesuai `docs/SAKLAR.md`:
-   - alamat tersembunyi, kata sandi sebagai *secret*;
-   - kartu per rumah; peringatan dan daftar syarat saat maju;
-   - mundur cepat sebagai penyelamat;
-   - hanya bergantung pada Cloudflare; gagal membaca berarti posisi `gas`;
-   - riwayat perubahan.
-7. **Jaring pengaman:** Supabase Pro dengan cadangan harian, keputusan PITR atau cadangan per jam (keputusan nomor 5), staging (project Supabase kedua), dan latihan saklar balik di staging (nyala → mati → nyala, tanpa nomor kembar dan tanpa kiriman ganda).
-8. **Go-live per rumah** setelah semua syarat di `docs/SAKLAR.md` tercentang dan Gabriel setuju: nyalakan saklar, pantau operasi, dan siap mematikannya. Posisi `supabase` dipasang setelah WO lama habis, lalu GAS dimatikan dan spreadsheet dikunci sebagai arsip.
+**Titik henti**, satu-satunya alasan bertanya ke Gabriel: pembayaran, **menyalakan** saklar di produksi, rumus poin/rupiah, dan menghapus data produksi.
+
+**Target akhir rencana ini:** panel saklar jadi, dan latihan saklar balik lulus di staging. Saklar produksi tetap di posisi `gas`. Yang menyalakannya Gabriel, serentak untuk ketiga rumah (`docs/SAKLAR.md`, "Target selesai migrasi").
+
+**0. Persiapan pagi.**
+- Gabriel menyerahkan langsung, tidak lewat repo:
+  - token uji SPV-001 baru KMB Project, yang dimasukkan dulu ke sheet `ApiTokens` KMB Project;
+  - token uji SUM dan KMB TRA.
+- Akun layanan Google baca-saja dibuat di akun Google kawanabadigrup. Kalau Raka punya akses, ia membuatnya sendiri; kalau tidak, Gabriel yang membuatnya. Ketiga spreadsheet dibagikan ke akun itu sebagai Viewer, dan satu folder Drive privat dibagikan sebagai Editor untuk cadangan.
+- Raka membuat project Supabase kedua (gratis) untuk staging di akun bersama.
+- Rahasia hanya disimpan di *secret* Cloudflare atau GitHub, atau di environment lokal.
+- *Selesai kalau:* Raka memegang semua akses itu dan `node scripts/buat-token-tiga-rumah.mjs --cek <token SPV-001 baru>` menjawab "dipakai di: KMB Project".
+
+**1. KMB Project versi 1:1 dari PWA lama** (keputusan: salinan `mar-projek-offline`, portal dipensiunkan).
+- Salin `MAR github/mar-projek-offline` ke `pwa/kmbprojek/` dengan resep empat baris (`workers/kmb/README.md`), lalu tambahkan `ambilTokenSerahan` dan `masukDariPintu` persis seperti `pwa/kmb/app.js`.
+- Buat `workers/kmbprojek/` dari salinan `workers/kmb/`, dengan `RUMAH="kmbprojek"` dan `GAS_URL` = GAS KMB Project (`AKfycbxh4086…`).
+- Uji di `wrangler dev`: token SPV-001 diterima, token rumah lain ditolak, `pull_monitoring` sama persis dengan GAS.
+- Pindahkan domain `kmbprojek.abadiops.com` dari `project-mar` ke Worker baru dengan urutan tanpa putus. Pintu tidak perlu diubah.
+- *Selesai kalau:* `kmbprojek.abadiops.com` menyajikan PWA 1:1; masuk dari pintu tanpa layar token; data sama persis dengan GAS (cara cek seperti `docs/PROGRES.md` entri "cek sambungan tiap rumah").
+
+**2. Cermin ketiga rumah.**
+- Akun layanan menyalin **semua sheet dan semua baris, termasuk bulan lama**, ke skema `sum`, `kmb`, dan `kmb_projek`, searah, dengan format jsonb mentah seperti `db/sum/cermin_sheet.sql`.
+- Sinkron penuh tiap 5 menit: Cron Cloudflare kalau muat dalam batas CPU gratis, kalau tidak GitHub Actions. Log tidak boleh memuat data atau rahasia.
+- Laporan selisih harian.
+- Cermin `kmb_projek` yang sekarang (#12, #15) diselaraskan dengan cermin ini atau diganti.
+- *Selesai kalau:* sinkron berjalan terjadwal di ketiga rumah dan laporan selisih hari pertama nol. **Lulus** setelah 7 hari berturut-turut nol. Selama menunggu, lanjutkan ke langkah berikutnya.
+
+**3. Cadangan per jam dan uji pulih.**
+- `pg_dump` terenkripsi tiap jam ke folder Drive privat (atau R2 kalau bisa tanpa biaya), dengan kunci di *secret*.
+- Pulihkan satu cadangan ke project staging, lalu cocokkan jumlah barisnya.
+- *Selesai kalau:* cadangan tersimpan tiap jam dan uji pulih lulus.
+
+**4. Staging lengkap.**
+- Worker staging untuk pintu (`staging.abadiops.com`) dan tiap rumah (`staging-<rumah>.abadiops.com`) memakai Supabase staging.
+- *Selesai kalau:* alur masuk lewat pintu staging sampai dashboard tiap rumah berjalan.
+
+**5. Aksi baca pindah ke cermin.**
+- Uji kembar per aksi baca per rumah. Aksi yang lulus dipindah satu per satu: `AKSI_SUPABASE_LULUS_KEMBAR`, atau gerbang yang sama di Worker rumah lain.
+- *Selesai kalau:* semua aksi baca lulus uji kembar dan dilayani dari cermin, dengan GAS sebagai cadangan otomatis kalau Supabase gagal.
+
+**6. Halaman web 1:1 per rumah**, di aplikasi rumah masing-masing: SUM 7 halaman, KMB TRA, dan KMB Project.
+- Layar, field, dan pesannya identik dengan web GAS. Pilihan "Web" di pintu lalu diarahkan ke halaman ini, bukan ke `script.google.com`.
+- *Selesai kalau:* setiap halaman lulus perbandingan berdampingan dengan web GAS, dan "Web" di pintu tidak lagi keluar dari `abadiops.com`.
+
+**7. Jalur tulis WO baru di belakang saklar.**
+- WO baru lahir di Supabase, dengan:
+  - ID beda awalan;
+  - nomor `WO-YYYYMMDD-XXXX` (4 angka);
+  - buku tamu kiriman di Cloudflare;
+  - `ProcessedOps` dicerminkan;
+  - payroll gabungan (WO lama dari cermin + WO baru dari Supabase).
+- Jalur ini hanya aktif kalau saklar rumah itu bukan `gas`.
+- *Selesai kalau:* uji rekam-putar di staging lulus kolom per kolom, dan payroll gabungan sama dengan GAS untuk bulan-bulan lalu.
+
+**8. Panel saklar di `abadiops.com`**, sesuai `docs/SAKLAR.md`:
+- alamat tersembunyi dan kata sandi (Gabriel memasang *secret*-nya);
+- Durable Object;
+- peringatan dan daftar syarat saat maju;
+- mundur cepat sebagai penyelamat;
+- hanya bergantung pada Cloudflare;
+- gagal membaca berarti `gas`;
+- riwayat perubahan.
+
+Bangun dan uji di staging dulu, lalu pasang di produksi **dengan semua rumah di posisi `gas`**. *Selesai kalau:* **latihan saklar balik di staging lulus**: nyala → mati → nyala, tanpa nomor kembar, tanpa kiriman ganda, dan tanpa data rusak atau hilang.
+
+**9. Laporan kesiapan go-live.**
+- Isi daftar syarat di `docs/SAKLAR.md` untuk ketiga rumah, dengan bukti setiap butir.
+- **Berhenti di sini.** Gabriel yang menyalakan saklar, serentak, lalu operasi dipantau bersama.
 
 ## 6. Tugas kecil yang masih terbuka
 
-- **Uji sambungan penuh KMB Project:** token uji SPV-001 baru (ada di Gabriel, jangan ditulis di repo) dimasukkan ke sheet `ApiTokens` KMB Project, lalu data lewat `kmbprojek.abadiops.com` dibandingkan dengan GAS.
-- **Bug #18, sisa:** pilihan mode portal masih muncul kalau `kmbprojek.abadiops.com` dibuka langsung tanpa pintu. Buang pilihan itu, atau arahkan ke pintu.
-- **Sisa kode di portal** yang sudah mati: `serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, dan blok antar di `loginWithToken`. Kode masuk dari pintu (`masukDariPintu`) **jangan** dibuang.
-- **Bug #17, sisa:** angka "semua WO sepanjang waktu" yang 1:1 dengan web GAS butuh aksi API baru di GAS. Ini untuk sesudah migrasi.
-- **`scripts/verify-sum-kmb-isolation.mjs`** menguji perilaku lama. Perbarui atau pensiunkan.
-- **Worker `project-kmb`:** hapus, dan/atau samakan `name` di `wrangler.toml` akar dengan `project-mar`. Bicarakan dulu dengan Gabriel.
-- **Pengecekan token kembar harian:** API GAS KMB Project punya aksi `list_tokens`. Cek siapa yang boleh memanggilnya. Pilihan lainnya akun layanan Google (langkah 2).
+- **Bug #18, sisa:** pilihan mode portal saat dibuka langsung. Selesai dengan sendirinya setelah langkah 1, karena portal dipensiunkan.
+- **Sisa kode mati di portal** (`serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, blok antar di `loginWithToken`): selesai dengan sendirinya setelah langkah 1.
+- **Bug #17, sisa:** angka "semua WO sepanjang waktu" 1:1 dengan web GAS. Ikut dikerjakan di langkah 6 (halaman web), dengan data dari cermin.
+- **`scripts/verify-sum-kmb-isolation.mjs`** menguji perilaku lama. Pensiunkan, karena gantinya adalah cek sambungan tiap rumah.
+- **Worker `project-kmb`** tidak dipakai. Hapus setelah langkah 1, dan samakan `name` di `wrangler.toml` akar dengan `project-mar` selama portal masih ada.
+- **MARProject lama di Vercel:** dibekukan, dan matikan `.github/workflows/pantau.yml` (keputusan 29 Okt).
+- **Pengecekan token kembar harian:** pakai daftar token dari cermin (langkah 2) untuk ketiga rumah, lalu kirim peringatan kalau ada yang kembar.
 
 ## 7. Jangan
 
+- Jangan berhenti untuk bertanya di luar titik henti. Keputusan teknis kecil diambil sendiri dan dicatat.
+- Jangan **menyalakan** saklar di produksi, membayar apa pun, mengubah rumus poin/rupiah, atau menghapus data produksi tanpa Gabriel.
 - Jangan push perubahan yang bergantung pada domain, DNS, SQL, atau isi sheet sebelum hal itu terbukti ada.
 - Jangan mengembalikan pengecekan rumah lain ke aplikasi rumah. Itu tugas pintu.
 - Jangan menampilkan layar token lagi kepada pengguna yang datang dari pintu (keputusan nomor 10).
-- Jangan menyalakan saklar, membangun jalur tulis ke Supabase untuk produksi, atau mengubah `STORAGE_MODE`/`BACKEND_DRIVER` tanpa persetujuan Gabriel.
-- Jangan menulis token di kode, skrip, uji, dokumen, maupun pesan commit.
+- Jangan menulis token, kata sandi, atau kunci di kode, skrip, uji, dokumen, log, maupun pesan commit.
 - Jangan memakai `sed -i` di Git Bash untuk file repo; pakai Node. Jangan menjalankan `scripts/update-worker-engine.mjs`.
-- Jangan menyentuh rumus poin dan rupiah (`services/scoring.js`) tanpa Gabriel.

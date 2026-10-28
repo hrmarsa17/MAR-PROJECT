@@ -5,6 +5,17 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · bersama (semua keputusan diambil; rencana tanpa bertanya)
+- Berubah: dokumen saja. Gabriel menyetujui paket usulan dan menjawab tiga butir sisanya:
+  - **Biaya:** opsi gratis dulu. Cadangan buatan sendiri tiap jam dengan uji pulih; Pro atau PITR hanya atas keputusan Gabriel.
+  - **Branch:** push langsung ke `main` tetap boleh, dengan koridor uji sebelum dan pantau sesudah push.
+  - **Go-live:** serentak di ketiga rumah.
+  - `docs/KEPUTUSAN.md`: 16 baris keputusan 29 Okt (nomor lama 1–7 dan 11, ditambah cermin, staging, wewenang, panel, web 1:1, jalur tulis, payroll, dan go-live). Bagian **"Belum diputuskan" sekarang kosong**.
+  - `docs/SAKLAR.md`: kode rumah baru, syarat nomor WO 4 angka, cadangan gratis dengan uji pulih (menggantikan syarat Pro), syarat go-live serentak, dan Durable Object.
+  - `AGENTS.md`: pengecualian aturan rumah (Raka boleh mengerjakan semua rumah sesuai rencana) dan koridor butir 12 (jalan terus; empat titik henti).
+  - `docs/SERAH-TERIMA-2026-10-29.md` §5: **langkah 0–9 dengan syarat "Selesai kalau"**, berakhir di panel saklar jadi dan latihan saklar balik lulus di staging. Menyalakan saklar adalah titik henti untuk Gabriel.
+- Belum selesai / berikutnya: Raka dan AI-nya mulai dari §5 langkah 0.
+
 ### 2026-10-29 · Gabriel (+ Claude) · bersama (target selesai + panel saklar + serah terima final)
 - Berubah: dokumen saja.
   - `docs/SAKLAR.md`:
@@ -95,10 +106,10 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
 | **Rencana migrasi berurutan.** Target selesai: tinggal menyalakan saklar. Urutannya ada di `docs/SERAH-TERIMA-2026-10-29.md` §5 dan `docs/SAKLAR.md` | bersama | Gabriel + Raka | panduan utama |
-| KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | pemindahan domain menunggu keputusan nomor 11 |
+| KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | diputuskan 29 Okt: domain `kmbprojek.abadiops.com` dipindah ke Worker baru, portal dipensiunkan (§5 langkah 1) |
 | Cermin terjadwal ketiga rumah (Cron Cloudflare, menyalin setiap sheet termasuk bulan lama), dengan laporan selisih harian; lulus kalau selisihnya nol 7 hari | bersama | Raka + Gabriel | Gabriel: buat akun layanan Google dan bagikan ketiga spreadsheet |
 | Panel saklar di `abadiops.com` sesuai `docs/SAKLAR.md` (tersembunyi, kata sandi, peringatan, mundur sebagai penyelamat, hanya bergantung pada Cloudflare) | bersama | Raka (+ AI) | kata sandi diset Gabriel sebagai *secret*; saklar tetap `gas` |
-| Jaring pengaman: Supabase Pro + keputusan nomor 5, staging, latihan saklar balik di staging | bersama | Gabriel + Raka | sebelum go-live rumah mana pun |
+| Jaring pengaman (keputusan 29 Okt: opsi gratis dulu): cadangan `pg_dump` terenkripsi tiap jam ke penyimpanan privat gratis + uji pulih, staging gratis, latihan saklar balik di staging | bersama | Raka (+ AI) | §5 langkah 3, 4, dan 8 |
 | Setel env `KMBP_UJI_SPV_TOKEN` dan `SUM_UJI_TOKEN` (nilainya dari Gabriel, jangan ditulis di repo). Token uji baru KMB Project belum dimasukkan ke sheet `ApiTokens` | kmb-projek | Raka + Gabriel | |
 | Buang sisa kode pengantaran di portal (`serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, blok antar di `loginWithToken`) | kmb-projek | Raka | sudah mati sejak 29 Okt |
 | Bug #15: definisi `kmb_projek.catalog_jobs` ke `cermin_sheet.sql`, diisi lewat skrip sinkron | kmb-projek | Raka | |
@@ -117,7 +128,7 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | Pengecekan token kembar otomatis setiap hari untuk semua rumah, dengan peringatan | bersama | Gabriel + Raka | pintu sudah menolak token kembar saat login; pengecekan harian butuh daftar token semua rumah. Cara yang mungkin: akun layanan Google, atau aksi API GAS `list_tokens` yang ada di KMB Project (perlu dicek siapa yang boleh memanggilnya, dan apakah rumah lain punya aksi yang sama) |
 | Project Supabase untuk staging | bersama | Gabriel + Raka | menunggu |
 | Deploy pintu dan dua rumah untuk keputusan nomor 10: `cd workers/pintu; npx wrangler deploy`, `cd workers/sum; npx wrangler deploy`, `cd workers/kmb; npx wrangler deploy`. Portal KMB Project tayang otomatis dari push | bersama | Gabriel | **deploy selesai** 29 Okt dan diverifikasi dari luar: pintu menampilkan pilihan dan mengirim alamat web, `sum` dan `kmbtra` memakai `masukDariPintu`, `kmbprojek` tanpa layar token. **Sisa:** uji browser oleh Gabriel (jendela penyamaran) |
-| Pilihan mode portal KMB Project saat dibuka langsung tanpa pintu: buang atau arahkan ke pintu (bug #18) | kmb-projek | Raka | |
+| Pilihan mode portal KMB Project saat dibuka langsung tanpa pintu: buang atau arahkan ke pintu (bug #18) | kmb-projek | Raka | selesai sendiri setelah §5 langkah 1 (portal dipensiunkan) |
 | Uji sambungan penuh KMB Project: masukkan token uji baru SPV-001 ke sheet `ApiTokens` KMB Project, lalu bandingkan data lewat `kmbprojek.abadiops.com` dengan GAS | kmb-projek | Gabriel | KMB TRA dan SUM sudah lulus 29 Okt |
 | Rumah baru `kmbbupr` (PT KMB di site BUPR): satu baris `RUMAH` di `workers/pintu/wrangler.toml`, ditambah Worker dan PWA rumahnya | bersama | Gabriel + Raka | sesudah migrasi |
 

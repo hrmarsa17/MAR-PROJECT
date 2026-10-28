@@ -1,6 +1,6 @@
 # Saklar "WO baru ke Supabase"
 
-Setiap rumah (`kmb`, `kmb-projek`, `sum`) punya satu saklar. Posisi bawaannya **`gas`**, artinya mati.
+Setiap rumah (`sum`, `kmbtra`, `kmbprojek`) punya satu saklar. Posisi bawaannya **`gas`**, artinya mati.
 
 Tujuan saklar: memindahkan backend tanpa memindahkan WO yang sedang berjalan. WO lama diselesaikan di GAS, WO baru lahir di Supabase.
 
@@ -33,11 +33,12 @@ Data mengalir dari spreadsheet ke Supabase sebagai cermin, tidak pernah sebalikn
 - [ ] Semua aksi tulis dan halaman web rumah itu sudah dipindah dan **lulus uji rekam-putar** di staging: hasil Worker sama dengan hasil GAS, kolom per kolom.
 - [ ] **Buku tamu kiriman** sudah aktif di pintu depan dan disimpan di Cloudflare, bukan di Supabase. Dengan begitu, kiriman yang dikirim ulang tidak tercatat dua kali, ke mesin mana pun.
 - [ ] Cermin ikut menyalin `ProcessedOps` dari GAS.
-- [ ] Sudah dipastikan **nomor WO tidak bisa kembar** antara GAS dan Supabase. Ini menunggu keputusan A/B/C di `docs/KEPUTUSAN.md`.
+- [ ] Sudah dipastikan **nomor WO tidak bisa kembar** antara GAS dan Supabase: WO Supabase memakai 4 angka (keputusan 29 Okt).
 - [ ] Payroll yang dihitung dari Supabase sama dengan payroll GAS untuk bulan-bulan sebelumnya.
-- [ ] Supabase sudah berlangganan paket **Pro**, sehingga ada cadangan harian.
+- [ ] **Cadangan per jam** (`pg_dump` terenkripsi ke penyimpanan privat gratis) berjalan, dan **uji pulih** ke project staging berhasil. Keputusan 29 Okt: opsi gratis dulu; Pro atau PITR hanya atas keputusan Gabriel.
 - [ ] Halaman web GAS rumah itu sudah ditutup atau dibuat hanya-baca.
 - [ ] **Latihan saklar balik** sudah dilakukan di staging: nyalakan, matikan, nyalakan lagi, tanpa ada nomor kembar dan tanpa kiriman ganda.
+- [ ] **Go-live serentak:** semua syarat ini terpenuhi di **ketiga** rumah sebelum saklar dinyalakan (keputusan 29 Okt).
 - [ ] Gabriel menyetujui.
 
 ## Saklar balik sebagai lapisan pengaman
@@ -53,7 +54,7 @@ Kalau ada masalah, saklar dibalik dari `dua_cabang` kembali ke `gas`.
 ## Cara saklar disimpan
 
 - Saklar harus bisa dibalik **dalam hitungan detik, tanpa deploy**. Simpan di tempat yang dibaca Worker pada setiap permintaan, misalnya Cloudflare KV, bukan di kode atau di `wrangler.toml`.
-- Saklar yang ada sekarang (`BACKEND_DRIVER` di `src/lib/backendConfig.ts` dan `STORAGE_MODE` di `wrangler.toml`) berlaku untuk seluruh sistem sekaligus dan belum mendukung posisi `dua_cabang`. Keduanya akan diganti dengan saklar per rumah ini. Sampai saat itu, nilainya tetap `appscript` dan `SPREADSHEET`.
+- Saklar lama (`BACKEND_DRIVER` di `src/lib/backendConfig.ts`, `STORAGE_MODE` di `wrangler.toml` akar) berlaku untuk seluruh sistem sekaligus dan tidak mendukung `dua_cabang`. Keduanya akan diganti saklar per rumah ini. Sampai saat itu, aksi baca KMB Project tetap ke GAS lewat gerbang `AKSI_SUPABASE_LULUS_KEMBAR`, berapa pun nilai `STORAGE_MODE`.
 
 ## Panel saklar di `abadiops.com` (keputusan Gabriel, 29 Okt 2026)
 
@@ -87,7 +88,7 @@ Saklar dioperasikan dari **satu panel visual di domain pintu**. Kode rumah sekar
 - Worker rumah yang **gagal membaca** saklar memakai posisi `gas`. Itu posisi yang paling aman.
 
 **Teknis**
-- Nilai saklar disimpan di Cloudflare (misalnya KV, atau Durable Object kalau perubahan harus berlaku dalam hitungan detik di semua lokasi; KV bisa butuh sampai ±60 detik).
+- Nilai saklar disimpan di **Durable Object** Cloudflare (keputusan 29 Okt): berlaku seketika di semua lokasi dan tersedia di paket gratis. Pintu menulis, Worker rumah membaca, dan perubahan tidak memerlukan deploy.
 - Pintu menulis, Worker rumah membaca. Perubahan saklar tidak memerlukan deploy.
 - Setiap perubahan dicatat otomatis (siapa, kapan, dari → ke, alasan), lalu disalin ke tabel "Catatan pembalikan" di bawah.
 
