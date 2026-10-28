@@ -63,4 +63,8 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 5. **Pemulihan data:** PITR Supabase (sekitar $100/bulan) atau cadangan per jam.
 6. **GitHub Pro** (sekitar $4/bulan), supaya PR yang ujinya gagal tidak bisa digabung.
 7. **MARProject lama di Vercel** (`mar-application.vercel.app`): dibekukan? Kalau ya, pemantau tiap jamnya juga harus dimatikan.
+9. **Alamat aplikasi SUM V2 dan KMB V2.** DNS sebagian provider internet mencegat `*.workers.dev` (temuan 28 Okt malam, lihat `docs/PROGRES.md`), jadi pengguna yang diantar pintu bisa berakhir di halaman blokir. Pilihannya:
+   - **A.** Subdomain per rumah: `sum.abadiops.com` dan `kmb.abadiops.com`. Cloudflare membuat DNS dan sertifikatnya otomatis dari `wrangler.toml` (`custom_domain = true`). Jelas, tapi bertentangan dengan bunyi keputusan "tidak ada nama perusahaan di alamat".
+   - **B.** Subdomain netral, misalnya `a.abadiops.com` dan `b.abadiops.com`. Keputusan itu tetap terjaga, tapi alamatnya tidak bercerita.
+   Kedua pilihan butuh pembaruan `ALAMAT_RUMAH` di `worker.js` dan `ALAMAT_RUMAH_LAIN` di `scripts/patched-app.js`, lalu deploy ulang ketiga Worker.
 8. ~~4 token kembar KMB V2 ↔ KMB Project~~ **Sudah diputuskan 28 Okt malam: pilihan C** (lihat baris "Token kembar" di tabel atas). Nomor ini dibiarkan supaya rujukan lama tetap nyambung. Dasarnya: keempat token dibandingkan utuh (20 karakter), sama persis, dan keempatnya akun uji KMB V2 ("L2 Test", "L1 Test", "Test Mechanic Field 1", "Test Mechanic tyre 1"), bukan pengguna sungguhan.
