@@ -40,7 +40,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, X-MAR-System, X-MAR-Tenant',
+          'Access-Control-Allow-Headers': 'Content-Type, X-MAR-System, X-MAR-Tenant, X-Active-Engine',
           'Access-Control-Max-Age': '86400'
         }
       });
@@ -98,6 +98,106 @@ export default {
         const isSupabaseSelected = (reqEngine === 'SUPABASE' || reqEngine === 'POSTGRES') && (reqEngine !== 'SPREADSHEET' && reqEngine !== 'SHEETS' && reqEngine !== 'GAS');
 
         // =========================================================================
+        // UNIVERSAL TOKEN RESOLVER (Gate Verification: KMB Supabase -> KMB GAS -> SUM GAS)
+        // Berjalan independen sebelum router engine agar dapat mengenali rumah token
+        // =========================================================================
+        if (action === 'ping' && tok) {
+          // 1. Coba Supabase (KMB Project) jika bukan request eksplisit SUM
+          if (supabaseUrl && supabaseKey && reqSystem !== 'SUM') {
+            try {
+              const r = await fetch(supabaseUrl + '/rest/v1/rpc/kmb_ping', {
+                method: 'POST',
+                headers: {
+                  'apikey': supabaseKey,
+                  'Authorization': 'Bearer ' + supabaseKey,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ p_token: tok })
+              });
+              const d = await r.json();
+              if (d && d.success && d.result) {
+                d.result.tenant_code = 'KMB';
+                return new Response(JSON.stringify(d), {
+                  status: 200,
+                  headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Access-Control-Allow-Origin': '*',
+                    'X-Active-Engine': 'SUPABASE',
+                    'X-MAR-Tenant': 'KMB'
+                  }
+                });
+              }
+            } catch (_) {}
+          }
+
+          // 2. Multi-GAS Resolver: Verifikasi token ke rumah KMB & SUM
+          const preferSum = reqSystem === 'SUM' || tok.toLowerCase().startsWith('sum');
+          const primaryGasUrl = preferSum ? (env?.APPSCRIPT_URL_SUM || GAS_URLS.SUM) : (env?.APPSCRIPT_URL_KMB || env?.APPSCRIPT_URL || GAS_URLS.KMB);
+          const secondaryGasUrl = preferSum ? (env?.APPSCRIPT_URL_KMB || env?.APPSCRIPT_URL || GAS_URLS.KMB) : (env?.APPSCRIPT_URL_SUM || GAS_URLS.SUM);
+          const primaryTenant = preferSum ? 'SUM' : 'KMB';
+          const secondaryTenant = preferSum ? 'KMB' : 'SUM';
+
+          // Coba GAS pertama
+          try {
+            const res1 = await fetch(primaryGasUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': contentType },
+              body: bodyText,
+              redirect: 'follow'
+            });
+            const d1 = await res1.json();
+            if (d1 && d1.success && d1.result) {
+              d1.result.tenant_code = primaryTenant;
+              return new Response(JSON.stringify(d1), {
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json; charset=utf-8',
+                  'Access-Control-Allow-Origin': '*',
+                  'X-MAR-Tenant': primaryTenant
+                }
+              });
+            }
+          } catch (_) {}
+
+          // Coba GAS kedua
+          try {
+            const res2 = await fetch(secondaryGasUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': contentType },
+              body: bodyText,
+              redirect: 'follow'
+            });
+            const d2 = await res2.json();
+            if (d2 && d2.success && d2.result) {
+              d2.result.tenant_code = secondaryTenant;
+              return new Response(JSON.stringify(d2), {
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json; charset=utf-8',
+                  'Access-Control-Allow-Origin': '*',
+                  'X-MAR-Tenant': secondaryTenant
+                }
+              });
+            }
+            return new Response(JSON.stringify(d2 || { success: false, error: 'Token tidak dikenal / nonaktif' }), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Access-Control-Allow-Origin': '*'
+              }
+            });
+          } catch (err2) {
+            return new Response(JSON.stringify({ success: false, error: 'Token tidak dikenal / nonaktif' }), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Access-Control-Allow-Origin': '*'
+              }
+            });
+          }
+        }
+
+        // =========================================================================
         // SUPABASE DUAL-ENGINE READ ROUTER (KMB Project)
         // Sub-50ms reads from live Supabase Singapore
         // Aktif bila engine adalah SUPABASE
@@ -108,96 +208,6 @@ export default {
             'Authorization': 'Bearer ' + supabaseKey,
             'Content-Type': 'application/json'
           };
-
-          if (action === 'ping' && tok) {
-            // 1. Coba Supabase kmb_ping jika target bukan eksplisit SUM
-            if (isSupabaseSelected && targetSystem !== 'SUM' && supabaseUrl && supabaseKey) {
-              try {
-                const r = await fetch(supabaseUrl + '/rest/v1/rpc/kmb_ping', {
-                  method: 'POST',
-                  headers: supaHeaders,
-                  body: JSON.stringify({ p_token: tok })
-                });
-                const d = await r.json();
-                if (d && d.success && d.result) {
-                  d.result.tenant_code = 'KMB';
-                  return new Response(JSON.stringify(d), {
-                    status: 200,
-                    headers: {
-                      'Content-Type': 'application/json; charset=utf-8',
-                      'Access-Control-Allow-Origin': '*',
-                      'X-Active-Engine': 'SUPABASE',
-                      'X-MAR-Tenant': 'KMB'
-                    }
-                  });
-                }
-              } catch (_) {}
-            }
-
-            // 2. Multi-GAS Resolver: Verifikasi token ke rumah KMB & SUM
-            const preferSum = targetSystem === 'SUM' || tok.toLowerCase().startsWith('sum');
-            const primaryGasUrl = preferSum ? (env?.APPSCRIPT_URL_SUM || GAS_URLS.SUM) : (env?.APPSCRIPT_URL_KMB || env?.APPSCRIPT_URL || GAS_URLS.KMB);
-            const secondaryGasUrl = preferSum ? (env?.APPSCRIPT_URL_KMB || env?.APPSCRIPT_URL || GAS_URLS.KMB) : (env?.APPSCRIPT_URL_SUM || GAS_URLS.SUM);
-            const primaryTenant = preferSum ? 'SUM' : 'KMB';
-            const secondaryTenant = preferSum ? 'KMB' : 'SUM';
-
-            try {
-              const res1 = await fetch(primaryGasUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': contentType },
-                body: bodyText,
-                redirect: 'follow'
-              });
-              const d1 = await res1.json();
-              if (d1 && d1.success && d1.result) {
-                d1.result.tenant_code = primaryTenant;
-                return new Response(JSON.stringify(d1), {
-                  status: 200,
-                  headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    'Access-Control-Allow-Origin': '*',
-                    'X-MAR-Tenant': primaryTenant
-                  }
-                });
-              }
-            } catch (_) {}
-
-            try {
-              const res2 = await fetch(secondaryGasUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': contentType },
-                body: bodyText,
-                redirect: 'follow'
-              });
-              const d2 = await res2.json();
-              if (d2 && d2.success && d2.result) {
-                d2.result.tenant_code = secondaryTenant;
-                return new Response(JSON.stringify(d2), {
-                  status: 200,
-                  headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    'Access-Control-Allow-Origin': '*',
-                    'X-MAR-Tenant': secondaryTenant
-                  }
-                });
-              }
-              return new Response(JSON.stringify(d2 || { success: false, error: 'Token tidak dikenal / nonaktif' }), {
-                status: 200,
-                headers: {
-                  'Content-Type': 'application/json; charset=utf-8',
-                  'Access-Control-Allow-Origin': '*'
-                }
-              });
-            } catch (err2) {
-              return new Response(JSON.stringify({ success: false, error: 'Token tidak dikenal / nonaktif' }), {
-                status: 200,
-                headers: {
-                  'Content-Type': 'application/json; charset=utf-8',
-                  'Access-Control-Allow-Origin': '*'
-                }
-              });
-            }
-          }
 
           if (action === 'pull_create_refs') {
             try {

@@ -49,6 +49,8 @@ Formatnya:
   - Multi-GAS Token Resolver (`worker.js`, `workers/kmb-projek/worker.js`):
     - **Penyebab masalah:** Worker `abadiops.com` sebelumnya hanya memeriksa Supabase `kmb_ping` lalu fallback ke `GAS_EXEC_URL` KMB Project (`AKfycbxh4086…`). Saat token SUM V2 (`4651ebd7272e4aae939b` milik SPV-000 L1 Supervisor) dimasukkan, KMB GAS menolak dengan pesan *"Token tidak dikenal / nonaktif"*.
     - **Perilaku baru:**
+      - Merestrukturisasi blok `action === 'ping'` di `worker.js` agar berdiri sendiri sebelum pengecekan engine (`isSupabaseSelected && targetSystem === 'KMB'`). Sebelumnya, jika `targetSystem` awal adalah SUM atau belum disetel, blok ping terlewati dan langsung jatuh ke forwarding KMB default.
+      - Menambahkan header `X-Active-Engine` pada `Access-Control-Allow-Headers` preflight OPTIONS `/api/gas` agar browser tidak memblokir request karena CORS.
       - Di `worker.js` pada action `ping`: jika `kmb_ping` tidak cocok, Worker memverifikasi token ke `GAS_URLS.KMB` dan `GAS_URLS.SUM` (`AKfycbzB5EUJ…`).
       - Saat GAS SUM memvalidasi token, Worker menyematkan `tenant_code: 'SUM'` dan header `X-MAR-Tenant: SUM`.
       - Untuk aksi data selanjutnya (`pull_monitoring`, `pull_create_refs`, dll.), Worker secara otomatis meneruskan permintaan ke backend SUM jika tenant adalah SUM.
