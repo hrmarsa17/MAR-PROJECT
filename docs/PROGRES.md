@@ -57,6 +57,7 @@ Formatnya:
       - Teruji secara lokal via Node: ping token SUM mengembalikan status 200 dengan profil supervisor dan `pull_monitoring` berhasil menarik data monitoring SUM.
   - Client GAS Fallback (`scripts/patched-app.js`):
     - Menambahkan rute SUM ke `GAS_FALLBACK_URLS`.
+    - Mengoptimasi pemanggilan `api()` dengan menghapus custom headers yang memicu preflight CORS di browser, serta menyematkan fallback multi-GAS langsung pada klien browser untuk aksi `ping`.
     - Mengemas ulang ke `worker.js` via `scripts/pack-final-worker.mjs`.
 - Belum selesai / berikutnya: Verifikasi login langsung dengan token SUM di browser laptop pada abadiops.com.
 

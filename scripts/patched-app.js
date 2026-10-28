@@ -1888,9 +1888,7 @@ async function api(action, data = {}, opId = null, customToken = null) {
       const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-MAR-System': currentSystem,
-          'X-Active-Engine': activeEngine
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: body
       });
@@ -1928,16 +1926,46 @@ async function api(action, data = {}, opId = null, customToken = null) {
     const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-MAR-System': currentSystem,
-        'X-Active-Engine': activeEngine
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
     return await res.json();
   } catch (err) {
-    // Direct GAS fallback if proxy is unreachable
+    // Direct GAS fallback if proxy is unreachable or blocked
     try {
+      if (action === 'ping') {
+        // Multi-GAS verification on direct fallback
+        try {
+          const r1 = await fetch(GAS_FALLBACK_URLS.KMB, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+          });
+          const d1 = await r1.json();
+          if (d1 && d1.success && d1.result) {
+            d1.result.tenant_code = 'KMB';
+            return d1;
+          }
+        } catch (_) {}
+
+        try {
+          const r2 = await fetch(GAS_FALLBACK_URLS.SUM, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+          });
+          const d2 = await r2.json();
+          if (d2 && d2.success && d2.result) {
+            d2.result.tenant_code = 'SUM';
+            return d2;
+          }
+          return d2 || { success: false, error: 'Token tidak dikenal / nonaktif' };
+        } catch (_) {}
+      }
+
       const gasUrl = GAS_FALLBACK_URLS[currentSystem] || GAS_FALLBACK_URLS.KMB;
       const directRes = await fetch(gasUrl, {
         method: 'POST',
