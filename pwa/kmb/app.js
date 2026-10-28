@@ -3635,25 +3635,41 @@ window.addEventListener('offline',renderAll);
 })();
 
 /* ── Serah-terima token dari pintu abadiops.com (#token=…) ──
-   Tambahan migrasi (bug #11), bukan perubahan perilaku: token dari pintu
-   diperlakukan persis seperti token yang diketik di layar login (doLogin).
-   Token langsung dihapus dari alamat. Kalau HP ini sudah masuk dengan token
-   lain, token itu TIDAK diganti: antrean kirimannya bisa hilang saat logout. */
-function terimaTokenSerahan() {
+   Tambahan migrasi (keputusan Gabriel 29 Okt, nomor 10): pengguna sudah mengisi token dan
+   memilih "Aplikasi" di pintu, jadi layar login TIDAK ditampilkan sama sekali. Token dipakai
+   seperti hasil doLogin(): layar utama langsung tampil, ping memastikan peran, data disinkron.
+   Token dihapus dari alamat. Kalau HP ini sudah masuk dengan token lain, token itu TIDAK
+   diganti, karena antrean kirimannya bisa hilang saat logout. */
+var _masukDariPintu = false;
+function ambilTokenSerahan() {
   var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
-  if (!m) return;
+  if (!m) return '';
   var t = '';
   try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  return t;
+}
+function masukDariPintu(t) {
   if (!t) return;
   if (S.token) {
     if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
     return;
   }
-  var inp = document.getElementById('tokenInput');
-  if (!inp) return;
-  inp.value = t;
-  doLogin();
+  _masukDariPintu = true;
+  S.token = t;
+  requestNotifPermission(); requestPeriodicSync();
+  if (!navigator.onLine) { saveTokenOffline(t); return; }
+  api('ping').then(function(r) {
+    if (r.success) {
+      S.me = r.result;
+      S.role = (r.result && r.result.role) ? r.result.role : 'mechanic';
+      return kvSet('token',t).then(function() { return kvSet('me',S.me); })
+        .then(function() { return kvSet('role',S.role); })
+        .then(function() { if (S.role !== 'mechanic') return pullRefs().catch(function(){}); })
+        .then(function() { showScreen('main'); renderAll(); syncNow(false); });
+    }
+    S.token = null; showScreen('login'); toast('❌ '+(r.error||'Token ditolak'));
+  }).catch(function() { saveTokenOffline(t); });
 }
 
 openDb().then(function() {
@@ -3686,6 +3702,7 @@ openDb().then(function() {
   // memperlihatkannya — berkedip sebentar lalu hilang, yang terbaca sebagai
   // aplikasi rusak, bukan sebagai medan yang memang ditiadakan.
   setelMeterCreate();
+  masukDariPintu(ambilTokenSerahan()); // sebelum layar dipilih: tanpa layar login (keputusan 29 Okt nomor 10)
   syncVersionFromCache().then(function(){ showScreen(S.token?'main':'login'); renderAll(); });
   showScreen(S.token?'main':'login');
   // Timer bisa masih berjalan dari sesi sebelumnya (state tersimpan di IndexedDB)
@@ -3694,8 +3711,7 @@ openDb().then(function() {
   // iOS: beforeinstallprompt tak pernah ada → tampilkan tombol Instal manual (panduan)
   if (IS_IOS && !IS_STANDALONE) { var _ib = document.getElementById('installBtn'); if (_ib) _ib.style.display = ''; }
   renderAll();
-  setTimeout(terimaTokenSerahan, 0); // sesudah blok ini, supaya ping/sync awal tidak ikut jalan dua kali
-  if (S.token && navigator.onLine) {
+  if (S.token && navigator.onLine && !_masukDariPintu) {
     // Refresh role dari server tiap buka (self-heal role lama yg salah — tanpa perlu logout/login).
     api('ping').then(function(r){
       if (r.success && r.result && r.result.role && r.result.role !== S.role) {

@@ -20,12 +20,13 @@ not_found_handling = "none"
 
 # Daftar rumah. Ini konfigurasi, bukan kode (haram hardcode, AGENTS.md §5): menambah rumah,
 # misalnya kmbbupr, cukup menambah satu baris di sini lalu deploy. Alamat GAS disalin dari
-# GAS_URLS di worker.js; alamat aplikasi = <kode>.abadiops.com.
+# GAS_URLS di worker.js; alamat aplikasi = <kode>.abadiops.com; web = halaman web GAS rumah itu
+# (sekarang sama dengan alamat API-nya), dibuka dengan ?token= (keputusan 29 Okt nomor 10).
 [vars]
 RUMAH = [
-  { kode = "kmbprojek", nama = "KMB Projek", gas = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec", alamat = "https://kmbprojek.abadiops.com/" },
-  { kode = "sum", nama = "SUM", gas = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec", alamat = "https://sum.abadiops.com/" },
-  { kode = "kmbtra", nama = "KMB TRA", gas = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec", alamat = "https://kmbtra.abadiops.com/" },
+  { kode = "kmbprojek", nama = "KMB Projek", gas = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec", alamat = "https://kmbprojek.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec" },
+  { kode = "sum", nama = "SUM", gas = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec", alamat = "https://sum.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec" },
+  { kode = "kmbtra", nama = "KMB TRA", gas = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec", alamat = "https://kmbtra.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec" },
 ]
 
 [observability]

@@ -2358,6 +2358,10 @@ function transformGasWo(w, defaultStatus) {
 // =========================================================================
 // AUTHENTICATION & TOKEN RESOLVER
 // =========================================================================
+// Datang dari pintu abadiops.com dengan #token=: pilihan Aplikasi/Web sudah dibuat di pintu,
+// jadi layar token dan pilihan mode portal tidak ditampilkan (keputusan Gabriel 29 Okt, nomor 10).
+let masukDariPintu = false;
+
 function checkAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const tokenFromUrl = urlParams.get('token');
@@ -2373,6 +2377,11 @@ function checkAuth() {
   }
 
   const tokenToUse = tokenFromHash || tokenFromUrl || tokenFromStorage;
+
+  if (tokenFromHash) {
+    masukDariPintu = true;
+    hideGateOverlay();
+  }
 
   if (tokenToUse) {
     loginWithToken(tokenToUse);
@@ -2506,7 +2515,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
       updateUserBar();
       updateSystemBadge();
       updateEngineStatusBadge(true);
-      showModeChoice(user.name, tenantCode, user.role);
+      tampilkanSesudahMasuk(user.name, tenantCode, user.role);
 
       if (user.role === 'mechanic') {
         switchTab('monitoring');
@@ -2553,7 +2562,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
       window.history.replaceState({}, '', url);
 
       updateUserBar();
-      showModeChoice(user.name, tenantCode, user.role);
+      tampilkanSesudahMasuk(user.name, tenantCode, user.role);
     }
 
     // 3. Token asal / tidak dikenal: JANGAN PINDAH LAYAR, beri notifikasi error di login
@@ -2622,6 +2631,12 @@ function hideGateOverlay() {
 }
 
 function showGateError(msg) {
+  // Token dari pintu ternyata ditolak: baru sekarang layar token dimunculkan.
+  if (masukDariPintu) {
+    masukDariPintu = false;
+    document.documentElement.classList.remove('dari-pintu');
+    showGateOverlay();
+  }
   const el = document.getElementById('gate-error-msg');
   if (el) {
     el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
@@ -6355,6 +6370,16 @@ function downloadPayrollReport() {
    } else {
      showToast('⚠️ Berkas tidak tersedia untuk diunduh langsung', 'warning');
    }
+}
+
+// Sesudah login: kalau datang dari pintu, langsung dashboard (tanpa pilihan mode portal).
+function tampilkanSesudahMasuk(nama, tenantCode, peran) {
+  if (!masukDariPintu) { showModeChoice(nama, tenantCode, peran); return; }
+  masukDariPintu = false;
+  state.accessMode = 'web';
+  try { localStorage.setItem('mar_access_mode', 'web'); } catch (_) {}
+  document.documentElement.classList.remove('dari-pintu');
+  hideGateOverlay();
 }
 
 function showModeChoice(userName, tenantCode, peran) {

@@ -5,6 +5,23 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · bersama (keputusan nomor 10: pilihan di pintu, tanpa layar token lagi)
+- Berubah:
+  - **Pintu** (`workers/pintu`):
+    - Sesudah token dikenali, tampil pilihan "📱 Aplikasi" atau "🖥️ Web".
+    - Aplikasi membuka `<rumah>.abadiops.com#token=`. Web membuka alamat GAS rumah itu + `?token=`; ketiga web GAS mengenali `?token=` lewat `TokenContext.js`.
+    - `wrangler.toml` mendapat kolom `web` per rumah, dan API mengirim `web_rumah`.
+  - **PWA SUM dan KMB V2:** `terimaTokenSerahan` diganti `ambilTokenSerahan` + `masukDariPintu`.
+    - Token diproses **sebelum** layar dipilih, jadi layar login tidak pernah tampil. Layar utama langsung muncul, lalu ping memastikan peran dan data disinkron.
+    - Blok ping saat boot tidak ikut jalan dua kali.
+    - Kalau token ditolak, baru layar login muncul dengan pesannya.
+  - **Portal KMB Project:**
+    - `built-index.html` mendapat penanda `dari-pintu` di `<head>`, sehingga overlay token tersembunyi sejak halaman mulai dimuat.
+    - `checkAuth` menandai `masukDariPintu`, dan `tampilkanSesudahMasuk` melewati pilihan mode portal, langsung ke dashboard.
+    - `showGateError` memunculkan overlay lagi kalau token ditolak.
+  - Diuji lokal (9 cek lulus): pilihan di pintu, alamat Aplikasi/Web untuk SUM dan KMB TRA, sintaks semua skrip, penanda portal sebelum overlay, token palsu ditolak. Hilangnya layar token secara visual perlu diuji di browser.
+- Belum selesai / berikutnya: deploy pintu, `sum`, dan `kmb` (manual), lalu uji browser oleh Gabriel.
+
 ### 2026-10-29 · Gabriel (+ Claude) · bersama (cek sambungan tiap rumah + mode Aplikasi/Web)
 - Berubah: tidak ada kode. Cek sambungan lewat alamat produksi tiap rumah:
   - **Konfigurasi** cocok dengan catatan resmi proyek GAS masing-masing:
@@ -78,7 +95,8 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | KMB TRA (KMB V2): pindahkan halaman web GAS secara 1:1, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 | Pengecekan token kembar otomatis setiap hari untuk semua rumah, dengan peringatan | bersama | Gabriel + Raka | pintu sudah menolak token kembar saat login; pengecekan harian butuh daftar token semua rumah. Cara yang mungkin: akun layanan Google, atau aksi API GAS `list_tokens` yang ada di KMB Project (perlu dicek siapa yang boleh memanggilnya, dan apakah rumah lain punya aksi yang sama) |
 | Project Supabase untuk staging | bersama | Gabriel + Raka | menunggu |
-| Seragamkan pilihan Aplikasi/Web untuk semua rumah. Aplikasi = `<rumah>.abadiops.com`, Web = alamat GAS rumah itu | bersama | Gabriel + Raka | menunggu keputusan nomor 10 (`docs/KEPUTUSAN.md`); bug #18 |
+| Deploy pintu dan dua rumah untuk keputusan nomor 10: `cd workers/pintu; npx wrangler deploy`, `cd workers/sum; npx wrangler deploy`, `cd workers/kmb; npx wrangler deploy`. Portal KMB Project tayang otomatis dari push | bersama | Gabriel | sesudah itu uji di browser: pilih Aplikasi dan Web untuk tiap rumah, dan pastikan tidak ada layar token |
+| Pilihan mode portal KMB Project saat dibuka langsung tanpa pintu: buang atau arahkan ke pintu (bug #18) | kmb-projek | Raka | |
 | Uji sambungan penuh KMB Project: masukkan token uji baru SPV-001 ke sheet `ApiTokens` KMB Project, lalu bandingkan data lewat `kmbprojek.abadiops.com` dengan GAS | kmb-projek | Gabriel | KMB TRA dan SUM sudah lulus 29 Okt |
 | Rumah baru `kmbbupr` (PT KMB di site BUPR): satu baris `RUMAH` di `workers/pintu/wrangler.toml`, ditambah Worker dan PWA rumahnya | bersama | Gabriel + Raka | sesudah migrasi |
 

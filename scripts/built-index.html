@@ -2,6 +2,9 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
+  <!-- Datang dari pintu (#token=): sembunyikan layar token sejak awal, supaya tidak terlihat sekilas pun (keputusan 29 Okt nomor 10). -->
+  <script>if (/(?:^#|&)token=/.test(location.hash)) document.documentElement.classList.add('dari-pintu');</script>
+  <style>html.dari-pintu #gate-overlay { display: none !important; }</style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MAR PORTAL - Mechanic Activity Report</title>
   <link rel="icon" href="https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico">

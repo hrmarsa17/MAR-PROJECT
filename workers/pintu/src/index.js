@@ -4,8 +4,8 @@
  *
  * POST /api/pintu  { token }
  *   Token dicek ke GAS SEMUA rumah sekaligus (ping), lalu:
- *   - cocok di tepat satu rumah → { success, rumah, nama_rumah, alamat_rumah, nama }.
- *     Halaman pintu mengantar pengguna ke alamat_rumah dengan #token=.
+ *   - cocok di tepat satu rumah → { success, rumah, nama_rumah, alamat_rumah, web_rumah, nama }.
+ *     Halaman pintu menawarkan Aplikasi (alamat_rumah#token=) atau Web (web_rumah?token=).
  *   - cocok di lebih dari satu rumah → ditolak. JANGAN menebak.
  *   - tidak cocok di mana pun → pesan asli GAS ("Token tidak dikenal / nonaktif").
  *   - tidak cocok, tapi ada rumah yang tidak menjawab → minta coba lagi, supaya mekanik
@@ -66,7 +66,7 @@ async function kenaliRumah(token, env) {
   }
   if (cocok.length === 1) {
     const { rumah, d } = cocok[0];
-    return { success: true, rumah: rumah.kode, nama_rumah: rumah.nama, alamat_rumah: rumah.alamat, nama: (d.result && d.result.name) || '' };
+    return { success: true, rumah: rumah.kode, nama_rumah: rumah.nama, alamat_rumah: rumah.alamat, web_rumah: rumah.web || '', nama: (d.result && d.result.name) || '' };
   }
   if (gagal.length) return { success: false, error: 'Server sedang sibuk, token belum bisa diperiksa. Coba lagi sebentar lagi.' };
   const tolak = hasil.find((h) => h.d && h.d.error);
