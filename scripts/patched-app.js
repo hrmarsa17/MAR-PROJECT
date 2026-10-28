@@ -1859,7 +1859,8 @@ export function toggleEngine() {
 // =========================================================================
 const GAS_FALLBACK_URLS = {
   KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec",
-  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec"
+  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec",
+  KMB_V2: "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec"
 };
 
 const ROUTER_ACTIONS = new Set([
@@ -1896,7 +1897,7 @@ async function api(action, data = {}, opId = null, customToken = null) {
       return await res.json();
     } catch (err) {
       try {
-        const gasUrl = GAS_FALLBACK_URLS[currentSystem] || GAS_FALLBACK_URLS.KMB;
+        const gasUrl = GAS_FALLBACK_URLS.KMB; // isolasi rumah: data hanya ke GAS KMB Project (bug #11)
         const directRes = await fetch(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1937,38 +1938,31 @@ async function api(action, data = {}, opId = null, customToken = null) {
     // Direct GAS fallback if proxy is unreachable or blocked
     try {
       if (action === 'ping') {
-        // Multi-GAS verification on direct fallback
-        try {
-          const r1 = await fetch(GAS_FALLBACK_URLS.KMB, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-          });
-          const d1 = await r1.json();
-          if (d1 && d1.success && d1.result) {
-            d1.result.tenant_code = 'KMB';
-            return d1;
-          }
-        } catch (_) {}
-
-        try {
-          const r2 = await fetch(GAS_FALLBACK_URLS.SUM, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-          });
-          const d2 = await r2.json();
-          if (d2 && d2.success && d2.result) {
-            d2.result.tenant_code = 'SUM';
-            return d2;
-          }
-          return d2 || { success: false, error: 'Token tidak dikenal / nonaktif' };
-        } catch (_) {}
+        // Cadangan bila Worker tak terjangkau: aturan pintu yang sama dengan Worker
+        // (ketiga rumah sekaligus, jangan menebak). Lihat docs/KEPUTUSAN.md 28 Okt.
+        const rumahCadangan = [['KMB', GAS_FALLBACK_URLS.KMB], ['SUM', GAS_FALLBACK_URLS.SUM], ['KMB_V2', GAS_FALLBACK_URLS.KMB_V2]];
+        const hasilCadangan = await Promise.all(rumahCadangan.map(async ([tenant, gasUrl]) => {
+          try {
+            const r = await fetch(gasUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload),
+              redirect: 'follow'
+            });
+            const d = await r.json();
+            return (d && d.success && d.result) ? { tenant, d } : null;
+          } catch (_) { return null; }
+        }));
+        const cocokCadangan = hasilCadangan.filter(Boolean);
+        if (cocokCadangan.length > 1) return { success: false, error: 'Token ini terdaftar di lebih dari satu rumah. Hubungi admin.' };
+        if (cocokCadangan.length === 1) {
+          cocokCadangan[0].d.result.tenant_code = cocokCadangan[0].tenant;
+          return cocokCadangan[0].d;
+        }
+        return { success: false, error: 'Token tidak dikenal / nonaktif' };
       }
 
-      const gasUrl = GAS_FALLBACK_URLS[currentSystem] || GAS_FALLBACK_URLS.KMB;
+      const gasUrl = GAS_FALLBACK_URLS.KMB; // isolasi rumah: data hanya ke GAS KMB Project (bug #11)
       const directRes = await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -2430,6 +2424,24 @@ export function switchSystem(nextSys) {
   updateSystemBadge();
 }
 
+// Aplikasi rumah lain (pintu, bug #11). Worker mengirim `alamat_rumah`; daftar ini
+// cadangan kalau ping dijawab GAS langsung karena Worker tak terjangkau.
+const ALAMAT_RUMAH_LAIN = {
+  SUM: 'https://abadiops-sum.kawanabadigrup.workers.dev/',
+  KMB_V2: 'https://abadiops-kmb.kawanabadigrup.workers.dev/'
+};
+
+function serahkanKeRumah(alamat, token) {
+  // Sesi portal dibersihkan, supaya membuka abadiops.com lagi tidak memulihkan
+  // sesi rumah lain di tampilan KMB Project.
+  ['mar_auth_token', 'kmb_portal_token', 'mar_current_system'].forEach((k) => {
+    try { localStorage.removeItem(k); } catch (_) {}
+  });
+  const btnEnter = document.getElementById('btn-enter-gate');
+  if (btnEnter) btnEnter.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Membuka aplikasi rumah Anda...';
+  window.location.replace(alamat + '#token=' + encodeURIComponent(token));
+}
+
 export async function loginWithToken(token, isAutoAuth = false) {
   const cleanToken = String(token || '').trim();
   if (!cleanToken) {
@@ -2453,6 +2465,15 @@ export async function loginWithToken(token, isAutoAuth = false) {
 
     if (res && res.success && res.result) {
       const info = res.result;
+
+      // PINTU (docs/KEPUTUSAN.md 28 Okt): token SUM V2 / KMB V2 diantar ke aplikasi
+      // rumahnya sendiri beserta tokennya. Portal ini hanya untuk KMB Project (bug #11).
+      const alamatRumahLain = info.alamat_rumah || ALAMAT_RUMAH_LAIN[String(info.tenant_code || '').toUpperCase()];
+      if (alamatRumahLain) {
+        serahkanKeRumah(alamatRumahLain, cleanToken);
+        return true;
+      }
+
       const user = {
         id: info.mechanic_id || info.id || cleanToken,
         mechanic_id: info.mechanic_id || info.id || cleanToken,

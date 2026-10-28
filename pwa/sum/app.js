@@ -2416,6 +2416,28 @@ function renderApprovedList(){
 /* ── Init ── */
 window.addEventListener('online',function(){renderAll(); syncNow(false);});
 window.addEventListener('offline',renderAll);
+/* ── Serah-terima token dari pintu abadiops.com (#token=…) ──
+   Tambahan migrasi (bug #11), bukan perubahan perilaku: token dari pintu
+   diperlakukan persis seperti token yang diketik di layar login (doLogin).
+   Token langsung dihapus dari alamat. Kalau HP ini sudah masuk dengan token
+   lain, token itu TIDAK diganti: antrean kirimannya bisa hilang saat logout. */
+function terimaTokenSerahan() {
+  var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
+  if (!m) return;
+  var t = '';
+  try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  if (!t) return;
+  if (S.token) {
+    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
+    return;
+  }
+  var inp = document.getElementById('tokenInput');
+  if (!inp) return;
+  inp.value = t;
+  doLogin();
+}
+
 openDb().then(function() {
   return Promise.all([kvGet('token'),kvGet('me'),kvGet('wos'),kvGet('refs'),kvGet('pending'),kvGet('last_sync'),kvGet('role'),kvGet('refs_at'),kvGet('active'),kvGet('approved'),kvGet('timer_states'),kvGet('monitoring'),kvGet('monitoring_overall'),kvGet('rejected'),kvGet('cancelable')]);
 }).then(function(v) {
@@ -2458,6 +2480,7 @@ openDb().then(function() {
   if (S.token) requestPeriodicSync();
   if (IS_IOS && !IS_STANDALONE) { var _ib = document.getElementById('installBtn'); if (_ib) _ib.style.display = ''; }
   renderAll();
+  setTimeout(terimaTokenSerahan, 0); // sesudah blok ini, supaya ping/sync awal tidak ikut jalan dua kali
   if (S.token && navigator.onLine) {
     api('ping').then(function(r){
       if (r.success && r.result && r.result.role && r.result.role !== S.role) {

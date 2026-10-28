@@ -100,6 +100,11 @@ for (const action of AKSI) {
     action === 'ping' ? gasLangsung(action) : panggil(action, 'spreadsheet'),
   ]);
   const hasil = [];
+  // Kalau jalur Supabase gagal lalu jatuh ke GAS, yang dibandingkan GAS dengan GAS:
+  // "SAMA" palsu. Itu dihitung gagal. (ping tidak membawa header ini.)
+  if (action !== 'ping' && s.jalur !== 'SUPABASE') {
+    hasil.push(`jalur Supabase tidak menjawab sendiri (X-Active-Engine=${s.jalur}), jadi tidak ada yang dibandingkan`);
+  }
   beda(rapikan(s.json), rapikan(g.json), 'jawaban', hasil);
   const sama = hasil.length === 0;
   if (sama) lulus++;

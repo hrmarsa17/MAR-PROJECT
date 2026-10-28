@@ -87,6 +87,9 @@ Tiap rumah punya frontend dan backend sendiri.
 | Backend sekarang (GAS `/exec`) | `AKfycbwlwlQv…` | `AKfycbxh4086…` | `AKfycbzB5EUJ…` |
 | Spreadsheet | `1ehnxDlv…` | `1lnJo74O…` | `1qHjfIUT…` (terkonfirmasi: script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Backend yang disiapkan | Supabase skema `kmb` | skema `kmb_projek` | skema `sum` |
+| Aplikasi sekarang | `abadiops-kmb.kawanabadigrup.workers.dev` | `abadiops.com` (Worker `project-kmb`) | `abadiops-sum.kawanabadigrup.workers.dev` |
+
+**Pintu** (sementara ada di Worker `project-kmb`, lihat `docs/KEPUTUSAN.md` 28 Okt): token dicek ke GAS ketiga rumah sekaligus. Cocok di satu rumah: pengguna KMB Project tetap di portal, sedangkan pengguna SUM V2 dan KMB V2 diantar ke aplikasi rumahnya dengan `#token=`. Cocok di lebih dari satu rumah: ditolak, tidak ditebak. Selain ping, Worker KMB Project hanya bicara dengan GAS KMB Project.
 
 Aturan rumah:
 1. **Frontend adalah salinan 1:1 dari PWA lama rumah itu.** Cara paling aman: pakai file PWA lama apa adanya, dan ubah hanya alamat API serta tombol serah-terima token. Kalau frontend dibangun ulang, hasilnya wajib identik dengan PWA lama (layar, alur, field, dan pesan) dan dibandingkan berdampingan. Ukuran "identik" ada di PWA lama, bukan di rumah lain.
@@ -136,7 +139,11 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
 
 Repo ini belum berbentuk tiga rumah. Isinya sekarang:
 - Kode **MARProject** (Next.js) di `src/`, `db/`, `tests/`, dan `scripts/`. Awalnya dibuat untuk KMB V2, sekarang dipakai sebagai dasar kerja KMB Project.
-- **`worker.js`**: hasil build untuk Worker `project-kmb` (lihat `wrangler.toml`), yang bekerja dengan GAS **KMB Project**.
+- **`worker.js`**: hasil build untuk Worker `project-kmb` (lihat `wrangler.toml`), yang bekerja dengan GAS **KMB Project**. Isinya juga memuat pintu ketiga rumah.
+  - Bagian kodenya disunting langsung. `app.js` di dalamnya dirakit dari `scripts/patched-app.js` dengan `scripts/pack-final-worker.mjs`. Perakitan ini mengubah akhiran baris literal `style.css`, jadi kembalikan literal itu kalau isinya tidak berubah.
+  - Salin hasilnya ke `workers/kmb-projek/worker.js`; kedua file harus identik.
+  - **Jangan jalankan `scripts/update-worker-engine.mjs`** (dipensiunkan 28 Okt): skrip itu menimpa seluruh blok `/api/gas`.
+  - Aksi baca hanya dilayani Supabase kalau nama aksinya ada di `AKSI_SUPABASE_LULUS_KEMBAR`, setelah lulus `scripts/uji-kembar-kmb-projek.mjs`.
 - `src/lib/backendConfig.ts`: saklar global `BACKEND_DRIVER` dengan pilihan `appscript` atau `supabase`. Konstanta `APPSCRIPT_URL_KMB` di file itu sebenarnya menunjuk ke GAS **KMB Project**, bukan KMB V2.
 - `src/lib/tenantRouter.ts`: memakai kode tenant `KMB`, `MAR`, dan `SUM`. Kode ini belum sama dengan kode rumah di §2.
 - `docs/MULTI-TENANT-SETUP.md` dan `docs/SPEK-LAYAR/`: dokumen kerja dari Raka. Kalau ada yang bertentangan dengan file ini, **file ini yang berlaku** sampai diselaraskan.

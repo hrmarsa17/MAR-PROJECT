@@ -303,10 +303,17 @@ BEGIN
 END;
 $$;
 
--- Beri hak eksekusi ke anon dan authenticated
+-- Hak eksekusi. Hanya kmb_ping yang terbuka untuk anon/authenticated, karena fungsi itu
+-- sendiri pemeriksa token. Empat fungsi baca lainnya TIDAK memeriksa token, jadi ditutup
+-- dan hanya boleh dipanggil lewat pembungkus *_bertoken di rpc_wajib_token.sql (bug #13).
+-- Jalankan rpc_wajib_token.sql sesudah file ini.
 GRANT EXECUTE ON FUNCTION public.kmb_ping(text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_create_refs() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_monitoring() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_my_wos(text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_wos_by_status(text) TO anon, authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.kmb_create_refs() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.kmb_monitoring() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.kmb_my_wos(text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.kmb_wos_by_status(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.kmb_create_refs() TO service_role;
+GRANT EXECUTE ON FUNCTION public.kmb_monitoring() TO service_role;
+GRANT EXECUTE ON FUNCTION public.kmb_my_wos(text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.kmb_wos_by_status(text) TO service_role;
 

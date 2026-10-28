@@ -3634,6 +3634,28 @@ window.addEventListener('offline',renderAll);
   });
 })();
 
+/* ── Serah-terima token dari pintu abadiops.com (#token=…) ──
+   Tambahan migrasi (bug #11), bukan perubahan perilaku: token dari pintu
+   diperlakukan persis seperti token yang diketik di layar login (doLogin).
+   Token langsung dihapus dari alamat. Kalau HP ini sudah masuk dengan token
+   lain, token itu TIDAK diganti: antrean kirimannya bisa hilang saat logout. */
+function terimaTokenSerahan() {
+  var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
+  if (!m) return;
+  var t = '';
+  try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  if (!t) return;
+  if (S.token) {
+    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
+    return;
+  }
+  var inp = document.getElementById('tokenInput');
+  if (!inp) return;
+  inp.value = t;
+  doLogin();
+}
+
 openDb().then(function() {
   return Promise.all([kvGet('token'),kvGet('me'),kvGet('wos'),kvGet('refs'),kvGet('pending'),kvGet('last_sync'),kvGet('role'),kvGet('refs_at'),kvGet('active'),kvGet('approved'),kvGet('transfers'),kvGet('timer_states'),kvGet('monitoring'),kvGet('monitoring_overall'),kvGet('rejected')]);
 }).then(function(v) {
@@ -3672,6 +3694,7 @@ openDb().then(function() {
   // iOS: beforeinstallprompt tak pernah ada → tampilkan tombol Instal manual (panduan)
   if (IS_IOS && !IS_STANDALONE) { var _ib = document.getElementById('installBtn'); if (_ib) _ib.style.display = ''; }
   renderAll();
+  setTimeout(terimaTokenSerahan, 0); // sesudah blok ini, supaya ping/sync awal tidak ikut jalan dua kali
   if (S.token && navigator.onLine) {
     // Refresh role dari server tiap buka (self-heal role lama yg salah — tanpa perlu logout/login).
     api('ping').then(function(r){

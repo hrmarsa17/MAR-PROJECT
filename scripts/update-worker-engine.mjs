@@ -1,5 +1,11 @@
 import fs from 'fs';
 
+// DIPENSIUNKAN 28 Okt 2026 (Gabriel + Claude). Skrip ini MENIMPA seluruh blok /api/gas
+// di worker.js dengan templat lama, sehingga pintu ketiga rumah, gerbang tahap 4, isolasi
+// rumah, dan RPC bertoken ikut hilang. Sunting worker.js langsung. Lihat docs/PROGRES.md.
+console.error('❌ scripts/update-worker-engine.mjs sudah dipensiunkan: menjalankannya akan menimpa pintu di worker.js. Sunting worker.js langsung.');
+process.exit(1);
+
 let workerCode = fs.readFileSync('worker.js', 'utf8');
 
 // Normalize line endings
