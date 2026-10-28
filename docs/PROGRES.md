@@ -5,6 +5,19 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · bersama (cek sambungan tiap rumah + mode Aplikasi/Web)
+- Berubah: tidak ada kode. Cek sambungan lewat alamat produksi tiap rumah:
+  - **Konfigurasi** cocok dengan catatan resmi proyek GAS masing-masing:
+    - `kmbprojek` → `AKfycbxh4086…` (`MAR-PROJEK-KMB`).
+    - `kmbtra` → `AKfycbwlwlQv…` (dipakai halaman web `MAR-project`, script `17sBKK…`).
+    - `sum` → `AKfycbzB5EUJ…` (`MAR-SUM-v2`).
+    - Pintu memakai ketiga alamat yang sama.
+  - **KMB TRA** (`kmbtra.abadiops.com`): akun uji SPV-001 dan TYRE-002 diterima dengan profil sama dengan GAS, token SUM ditolak, `pull_monitoring` lewat aplikasi **sama persis** dengan GAS langsung (jalur `gas`).
+  - **SUM** (`sum.abadiops.com`): akun uji SPV-000 diterima dengan profil sama, token KMB TRA ditolak, `pull_monitoring` **sama persis** dengan GAS langsung.
+  - **KMB Project** (`kmbprojek.abadiops.com`): token SUM dan KMB TRA ditolak. Uji positif belum bisa karena token uji baru belum ada di sheet. Tangkapan layar Gabriel menunjukkan approved 55, pending 26, dan poin 198.69, sama dengan web GAS KMB Project.
+  - **Mode akses** (catatan Gabriel): portal KMB Project sudah menampilkan pilihan Aplikasi/Web sesudah login, sedangkan KMB TRA dan SUM masih menampilkan PWA saja. Arti mode dicatat di `docs/KEPUTUSAN.md` (Aplikasi = link aplikasi rumah, Web = link GAS). Tempat pilihan menunggu keputusan nomor 10. Pilihan di portal KMB Project belum sesuai arti itu (bug #18).
+- Belum selesai / berikutnya: keputusan nomor 10; uji sambungan penuh KMB Project sesudah token uji ada di sheet.
+
 ### 2026-10-29 · Gabriel (+ Claude) · kmb-projek (bug #17: angka contoh palsu dan label sumber)
 - Berubah:
   - Temuan Gabriel: dashboard portal menampilkan TOTAL WO 81, sedangkan web GAS 835, dengan label "Live Supabase". Dicek: datanya memang dari GAS (approved 55, pending 26, dan poin 198.69 sama persis). Label itu hanya membaca pilihan engine di browser, dan saklar tidak terlibat.
@@ -65,6 +78,8 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | KMB TRA (KMB V2): pindahkan halaman web GAS secara 1:1, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 | Pengecekan token kembar otomatis setiap hari untuk semua rumah, dengan peringatan | bersama | Gabriel + Raka | pintu sudah menolak token kembar saat login; pengecekan harian butuh daftar token semua rumah. Cara yang mungkin: akun layanan Google, atau aksi API GAS `list_tokens` yang ada di KMB Project (perlu dicek siapa yang boleh memanggilnya, dan apakah rumah lain punya aksi yang sama) |
 | Project Supabase untuk staging | bersama | Gabriel + Raka | menunggu |
+| Seragamkan pilihan Aplikasi/Web untuk semua rumah. Aplikasi = `<rumah>.abadiops.com`, Web = alamat GAS rumah itu | bersama | Gabriel + Raka | menunggu keputusan nomor 10 (`docs/KEPUTUSAN.md`); bug #18 |
+| Uji sambungan penuh KMB Project: masukkan token uji baru SPV-001 ke sheet `ApiTokens` KMB Project, lalu bandingkan data lewat `kmbprojek.abadiops.com` dengan GAS | kmb-projek | Gabriel | KMB TRA dan SUM sudah lulus 29 Okt |
 | Rumah baru `kmbbupr` (PT KMB di site BUPR): satu baris `RUMAH` di `workers/pintu/wrangler.toml`, ditambah Worker dan PWA rumahnya | bersama | Gabriel + Raka | sesudah migrasi |
 
 ---
