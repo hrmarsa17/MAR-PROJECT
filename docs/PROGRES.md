@@ -25,12 +25,18 @@ Formatnya:
 | SUM: jalankan `db/sum/cermin_sheet.sql` di Supabase SQL Editor | sum | Gabriel | |
 | SUM: sinkron pertama (`--kering` dulu), cocokkan jumlah baris 19 sheet | sum | Gabriel | |
 | SUM: pelajari `readSheetAsObjects` dan versi aktif 4 fungsi kembar, sebelum aksi baca pertama dipindah | sum | Gabriel | |
-| SUM: deploy `workers/sum` ke alamat uji memakai API token kawanabadigrup (`CLOUDFLARE_API_TOKEN`, lalu `npx wrangler deploy`). Jangan `wrangler login`: laptop Gabriel masih login ke akun Cloudflare pribadi untuk Rembes | sum | Gabriel | langkah ada di `workers/sum/README.md` |
+| SUM: deploy `workers/sum` ke alamat uji memakai API token kawanabadigrup (`CLOUDFLARE_API_TOKEN`, lalu `npx wrangler deploy`). Jangan `wrangler login`: laptop Gabriel masih login ke akun Cloudflare pribadi untuk Rembes | sum | Gabriel | **selesai** 28 Okt: `https://abadiops-sum.kawanabadigrup.workers.dev` |
 | SUM: uji dengan token sungguhan untuk kelima peran | sum | Gabriel | |
 | Pintu `abadiops.com`: sambungkan rumah SUM. Alamat itu sekarang menyajikan portal KMB Project | bersama | Gabriel + Raka | |
 | SUM: tombol serah-terima token di PWA lama dan pembaca `#token=` di PWA baru | sum | Gabriel | sebelum mekanik dipindah |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · sum (3)
+- Berubah:
+  - Worker `abadiops-sum` di-deploy Gabriel ke `https://abadiops-sum.kawanabadigrup.workers.dev` (versi `fdbdbc6c`), memakai API token kawanabadigrup.
+  - Diuji terhadap versi tayang: `/api/sehat` ok. Ke-9 file PWA tersaji 200 tanpa redirect. Uji kembar dengan token palsu (`ping`, `pull_my_wos`, `create_wo`, token kosong, body bukan JSON): jawaban lewat Worker identik dengan jawaban langsung GAS. Waktu jawab 3–6 detik, hampir seluruhnya waktu GAS.
+- Belum selesai / berikutnya: uji dengan token sungguhan untuk kelima peran. Alamat ini belum dipakai mekanik.
 
 ### 2026-10-28 · Gabriel (+ Claude) · sum (2)
 - Berubah:
