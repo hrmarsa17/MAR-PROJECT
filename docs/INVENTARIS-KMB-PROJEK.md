@@ -6,7 +6,7 @@ Dokumen ini adalah **kontrak inventaris resmi** untuk seluruh aksi backend, form
 * **Pemegang**: Raka
 * **Frontend**: `mar-projek-offline` (SPA / PWA di `abadiops.com`)
 * **Backend GAS Live**: `https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec`
-* **Spreadsheet ID**: `1lnJo74O_C-R6kKz9g8jP_e-q2Wc4p9sM` *(KMB Project Master Sheet)*
+* **Spreadsheet ID**: `1lnJo74OShElGEhB…` *(KMB Project Master Sheet; ID lengkap di `MAR-PROJEK-KMB/CLAUDE.md`. Dikoreksi 28 Okt: ID yang tertulis sebelumnya tidak valid, hanya 33 karakter)*. Token dicek hanya di tab `ApiTokens` (`_resolveToken` di `ApiService.js`), dengan cache 30 menit
 * **Backend Target**: Supabase skema `kmb_projek`
 
 ---
