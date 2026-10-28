@@ -66,3 +66,5 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
    - **C.** Kalau keempatnya ternyata akun uji yang tersalin dari KMB V2, hapus dari rumah yang tidak memakainya.
 
    Kapan pun dipilih, pintu wajib menolak menebak. Token yang cocok di dua rumah tidak boleh diarahkan otomatis ke salah satunya.
+
+   **Hasil verifikasi 28 Okt (token dibandingkan utuh, 20 karakter):** keempatnya sama persis, dan **keempatnya akun uji KMB V2**: "L2 Test" (superintendent), "L1 Test" (supervisor), "Test Mechanic Field 1", dan "Test Mechanic tyre 1". Di data KMB Project, `MECH-003` dan `TYRE-002` hanya ada tokennya, tanpa data mekanik. Jadi ini salinan akun uji, **bukan pengguna sungguhan**, dan tidak ada token pengguna sungguhan yang kembar. Pilihan yang cocok: **C**. Salinan akun uji dihapus dari data KMB Project, lalu kalau perlu dibuatkan akun uji sendiri dengan token berbeda (misalnya berawalan `uji-kmbp-`). Menunggu persetujuan Gabriel.
