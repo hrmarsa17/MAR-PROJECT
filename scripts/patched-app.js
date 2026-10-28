@@ -1858,7 +1858,8 @@ export function toggleEngine() {
 // API CLIENT (Cloudflare Worker Proxy -> Supabase / Google Apps Script)
 // =========================================================================
 const GAS_FALLBACK_URLS = {
-  KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec"
+  KMB: "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec",
+  SUM: "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec"
 };
 
 const ROUTER_ACTIONS = new Set([
@@ -2397,8 +2398,8 @@ export async function loginWithToken(token, isAutoAuth = false) {
       const user = {
         id: info.mechanic_id || info.id || cleanToken,
         mechanic_id: info.mechanic_id || info.id || cleanToken,
-        name: info.name || info.mechanic_name || 'User KMB',
-        mechanic_name: info.name || info.mechanic_name || 'User KMB',
+        name: info.name || info.mechanic_name || 'User',
+        mechanic_name: info.name || info.mechanic_name || 'User',
         role: (info.role || 'mechanic').toLowerCase(),
         email: info.email || '',
         section: info.section || 'vessel,maintenance'

@@ -44,6 +44,20 @@ Formatnya:
 
 ---
 
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Penyambungan Multi-GAS Token Resolver untuk SUM V2)
+- Berubah:
+  - Multi-GAS Token Resolver (`worker.js`, `workers/kmb-projek/worker.js`):
+    - **Penyebab masalah:** Worker `abadiops.com` sebelumnya hanya memeriksa Supabase `kmb_ping` lalu fallback ke `GAS_EXEC_URL` KMB Project (`AKfycbxh4086…`). Saat token SUM V2 (`4651ebd7272e4aae939b` milik SPV-000 L1 Supervisor) dimasukkan, KMB GAS menolak dengan pesan *"Token tidak dikenal / nonaktif"*.
+    - **Perilaku baru:**
+      - Di `worker.js` pada action `ping`: jika `kmb_ping` tidak cocok, Worker memverifikasi token ke `GAS_URLS.KMB` dan `GAS_URLS.SUM` (`AKfycbzB5EUJ…`).
+      - Saat GAS SUM memvalidasi token, Worker menyematkan `tenant_code: 'SUM'` dan header `X-MAR-Tenant: SUM`.
+      - Untuk aksi data selanjutnya (`pull_monitoring`, `pull_create_refs`, dll.), Worker secara otomatis meneruskan permintaan ke backend SUM jika tenant adalah SUM.
+      - Teruji secara lokal via Node: ping token SUM mengembalikan status 200 dengan profil supervisor dan `pull_monitoring` berhasil menarik data monitoring SUM.
+  - Client GAS Fallback (`scripts/patched-app.js`):
+    - Menambahkan rute SUM ke `GAS_FALLBACK_URLS`.
+    - Mengemas ulang ke `worker.js` via `scripts/pack-final-worker.mjs`.
+- Belum selesai / berikutnya: Verifikasi login langsung dengan token SUM di browser laptop pada abadiops.com.
+
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Fix Mode Akses: Web Normal Buka Portal Lengkap)
 - Berubah:
   - Alur Pemilihan Mode Akses (scripts/built-index.html, scripts/patched-app.js, worker.js):
