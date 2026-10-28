@@ -44,6 +44,17 @@ Formatnya:
 
 ---
 
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Fix Mode Akses: Web Normal Buka Portal Lengkap)
+- Berubah:
+  - Alur Pemilihan Mode Akses (scripts/built-index.html, scripts/patched-app.js, worker.js):
+    - **Penyebab masalah:** Sebelumnya tombol atas (PWA) yang menutup gate overlay (`hideGateOverlay()`) dan membuka portal dashboard dengan toast "Mode PWA aktif", sedangkan tombol bawah (Web Normal) mencoba melakukan `window.location.href = /monitoring?token=...` yang menyebabkan reload dan memunculkan kembali modal pilihan mode (looping).
+    - **Perilaku baru:**
+      - Tombol bawah **Web Normal** (`#btn-mode-web`): Ditandai sebagai mode aktif utama (badge "Buka Semua Modul"). Saat diklik, langsung memanggil `hideGateOverlay()`, mengaktifkan seluruh modul/tab portal web (Performa, Create WO, Monitoring, Approvals, Teknis, Koreksi HM/KM, Reports), memperbarui riwayat URL tanpa reload, dan menampilkan notifikasi sukses "Web Normal aktif (Semua modul terbuka)".
+      - Tombol atas **PWA** (`#btn-mode-pwa`): Diberi label "Segera Hadir". Karena PWA offline lapangan masih dalam tahap persiapan, jika diklik sistem memberi pemberitahuan "PWA Lapangan sedang disiapkan" dan mengarahkan pengguna ke Web Normal agar tidak terhalang.
+      - Menyesuaikan warna aksen tombol Web Normal secara dinamis (`#3B82F6` untuk SUM, `#10B981` untuk KMB).
+      - Menjalankan `scripts/pack-final-worker.mjs` untuk mengemas HTML dan JS terbaru ke dalam `worker.js`.
+- Belum selesai / berikutnya: Verifikasi pengujian langsung di browser laptop pada abadiops.com.
+
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Universal Login Gate)
 - Berubah:
   - Universal Branding & State Portal (scripts/built-index.html, scripts/patched-app.js):

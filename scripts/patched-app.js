@@ -2356,6 +2356,12 @@ export function updateSystemBadge() {
   if (btnEnter) {
     btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Aplikasi';
   }
+  const btnModeWeb = document.getElementById('btn-mode-web');
+  if (btnModeWeb) {
+    btnModeWeb.style.background = currentSys === 'SUM'
+      ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
+      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+  }
 }
 
 export function switchSystem(nextSys) {
@@ -6258,8 +6264,12 @@ function showModeChoice(userName, tenantCode, peran) {
 }
 
 function selectMode(mode) {
-  if (mode === 'pwa') {
+  if (mode === 'web') {
+    state.accessMode = 'web';
+    localStorage.setItem('mar_access_mode', 'web');
     hideGateOverlay();
+
+    // Buka semua modul / tab sesuai peran pengguna (Web Normal)
     if (state.currentUser?.role === 'mechanic') {
       switchTab('monitoring');
     } else {
@@ -6268,16 +6278,34 @@ function selectMode(mode) {
       renderMonitoring();
       switchTab('dashboard');
     }
-    showToast(`Mode PWA aktif. Data akan disimpan offline.`, 'info');
-    syncFromSpreadsheet(false);
-  } else if (mode === 'web') {
+
+    if (state.joblists && state.joblists.length > 0 && (!state.joblists[0].team || !state.joblists[0].team[0])) {
+      state.joblists[0].team = [state.currentUser?.id || state.currentUser?.mechanic_id];
+      renderJoblists();
+    }
+
     const tok = state.activeToken || localStorage.getItem('mar_auth_token') || localStorage.getItem('kmb_portal_token') || '';
     const sys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'MAR').toUpperCase();
-    localStorage.setItem('mar_auth_token', tok);
-    localStorage.setItem('mar_current_system', sys);
-    document.cookie = `mar_token=${encodeURIComponent(tok)}; path=/; SameSite=Lax`;
-    document.cookie = `mar_tenant=${encodeURIComponent(sys)}; path=/; SameSite=Lax`;
-    window.location.href = `/monitoring?token=${encodeURIComponent(tok)}&tenant=${encodeURIComponent(sys)}`;
+    if (tok) {
+      localStorage.setItem('mar_auth_token', tok);
+      localStorage.setItem('kmb_portal_token', tok);
+      localStorage.setItem('mar_current_system', sys);
+      if (window.history && window.history.replaceState) {
+        const url = new URL(window.location);
+        url.searchParams.set('token', tok);
+        window.history.replaceState({}, '', url);
+      }
+    }
+
+    showToast(`Web Normal aktif (${sys}). Semua modul terbuka.`, 'success');
+    syncFromSpreadsheet(false);
+  } else if (mode === 'pwa') {
+    state.accessMode = 'pwa';
+    localStorage.setItem('mar_access_mode', 'pwa');
+    showToast('📱 PWA Lapangan sedang disiapkan. Membuka Web Normal...', 'info');
+    setTimeout(() => {
+      selectMode('web');
+    }, 600);
   }
 }
 
