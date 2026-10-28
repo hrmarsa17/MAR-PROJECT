@@ -7,6 +7,25 @@ import { pullMonitoringAppsScript } from '../../backends/appscript/data.js';
 import { CariMekanik } from './CariMekanik.js';
 import { LayarMekanik } from './LayarMekanik.js';
 
+const modePilih = {
+  display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem',
+  padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)',
+};
+
+const modeLabel = { fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.85rem' };
+
+const modeOpsi = {
+  display: 'flex', gap: '0.5rem', flexWrap: 'wrap' as const,
+};
+
+const modeBtnSuara = (mode: 'pwa' | 'web') => ({
+  padding: '0.5rem 1.2rem', borderRadius: 'var(--radius-sm)', border: '2px solid',
+  color: 'var(--text)', cursor: 'pointer',
+  fontWeight: 600, transition: 'all 0.2s',
+  borderColor: mode === 'pwa' ? 'var(--primary)' : 'var(--border)',
+  background: mode === 'pwa' ? 'var(--primary-soft)' : 'var(--card)',
+});
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -78,6 +97,27 @@ export default async function Monitoring({
 
   return (
     <div className="container">
+      {/* Mode akses: PWA vs Web Normal */}
+      <div style={modePilih}>
+        <span style={modeLabel}>Pilih mode akses</span>
+        <div style={modeOpsi}>
+          <button
+            type="button"
+            style={modeBtnSuara('pwa')}
+            onClick={() => window.location.href = '/pwa'}
+          >
+            📱 PWA (Offline-first)
+          </button>
+          <button
+            type="button"
+            style={modeBtnSuara('web')}
+            onClick={() => window.location.href = '/monitoring'}
+          >
+            💻 Web Normal
+          </button>
+        </div>
+      </div>
+
       {aku.peran !== 'mechanic' && (
         <div className="selector-header">
           <h1 className="page-title">📊 Mechanic Activity Report</h1>
