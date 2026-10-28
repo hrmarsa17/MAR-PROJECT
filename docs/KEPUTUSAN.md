@@ -57,3 +57,9 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 5. **Pemulihan data:** PITR Supabase (sekitar $100/bulan) atau cadangan per jam.
 6. **GitHub Pro** (sekitar $4/bulan), supaya PR yang ujinya gagal tidak bisa digabung.
 7. **MARProject lama di Vercel** (`mar-application.vercel.app`): dibekukan? Kalau ya, pemantau tiap jamnya juga harus dimatikan.
+8. **4 token kembar KMB V2 ↔ KMB Project** (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`). Dengan login zero-select, pintu tidak bisa tahu token itu milik rumah mana. Pilihannya:
+   - **A.** Beri token baru untuk keempat orang itu di salah satu rumah. Hanya 4 orang yang perlu mengetik token baru.
+   - **B.** Pintu menanyakan rumah **hanya** kalau token cocok di lebih dari satu rumah. Token lain tetap tanpa pilihan.
+   - **C.** Kalau keempatnya ternyata akun uji yang tersalin dari KMB V2, hapus dari rumah yang tidak memakainya.
+
+   Kapan pun dipilih, pintu wajib menolak menebak. Token yang cocok di dua rumah tidak boleh diarahkan otomatis ke salah satunya.

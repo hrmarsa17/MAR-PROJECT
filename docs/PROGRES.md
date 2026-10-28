@@ -34,13 +34,23 @@ Formatnya:
 | KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | **selesai** 28 Okt: `https://abadiops-kmb.kawanabadigrup.workers.dev` |
-| Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | |
+| Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | **ditemukan 4 token kembar KMB V2 ↔ KMB Project** (lihat entri 28 Okt "bersama (cek token)"). Pintu belum boleh dinyalakan untuk kedua rumah itu sebelum diputuskan |
 | KMB V2: uji dengan token sungguhan untuk ketiga peran (mechanic, supervisor, superintendent) | kmb | Gabriel | |
 | Pintu `abadiops.com`: sambungkan rumah KMB V2 | bersama | Gabriel + Raka | |
 | KMB V2: inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · bersama (cek token)
+- Berubah: tidak ada kode. Cek token kembar antar-rumah, dengan token hanya ditampilkan 4 huruf pertamanya.
+  - Sumber: `ApiTokens` dan `offline_token` dari cadangan KMB V2 (23 Sep), `ApiTokens` dari cadangan SUM V2 (15 Sep), dan `TOKENS` dari `workers/kmb-projek/worker.js` (KMB Project). Semua token berupa hex 20 karakter.
+  - Jumlah: KMB V2 32 (+3 offline_token), SUM V2 55, KMB Project 28.
+  - **4 token kembar, semuanya KMB V2 ↔ KMB Project, dengan mechanic_id yang sama di kedua rumah:** `SUPT-001` (67e8…), `SPV-001` (52fd…), `MECH-003` (fde7…), `TYRE-002` (9b83…). Dua di antaranya approver (superintendent dan supervisor).
+  - SUM V2 tidak kembar dengan rumah lain. Tidak ada token kembar di dalam satu rumah.
+  - Token `52fd…` juga tercantum sebagai token uji di `docs/MULTI-TENANT-SETUP.md`, padahal di cadangan KMB V2 token itu milik `SPV-001`.
+  - Keterbatasan: cadangan bertanggal 15–23 Sep, jadi token yang dibuat sesudahnya belum ikut dicek. Ulangi dengan data terbaru sebelum pintu dinyalakan.
+- Belum selesai / berikutnya: keputusan cara menangani 4 token kembar (`docs/KEPUTUSAN.md`, belum diputuskan nomor 8).
 
 ### 2026-10-28 · Gabriel (+ Claude) · kmb (2)
 - Berubah:
