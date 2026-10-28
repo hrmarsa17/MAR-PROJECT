@@ -34,6 +34,7 @@ Formatnya:
 | KMB Project: bersihkan label golongan `(1a)` dari Create WO & RPC `kmb_create_refs` (Bug #6) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kembalikan fallback `kmb_projek.api_tokens` di `src/backends/supabase/auth.ts` (Bug #8) | bersama / kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
+| KMB Project: perbaiki gate login agar token asal tidak otomatis lolos ke tab mekanik (Bug #10) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | **selesai** 28 Okt: `https://abadiops-kmb.kawanabadigrup.workers.dev` |
 | Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | **ditemukan 4 token kembar KMB V2 ↔ KMB Project** (lihat entri 28 Okt "bersama (cek token)"). Pintu belum boleh dinyalakan untuk kedua rumah itu sebelum diputuskan |
 | KMB V2: uji dengan token sungguhan untuk ketiga peran (mechanic, supervisor, superintendent) | kmb | Gabriel | |
@@ -42,6 +43,18 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Raka (+ Antigravity) · kmb-projek
+- Berubah:
+  - Perbaikan validasi token di login gate PWA KMB Project (`scripts/patched-app.js`, `worker.js`, `workers/kmb-projek/worker.js`) (Bug #10):
+    - **Penyebab masalah:** Sebelumnya, `loginWithToken()` langsung membuat dummy fallback user `{ id: cleanToken, role: 'mechanic', name: 'User KMB' }` jika token tidak ada di cache lokal, lalu segera memanggil `hideGateOverlay()` dan `switchTab('monitoring')` sebelum verifikasi server selesai. Akibatnya, token sembarangan/salah langsung dibawa masuk ke tab monitoring mekanik.
+    - **Perilaku baru:**
+      1. Saat tombol login ditekan (atau ditekan Enter), tombol langsung berganti status menjadi loading spinner (`Memeriksa token...`) dan di-disable.
+      2. Layar login (gate overlay) ditahan tetap terbuka — tidak langsung berpindah tab.
+      3. Token diverifikasi secara async via `api('ping')` ke database backend (Supabase Singapore `kmb_ping` atau fallback GAS KMB Project).
+      4. Jika token tidak valid / tidak dikenal: user tetap di layar login, muncul pesan error merah di elemen `#gate-error-msg` dan toast error, input token diberi border merah dan fokus, token dibersihkan dari `localStorage` dan URL, dan tombol login kembali aktif.
+      5. Jika token valid: profil dan role dimuat sesuai respon backend (mekanik ke monitoring, approver/supervisor ke dashboard).
+- Belum selesai / berikutnya: pengujian login langsung di browser untuk berbagai variasi token.
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (cek token)
 - Berubah: tidak ada kode. Cek token kembar antar-rumah, dengan token hanya ditampilkan 4 huruf pertamanya.

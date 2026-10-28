@@ -2367,109 +2367,133 @@ export function switchSystem(nextSys) {
   updateSystemBadge();
 }
 
-export async function loginWithToken(token) {
-  const cleanToken = String(token).trim();
-  state.currentSystem = 'KMB';
-  localStorage.setItem('mar_current_system', 'KMB');
-  updateSystemBadge();
-
-  // 1. First resolve from local TOKENS / state for instant UI rendering
-  const tokenRecord = TOKENS.find(t => (t.token || t.offline_token || '').toLowerCase() === cleanToken.toLowerCase());
-  let user = null;
-  if (tokenRecord) {
-    user = state.mechanics.find(m => (m.id || m.mechanic_id) === tokenRecord.mechanic_id);
-    if (!user) {
-      user = {
-        id: tokenRecord.mechanic_id,
-        mechanic_id: tokenRecord.mechanic_id,
-        name: tokenRecord.name || tokenRecord.mechanic_name || (cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB'),
-        role: tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic')),
-        section: tokenRecord.section || 'vessel,maintenance'
-      };
-    } else {
-      user = {
-        ...user,
-        id: user.id || user.mechanic_id || tokenRecord.mechanic_id,
-        mechanic_id: user.mechanic_id || user.id || tokenRecord.mechanic_id,
-        name: user.name || user.mechanic_name || tokenRecord.name || tokenRecord.mechanic_name,
-        role: user.role || tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'))
-      };
-    }
-  } else {
-    user = state.mechanics.find(m => (m.id || m.mechanic_id || '').toLowerCase() === cleanToken.toLowerCase() || (m.token || m.offline_token || '').toLowerCase() === cleanToken.toLowerCase());
+export async function loginWithToken(token, isAutoAuth = false) {
+  const cleanToken = String(token || '').trim();
+  if (!cleanToken) {
+    if (!isAutoAuth) showGateError('Silakan masukkan token akses.');
+    return false;
   }
 
-  // Fallback temporary user
-  if (!user) {
-    user = {
-      id: cleanToken,
-      mechanic_id: cleanToken,
-      name: cleanToken === '67e8153da255457eb6ef' ? 'L2 Test' : 'User KMB',
-      role: cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : 'mechanic')
-    };
+  const btnEnter = document.getElementById('btn-enter-gate');
+  const errorEl = document.getElementById('gate-error-msg');
+  if (errorEl) errorEl.style.display = 'none';
+
+  // Tampilkan loading di tombol login tanpa memindahkan layar
+  if (btnEnter) {
+    btnEnter.disabled = true;
+    btnEnter.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memeriksa token...';
   }
 
-  // Guarantee valid role (never empty string)
-  if (!user.role) {
-    user.role = (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'));
-  }
+  try {
+    // 1. Verifikasi token ke backend (Supabase Singapore / Google Apps Script)
+    const res = await api('ping', {}, null, cleanToken);
 
-  state.currentUser = user;
-  state.activeToken = cleanToken;
-  localStorage.setItem('kmb_portal_token', cleanToken);
-
-  const url = new URL(window.location);
-  url.searchParams.set('token', cleanToken);
-  window.history.replaceState({}, '', url);
-
-  updateUserBar();
-  hideGateOverlay();
-  if ((user.role || 'mechanic').toLowerCase() === 'mechanic') {
-    switchTab('monitoring');
-  } else {
-    renderDashboard();
-    renderApprovals();
-    renderMonitoring();
-  }
-
-  // Reset initial joblist user
-  if (state.joblists.length > 0 && (!state.joblists[0].team || !state.joblists[0].team[0])) {
-    state.joblists[0].team = [user.id || user.mechanic_id];
-    renderJoblists();
-  }
-
-  // 2. Now verify against Google Apps Script / Google Sheets
-  api('ping').then(res => {
-    if (res.success && res.result) {
+    if (res && res.success && res.result) {
       const info = res.result;
-      if (info.tenant_code || info.tenant || info.system) {
-        state.currentSystem = 'KMB';
-        localStorage.setItem('mar_current_system', 'KMB');
-        updateSystemBadge();
-      }
-      state.currentUser = {
-        id: info.mechanic_id,
-        mechanic_id: info.mechanic_id,
-        name: info.name,
-        mechanic_name: info.name,
-        role: info.role || 'mechanic',
-        email: info.email
+      const user = {
+        id: info.mechanic_id || info.id || cleanToken,
+        mechanic_id: info.mechanic_id || info.id || cleanToken,
+        name: info.name || info.mechanic_name || 'User KMB',
+        mechanic_name: info.name || info.mechanic_name || 'User KMB',
+        role: (info.role || 'mechanic').toLowerCase(),
+        email: info.email || '',
+        section: info.section || 'vessel,maintenance'
       };
+
+      state.currentSystem = 'KMB';
+      localStorage.setItem('mar_current_system', 'KMB');
+      state.currentUser = user;
+      state.activeToken = cleanToken;
+      localStorage.setItem('kmb_portal_token', cleanToken);
+
+      const url = new URL(window.location);
+      url.searchParams.set('token', cleanToken);
+      window.history.replaceState({}, '', url);
+
       updateUserBar();
-      showToast(`Terhubung sebagai ${info.name} (${(info.role || 'user').toUpperCase()}) via Google Sheets!`, 'success');
-      if ((info.role || 'mechanic').toLowerCase() === 'mechanic') {
+      hideGateOverlay();
+
+      if (user.role === 'mechanic') {
         switchTab('monitoring');
       } else {
-        renderApprovals();
         renderDashboard();
+        renderApprovals();
         renderMonitoring();
+        switchTab('dashboard');
       }
-    }
-  });
 
-  // Pull latest spreadsheet data in background
-  syncFromSpreadsheet(false);
-  return true;
+      if (state.joblists.length > 0 && (!state.joblists[0].team || !state.joblists[0].team[0])) {
+        state.joblists[0].team = [user.id || user.mechanic_id];
+        renderJoblists();
+      }
+
+      showToast(`Terhubung sebagai ${user.name} (${user.role.toUpperCase()})!`, 'success');
+      syncFromSpreadsheet(false);
+      return true;
+    }
+
+    // 2. Fallback offline hanya jika token benar-benar terdaftar di TOKENS lokal
+    const tokenRecord = TOKENS.find(t => (t.token || t.offline_token || '').toLowerCase() === cleanToken.toLowerCase());
+    if (tokenRecord) {
+      const matchedMech = state.mechanics.find(m => (m.id || m.mechanic_id) === tokenRecord.mechanic_id);
+      const user = {
+        id: tokenRecord.mechanic_id,
+        mechanic_id: tokenRecord.mechanic_id,
+        name: tokenRecord.name || matchedMech?.name || 'Mekanik',
+        mechanic_name: tokenRecord.name || matchedMech?.name || 'Mekanik',
+        role: (tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'))).toLowerCase(),
+        section: tokenRecord.section || matchedMech?.section || 'vessel,maintenance'
+      };
+
+      state.currentSystem = 'KMB';
+      localStorage.setItem('mar_current_system', 'KMB');
+      state.currentUser = user;
+      state.activeToken = cleanToken;
+      localStorage.setItem('kmb_portal_token', cleanToken);
+
+      const url = new URL(window.location);
+      url.searchParams.set('token', cleanToken);
+      window.history.replaceState({}, '', url);
+
+      updateUserBar();
+      hideGateOverlay();
+
+      if (user.role === 'mechanic') {
+        switchTab('monitoring');
+      } else {
+        renderDashboard();
+        renderApprovals();
+        renderMonitoring();
+        switchTab('dashboard');
+      }
+
+      showToast(`Terhubung (Offline) sebagai ${user.name}!`, 'info');
+      syncFromSpreadsheet(false);
+      return true;
+    }
+
+    // 3. Token asal / tidak dikenal: JANGAN PINDAH LAYAR, beri notifikasi error di login
+    const errMsg = res?.error || 'Token tidak dikenal atau tidak aktif.';
+    showGateError(errMsg);
+    showToast(errMsg, 'error');
+
+    // Bersihkan token dari storage dan URL agar tidak terjebak
+    localStorage.removeItem('kmb_portal_token');
+    const url = new URL(window.location);
+    url.searchParams.delete('token');
+    window.history.replaceState({}, '', url);
+
+    showGateOverlay();
+    return false;
+  } catch (err) {
+    showGateError('Gagal memverifikasi token: ' + (err.message || 'Koneksi error'));
+    return false;
+  } finally {
+    if (btnEnter) {
+      btnEnter.disabled = false;
+      btnEnter.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem';
+    }
+  }
 }
 
 function updateUserBar() {
@@ -2507,7 +2531,6 @@ function updateUserBar() {
 
 function showGateOverlay() {
   document.getElementById('gate-overlay').style.display = 'flex';
-  document.getElementById('gate-error-msg').style.display = 'none';
 }
 
 function hideGateOverlay() {
@@ -2516,8 +2539,19 @@ function hideGateOverlay() {
 
 function showGateError(msg) {
   const el = document.getElementById('gate-error-msg');
-  el.textContent = msg;
-  el.style.display = 'block';
+  if (el) {
+    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
+    el.style.display = 'block';
+    el.style.color = '#EF4444';
+    el.style.fontWeight = '600';
+    el.style.fontSize = '13px';
+  }
+  const inputEl = document.getElementById('input-token');
+  if (inputEl) {
+    inputEl.style.borderColor = '#EF4444';
+    inputEl.focus();
+    inputEl.select();
+  }
 }
 
 function logout() {
@@ -2530,6 +2564,15 @@ function logout() {
   state.activeToken = null;
   document.getElementById('user-profile-bar').style.display = 'none';
   document.getElementById('portal-nav').style.display = 'none';
+
+  const errEl = document.getElementById('gate-error-msg');
+  if (errEl) errEl.style.display = 'none';
+  const inputEl = document.getElementById('input-token');
+  if (inputEl) {
+    inputEl.value = '';
+    inputEl.style.borderColor = '';
+  }
+
   showGateOverlay();
   showToast('Anda telah keluar dari sesi.', 'info');
 }
@@ -5104,6 +5147,9 @@ function initEventListeners() {
     inputToken.addEventListener('input', (e) => {
       state.currentSystem = 'KMB';
       updateSystemBadge();
+      inputToken.style.borderColor = '';
+      const errEl = document.getElementById('gate-error-msg');
+      if (errEl) errEl.style.display = 'none';
     });
   }
 
