@@ -21,9 +21,9 @@ Formatnya:
 | KMB Project: buang hardcode yang tersisa (bug #16): `TOKENS`/`MECHANICS` di `data.js` dan `DEFAULT_MECHANICS_LIST` di `scripts/patched-app.js` | kmb-projek | Raka (+ keputusan Gabriel) | mengubah login luring dan tampilan awal portal |
 | KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | **token lama selesai dibuang** 28 Okt malam. Token uji baru belum dimasukkan; opsional, kalau Raka perlu akun uji |
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | **selesai** 28 Okt malam: 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001). Diverifikasi lewat `kmb_ping`: keempat token lama tidak ada lagi di cermin |
-| Deploy ketiga Worker | bersama | Gabriel | `abadiops-sum` dan `abadiops-kmb` **live** (`sum.abadiops.com`, `kmb.abadiops.com`). **Koreksi 28 Okt malam:** `abadiops.com` TIDAK dilayani Worker `project-kmb`. Dashboard menunjukkan `project-kmb` tanpa custom domain dan tanpa route, dengan 1 pemanggilan per 24 jam. Kode baru tetap tayang di `abadiops.com` tanpa deploy manual. Dugaannya, ada Worker lain yang ter-deploy otomatis dari GitHub; namanya perlu dicari di dashboard |
+| Deploy ketiga Worker | bersama | Gabriel | `abadiops-sum` dan `abadiops-kmb` **live** (`sum.abadiops.com`, `kmb.abadiops.com`). `abadiops.com` dilayani Worker **`project-mar`**, yang ter-deploy otomatis dari GitHub `main` (Workers Builds, repo `kawanabadigrup/Project-KMB`). Worker `project-kmb` tidak punya domain dan tidak dipakai |
 | **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | `sum.abadiops.com` dan `kmb.abadiops.com` **sudah live** 28 Okt malam (diverifikasi: terbuka dari jaringan Gabriel, pembaca `#token=` ada, `sum.abadiops.com/api` sampai ke GAS SUM). Pintu `abadiops.com` sudah mengantar ke sana |
-| KMB Project ke `projekkmb.abadiops.com`: (1) cari Worker yang melayani `abadiops.com` (dashboard: zona `abadiops.com` → Workers Routes, atau DNS, atau kolom Domains di daftar Workers & Pages); (2) tambahkan custom domain `projekkmb.abadiops.com` ke Worker **itu**, bukan ke `project-kmb`; (3) isi kembali `ALAMAT_RUMAH.KMB_PROJEK` di `worker.js` dan `ALAMAT_APLIKASI_RUMAH.KMB` di `scripts/patched-app.js` | kmb-projek | Gabriel + Claude | pengantaran KMB Project **ditunda** (alamat dikosongkan), supaya pengguna tidak dikirim ke domain yang belum ada |
+| KMB Project ke `projekkmb.abadiops.com`: (1) dashboard → Workers & Pages → **`project-mar`** → Settings → Domains & Routes → Add → Custom domain → `projekkmb.abadiops.com`; (2) sesudah domain terbukti ada, isi kembali `ALAMAT_RUMAH.KMB_PROJEK` di `worker.js` dan `ALAMAT_APLIKASI_RUMAH.KMB` di `scripts/patched-app.js`, lalu push (otomatis tayang) | kmb-projek | Gabriel + Claude | pengantaran KMB Project **ditunda** (alamat dikosongkan) sampai langkah (1) selesai |
 | KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | **selesai** 28 Okt malam. Diverifikasi dari luar: 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu |
 | Pintu: uji di browser (jendela penyamaran) dengan token uji SUM, KMB V2, KMB Project, token kembar, dan token palsu | bersama | Gabriel | sesudah deploy |
 | KMB Project: definisi `kmb_projek.catalog_jobs` dimasukkan ke `cermin_sheet.sql` dan diisi lewat skrip sinkron (bug #15) | kmb-projek | Raka | |
@@ -55,6 +55,18 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · bersama (INSIDEN: pengantaran KMB Project ke domain yang belum ada)
+- Kejadian:
+  - Commit `d69bb61` (antar pengguna KMB Project ke `projekkmb.abadiops.com`) di-push sebelum domain itu ada.
+  - Push ke `main` ternyata langsung tayang di `abadiops.com` lewat Worker `project-mar` (Workers Builds dari GitHub).
+  - Selama beberapa menit, pengguna KMB Project yang login di `abadiops.com` dikirim ke alamat yang tidak ada, dan sesi portalnya terhapus.
+- Pemulihan:
+  - Commit `27c1160` mengosongkan alamat KMB Project. Versi itu tayang sekitar 4 menit sesudah push, diverifikasi dengan memantau `abadiops.com/app.js`.
+  - Pengguna yang terdampak cukup membuka `abadiops.com` lagi dan memasukkan token.
+- Pelajaran (dicatat di `AGENTS.md` §6):
+  - Push ke `main` = deploy produksi.
+  - Perubahan yang bergantung pada domain, DNS, atau SQL hanya di-push sesudah hal itu terbukti ada.
 
 ### 2026-10-28 · Gabriel (+ Claude) · kmb-projek (koreksi: Worker di balik abadiops.com; pengantaran KMB Project ditunda)
 - Berubah:
