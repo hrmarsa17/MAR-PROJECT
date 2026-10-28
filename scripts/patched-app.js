@@ -1885,10 +1885,11 @@ async function api(action, data = {}, opId = null, customToken = null) {
     }).toString();
 
     try {
-      const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}`, {
+      const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}&system=${currentSystem.toLowerCase()}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-MAR-System': currentSystem
         },
         body: body
       });
@@ -1923,10 +1924,11 @@ async function api(action, data = {}, opId = null, customToken = null) {
   };
 
   try {
-    const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}`, {
+    const res = await fetch(`/api/gas?engine=${activeEngine.toLowerCase()}&system=${currentSystem.toLowerCase()}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-MAR-System': currentSystem
       },
       body: JSON.stringify(payload)
     });
@@ -1981,37 +1983,43 @@ async function api(action, data = {}, opId = null, customToken = null) {
   }
 }
 
+function getCacheKey() {
+  const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
+  return 'mar_gas_refs_' + currentSys + '_v1';
+}
+
 // Load cached refs from previous session
 function loadCachedSpreadsheetData() {
   try {
-    // Purge obsolete cache versions
-    localStorage.removeItem('kmb_gas_refs_v7');
-    localStorage.removeItem('kmb_gas_refs_v8');
-
-    const cached = localStorage.getItem('kmb_gas_refs_v9');
+    const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
+    const key = getCacheKey();
+    let cached = localStorage.getItem(key);
+    if (!cached && currentSys === 'KMB') {
+      cached = localStorage.getItem('kmb_gas_refs_v9');
+    }
     if (cached) {
       const parsed = JSON.parse(cached);
-      // Validate that units contain valid rekondisi models before accepting
-      const hasRekondisi = Array.isArray(parsed.units) && parsed.units.some(u => {
-        const id = (u.unit_id || u.id || '').toLowerCase();
-        const model = (u.unit_model || '').toLowerCase();
-        const scope = (u.unit_scope || '').toLowerCase();
-        return id.startsWith('sdvs') || id.startsWith('dlcd') || id.startsWith('sdt') || model.includes('vessel') || scope.includes('vessel');
-      });
-
-      if (hasRekondisi) {
-        state.units = parsed.units;
+      if (Array.isArray(parsed.units) && parsed.units.length > 0) {
+        if (currentSys === 'SUM') {
+          state.units = parsed.units;
+        } else {
+          const hasRekondisi = parsed.units.some(u => {
+            const id = (u.unit_id || u.id || '').toLowerCase();
+            const model = (u.unit_model || '').toLowerCase();
+            const scope = (u.unit_scope || '').toLowerCase();
+            return id.startsWith('sdvs') || id.startsWith('dlcd') || id.startsWith('sdt') || model.includes('vessel') || scope.includes('vessel');
+          });
+          if (hasRekondisi) {
+            state.units = parsed.units;
+          }
+        }
       }
       if (Array.isArray(parsed.mechanics) && parsed.mechanics.length > 0) state.mechanics = parsed.mechanics;
-      if (Array.isArray(parsed.components) && parsed.components.length > 200) state.components = parsed.components;
+      if (Array.isArray(parsed.components) && parsed.components.length > 0) state.components = parsed.components;
       if (parsed.monitoringData && parsed.monitoringData.overall) state.monitoringData = parsed.monitoringData;
       if (Array.isArray(parsed.workOrders) && parsed.workOrders.length > 0) state.workOrders = parsed.workOrders;
-      if (Array.isArray(parsed.pendingL1Wos) && parsed.pendingL1Wos.length > 0) state.pendingL1Wos = parsed.pendingL1Wos;
-      if (Array.isArray(parsed.pendingL2Wos) && parsed.pendingL2Wos.length >= 6) {
-        state.pendingL2Wos = parsed.pendingL2Wos;
-      } else {
-        state.pendingL2Wos = [...DEFAULT_PENDING_L2_LIST];
-      }
+      if (Array.isArray(parsed.pendingL1Wos)) state.pendingL1Wos = parsed.pendingL1Wos;
+      if (Array.isArray(parsed.pendingL2Wos)) state.pendingL2Wos = parsed.pendingL2Wos;
       if (Array.isArray(parsed.activeWos)) state.activeWos = parsed.activeWos;
       if (Array.isArray(parsed.approvedWos)) state.approvedWos = parsed.approvedWos;
       if (Array.isArray(parsed.rejectedWos)) state.rejectedWos = parsed.rejectedWos;
@@ -2021,7 +2029,8 @@ function loadCachedSpreadsheetData() {
 
 function saveCachedSpreadsheetData() {
   try {
-    localStorage.setItem('kmb_gas_refs_v9', JSON.stringify({
+    const key = getCacheKey();
+    localStorage.setItem(key, JSON.stringify({
       units: state.units,
       mechanics: state.mechanics,
       components: state.components,
@@ -2200,12 +2209,33 @@ export async function syncFromSpreadsheet(manual = false) {
 }
 
 export function updateEngineStatusBadge(connected = true) {
+  const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
   const eng = getActiveEngine();
   const el = document.getElementById('engine-status');
   const btn = document.getElementById('btn-engine-toggle');
   const gateBtn = document.getElementById('gate-engine-toggle');
   const userEngineLabel = document.getElementById('user-engine-label');
   const syncLabel = document.getElementById('sync-label');
+
+  if (currentSys === 'SUM') {
+    if (el) {
+      el.innerHTML = '<i class="fa-solid fa-table" style="color: #2563EB; font-size: 8px;"></i> SPREADSHEET LIVE (Google Sheets)';
+    }
+    if (btn) {
+      btn.style.background = '#EFF6FF';
+      btn.style.borderColor = '#BFDBFE';
+      btn.style.color = '#1E40AF';
+      btn.title = 'Rumah SUM V2: Live Google Spreadsheet (GAS)';
+      const switchTag = btn.querySelector('.switch-tag');
+      if (switchTag) switchTag.style.display = 'none';
+    }
+    if (gateBtn) {
+      gateBtn.style.display = 'none';
+    }
+    if (userEngineLabel && userEngineLabel.parentElement) userEngineLabel.parentElement.style.display = 'none';
+    if (syncLabel) syncLabel.textContent = 'Sync Sheets';
+    return;
+  }
 
   if (eng === 'SUPABASE') {
     if (el) {
@@ -2433,7 +2463,21 @@ export async function loginWithToken(token, isAutoAuth = false) {
         section: info.section || 'vessel,maintenance'
       };
 
-      const tenantCode = (info.tenant_code || info.tenantCode || info.tenant || (cleanToken.toLowerCase().startsWith('sum') ? 'SUM' : 'KMB')).toUpperCase();
+      const tenantCode = (info.tenant_code || info.tenantCode || info.tenant || (cleanToken.toLowerCase().startsWith('sum') || cleanToken === '4651ebd7272e4aae939b' || cleanToken === '4738b90a197443aaa410' ? 'SUM' : 'KMB')).toUpperCase();
+
+      if (state.currentSystem !== tenantCode) {
+        state.units = [];
+        state.mechanics = [];
+        state.components = [];
+        state.monitoringData = null;
+        state.workOrders = [];
+        state.pendingL1Wos = [];
+        state.pendingL2Wos = [];
+        state.activeWos = [];
+        state.approvedWos = [];
+        state.rejectedWos = [];
+      }
+
       state.currentSystem = tenantCode;
       localStorage.setItem('mar_current_system', tenantCode);
       localStorage.setItem('mar_auth_token', cleanToken);
@@ -2441,11 +2485,16 @@ export async function loginWithToken(token, isAutoAuth = false) {
       state.activeToken = cleanToken;
       localStorage.setItem('kmb_portal_token', cleanToken);
 
+      loadCachedSpreadsheetData();
+      initStorage();
+
       const url = new URL(window.location);
       url.searchParams.set('token', cleanToken);
       window.history.replaceState({}, '', url);
 
       updateUserBar();
+      updateSystemBadge();
+      updateEngineStatusBadge(true);
       showModeChoice(user.name, tenantCode, user.role);
 
       if (user.role === 'mechanic') {
@@ -2580,12 +2629,17 @@ function showGateError(msg) {
 
 function logout() {
   localStorage.removeItem('kmb_portal_token');
+  localStorage.removeItem('mar_auth_token');
+  localStorage.removeItem('mar_current_system');
+  state.currentSystem = 'MAR';
+
   const url = new URL(window.location);
   url.searchParams.delete('token');
   window.history.replaceState({}, '', url);
 
   state.currentUser = null;
   state.activeToken = null;
+  updateSystemBadge();
   document.getElementById('user-profile-bar').style.display = 'none';
   document.getElementById('portal-nav').style.display = 'none';
 
@@ -2604,23 +2658,29 @@ function logout() {
 // =========================================================================
 // STORAGE & SEED DATA
 // =========================================================================
+function getWorkOrdersKey() {
+  const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
+  return 'mar_work_orders_' + currentSys;
+}
+
 function initStorage() {
-  try {
-    const savedSys = localStorage.getItem('mar_current_system');
-    if (savedSys && savedSys.toUpperCase() === 'SUM') {
-      localStorage.removeItem('mar_current_system');
-      localStorage.removeItem('kmb_work_orders');
-    }
-  } catch (_) {}
-  const storedWos = localStorage.getItem('kmb_work_orders');
+  const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
+  const key = getWorkOrdersKey();
+  let storedWos = localStorage.getItem(key);
+  if (!storedWos && currentSys === 'KMB') {
+    storedWos = localStorage.getItem('kmb_work_orders');
+  }
   if (storedWos) {
     try {
       const parsed = JSON.parse(storedWos);
-      state.workOrders = Array.isArray(parsed)
-        ? parsed.filter(wo => !wo?.wo_number?.match(/-[A-Z]$/i) && !String(wo?.unit_id || '').toUpperCase().startsWith('SUM'))
-        : [];
-      if (state.workOrders.length !== parsed.length) {
-        saveWorkOrders();
+      if (Array.isArray(parsed)) {
+        if (currentSys === 'KMB') {
+          state.workOrders = parsed.filter(wo => !wo?.wo_number?.match(/-[A-Z]$/i) && !String(wo?.unit_id || '').toUpperCase().startsWith('SUM'));
+        } else {
+          state.workOrders = parsed;
+        }
+      } else {
+        state.workOrders = [];
       }
     } catch (e) {
       state.workOrders = [];
@@ -2629,7 +2689,8 @@ function initStorage() {
 }
 
 function saveWorkOrders() {
-  localStorage.setItem('kmb_work_orders', JSON.stringify(state.workOrders));
+  const key = getWorkOrdersKey();
+  localStorage.setItem(key, JSON.stringify(state.workOrders));
 }
 
 // =========================================================================
@@ -3626,12 +3687,15 @@ function renderDashboard() {
   if (statPendEl) statPendEl.textContent = pendingWoCount;
   const statPtsEl = document.getElementById('stat-total-points');
   if (statPtsEl) statPtsEl.textContent = totalApprovedPts.toFixed(2);
+  const currentSys = (state.currentSystem || localStorage.getItem('mar_current_system') || 'KMB').toUpperCase();
+  const engineLabel = currentSys === 'SUM' ? 'Google Sheets' : (getActiveEngine() === 'SUPABASE' ? 'Live Supabase' : 'Google Sheets');
+
   const statIncEl = document.getElementById('stat-incentive-preview');
-  if (statIncEl) statIncEl.textContent = `Live Supabase: Rp ${totalApprovedIdr.toLocaleString('id-ID')}`;
+  if (statIncEl) statIncEl.textContent = `${engineLabel}: Rp ${totalApprovedIdr.toLocaleString('id-ID')}`;
 
   const periodeEl = document.getElementById('dashboard-periode-str');
   if (periodeEl) {
-    periodeEl.textContent = `📅 Periode: ${overall.periode || '26 Okt – 25 Nov 2026'} (Live Supabase)`;
+    periodeEl.textContent = `📅 Periode: ${overall.periode || '26 Okt – 25 Nov 2026'} (${engineLabel})`;
   }
 
   const tbody = document.getElementById('dashboard-recent-wo-body');

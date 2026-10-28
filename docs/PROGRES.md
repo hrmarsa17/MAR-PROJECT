@@ -44,6 +44,28 @@ Formatnya:
 
 ---
 
+### 2026-10-28 · Raka (+ Antigravity) · bersama (Isolasi Data SUM vs KMB & Pemisahan Cache Tenant)
+- Berubah:
+  - **Akar Masalah Data KMB Tampil di SUM:**
+    1. Di worker.js, ekstraksi reqSystem sebelumnya memeriksa parsedData.system (dimana parsedData adalah peek.data). Saat frontend mengirim payload JSON { token, system: 'SUM', action: 'pull_monitoring', data: {} }, peek.system tidak terbaca dan reqSystem bernilai kosong (targetSystem default ke 'KMB').
+    2. Akibatnya, if (isSupabaseSelected && targetSystem === 'KMB') terpanggil dan Worker mengambil RPC kmb_monitoring serta kmb_create_refs dari database Supabase Singapore KMB Project, mengabaikan rumah SUM.
+    3. Di scripts/patched-app.js, fungsi initStorage() memiliki baris peninggalan yang menghapus mar_current_system jika bernilai 'SUM', sehingga sistem selalu ter-reset ke KMB setiap refresh atau load storage.
+    4. Cache localStorage menggunakan satu kunci global kmb_gas_refs_v9 dan filter rekondisi yang menolak unit non-vessel milik SUM.
+  - **Perbaikan:**
+    1. worker.js & workers/kmb-projek/worker.js:
+       - Ekstraksi bodySystem diperluas membaca peek.system dan params.get('system').
+       - Pengenalan otomatis token SUM (4651ebd7272e4aae939b, 4738b90a197443aaa410, prefix sum).
+       - isSupabaseSelected dikunci khusus targetSystem === 'KMB'. Untuk SUM, seluruh aksi dialirkan 100% langsung ke SUM GAS (AKfycbzB5EUJ…).
+    2. scripts/patched-app.js:
+       - api() kini menyematkan parameter query &system= dan header X-MAR-System: currentSystem.
+       - Menghapus pembersihan destruktif mar_current_system di initStorage().
+       - Kunci cache dan work orders di-scope per tenant (mar_gas_refs__v1 dan mar_work_orders_).
+       - loginWithToken() mengosongkan state in-memory saat berpindah tenant agar tidak ada data unit/mekanik KMB yang bocor ke sesi SUM.
+       - Badge sistem dan indikator engine menampilkan PROJEK SUM (biru) dan SPREADSHEET LIVE (Google Sheets) untuk SUM.
+- Belum selesai / berikutnya:
+  - Menunggu verifikasi visual dari pengguna saat login di abadiops.com dengan token SUM.
+
+---
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Penyambungan Multi-GAS Token Resolver untuk SUM V2)
 - Berubah:
   - Multi-GAS Token Resolver (`worker.js`, `workers/kmb-projek/worker.js`):
