@@ -29,7 +29,7 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
 | Setel env `KMBP_UJI_SPV_TOKEN` dan `SUM_UJI_TOKEN` (nilainya dari Gabriel, jangan ditulis di repo). Token uji baru KMB Project belum dimasukkan ke sheet `ApiTokens` | kmb-projek | Raka + Gabriel | |
-| Bug #16: buang hardcode yang tersisa (`DEFAULT_MECHANICS_LIST` di `scripts/patched-app.js`, `TOKENS`/`MECHANICS` di `data.js`) | kmb-projek | Raka (+ keputusan Gabriel) | mengubah login luring dan tampilan awal portal |
+| Bug #16: buang hardcode yang tersisa (`DEFAULT_MECHANICS_LIST` di `scripts/patched-app.js`, `TOKENS`/`MECHANICS` di `data.js`) | kmb-projek | Raka | **diputuskan Gabriel 29 Okt: hapus.** Konsekuensi diterima: tidak ada login offline, layar awal kosong sampai data GAS masuk |
 | Buang sisa kode pengantaran di portal (`serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, blok antar di `loginWithToken`) | kmb-projek | Raka | sudah mati sejak 29 Okt |
 | Bug #15: definisi `kmb_projek.catalog_jobs` ke `cermin_sheet.sql`, diisi lewat skrip sinkron | kmb-projek | Raka | |
 | Bug #12: cermin diperbarui terus-menerus, uji kembar per aksi (`scripts/uji-kembar-kmb-projek.mjs`), aksi yang lulus dimasukkan ke `AKSI_SUPABASE_LULUS_KEMBAR` | kmb-projek | Raka | 0 aksi lulus |
