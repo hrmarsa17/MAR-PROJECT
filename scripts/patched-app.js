@@ -2427,8 +2427,8 @@ export function switchSystem(nextSys) {
 // Aplikasi rumah lain (pintu, bug #11). Worker mengirim `alamat_rumah`; daftar ini
 // cadangan kalau ping dijawab GAS langsung karena Worker tak terjangkau.
 const ALAMAT_RUMAH_LAIN = {
-  SUM: 'https://abadiops-sum.kawanabadigrup.workers.dev/',
-  KMB_V2: 'https://abadiops-kmb.kawanabadigrup.workers.dev/'
+  SUM: 'https://sum.abadiops.com/',
+  KMB_V2: 'https://kmb.abadiops.com/'
 };
 
 function serahkanKeRumah(alamat, token) {

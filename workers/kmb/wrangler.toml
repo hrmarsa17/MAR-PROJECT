@@ -6,6 +6,13 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
 
+# Alamat utama (keputusan Gabriel 28 Okt malam, pilihan A). *.workers.dev dicegat DNS
+# sebagian provider internet, sedangkan domain sendiri tidak. Cloudflare membuat DNS dan
+# sertifikatnya otomatis. workers.dev tetap aktif sementara untuk perangkat uji.
+routes = [
+  { pattern = "kmb.abadiops.com", custom_domain = true }
+]
+
 # Akun Cloudflare kawanabadigrup. Dikunci supaya deploy tidak pernah nyasar ke akun lain
 # yang kebetulan sedang login di laptop (misalnya akun pribadi untuk Rembes). Kalau login
 # yang aktif bukan kawanabadigrup, deploy ditolak, tidak dikirim ke akun yang salah.

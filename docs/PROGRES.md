@@ -22,7 +22,7 @@ Formatnya:
 | KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | **token lama selesai dibuang** 28 Okt malam. Token uji baru belum dimasukkan; opsional, kalau Raka perlu akun uji |
 | KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | **selesai** 28 Okt malam: 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001). Diverifikasi lewat `kmb_ping`: keempat token lama tidak ada lagi di cermin |
 | Deploy ketiga Worker sesudah pull: `project-kmb` (akar repo), `abadiops-sum` (`workers/sum`), `abadiops-kmb` (`workers/kmb`). Pastikan dulu Raka tidak punya deploy `project-kmb` yang lebih baru dan belum di-push | bersama | Gabriel | `project-kmb` **sudah live** 28 Okt malam (diverifikasi: pintu menjawab tenant `KMB_V2`, portal memuat `serahkanKeRumah`). `abadiops-sum` dan `abadiops-kmb` **sudah live** 28 Okt malam (diverifikasi lewat IP Cloudflare: pembaca `#token=` ada) |
-| **Alamat aplikasi rumah di bawah `abadiops.com`.** Dari jaringan laptop Gabriel (28 Okt malam), DNS biasa untuk `*.workers.dev` dicegat. Jawabannya IP Amazon dengan sertifikat `CN=2yew73de.com`, bahkan untuk kueri ke `1.1.1.1`. DNS terenkripsi (DoH) memberi IP Cloudflare yang benar, dan lewat IP itu kedua aplikasi tersambung normal. Ini pola pemblokiran DNS oleh provider internet. Mekanik dengan provider yang sama bisa gagal membuka `abadiops-sum`/`abadiops-kmb`, sedangkan `abadiops.com` aman | bersama | Gabriel | menunggu keputusan alamat (`docs/KEPUTUSAN.md`, belum diputuskan nomor 9). Cek juga dari HP dengan data seluler |
+| **Alamat aplikasi rumah di bawah `abadiops.com`.** DNS biasa untuk `*.workers.dev` dicegat sebagian provider internet (temuan 28 Okt malam) | bersama | Gabriel | **diputuskan** 28 Okt malam: pilihan A, `sum.abadiops.com` dan `kmb.abadiops.com`. Konfigurasi siap di `workers/sum`, `workers/kmb`, dan `worker.js`. Tinggal deploy ulang ketiga Worker: kedua rumah dulu, lalu `project-kmb` |
 | KMB Project: jalankan `db/kmb_projek/rpc_wajib_token.sql` di Supabase SQL Editor | kmb-projek | Gabriel | **selesai** 28 Okt malam. Diverifikasi dari luar: 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu |
 | Pintu: uji di browser (jendela penyamaran) dengan token uji SUM, KMB V2, KMB Project, token kembar, dan token palsu | bersama | Gabriel | sesudah deploy |
 | KMB Project: definisi `kmb_projek.catalog_jobs` dimasukkan ke `cermin_sheet.sql` dan diisi lewat skrip sinkron (bug #15) | kmb-projek | Raka | |
@@ -54,6 +54,21 @@ Formatnya:
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · bersama (langkah 1–2 + alamat aplikasi rumah)
+- Berubah:
+  - Supabase, dijalankan Gabriel:
+    - `hapus-salinan-token-uji.sql` mengubah 4 baris (`api_tokens` dan `config_mechanics` untuk SPV-001 dan SUPT-001).
+    - `rpc_wajib_token.sql` berhasil.
+    - Diverifikasi dari luar: token lama hilang dari cermin, 4 fungsi lama tertutup untuk anon, 4 pembungkus menolak token palsu.
+  - `abadiops-sum` dan `abadiops-kmb` di-deploy dengan pembaca `#token=`. Diverifikasi lewat IP Cloudflare, karena DNS biasa di jaringan Gabriel mencegat `*.workers.dev`.
+  - **Keputusan alamat (pilihan A):**
+    - `routes` dengan `custom_domain = true` untuk `sum.abadiops.com` (`workers/sum/wrangler.toml`) dan `kmb.abadiops.com` (`workers/kmb/wrangler.toml`).
+    - `ALAMAT_RUMAH` di `worker.js` dan `ALAMAT_RUMAH_LAIN` di `scripts/patched-app.js` diganti ke alamat itu. `worker.js` dirakit ulang (`index.html`, `style.css`, `data.js` tidak berubah).
+    - `--dry-run` kedua rumah lulus.
+- Belum selesai / berikutnya:
+  - Deploy ulang ketiga Worker, kedua rumah dulu supaya alamatnya sudah ada sebelum pintu mengantar ke sana.
+  - Lalu uji pengantaran di browser.
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (haram hardcode + alat token tiga rumah)
 - Berubah:
