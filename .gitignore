@@ -34,3 +34,6 @@ cadangkan-produksi.cmd
 
 # Direktori skrip uji coba sementara
 scratch/
+
+# Sisa wrangler dev lokal (jangan di-commit)
+.wrangler/
