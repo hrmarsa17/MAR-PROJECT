@@ -6,38 +6,19 @@
 import { UNITS as FALLBACK_UNITS, MECHANICS as FALLBACK_MECHANICS, COMPONENTS as FALLBACK_COMPONENTS, TOKENS, FACTORS, RATES } from './data.js';
 import { calculateWoPoints, calculateTeamDistribution } from './services/scoring.js';
 
+// Nilai awal sebelum data GAS masuk. Sengaja kosong/nol (keputusan Gabriel 29 Okt, bug #16:
+// hardcode haram). Dulu berisi angka contoh dan daftar 20 mekanik asli beserta tokennya.
 const DEFAULT_MONITORING_OVERALL = {
-  mechanics: 20,
-  pending_mechanic_work: 7,
-  pending_l1: 3,
-  pending_l2: 21,
-  approved: 13,
-  periode: '26 Okt – 25 Nov 2026',
-  total_poin: 20.20
+  mechanics: 0,
+  pending_mechanic_work: 0,
+  pending_l1: 0,
+  pending_l2: 0,
+  approved: 0,
+  periode: '',
+  total_poin: 0
 };
 
-const DEFAULT_MECHANICS_LIST = [
-  { id: "VES-012", name: "Gusti Raka Pamungkas", section: "vessel", token: "97a47ff4c7e443f2a550", pending_mechanic_work: 2, pending_l1: 0, pending_l2: 0, approved: 0 },
-  { id: "MNT-002", name: "Mekanik Maintenance 2", section: "maintenance", token: "7ceafd98922343139b11", pending_mechanic_work: 2, pending_l1: 0, pending_l2: 0, approved: 0 },
-  { id: "MNT-009", name: "Alan Rohim", section: "maintenance", token: "abb499b53b564d0abc8e", pending_mechanic_work: 1, pending_l1: 1, pending_l2: 3, approved: 1 },
-  { id: "VES-007", name: "Bayu Aji", section: "vessel", token: "bccd82db654b4caabe01", pending_mechanic_work: 1, pending_l1: 0, pending_l2: 1, approved: 3 },
-  { id: "VES-011", name: "Yudo Hardianto", section: "vessel", token: "cad65b7ac67d485095f6", pending_mechanic_work: 1, pending_l1: 0, pending_l2: 3, approved: 1 },
-  { id: "VES-010", name: "Aditya", section: "vessel", token: "c2309102d07946488229", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 0, approved: 1 },
-  { id: "MNT-003", name: "Afid Irham", section: "maintenance", token: "67adf77d8d934659b5c5", pending_mechanic_work: 0, pending_l1: 1, pending_l2: 0, approved: 4 },
-  { id: "VES-005", name: "Aji Laksono", section: "vessel", token: "c5f9fed98f4a41b29ff3", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 0, approved: 0 },
-  { id: "MNT-007", name: "Aldo Noviansyah", section: "maintenance", token: "da766cd0acc54b5f938b", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 6, approved: 5 },
-  { id: "MNT-010", name: "Bagus Wahyu Nurcahyo", section: "maintenance", token: "58ea54f16b0149d1b06f", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 2, approved: 1 },
-  { id: "VES-009", name: "Cahyo Aji", section: "vessel", token: "abec2e7e7334498e8b84", pending_mechanic_work: 0, pending_l1: 2, pending_l2: 0, approved: 0 },
-  { id: "VES-008", name: "Dimas", section: "vessel", token: "a4c9596a547548e19866", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 0, approved: 0 },
-  { id: "MNT-006", name: "Eliyadi", section: "maintenance", token: "66383ba88e8145368f80", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 5, approved: 1 },
-  { id: "MNT-012", name: "Khoirul Musthofa", section: "vessel", token: "2022d461a0174205bb8f", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 3, approved: 1 },
-  { id: "MNT-004", name: "M. Riyanto", section: "vessel", token: "6587ce74c4ec46a8b023", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 5, approved: 0 },
-  { id: "VES-013", name: "Nicko Herman Saputra", section: "vessel", token: "ea4d95e0439344b78605", pending_mechanic_work: 0, pending_l1: 2, pending_l2: 0, approved: 0 },
-  { id: "VES-004", name: "Rahmat", section: "vessel", token: "0385984dc6234e26a53f", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 1, approved: 3 },
-  { id: "MNT-011", name: "Regista Pratama", section: "maintenance", token: "a184eb0d25ff4e9388f8", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 5, approved: 1 },
-  { id: "MNT-008", name: "Rido Saputra", section: "maintenance", token: "151cc987cf5e4666840a", pending_mechanic_work: 0, pending_l1: 1, pending_l2: 4, approved: 0 },
-  { id: "MNT-005", name: "Wiwit", section: "maintenance", token: "cac19e70058a43f8ab57", pending_mechanic_work: 0, pending_l1: 0, pending_l2: 7, approved: 4 }
-];
+const DEFAULT_MECHANICS_LIST = [];
 
 const DEFAULT_PENDING_L1_LIST = [
   {

@@ -165,7 +165,7 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
   - Uji memakai token palsu (`uji-palsu-…`) atau environment (`KMBP_UJI_SPV_TOKEN`, `SUM_UJI_TOKEN`).
   - Token baru dibuat dan dicek dengan `scripts/buat-token-tiga-rumah.mjs`, yang bertanya langsung ke ketiga rumah. Token yang dicetaknya tidak boleh di-commit.
   - Alamat GAS dan alamat aplikasi rumah adalah konfigurasi, bukan data. Simpan di satu tempat (`wrangler.toml`, `GAS_URLS` di `worker.js`), jangan disebar.
-  - Hardcode yang masih tersisa dicatat di `docs/BUG-DICATAT.md` #16 dan dibuang oleh pemilik rumahnya.
+  - Hardcode di portal KMB Project sudah dibuang 29 Okt (bug #16). Rumus poin dan rupiah di `services/scoring.js` (1:1 dengan `ScoringService.gs`) adalah rumus, bukan data hidup, dan tidak boleh diubah tanpa Gabriel (lihat garis merah di bawah).
 - **Jangan `clasp push` ke GAS produksi**, dan **jangan membuat deployment GAS baru**. Alamat `/exec` setiap GAS harus tetap sama selama masa peralihan.
 - **Jangan menulis ke spreadsheet** dari sistem baru.
 - **Jangan mengubah rumus poin atau rupiah**, dan jangan "membetulkan" angka apa pun. Keputusan bisnis dan angka uang ada di tangan **Gabriel**.

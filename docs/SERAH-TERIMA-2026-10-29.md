@@ -53,7 +53,7 @@ Catatan:
 ## 4. Tugasmu, urut
 
 1. **Token uji.** Setel env lokal `KMBP_UJI_SPV_TOKEN` (token uji SPV-001 baru) dan `SUM_UJI_TOKEN`. Minta nilainya ke Gabriel, dan jangan pernah menulisnya di repo. Token uji baru KMB Project **belum** dimasukkan ke sheet `ApiTokens`; minta Gabriel menambahkannya kalau kamu butuh akun uji.
-2. **Bug #16: HAPUS** (keputusan Gabriel 29 Okt; tertanam di kode = hardcode = haram). Buang `DEFAULT_MECHANICS_LIST` di `patched-app.js` serta `TOKENS`/`MECHANICS` di `data.js`. Konsekuensinya diterima: tidak ada login offline, dan layar awal kosong sampai data GAS masuk. Uji di `wrangler dev` dulu; push langsung tayang.
+2. ~~Bug #16~~ **Sudah dikerjakan 29 Okt dini hari** (Gabriel + Claude): `DEFAULT_MECHANICS_LIST`, `data.js`, dan angka monitoring palsu dikosongkan. Lihat entri PROGRES. Tidak perlu dikerjakan lagi; cukup ketahui bahwa portal tidak lagi punya login offline.
 3. **Buang sisa kode pengantaran** di portal: `serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, dan blok antar di `loginWithToken`. Kodenya sudah mati sejak 29 Okt.
 4. **Bug #15.** Ambil definisi `kmb_projek.catalog_jobs` dari Supabase, masukkan ke `cermin_sheet.sql`, lalu isi lewat skrip sinkron.
 5. **Bug #12.** Perbarui cermin terus-menerus, jalankan uji kembar per aksi, dan masukkan aksi yang lulus ke `AKSI_SUPABASE_LULUS_KEMBAR` satu per satu.
