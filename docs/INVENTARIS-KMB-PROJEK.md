@@ -46,7 +46,7 @@ Dokumen ini adalah **kontrak inventaris resmi** untuk seluruh aksi backend, form
   ```json
   {
     "action": "ping",
-    "token": "52fdb552231348ffb14a"
+    "token": "<token uji SPV KMB Project>"
   }
   ```
 * **Output Berhasil (HTTP 200)**:

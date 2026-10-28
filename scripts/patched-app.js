@@ -2525,7 +2525,7 @@ export async function loginWithToken(token, isAutoAuth = false) {
         mechanic_id: tokenRecord.mechanic_id,
         name: tokenRecord.name || matchedMech?.name || 'Mekanik',
         mechanic_name: tokenRecord.name || matchedMech?.name || 'Mekanik',
-        role: (tokenRecord.role || (cleanToken === '67e8153da255457eb6ef' ? 'superintendent' : (cleanToken === '52fdb552231348ffb14a' ? 'supervisor' : 'mechanic'))).toLowerCase(),
+        role: (tokenRecord.role || 'mechanic').toLowerCase(),
         section: tokenRecord.section || matchedMech?.section || 'vessel,maintenance'
       };
 

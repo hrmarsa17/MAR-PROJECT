@@ -57,7 +57,7 @@ describe('POST /api/gas (Dual Engine Gateway)', () => {
     const req = new Request('http://localhost/api/gas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: '52fdb552231348ffb14a', action: 'ping' }),
+      body: JSON.stringify({ token: 'uji-palsu-spv-kmbp', action: 'ping' }),
     });
 
     const res = await POST(req);
@@ -75,7 +75,7 @@ describe('POST /api/gas (Dual Engine Gateway)', () => {
     const req = new Request('http://localhost/api/gas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: '52fdb552231348ffb14a', action: 'pull_create_refs' }),
+      body: JSON.stringify({ token: 'uji-palsu-spv-kmbp', action: 'pull_create_refs' }),
     });
 
     const res = await POST(req);
@@ -103,7 +103,7 @@ describe('POST /api/gas (Dual Engine Gateway)', () => {
           'Content-Type': 'application/json',
           'X-Active-Engine': 'SPREADSHEET',
         },
-        body: JSON.stringify({ token: '52fdb552231348ffb14a', action: 'ping' }),
+        body: JSON.stringify({ token: 'uji-palsu-spv-kmbp', action: 'ping' }),
       });
 
       const res = await POST(req);

@@ -88,7 +88,7 @@ async function runTests() {
       'X-Active-Engine': 'SUPABASE'
     },
     body: JSON.stringify({
-      token: '52fdb552231348ffb14a',
+      token: process.env.KMBP_UJI_SPV_TOKEN, // token uji supervisor KMB Project, isi lewat environment
       system: 'KMB',
       engine: 'SUPABASE',
       action: 'pull_monitoring',

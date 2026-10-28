@@ -16,7 +16,12 @@ import postgres from 'postgres';
 import fs from 'fs';
 
 const GAS_URL = process.env.APPSCRIPT_URL_KMB || 'https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec';
-const SPV_TOKEN = '52fdb552231348ffb14a';
+// Token uji supervisor KMB Project. Tidak ditulis di repo; isi lewat environment KMBP_UJI_SPV_TOKEN.
+const SPV_TOKEN = process.env.KMBP_UJI_SPV_TOKEN;
+if (!SPV_TOKEN) {
+  console.error('❌ KMBP_UJI_SPV_TOKEN belum disetel di environment! (token uji supervisor KMB Project)');
+  process.exit(1);
+}
 const DB_URL = process.env.DATABASE_URL_KMB || process.env.DATABASE_URL;
 
 if (!DB_URL) {

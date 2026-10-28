@@ -17,7 +17,11 @@ Formatnya:
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
 | Pintu: pengecekan token kembar otomatis setiap hari untuk ketiga rumah, dengan peringatan | bersama | Gabriel + Raka | lihat `docs/KEPUTUSAN.md` 28 Okt |
-| KMB Project: hapus salinan 4 akun uji KMB V2 (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`) dari data token KMB Project. Kalau perlu akun uji, buat sendiri dengan token berbeda | kmb-projek | Raka | menunggu persetujuan Gabriel (`docs/KEPUTUSAN.md`, belum diputuskan nomor 8) |
+| KMB Project: hapus salinan 4 akun uji KMB V2 (`SUPT-001`, `SPV-001`, `MECH-003`, `TYRE-002`) dari data token KMB Project. Kalau perlu akun uji, buat sendiri dengan token berbeda | kmb-projek | Gabriel (+ Claude), menggantikan Raka | **kode selesai** 28 Okt (pilihan C). Sisa langkah manual: lihat 4 baris di bawah |
+| KMB Project: di spreadsheet, sheet ApiTokens, ganti token `SUPT-001`, `SPV-001`, `MECH-003` dengan token baru (diberikan di chat, **jangan** ditulis di repo). Di sheet Config_Mechanics, kosongkan `offline_token` yang masih berisi token lama | kmb-projek | Gabriel | |
+| KMB Project: jalankan `db/kmb_projek/hapus-salinan-token-uji.sql` di Supabase SQL Editor. Wajib, karena login KMB Project mengecek Supabase sebelum GAS | kmb-projek | Gabriel | aman diulang |
+| KMB Project: deploy `project-kmb` dari akar repo, sesudah pull. Pastikan dulu Raka tidak punya deploy yang lebih baru dan belum di-push | kmb-projek | Raka atau Gabriel | |
+| KMB Project: setel `KMBP_UJI_SPV_TOKEN` (token baru SPV-001) sebelum menjalankan `scripts/sinkron-kmb-projek-cermin.mjs`, `scripts/uji-live-supabase-backend.mjs`, `scripts/verify-sum-kmb-isolation.mjs` | kmb-projek | Raka | |
 | Konfirmasi region Supabase adalah Singapura | bersama | Gabriel + Raka | **selesai** (terkonfirmasi `ap-southeast-1` = Singapura) |
 | Konfirmasi bahwa spreadsheet `1qHjfIUT…` milik SUM V2 (script `1k_A_KER…`) | sum | Gabriel + Raka | **selesai** (terkonfirmasi script `1k_A_KER…` di `MAR-SUM-v2`) |
 | Pindahkan kode MARProject ke cabang arsip, lalu bentuk susunan tiga rumah | bersama | Gabriel + Raka | **arsip selesai** (`archive/marproject`), susunan tiga rumah disiapkan |
@@ -37,13 +41,26 @@ Formatnya:
 | KMB Project: kunci isolasi `worker.js` murni KMB, hapus routing `GAS_URLS.SUM` dan switch system (Bug #9) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB Project: perbaiki gate login agar token asal tidak otomatis lolos ke tab mekanik (Bug #10) | kmb-projek | Raka | **selesai** 28 Okt |
 | KMB V2: deploy `workers/kmb` ke alamat uji (`CLOUDFLARE_API_TOKEN` yang sama, lalu `npx wrangler deploy`) | kmb | Gabriel | **selesai** 28 Okt: `https://abadiops-kmb.kawanabadigrup.workers.dev` |
-| Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | **ditemukan 4 token kembar KMB V2 ↔ KMB Project** (lihat entri 28 Okt "bersama (cek token)"). Pintu belum boleh dinyalakan untuk kedua rumah itu sebelum diputuskan |
+| Pintu: deteksi rumah dari token (keputusan login zero-select). Token SUM dan KMB V2 belum ada di Supabase, jadi pintu perlu cermin `api_tokens` kedua rumah, atau bertanya ke GAS masing-masing. Cek juga token kembar antar-rumah | bersama | Gabriel + Raka | 4 token kembar KMB V2 ↔ KMB Project **diselesaikan dengan pilihan C** (28 Okt), tinggal langkah manual di atas. Pintu belum mengenali KMB V2 dan belum menerapkan aturan "jangan menebak" |
 | KMB V2: uji dengan token sungguhan untuk ketiga peran (mechanic, supervisor, superintendent) | kmb | Gabriel | |
 | Pintu `abadiops.com`: sambungkan rumah KMB V2 | bersama | Gabriel + Raka | |
 | KMB V2: inventaris perilaku per aksi (`docs/INVENTARIS-KMB.md`) dan skema cermin `kmb` | kmb | Gabriel | |
 | KMB V2: pindahkan halaman web GAS secara 1:1 ke Abadi, lalu tutup halaman web GAS | kmb | Gabriel | **wajib sebelum saklar KMB dinyalakan** |
 
 ---
+
+### 2026-10-28 · Gabriel (+ Claude) · kmb-projek (pilihan C: hapus salinan token uji KMB V2)
+- Berubah:
+  - `worker.js` dan `workers/kmb-projek/worker.js`: 4 entri `TOKENS` di data.js dihapus (28 → 24), `offline_token` SUPT-001 dikosongkan, app.js dirakit ulang dari `scripts/patched-app.js`. style.css sengaja dibiarkan persis seperti sebelumnya, karena perakitan ulang mengubah akhiran barisnya. Kode Worker di luar 4 file tertanam tidak berubah.
+  - `scripts/patched-app.js`: peran tidak lagi dikunci ke dua token uji lama. Untuk token lain hasilnya sama persis (`tokenRecord.role || 'mechanic'`).
+  - `scripts/sinkron-kmb-projek-cermin.mjs`, `scripts/uji-live-supabase-backend.mjs`, `scripts/verify-sum-kmb-isolation.mjs`: token uji supervisor dibaca dari environment `KMBP_UJI_SPV_TOKEN`. Dua skrip pertama berhenti dengan pesan jelas kalau kosong.
+  - `tests/api/gas.test.ts`: memakai token palsu `uji-palsu-spv-kmbp`. Fetch dan Supabase di-mock, jadi nilainya tidak berpengaruh. Lulus 3/3.
+  - `docs/MULTI-TENANT-SETUP.md` dan `docs/INVENTARIS-KMB-PROJEK.md` tidak lagi memuat token itu.
+  - Baru: `db/kmb_projek/hapus-salinan-token-uji.sql`. Yang dicocokkan md5-nya; token mentah tidak ditulis. Sudah diuji di Postgres dalam memori (PGlite) dengan skema `cermin_sheet.sql`: menghapus tepat baris lama, baris lain utuh, jalan kedua 0 baris.
+  - Tiga token uji baru untuk `SUPT-001`, `SPV-001`, `MECH-003` sudah dicek: ditolak ("Token tidak dikenal / nonaktif") oleh GAS SUM V2, KMB V2, dan KMB Project, dan tidak ada di bundel. Tokennya hanya diberikan ke Gabriel lewat chat.
+  - `docs/KEPUTUSAN.md`: nomor 8 dipindah ke "Sudah diputuskan".
+  - Temuan: login KMB Project mengecek `kmb_projek.api_tokens` (RPC `kmb_ping`) **sebelum** GAS. Jadi mengganti token di sheet saja tidak cukup; SQL di atas wajib dijalankan.
+- Belum selesai / berikutnya: langkah manual di tabel tugas (sheet, SQL, deploy, `KMBP_UJI_SPV_TOKEN`). Setelah sheet diganti, tunggu paling lama 30 menit (cache token GAS KMB Project): token lama ditolak di KMB Project dan token baru dikenali.
 
 ### 2026-10-28 · Gabriel (+ Claude) · bersama (verifikasi token kembar)
 - Berubah: tidak ada kode. Keempat token kembar dibandingkan utuh (20 karakter) antara cadangan KMB V2 (23 Sep) dan `workers/kmb-projek/worker.js`: **sama persis**, dan **keempatnya akun uji KMB V2** ("L2 Test", "L1 Test", "Test Mechanic Field 1", "Test Mechanic tyre 1"). Di data KMB Project, `MECH-003` dan `TYRE-002` hanya ada tokennya, tanpa data mekanik.

@@ -10,7 +10,12 @@ async function testLiveSupabaseSystem() {
   console.log('🚀 PENGUJIAN SISTEM DENGAN BACKEND SUPABASE AKTIF (LIVE DB)');
   console.log('================================================================\n');
 
-  const SPV_TOKEN = '52fdb552231348ffb14a';
+  // Token uji supervisor KMB Project. Tidak ditulis di repo; isi lewat environment KMBP_UJI_SPV_TOKEN.
+  const SPV_TOKEN = process.env.KMBP_UJI_SPV_TOKEN;
+  if (!SPV_TOKEN) {
+    console.error('❌ KMBP_UJI_SPV_TOKEN belum disetel di environment! (token uji supervisor KMB Project)');
+    process.exit(1);
+  }
 
   // 1. Test ping via /api/gas
   console.log('1. Menguji Aksi "ping" lewat /api/gas ...');

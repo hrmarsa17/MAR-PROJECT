@@ -30,7 +30,7 @@ Kunci utama pemisahan tenant terletak pada **TOKEN AKSES**:
 2. **Disimpan Plaintext (Sengaja)**: Sesuai arsitektur KMB V2, token **tidak di-hash** di database/sheet. Alasannya: layar *Monitoring* memiliki fitur bagi Supervisor/Superintendent untuk membacakan kembali token mekanik yang lupa di lapangan. Keamanan dijaga oleh pembatasan hak akses role, bukan oleh *one-way hash*.
 3. **Format Token**:
    - Format Ber-Prefix: `<tenant_code>-<karakter_acak>` (contoh: `kmb-dnjasdians`, `sum-sdan3i12d`, `sum-maman0123`).
-   - Format Legacy / Hex: 20 karakter hex (contoh: `52fdb552231348ffb14a`), dipetakan otomatis ke tenant default (`KMB`).
+   - Format Legacy / Hex: 20 karakter hex (contoh: `0123456789abcdef0123`), dipetakan otomatis ke tenant default (`KMB`).
 
 ---
 
@@ -309,7 +309,7 @@ Berikut adalah daftar token uji yang sudah terdaftar di database dan spreadsheet
 
 | Tenant | Peran | Nama | Token Uji | File Rujukan Dummy |
 |---|---|---|---|---|
-| **KMB** | L1 (Supervisor) | Supv KMB | `52fdb552231348ffb14a` / `kmb-dnjasdians` | [`db/dummy-lengkap.sql`](file:///d:/marbaru/MARProject/db/dummy-lengkap.sql#L131) |
+| **KMB** | L1 (Supervisor) | Supv KMB | token uji SPV KMB Project (environment `KMBP_UJI_SPV_TOKEN`) / `kmb-dnjasdians` | [`db/dummy-lengkap.sql`](file:///d:/marbaru/MARProject/db/dummy-lengkap.sql#L131) |
 | **KMB** | L2 (Superintendent) | Supt KMB | `kmb-mgr1234567` | [`db/dummy-lengkap.sql`](file:///d:/marbaru/MARProject/db/dummy-lengkap.sql#L132) |
 | **KMB** | Mekanik Field | Mekanik 1 KMB | `kmb-m1satu1234` | [`db/dummy-lengkap.sql`](file:///d:/marbaru/MARProject/db/dummy-lengkap.sql#L133) |
 | **SUM** | L1 (Supervisor) | Maman (L1) | `sum-maman0123` | [`db/dummy-sum.sql`](file:///d:/marbaru/MARProject/db/dummy-sum.sql#L309) |
