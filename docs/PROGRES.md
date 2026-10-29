@@ -6,6 +6,11 @@ Formatnya:
 
 ```
 ### 2026-10-29 · Raka (+ AI) · bersama (koneksi Supabase SUM, DDL cermin live, template web 1:1 KMB Project, & network-first PWA)
+- **Konfigurasi Kunci API Supabase SUM (`dnnqrslftndcbmnvuveb`)**:
+  - Publishable API key (`sb_publishable_HgQd...`) diverifikasi aktif untuk RPC publik: pengujian RPC `sum_ping` mengembalikan respon JSON valid.
+  - `workers/sum/wrangler.toml` diperbarui dengan publishable key proyek SUM baru dan di-deploy ke Cloudflare Worker (`abadiops-sum` Version `8db5e425…`).
+  - Verifikasi live: `https://sum.abadiops.com/api/sehat` mengembalikan `supabase_configured: true`.
+  - Secret key (`sb_s...`) diverifikasi aktif (200 OK ke endpoint REST) dan disiapkan untuk perkakas sinkronisasi data cermin (`tools/sum/sinkron-cermin.mjs`). Kunci rahasia tidak pernah masuk ke repo sesuai aturan §4.
 - **Eksekusi DDL & RPC Database SUM V2 (skema `sum`)**:
   - Koneksi database Postgres SUM (`dnnqrslftndcbmnvuveb`) berhasil terhubung lewat Supabase connection pooler port 6543 di region Singapore (`aws-0-ap-southeast-1.pooler.supabase.com:6543`).
   - DDL `db/sum/cermin_sheet.sql` sukses dieksekusi langsung ke database: skema `sum` dan 22 tabel cermin mentah spreadsheet terpasang bersih.
