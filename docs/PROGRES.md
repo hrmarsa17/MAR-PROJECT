@@ -5,6 +5,18 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · kmb-projek (verifikasi token uji L1 & L2 KMB Project di pintu & live backend)
+- Berubah:
+  - **Verifikasi Token Uji KMB Project (§5 Langkah 0 selesai)**:
+    - Token L1 (`52fd…`) dan L2 (`67e8…`) diterima dari Gabriel.
+    - Uji `scripts/buat-token-tiga-rumah.mjs --cek`: kedua token terkonfirmasi eksklusif di KMB Project, tanpa tabrakan di SUM atau KMB TRA.
+    - Uji Pintu `abadiops.com/api/pintu`: kedua token dikenali dengan tepat sebagai `kmbprojek`, mengembalikan tautan aplikasi `https://kmbprojek.abadiops.com/` dan profil (`L1 Test`, `L2 Test`).
+    - Uji Backend `kmbprojek.abadiops.com/api`:
+      - `52fd…` (L1) -> peran `supervisor`, `approved: 68`, `pending_l1: 3`, `pending_l2: 0`, 20 mekanik.
+      - `67e8…` (L2) -> peran `superintendent`, `approved: 68`, `pending_l1: 3`, `pending_l2: 0`, 20 mekanik.
+    - Token disamarkan penuh sesuai aturan keamanan AGENTS.md §4 & §5.
+- Belum selesai / berikutnya: Menunggu akun layanan Google (`GOOGLE_SA_KEY_FILE`) dari Gabriel untuk menjalankan cermin tiga rumah (§5 Langkah 2).
+
 ### 2026-10-29 · Raka (+ AI) · bersama (§5 langkah 2 & audit kesiapan tugas terbuka)
 - Berubah:
   - **Tugas Terbuka §6 Dituntaskan**:
