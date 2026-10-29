@@ -3646,10 +3646,15 @@ function ambilTokenSerahan() {
   if (!m) return '';
   var t = '';
   try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
-  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
   return t;
 }
 function masukDariPintu(t) {
+  if (!t) return;
+  if (S.token) {
+    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
+    return;
+  }
   _masukDariPintu = true;
   S.token = t;
   requestNotifPermission(); requestPeriodicSync();
@@ -3700,6 +3705,7 @@ openDb().then(function() {
   masukDariPintu(ambilTokenSerahan()); // sebelum layar dipilih: tanpa layar login (keputusan 29 Okt nomor 10)
   syncVersionFromCache().then(function(){ showScreen(S.token?'main':'login'); renderAll(); });
   showScreen(S.token?'main':'login');
+  document.documentElement.classList.remove('dari-pintu'); // anti-kedip cukup sampai layar pertama dipilih; sesudahnya layar login (token ditolak, logout) harus terlihat
   // Timer bisa masih berjalan dari sesi sebelumnya (state tersimpan di IndexedDB)
   startTimerTicker();
   if (S.token) requestPeriodicSync();

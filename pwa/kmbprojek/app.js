@@ -18,7 +18,7 @@ var CONFIG = { API_URL: './api' };
 // service worker yang benar-benar aktif (lihat syncVersionFromCache).
 // Dengan begitu rilis cukup mengubah CACHE di sw.js; angka di sini tak bisa lagi
 // tertinggal diam-diam seperti dulu (APP_VERSION v26 vs CACHE v34).
-var APP_VERSION = 'projek-v16'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
+var APP_VERSION = 'projek-v17'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
 
 // ── Pembaruan versi otomatis ────────────────────────────────────────────────
 // sw.js sudah skipWaiting()+clients.claim(), jadi versi baru mengambil alih
@@ -4255,6 +4255,10 @@ function ambilTokenSerahan() {
 }
 function masukDariPintu(t) {
   if (!t) return;
+  if (S.token) {
+    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
+    return;
+  }
   _masukDariPintu = true;
   S.token = t;
   showScreen('main');
@@ -4306,13 +4310,10 @@ openDb().then(function() {
   // memperlihatkannya — berkedip sebentar lalu hilang, yang terbaca sebagai
   // aplikasi rusak, bukan sebagai medan yang memang ditiadakan.
   setelMeterCreate();
-  var tokenAwal = ambilTokenSerahan();
-  if (tokenAwal) {
-    S.token = tokenAwal;
-    masukDariPintu(tokenAwal);
-  }
+  masukDariPintu(ambilTokenSerahan()); // sebelum layar dipilih: tanpa layar login (keputusan 29 Okt nomor 10)
   syncVersionFromCache().then(function(){ showScreen(S.token?'main':'login'); renderAll(); });
   showScreen(S.token?'main':'login');
+  document.documentElement.classList.remove('dari-pintu'); // anti-kedip cukup sampai layar pertama dipilih; sesudahnya layar login (token ditolak, logout) harus terlihat
   // Timer bisa masih berjalan dari sesi sebelumnya (state tersimpan di IndexedDB)
   startTimerTicker();
   if (S.token) requestPeriodicSync();
