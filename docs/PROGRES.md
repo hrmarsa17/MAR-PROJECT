@@ -5,6 +5,24 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · bersama (§5 langkah 2 & audit kesiapan tugas terbuka)
+- Berubah:
+  - **Tugas Terbuka §6 Dituntaskan**:
+    - `wrangler.toml` (akar): `name` diubah dari `project-kmb` menjadi `project-mar` agar konsisten dengan Worker builds yang terhubung ke Cloudflare (`project-mar`).
+    - `scripts/verify-sum-kmb-isolation.mjs`: dipensiunkan dengan banner resmi (menguji arsitektur lama; isolasi sekarang diuji per-rumah via `/api/sehat` & `/api/pintu`).
+  - **Fondasi Skema Cermin Mentah JSONB (§5 Langkah 2)**:
+    - `db/kmb/cermin_sheet.sql`: skema mentah 21 tabel cermin KMB V2 (`baris`, `nilai`, `data`, `sinkron_at`, `cermin_header`, `cermin_log`, `cermin_meta`) seragam dengan SUM.
+    - `db/kmb/README.md`: dokumentasi lengkap cermin KMB V2 dan panduan sinkron.
+    - `db/kmb_projek/cermin_sheet_mentah.sql`: skema mentah JSONB 17 tabel cermin KMB Project seragam dengan SUM & KMB, menyelesaikan akar masalah bug #12 & #15 (kolom hilang & katalog jobs).
+  - **Perkakas Sinkron Cermin Tiga Rumah**:
+    - `tools/kmb/sinkron-cermin.mjs`: alat sinkron Google Sheets API v4 langsung ke skema `kmb` dengan dukungan `--kering` (dry-run).
+    - `tools/kmb_projek/sinkron-cermin.mjs`: alat sinkron Google Sheets API v4 langsung ke skema `kmb_projek` dengan dukungan `--kering`.
+    - `tools/cek-token-kembar.mjs`: perkakas pemantau harian token kembar lintas rumah (bisa via kueri cermin database atau `--ping` GAS live paralel).
+  - **Uji Verifikasi**:
+    - Seluruh sintaks skrip baru (`node --check`) lulus 100%.
+    - Uji coba live `tools/cek-token-kembar.mjs --ping` terhadap 3 rumah berjalan lancar, token disamarkan tanpa kebocoran rahasia.
+- Belum selesai / berikutnya: Menunggu akun layanan Google (`GOOGLE_SA_KEY_FILE`) dari Gabriel untuk menjalankan sinkron cermin pertama (`--kering` lalu tulis) dan project Supabase staging (§5 Langkah 2 & 4).
+
 ### 2026-10-29 · Raka (+ AI) · kmb-projek (§5 langkah 1: PWA KMB Project 1:1 dan Worker abadiops-kmbprojek)
 - Berubah:
   - **PWA KMB Project 1:1** (`pwa/kmbprojek/`): disalin dari repo `PWA-Project-KMB` (`mar-projek-offline` projek-v13).

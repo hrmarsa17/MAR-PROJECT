@@ -1,3 +1,10 @@
+// DIPENSIUNKAN 29 Okt 2026 (docs/SERAH-TERIMA-2026-10-29.md §6).
+// Skrip ini menguji perilaku router lama di portal KMB Project yang meneruskan token SUM ke GAS SUM.
+// Sekarang setiap rumah berdiri sendiri (kmbprojek.abadiops.com, sum.abadiops.com, kmbtra.abadiops.com)
+// dan isolasi diuji langsung lewat endpoint sehat serta penolakan token silang di masing-masing rumah.
+console.error('❌ scripts/verify-sum-kmb-isolation.mjs sudah dipensiunkan (docs/SERAH-TERIMA-2026-10-29.md §6). Gunakan cek sambungan tiap rumah langsung.');
+process.exit(0);
+
 import worker from '../worker.js';
 
 // Token uji SUM dan KMB Project TIDAK ditulis di repo (haram hardcode, AGENTS.md §5).
