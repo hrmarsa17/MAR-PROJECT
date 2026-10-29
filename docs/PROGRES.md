@@ -19,7 +19,7 @@ Formatnya:
   - **Uji lokal `wrangler dev`** (`scripts/uji-lokal-kmbprojek.mjs`):
     - 21 uji lulus (7 file PWA HTTP 200, string versi/API/token serahan sah, `/api/sehat` sah, uji kembar terusan ke GAS KMB Project identik, penolakan token rumah lain sah).
   - **Pemantau Vercel dimatikan**: `.github/workflows/pantau.yml` schedule dinonaktifkan sesuai keputusan 29 Okt (MARProject lama di Vercel dibekukan).
-- Belum selesai / berikutnya: deploy `workers/kmbprojek` ke Cloudflare dengan API token kawanabadigrup untuk mengalihkan domain `kmbprojek.abadiops.com` dari `project-mar` ke Worker baru, lalu lanjut ke §5 langkah 2 (cermin).
+- Belum selesai / berikutnya: Worker `abadiops-porject-kmb` sudah tayang di Cloudflare (`https://abadiops-porject-kmb.kawanabadigrup.workers.dev`). Pasang custom domain `kmbprojek.abadiops.com` di dashboard Cloudflare (Settings -> Domains & Routes), lalu lanjut ke §5 langkah 2 (cermin).
 
 ### 2026-10-29 · Gabriel (+ Claude) · bersama (semua keputusan diambil; rencana tanpa bertanya)
 - Berubah: dokumen saja. Gabriel menyetujui paket usulan dan menjawab tiga butir sisanya:

@@ -1,15 +1,16 @@
 # Rumah KMB Project: Worker yang menyajikan PWA KMB Project dan meneruskan setiap panggilan API ke GAS KMB Project.
 # Rumah: kmbprojek · Pemegang: Raka · Tahap 3 (Pintu): 100% diteruskan ke GAS. Saklar: gas.
 # Penjelasan: workers/kmbprojek/README.md
-name = "abadiops-kmbprojek"
+name = "abadiops-porject-kmb"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
 
-# Alamat utama KMB Project (keputusan Gabriel 28 Okt malam).
-routes = [
-  { pattern = "kmbprojek.abadiops.com", custom_domain = true }
-]
+# Domain: kmbprojek.abadiops.com dipasang via dashboard Cloudflare (Settings -> Domains & Routes)
+# sama seperti abadiops.com, agar deploy lewat API token tanpa izin zona tidak gagal.
+# routes = [
+#   { pattern = "kmbprojek.abadiops.com", custom_domain = true }
+# ]
 
 # Akun Cloudflare kawanabadigrup. Dikunci supaya deploy tidak pernah nyasar ke akun lain.
 account_id = "9273ece6d47a3bb103159295c10ce9e6"
