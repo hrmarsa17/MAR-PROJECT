@@ -33,9 +33,9 @@ Formatnya:
   - Live `https://kmbprojek.abadiops.com/sw.js` -> `mar-projek-v16`.
   - Live `https://sum.abadiops.com/sw.js` -> `mar-sum-v48`.
   - Live `https://kmbtra.abadiops.com/sw.js` -> `mar-v94`.
-- **Yang Belum Selesai**:
-  - Sinkronisasi data awal cermin mentah (Langkah 2) membutuhkan Google Service Account key dengan izin baca ke spreadsheet SUM, KMB TRA, dan KMB Project.
-  - Pemindahan rendering Web 1:1 (Langkah 6) dari template HTML yang sudah disimpan ke Worker masing-masing rumah agar tombol "Web" di pintu tidak perlu lagi ke `script.google.com`.
+- **Yang Belum Selesai & Tindak Lanjut Besok**:
+  - **Kunci Akun Layanan Google (`GOOGLE_SA_KEY_FILE`)**: Panduan langkah demi langkah 2 menit untuk Gabriel & Raka telah ditulis di `docs/PANDUAN-SERVICE-ACCOUNT-GOOGLE.md`. Siapa pun yang memiliki akses Google Cloud Console (akun `kawanabadigrup`) dapat membuat kunci JSON tersebut di `console.cloud.google.com` dan membagikan akses Viewer ke 3 spreadsheet produksi (`1lnJo74O…`, `1qHjfIUT…`, `1ehnxDlv…`). Setelah file ada (misal di `D:\sa-key.json`), sinkronisasi cermin mentah (Langkah 2) siap langsung dieksekusi dengan: `$env:GOOGLE_SA_KEY_FILE="D:\sa-key.json"; node tools/sum/sinkron-cermin.mjs --kering`.
+  - **Rendering Web 1:1 (Langkah 6)**: Template HTML asli SUM (7 file di `workers/sum/web/`) dan KMB Project (11 file di `workers/kmbprojek/web/`) sudah lengkap di repo dan siap dihubungkan ke Worker masing-masing rumah agar tombol "Web" di pintu tidak perlu lagi ke `script.google.com`.
 
 ### 2026-10-29 · Raka (+ AI) · bersama (audit menyeluruh status migrasi: apa yang sudah & apa yang belum)
 - Ringkasan Status Selesai (Fondasi, Pintu, & Tiga Rumah 100% Siap):
@@ -57,8 +57,9 @@ Formatnya:
     - Dual-Engine router (Supabase + fallback GAS) terpasang di ketiga worker rumah.
     - 7 Berkas HTML asli Web Desktop SUM V2 tersimpan di `workers/sum/web/`.
 - Daftar Rinci Apa yang Belum Selesai (Sesuai Rencana §5 & docs/SERAH-TERIMA-2026-10-29.md):
-  - [ ] **1. Kunci Akun Layanan Google (`GOOGLE_SA_KEY_FILE`)** [Menunggu Gabriel]:
-    - Pemblokir utama: Kunci JSON Service Account Google (Viewer ke 3 spreadsheet dan Editor ke 1 folder Google Drive cadangan) belum diserahkan.
+  - [ ] **1. Kunci Akun Layanan Google (GOOGLE_SA_KEY_FILE)** [Panduan Siap di docs/PANDUAN-SERVICE-ACCOUNT-GOOGLE.md]:
+    - Pemblokir utama: Kunci JSON Service Account Google (Viewer ke 3 spreadsheet).
+    - Panduan pembuatan 2 menit tersedia di docs/PANDUAN-SERVICE-ACCOUNT-GOOGLE.md. Gabriel atau Raka bisa membuatnya di console.cloud.google.com (akun kawanabadigrup) dan membagikan akses Viewer ke 3 spreadsheet produksi.
   - [ ] **2. Langkah 2: Eksekusi Sinkronisasi Cermin Mentah**:
     - Menjalankan sinkronisasi pertama kali ke Supabase produksi (`--kering` lalu tulis).
     - Memasang pemicu sinkronisasi berkala tiap 5 menit (GitHub Actions atau Cron Cloudflare).

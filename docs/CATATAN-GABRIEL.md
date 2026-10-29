@@ -177,3 +177,20 @@ docs/
    - Jangan melakukan `clasp push` ke Google Apps Script produksi.
    - Jangan menyalakan saklar Supabase (`BACKEND_DRIVER=supabase`) sebelum disetujui bersama.
    - Jangan pernah menulis/mengubah spreadsheet dari sistem baru (aliran data hanya 1 arah: Spreadsheet → Supabase).
+
+
+---
+
+## 7. Kunci Akun Layanan Google (`GOOGLE_SA_KEY_FILE`) untuk Sinkronisasi Cermin Mentah (Langkah 2)
+
+Untuk menyedot data dari ketiga spreadsheet produksi ke Supabase tanpa batasan waktu 6 menit GAS, kita memerlukan **kunci akun layanan Google (JSON)** dengan hak akses Viewer ke 3 spreadsheet.
+
+Panduan langkah demi langkah (±2 menit) sudah disiapkan di [docs/PANDUAN-SERVICE-ACCOUNT-GOOGLE.md](PANDUAN-SERVICE-ACCOUNT-GOOGLE.md):
+1. Buat Service Account di [console.cloud.google.com](https://console.cloud.google.com/) (aktifkan Google Sheets API).
+2. Download key JSON-nya dan simpan di laptop (misal `D:\sa-key.json`). **JANGAN PERNAH commit file JSON ini ke git**.
+3. Bagikan (*Share*) 3 spreadsheet produksi (SUM, KMB TRA, KMB Project) ke email akun layanan tersebut sebagai **Viewer (Pelihat)**.
+4. Jalankan pengujian sinkronisasi kering (dry-run):
+   ```powershell
+   $env:GOOGLE_SA_KEY_FILE = "D:\sa-key.json"
+   node tools/sum/sinkron-cermin.mjs --kering
+   ```
