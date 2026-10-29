@@ -5,6 +5,33 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · bersama (koneksi Supabase SUM, DDL cermin live, template web 1:1 KMB Project, & network-first PWA)
+- **Eksekusi DDL & RPC Database SUM V2 (skema `sum`)**:
+  - Koneksi database Postgres SUM (`dnnqrslftndcbmnvuveb`) berhasil terhubung lewat Supabase connection pooler port 6543 di region Singapore (`aws-0-ap-southeast-1.pooler.supabase.com:6543`).
+  - DDL `db/sum/cermin_sheet.sql` sukses dieksekusi langsung ke database: skema `sum` dan 22 tabel cermin mentah spreadsheet terpasang bersih.
+  - RPC baca `db/sum/rpc_baca.sql` sukses dieksekusi: 4 fungsi (`sum_ping`, `sum_create_refs`, `sum_monitoring_bertoken`, `sum_my_wos_bertoken`) terpasang di skema `public`.
+  - Konfigurasi `workers/sum/wrangler.toml` disetel ke `SUPABASE_URL = "https://dnnqrslftndcbmnvuveb.supabase.co"`.
+- **Pengamanan Template Web Desktop 1:1 KMB Project (Langkah 6)**:
+  - 11 template HTML asli dari script GAS KMB Project (`1cKrVdmxH_hD4yVTwqLAXKdUjwM5wd7Glh4MdlpT7oP8KDOaGNgJCJVyh`) disalin dari repositori lokal ke `workers/kmbprojek/web/`:
+    - `Approval.html`, `DateTime24.html`, `Hm.html`, `Km.html`, `Main.html`, `MechanicDashboard.html`, `PANDUAN.html`, `Reports.html`, `Styles.html`, `Teknis.html`, `WorkOrder.html`.
+    - Template ini adalah sumber asli tampilan Desktop Web KMB Project (Gambar 2 yang dilampirkan pengguna).
+- **Tuntas Masalah Cache PWA & Penyerahan Token (Gambar 3)**:
+  - Penyebab Gambar 3: Tangkapan layar diambil pukul 16:24 WIB saat browser masih menyimpan Service Worker cache `mar-projek-v14` (rilis `v15` baru di-deploy pukul 16:47 WIB). Di `v14`, belum ada parsing hash token dari URL dan belum ada anti-flicker CSS di `<head>`.
+  - Peningkatan anti-stale cache: Menambahkan strategi `network-first` untuk dokumen navigasi HTML di seluruh Service Worker (`pwa/kmbprojek/sw.js`, `pwa/sum/sw.js`, `pwa/kmb/sw.js`). Saat online, browser selalu menarik HTML terbaru secara instan tanpa menunggu siklus update latar belakang.
+  - Nilai token serahan juga otomatis di-prefill ke input (`#tokenInput`) sebagai fallback tambahan.
+  - Bump versi: KMB Project (`projek-v16` / `mar-projek-v16`), SUM V2 (`sum-v48` / `mar-sum-v48`), KMB TRA (`kmb-v94` / `mar-v94`).
+  - Deploy ketiga Worker ke Cloudflare:
+    - KMB Project: `abadiops-porject-kmb` (Version `65318c32-85ac-41dc-9f11-3efa50748117`).
+    - SUM V2: `abadiops-sum` (Version `66feead5-b633-42e6-8015-03a2296321fc`).
+    - KMB TRA: `abadiops-kmb` (Version `d2918074-6765-448b-b965-e441502053f0`).
+- **Verifikasi Publik**:
+  - Live `https://kmbprojek.abadiops.com/sw.js` -> `mar-projek-v16`.
+  - Live `https://sum.abadiops.com/sw.js` -> `mar-sum-v48`.
+  - Live `https://kmbtra.abadiops.com/sw.js` -> `mar-v94`.
+- **Yang Belum Selesai**:
+  - Sinkronisasi data awal cermin mentah (Langkah 2) membutuhkan Google Service Account key dengan izin baca ke spreadsheet SUM, KMB TRA, dan KMB Project.
+  - Pemindahan rendering Web 1:1 (Langkah 6) dari template HTML yang sudah disimpan ke Worker masing-masing rumah agar tombol "Web" di pintu tidak perlu lagi ke `script.google.com`.
+
 ### 2026-10-29 · Raka (+ AI) · bersama (audit menyeluruh status migrasi: apa yang sudah & apa yang belum)
 - Ringkasan Status Selesai (Fondasi, Pintu, & Tiga Rumah 100% Siap):
   - **Pintu Masuk Netral (`abadiops.com`)**:

@@ -33,7 +33,7 @@ RUMAH = "sum"
 SAKLAR = "gas"
 # Web app GAS produksi SUM V2 (script 1k_A_KER…). Alamat ini juga tertulis di PWA lama.
 GAS_URL = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec"
-SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
+SUPABASE_URL = "https://dnnqrslftndcbmnvuveb.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
 STORAGE_MODE = "GAS"
 
