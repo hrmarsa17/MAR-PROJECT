@@ -13,7 +13,7 @@ Untuk Raka dan AI-nya. Baca dari atas sampai bawah sebelum mulai. Rinciannya ada
 | Alamat | Isi | Worker | Kode | Deploy |
 |---|---|---|---|---|
 | `abadiops.com` | **Pintu netral** | `abadiops-pintu` | `workers/pintu/` | manual: `cd workers/pintu; npx wrangler deploy` |
-| `kmbprojek.abadiops.com` | KMB Project (portal buatan Raka; diganti salinan 1:1 PWA lama di langkah 1 §5) | `project-mar` | `worker.js` di akar + salinan identik `workers/kmb-projek/worker.js` | **otomatis dari push ke `main`** |
+| `kmbprojek.abadiops.com` | KMB Project (salinan 1:1 PWA lama; §5 langkah 1 selesai 29 Okt) | `abadiops-porject-kmb` (nama salah ketik, dibiarkan) | `workers/kmbprojek/`, `pwa/kmbprojek/` | manual |
 | `sum.abadiops.com` | SUM V2 (salinan 1:1 PWA lama) | `abadiops-sum` | `workers/sum/`, `pwa/sum/` | manual |
 | `kmbtra.abadiops.com` | KMB V2, PT KMB di site TRA (salinan 1:1 PWA lama) | `abadiops-kmb` | `workers/kmb/`, `pwa/kmb/` | manual |
 | nanti: `kmbbupr.abadiops.com` | PT KMB di site BUPR | — | — | satu baris baru di `RUMAH`, `workers/pintu/wrangler.toml` |
@@ -27,6 +27,7 @@ Untuk Raka dan AI-nya. Baca dari atas sampai bawah sebelum mulai. Rinciannya ada
 
 **Catatan teknis**
 - Tiap aplikasi rumah hanya mengenal token rumahnya sendiri, 1:1 dengan PWA lama. Mengenali rumah adalah tugas pintu.
+- Worker `project-mar` (portal lama, `worker.js` di akar) masih dibangun otomatis dari setiap push ke `main`. Sejak 29 Okt ia tidak punya domain produksi yang diketahui (`projekkmb.abadiops.com` juga sudah tanpa record DNS).
 - Worker `project-kmb` tidak punya domain dan tidak dipakai. `npx wrangler deploy` dari akar masuk ke sana, bukan ke produksi.
 - Domain dipasang lewat dashboard. **Jangan menambah `routes` di `wrangler.toml` akar** tanpa mencantumkan semua domain Worker itu.
 - `*.workers.dev` dicegat DNS sebagian provider internet. Selalu pakai `*.abadiops.com`.
@@ -48,6 +49,17 @@ Untuk Raka dan AI-nya. Baca dari atas sampai bawah sebelum mulai. Rinciannya ada
   - KMB TRA dan SUM: data lewat aplikasi **sama persis** dengan GAS-nya, dan token rumah lain ditolak.
   - KMB Project: token rumah lain ditolak. Uji positif menunggu token uji (§6).
 - **Skrip yang dipensiunkan:** `scripts/update-worker-engine.mjs`, karena menimpa seluruh blok `/api/gas`.
+- **29 Okt siang (Raka; rinciannya di `docs/PROGRES.md`):**
+  - KMB Project 1:1 di `abadiops-porject-kmb`, dan domainnya dipindah.
+  - Skema dan alat cermin untuk ketiga rumah.
+  - Supabase SUM di project terpisah.
+  - Worker SUM dan KMB TRA dengan router dua mesin, masih tertutup.
+  - Template web GAS disalin: SUM 7 file, KMB Project 11 file.
+  - Panduan akun layanan Google.
+- **29 Okt malam (audit Gabriel + Claude):**
+  - Bug #19–#21 di PWA diperbaiki di repo; berlaku setelah deploy.
+  - Bug #22 dan #23 dicatat.
+  - Satu keputusan baru menunggu Gabriel: project Supabase SUM.
 - **Insiden 28 Okt:** perubahan yang mengantar ke domain yang belum ada sempat tayang otomatis. Pelajarannya ada di `AGENTS.md` §0a butir 3.
 
 ## 4. Status per rumah terhadap rencana migrasi
@@ -61,10 +73,10 @@ Rencana yang mengikat (`docs/KEPUTUSAN.md`, `docs/SAKLAR.md`):
 
 | Tahap | SUM | KMB TRA | KMB Project |
 |---|---|---|---|
-| 2. Cermin terus-menerus | skema (`db/sum/cermin_sheet.sql`) dan alat (`tools/sum/sinkron-cermin.mjs`) siap, **belum jalan** (menunggu akun layanan Google) | **belum mulai** | ada di skema `kmb_projek`, tapi diisi manual dan berbeda dengan GAS (#12, #15) |
-| 3. Pintu (aplikasi di Abadi, diteruskan ke GAS) | ✅ | ✅ | ✅ (portal, bukan salinan 1:1 PWA lama) |
+| 2. Cermin terus-menerus | skema dan 4 RPC terpasang di project **terpisah** `dnnqrslftndcbmnvuveb` (menunggu keputusan, `docs/KEPUTUSAN.md`); alat siap; **belum jalan** | skema, RPC, dan alat (`db/kmb/`, `tools/kmb/`) siap di repo, **belum dipasang** di Supabase | skema mentah dan alat baru (`db/kmb_projek/cermin_sheet_mentah.sql`, `tools/kmb_projek/`) siap; cermin lama masih manual (#12, #15) |
+| 3. Pintu (aplikasi di Abadi, diteruskan ke GAS) | ✅ | ✅ | ✅ (salinan 1:1 PWA lama, 29 Okt) |
 | 4. Aksi baca pindah ke cermin | – | – | – (0 aksi lulus uji kembar) |
-| Halaman web 1:1 (**wajib sebelum saklar**) | – | – | – |
+| Halaman web 1:1 (**wajib sebelum saklar**) | template GAS disalin (7 file, `workers/sum/web/`), belum disambung | – | template GAS disalin (11 file, `workers/kmbprojek/web/`), belum disambung |
 | Panel saklar di `abadiops.com` | belum dibangun (sama untuk semua rumah) | | |
 | 5. Saklar dua cabang | – | – | – |
 
@@ -75,6 +87,24 @@ Rencana yang mengikat (`docs/KEPUTUSAN.md`, `docs/SAKLAR.md`):
 **Titik henti**, satu-satunya alasan bertanya ke Gabriel: pembayaran, **menyalakan** saklar di produksi, rumus poin/rupiah, dan menghapus data produksi.
 
 **Target akhir rencana ini:** panel saklar jadi, dan latihan saklar balik lulus di staging. Saklar produksi tetap di posisi `gas`. Yang menyalakannya Gabriel, serentak untuk ketiga rumah (`docs/SAKLAR.md`, "Target selesai migrasi").
+
+**Status 29 Okt malam** (audit; rinciannya di `docs/PROGRES.md`):
+
+| Langkah | Status |
+|---|---|
+| 0 | **Sebagian.** Raka memegang token uji KMB Project dari Gabriel. Yang belum: akun layanan Google (panduan: `docs/PANDUAN-SERVICE-ACCOUNT-GOOGLE.md`), project staging (menunggu keputusan project SUM), dan token SPV-001 baru di sheet KMB Project. |
+| 1 | **Selesai**, diverifikasi live. Sisa kecil: hapus Worker `project-kmb`. |
+| 2 | **Persiapan.** Skema dan alat sinkron ketiga rumah ada di repo; belum ada sinkron. Syarat tambahan sebelum sinkron pertama: bug #22. |
+| 3, 4, 5, 7, 8, 9 | Belum mulai. |
+| 6 | Template web GAS disalin (SUM, KMB Project), belum disambung. KMB TRA belum. |
+
+**Pagi 30 Okt, sebelum langkah lain** (kalau Gabriel belum melakukannya malam ini):
+1. Deploy ketiga Worker rumah, supaya perbaikan bug #19–#21 tayang: `cd workers/sum; npx wrangler deploy`, lalu hal yang sama di `workers/kmb` dan `workers/kmbprojek`.
+2. Cek: baris pertama `sw.js` yang tayang berisi `mar-sum-v49`, `mar-v95`, dan `mar-projek-v17` (misalnya `curl -s https://sum.abadiops.com/sw.js | head -1`).
+3. Uji tangan di satu HP per rumah:
+   - masuk dari pintu;
+   - tutup aplikasi, lalu buka lagi dari ikon: harus langsung dashboard;
+   - logout: layar login harus terlihat.
 
 **0. Persiapan pagi.**
 - Gabriel menyerahkan langsung, tidak lewat repo:
@@ -97,11 +127,16 @@ Rencana yang mengikat (`docs/KEPUTUSAN.md`, `docs/SAKLAR.md`):
 - Sinkron penuh tiap 5 menit: Cron Cloudflare kalau muat dalam batas CPU gratis, kalau tidak GitHub Actions. Log tidak boleh memuat data atau rahasia.
 - Laporan selisih harian.
 - Cermin `kmb_projek` yang sekarang (#12, #15) diselaraskan dengan cermin ini atau diganti.
+- **Sebelum sinkron pertama:**
+  - tutup bug #22 (RPC wajib token; `work_conditions` dari cermin);
+  - jalankan `db/kmb/*.sql` di project utama;
+  - untuk SUM, tunggu keputusan project Supabase (`docs/KEPUTUSAN.md`, "Belum diputuskan").
 - *Selesai kalau:* sinkron berjalan terjadwal di ketiga rumah dan laporan selisih hari pertama nol. **Lulus** setelah 7 hari berturut-turut nol. Selama menunggu, lanjutkan ke langkah berikutnya.
 
 **3. Cadangan per jam dan uji pulih.**
 - `pg_dump` terenkripsi tiap jam ke folder Drive privat (atau R2 kalau bisa tanpa biaya), dengan kunci di *secret*.
 - Pulihkan satu cadangan ke project staging, lalu cocokkan jumlah barisnya.
+- Akun layanan tidak punya kuota Drive sendiri, jadi unggahan ke folder My Drive bisa ditolak ("Service Accounts do not have storage quota"). Kalau itu terjadi, unggah memakai OAuth akun kawanabadigrup (*refresh token* disimpan di *secret*), bukan akun layanan.
 - *Selesai kalau:* cadangan tersimpan tiap jam dan uji pulih lulus.
 
 **4. Staging lengkap.**
@@ -143,12 +178,12 @@ Bangun dan uji di staging dulu, lalu pasang di produksi **dengan semua rumah di 
 
 ## 6. Tugas kecil yang masih terbuka
 
-- **Bug #18, sisa:** pilihan mode portal saat dibuka langsung. Selesai dengan sendirinya setelah langkah 1, karena portal dipensiunkan.
-- **Sisa kode mati di portal** (`serahkanKeRumah`, `ALAMAT_APLIKASI_RUMAH`, blok antar di `loginWithToken`): selesai dengan sendirinya setelah langkah 1.
+- ✅ **Bug #18** dan **sisa kode mati di portal**: selesai dengan sendirinya, karena portal tidak lagi punya domain (langkah 1, 29 Okt).
 - **Bug #17, sisa:** angka "semua WO sepanjang waktu" 1:1 dengan web GAS. Ikut dikerjakan di langkah 6 (halaman web), dengan data dari cermin.
-- **`scripts/verify-sum-kmb-isolation.mjs`** menguji perilaku lama. Pensiunkan, karena gantinya adalah cek sambungan tiap rumah.
-- **Worker `project-kmb`** tidak dipakai. Hapus setelah langkah 1, dan samakan `name` di `wrangler.toml` akar dengan `project-mar` selama portal masih ada.
-- **MARProject lama di Vercel:** dibekukan, dan matikan `.github/workflows/pantau.yml` (keputusan 29 Okt).
+- ✅ `scripts/verify-sum-kmb-isolation.mjs` dipensiunkan, `name` di `wrangler.toml` akar menjadi `project-mar`, dan `.github/workflows/pantau.yml` dimatikan (29 Okt, Raka).
+- **Worker `project-kmb`** tidak dipakai. Hapus (langkah 1 sudah selesai).
+- **Bug #23, CI merah sejak 27 Okt:** samakan `tests/navbar.test.tsx` dengan kode, lalu pastikan CI hijau. Selama CI merah, kegagalan baru tidak terlihat.
+- **Koreksi catatan token uji L1/L2** (`docs/PROGRES.md` 29 Okt): cek ulang dengan `node scripts/buat-token-tiga-rumah.mjs --cek <token>`, lalu tulis awalan yang benar (4 karakter).
 - **Pengecekan token kembar harian:** pakai daftar token dari cermin (langkah 2) untuk ketiga rumah, lalu kirim peringatan kalau ada yang kembar.
 
 ## 7. Jangan
@@ -158,5 +193,7 @@ Bangun dan uji di staging dulu, lalu pasang di produksi **dengan semua rumah di 
 - Jangan push perubahan yang bergantung pada domain, DNS, SQL, atau isi sheet sebelum hal itu terbukti ada.
 - Jangan mengembalikan pengecekan rumah lain ke aplikasi rumah. Itu tugas pintu.
 - Jangan menampilkan layar token lagi kepada pengguna yang datang dari pintu (keputusan nomor 10).
+- Jangan mengubah PWA rumah selain resep empat baris dan pembaca serah-terima token (keputusan frontend 29 Okt). Larangan ini termasuk strategi `sw.js`, cara antrean membaca jawaban server, dan alur boot. Sebelum deploy PWA, `node scripts/uji-serahan-token.mjs` harus lulus 24/24 (`AGENTS.md` §0a butir 13).
+- Jangan menghapus penjaga sesi di `masukDariPintu`. HP yang sudah masuk dengan token lain tidak boleh diganti tokennya tanpa logout, karena antrean kirimannya akan terkirim atas nama token baru.
 - Jangan menulis token, kata sandi, atau kunci di kode, skrip, uji, dokumen, log, maupun pesan commit.
 - Jangan memakai `sed -i` di Git Bash untuk file repo; pakai Node. Jangan menjalankan `scripts/update-worker-engine.mjs`.

@@ -67,7 +67,7 @@ Aplikasi menentukan rumah mana yang dituju melalui urutan prioritas:
 2. **Parameter URL**:
    - `?system=KMB` atau `?system=SUM`.
 3. **Pencocokan Database / Sheet**:
-   - Token 20 karakter hex legacy (misal `52fdb552...` atau `97a47ff4...`) dicocokkan dengan tabel `api_tokens` di skema rumah masing-masing.
+   - Token 20 karakter hex legacy (misal `52fd…` atau `97a4…`) dicocokkan dengan tabel `api_tokens` di skema rumah masing-masing.
 
 ---
 

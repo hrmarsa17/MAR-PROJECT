@@ -76,6 +76,11 @@ Cara kerja yang terbukti 28–29 Okt 2026. Ikuti seperti aturan, bukan saran.
     - **menyalakan** saklar di produksi;
     - rumus poin atau rupiah;
     - menghapus data produksi.
+13. **PWA rumah adalah salinan 1:1** (keputusan frontend 29 Okt).
+    - Yang boleh berbeda dari PWA lama hanya resep empat baris dan pembaca serah-terima token: `ambilTokenSerahan`, `masukDariPintu` dengan penjaga sesi, dan dua baris anti-kedip di `index.html`.
+    - Strategi `sw.js`, cara antrean membaca jawaban server, dan alur boot **tidak** diubah tanpa keputusan Gabriel.
+    - Sebelum deploy PWA: `node scripts/uji-serahan-token.mjs` harus lulus 24/24. Lalu bandingkan `sw.js` dengan aslinya (`diff --strip-trailing-cr`); bedanya hanya boleh di baris resep.
+    - Pelajaran 29 Okt: bug #19–#21.
 
 ---
 
@@ -185,7 +190,7 @@ Ringkasnya (detail lengkap ada di `docs/SAKLAR.md`):
 Repo ini sedang menuju susunan tiga rumah. Yang sudah berbentuk rumah: `workers/pintu/` (pintu `abadiops.com`), `workers/sum/` + `pwa/sum/` (`sum.abadiops.com`), dan `workers/kmb/` + `pwa/kmb/` (`kmbtra.abadiops.com`). KMB Project masih berada di akar (`worker.js`, `scripts/`) dengan salinan di `workers/kmb-projek/`, dan tayang di `kmbprojek.abadiops.com`. Serah terima terbaru: `docs/SERAH-TERIMA-2026-10-29.md`. Selain itu:
 - Kode **MARProject** (Next.js) di `src/`, `db/`, `tests/`, dan `scripts/`. Awalnya dibuat untuk KMB V2, sekarang dipakai sebagai dasar kerja KMB Project.
 - **`worker.js`**: hasil build untuk Worker `project-kmb` (lihat `wrangler.toml`), yang bekerja dengan GAS **KMB Project**. Isinya juga memuat pintu ketiga rumah.
-  - ⚠️ **PUSH KE `main` = DEPLOY PRODUKSI.** Worker **`project-mar`** (aplikasi KMB Project di `kmbprojek.abadiops.com`) terhubung ke GitHub `kawanabadigrup/Project-KMB` (Workers Builds): setiap push ke `main` di-build dan tayang dalam beberapa menit. Terbukti 28 Okt malam, dan sempat menimbulkan insiden (lihat `docs/PROGRES.md`). `npx wrangler deploy` dari akar repo justru masuk ke Worker `project-kmb`, yang tidak punya domain dan tidak dipakai. Pintu (`abadiops-pintu`) dan rumah lain di-deploy manual dari foldernya. Jadi uji dulu dengan `wrangler dev`, dan push perubahan yang bergantung pada hal di luar kode (domain, DNS, SQL) hanya **sesudah** hal itu terbukti ada.
+  - ⚠️ **PUSH KE `main` = DEPLOY PRODUKSI.** Worker **`project-mar`** (portal lama; sejak 29 Okt tanpa domain produksi yang diketahui, karena `kmbprojek.abadiops.com` dipindah ke Worker `abadiops-porject-kmb`) terhubung ke GitHub `kawanabadigrup/Project-KMB` (Workers Builds): setiap push ke `main` di-build dan tayang dalam beberapa menit. Terbukti 28 Okt malam, dan sempat menimbulkan insiden (lihat `docs/PROGRES.md`). `npx wrangler deploy` dari akar repo justru masuk ke Worker `project-kmb`, yang tidak punya domain dan tidak dipakai. Pintu (`abadiops-pintu`) dan rumah lain di-deploy manual dari foldernya. Jadi uji dulu dengan `wrangler dev`, dan push perubahan yang bergantung pada hal di luar kode (domain, DNS, SQL) hanya **sesudah** hal itu terbukti ada.
   - Bagian kodenya disunting langsung. `app.js` di dalamnya dirakit dari `scripts/patched-app.js` dengan `scripts/pack-final-worker.mjs`. Perakitan ini mengubah akhiran baris literal `style.css`, jadi kembalikan literal itu kalau isinya tidak berubah.
   - Salin hasilnya ke `workers/kmb-projek/worker.js`; kedua file harus identik.
   - **Jangan jalankan `scripts/update-worker-engine.mjs`** (dipensiunkan 28 Okt): skrip itu menimpa seluruh blok `/api/gas`.

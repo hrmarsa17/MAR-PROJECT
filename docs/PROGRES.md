@@ -5,6 +5,42 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Gabriel (+ Claude) · bersama (audit kerja Raka 29 Okt di semua sistem; serah-terima token dipulihkan)
+- Dicek: GitHub (15 commit Raka, 54 file, `cf56a7c..1dd9166`), situs live (pintu dan ketiga rumah), Supabase (dua project), GitHub Actions, dan Cloudflare dari luar (mesin audit tidak punya wrangler).
+- **Aman dan sesuai rencana:**
+  - Pintu `abadiops.com`: pilihan Aplikasi/Web tayang. Daftar GAS di pintu sama dengan GAS di Worker rumah. Sempat sekitar satu jam tanpa pilihan Web (`0f0cdf1`, pengalihan otomatis), lalu dipulihkan (`2cd1dc4`).
+  - Ketiga rumah tetap 100% GAS. `/api/sehat` menjawab `saklar=gas`. `pull_monitoring` SUM dan KMB TRA lewat aplikasi sama persis dengan GAS langsung (`success:true`; 41 dan 27 mekanik). Bahkan `?uji=supabase` dijawab lewat jalur GAS.
+  - **§5 langkah 1 selesai:** `kmbprojek.abadiops.com` adalah PWA asli `gabrielrurent/PWA-Project-KMB` projek-v13 (`6e8b980`) dengan resep dan serah-terima token, di Worker `abadiops-porject-kmb`. Token SUM dan KMB TRA ditolak. Uji data positif belum saya lakukan karena saya tidak memegang token uji KMB Project yang aktif.
+  - File yang tayang di pintu dan ketiga rumah sama dengan repo `1dd9166`. Tidak ada rahasia di 54 file. `pantau.yml` dimatikan, `name` akar menjadi `project-mar`, dan `scripts/verify-sum-kmb-isolation.mjs` dipensiunkan (tugas §6).
+- **Bug yang tayang hari ini dan diperbaiki di repo malam ini (#19–#21).** Uji baru `scripts/uji-serahan-token.mjs`: kode yang tayang lulus 4/24, kode sesudah perbaikan 24/24.
+  - **#19, SUM dan KMB TRA:** membuka aplikasi tanpa `#token=` (ikon layar utama, muat ulang, tombol "Lanjutkan ke …" di pintu) membuat pengguna keluar. Online: layar login dengan "Token tidak dikenal". Offline: token di HP terhapus.
+  - **#19, ketiga rumah:**
+    - HP yang sudah masuk dengan token lain langsung diganti tokennya, sehingga antrean kiriman milik pengguna lama terkirim atas nama token baru.
+    - Layar menjadi kosong saat token ditolak atau sesudah logout.
+  - **#20, KMB Project:** saat GAS tidak terjangkau, kiriman di antrean latar ditandai gagal dan tidak dicoba ulang.
+  - **#21, KMB TRA dan KMB Project:** `sw.js` network-first untuk halaman HTML, menyimpang dari keputusan frontend 1:1.
+  - **Perbaikan:**
+    - Penjaga sesi dipulihkan persis seperti `cf56a7c`.
+    - Kelas anti-kedip dilepas sesudah layar pertama dipilih.
+    - Token dibuang dari alamat.
+    - `sw.js` kembali 1:1: KMB Project = asli + dua baris resep; KMB TRA = versi sebelum 29 Okt.
+    - Versi naik: `mar-sum-v49`, `mar-v95`, `mar-projek-v17`.
+  - **Berlaku setelah ketiga Worker rumah di-deploy** (`docs/SERAH-TERIMA-2026-10-29.md` §5, "Pagi 30 Okt").
+- **Temuan lain:**
+  - **Supabase SUM di project terpisah** `dnnqrslftndcbmnvuveb`: skema `sum.cermin_*` dan 4 RPC, dan `workers/sum` menunjuk ke sana. Ini menyimpang dari rancangan (satu project ditambah staging gratis) dan memakai slot gratis kedua. Dicatat di `docs/KEPUTUSAN.md` bagian "Belum diputuskan".
+  - **#22:**
+    - `sum_create_refs()` bisa dipanggil tanpa token: HTTP 200 dengan kunci publik, isinya masih kosong. `kmbtra_create_refs()` sama, tapi belum dipasang.
+    - `work_conditions` di kedua fungsi itu ditulis tetap di SQL. Labelnya juga berbeda dengan GAS, yang membaca faktor dari sheet.
+  - RPC `kmbtra_*` belum ada di project utama (PGRST202), artinya `db/kmb/*.sql` belum dijalankan. Tidak berdampak karena jalur Supabase tertutup.
+  - **#23:** CI `uji` merah sejak 27 Okt (`0f7c548`, `tests/navbar.test.tsx:81`). Semua push sejak itu merah, termasuk push kita. Job `rahasia` tetap hijau.
+  - **Koreksi entri "verifikasi token uji L1 & L2" di bawah:**
+    - `52fd…` dan `67e8…` adalah token KMB TRA (SPV-001 dan SUPT-001), bukan KMB Project. Dicek malam ini: pintu mengenali `52fd…` sebagai `kmbtra`, dan hanya `kmbtra.abadiops.com` yang menerimanya.
+    - Angka di entri itu (68 approved, 20 mekanik) adalah angka KMB Project, jadi kemungkinan tokennya benar tetapi awalannya salah tulis.
+    - Token baru `f5f6…`, `8a1a…`, dan `c181…` belum ada di sheet mana pun.
+  - Nama Worker `abadiops-porject-kmb` salah ketik. Dibiarkan dan dicatat di `workers/kmbprojek/README.md`.
+  - `docs/CATATAN-GABRIEL.md`: dua awalan token 8 karakter dipendekkan menjadi 4.
+- Belum selesai / berikutnya: deploy ketiga Worker rumah, keputusan project Supabase SUM, lalu §5 langkah 0 (akun layanan Google).
+
 ### 2026-10-29 · Raka (+ AI) · bersama (koneksi Supabase SUM, DDL cermin live, template web 1:1 KMB Project, & network-first PWA)
 - **Konfigurasi Kunci API Supabase SUM (`dnnqrslftndcbmnvuveb`)**:
   - Publishable API key (`sb_publishable_HgQd...`) diverifikasi aktif untuk RPC publik: pengujian RPC `sum_ping` mengembalikan respon JSON valid.

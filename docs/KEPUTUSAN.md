@@ -75,4 +75,21 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 
 ## Belum diputuskan (menunggu Gabriel)
 
-**Tidak ada.** Semua butir diputuskan Gabriel pada 29 Okt 2026; lihat baris 29 Okt di tabel atas. Nomor lama 1–11 sudah dipindah ke sana. Keputusan baru yang muncul selama pengerjaan dicatat di sini, **kecuali** keputusan teknis kecil. Keputusan teknis kecil diambil sendiri sesuai `AGENTS.md` §0a dan dicatat di `docs/PROGRES.md`.
+Keputusan rencana 29 Okt sudah diambil (baris 29 Okt di tabel atas; nomor lama 1–11 sudah dipindah ke sana).
+
+1. **Project Supabase untuk SUM** (muncul dari audit 29 Okt malam).
+   - **Keadaan:**
+     - Raka membuat project terpisah `dnnqrslftndcbmnvuveb` (Singapura) dan memasang skema cermin `sum.cermin_*` serta 4 RPC di sana.
+     - `workers/sum` sudah diarahkan ke project itu. Jalur Supabase SUM masih tertutup, dan tabelnya masih kosong.
+     - Alasannya tidak tercatat.
+   - **Rancangan yang diputuskan:** satu project `sptgqsjgszwbreikxdph` dengan skema per rumah (`sum`, `kmb`, `kmb_projek`), ditambah satu project gratis untuk staging. Paket gratis Supabase hanya mengizinkan dua project aktif, jadi project SUM terpisah memakai slot staging.
+   - **Usulan:** kembali ke rancangan.
+     1. Jalankan `db/sum/cermin_sheet.sql` dan `db/sum/rpc_baca.sql` (sesudah bug #22 diperbaiki) di project utama.
+     2. Arahkan `workers/sum` ke project utama.
+     3. **Jeda** (pause) project terpisah. Menjeda bisa dibalik, menghapus tidak.
+     4. Pakai slot yang kosong untuk staging.
+   - **Sampai diputuskan:**
+     - Jangan menulis data ke project terpisah.
+     - Cermin SUM dan staging menunggu keputusan ini. Langkah lain jalan terus.
+
+Keputusan baru yang muncul selama pengerjaan dicatat di sini, **kecuali** keputusan teknis kecil. Keputusan teknis kecil diambil sendiri sesuai `AGENTS.md` §0a dan dicatat di `docs/PROGRES.md`.
