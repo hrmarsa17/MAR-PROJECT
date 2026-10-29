@@ -18,7 +18,7 @@ var CONFIG = { API_URL: './api' };
 // service worker yang benar-benar aktif (lihat syncVersionFromCache).
 // Dengan begitu rilis cukup mengubah CACHE di sw.js; angka di sini tak bisa lagi
 // tertinggal diam-diam seperti dulu (APP_VERSION v26 vs CACHE v34).
-var APP_VERSION = 'projek-v14'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
+var APP_VERSION = 'projek-v15'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
 
 // ── Pembaruan versi otomatis ────────────────────────────────────────────────
 // sw.js sudah skipWaiting()+clients.claim(), jadi versi baru mengambil alih
@@ -4244,21 +4244,20 @@ window.addEventListener('offline',renderAll);
    diganti, karena antrean kirimannya bisa hilang saat logout. */
 var _masukDariPintu = false;
 function ambilTokenSerahan() {
-  var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
+  var hash = location.hash || '';
+  var search = location.search || '';
+  var m = /(?:^#|&)token=([^&]+)/.exec(hash) || /[?&]token=([^&]+)/.exec(search);
   if (!m) return '';
   var t = '';
   try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
-  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
   return t;
 }
 function masukDariPintu(t) {
   if (!t) return;
-  if (S.token) {
-    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
-    return;
-  }
   _masukDariPintu = true;
   S.token = t;
+  showScreen('main');
   requestNotifPermission(); requestPeriodicSync();
   if (!navigator.onLine) { saveTokenOffline(t); return; }
   api('ping').then(function(r) {
@@ -4270,7 +4269,10 @@ function masukDariPintu(t) {
         .then(function() { if (S.role !== 'mechanic') return pullRefs().catch(function(){}); })
         .then(function() { showScreen('main'); renderAll(); syncNow(false); });
     }
-    S.token = null; showScreen('login'); toast('❌ '+(r.error||'Token ditolak'));
+    S.token = null;
+    document.documentElement.classList.remove('dari-pintu');
+    showScreen('login');
+    toast('❌ '+(r.error||'Token ditolak'));
   }).catch(function() { saveTokenOffline(t); });
 }
 
@@ -4304,7 +4306,11 @@ openDb().then(function() {
   // memperlihatkannya — berkedip sebentar lalu hilang, yang terbaca sebagai
   // aplikasi rusak, bukan sebagai medan yang memang ditiadakan.
   setelMeterCreate();
-  masukDariPintu(ambilTokenSerahan());
+  var tokenAwal = ambilTokenSerahan();
+  if (tokenAwal) {
+    S.token = tokenAwal;
+    masukDariPintu(tokenAwal);
+  }
   syncVersionFromCache().then(function(){ showScreen(S.token?'main':'login'); renderAll(); });
   showScreen(S.token?'main':'login');
   // Timer bisa masih berjalan dari sesi sebelumnya (state tersimpan di IndexedDB)

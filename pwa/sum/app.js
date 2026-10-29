@@ -6,7 +6,7 @@
    ============================================================ */
 
 var CONFIG = { API_URL: './api' };
-var APP_VERSION = 'sum-v46'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
+var APP_VERSION = 'sum-v47'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
 var S = { mechTab:'assigned', token:null, me:null, role:null, wos:[], refs:null, refsAt:null, pending:[], active:[], approved:[], rejected:[], cancelable:[], monitoring:[], monitoringOverall:{}, monitoringPeriode:'', outbox:[], lastSync:null, syncing:false, tab:'wos', appSub:'pending', showOutbox:false, timerStates:{} };
 // Referensi kecil (komponen/unit/mekanik) — tarik ulang maks 1x/12 jam.
 // Katalog SUM kecil (±148 komponen, 47 unit) — menariknya murah, jadi tak perlu
@@ -2424,7 +2424,7 @@ window.addEventListener('offline',renderAll);
    diganti, karena antrean kirimannya bisa hilang saat logout. */
 var _masukDariPintu = false;
 function ambilTokenSerahan() {
-  var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
+  var hash = location.hash || ''; var search = location.search || ''; var m = /(?:^#|&)token=([^&]+)/.exec(hash) || /[?&]token=([^&]+)/.exec(search);
   if (!m) return '';
   var t = '';
   try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
@@ -2432,11 +2432,6 @@ function ambilTokenSerahan() {
   return t;
 }
 function masukDariPintu(t) {
-  if (!t) return;
-  if (S.token) {
-    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
-    return;
-  }
   _masukDariPintu = true;
   S.token = t;
   requestNotifPermission(); requestPeriodicSync();

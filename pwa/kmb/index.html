@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="MAR KMB">
   <title>MAR KMB V2 — Offline</title>
+  <!-- Datang dari pintu (#token=): sembunyikan layar login sejak awal, supaya tidak terlihat sekilas pun (keputusan 29 Okt nomor 10). -->
+  <script>if (/(?:^#|&|\?)token=/.test(location.hash || location.search)) document.documentElement.classList.add('dari-pintu');</script>
+  <style>html.dari-pintu #screen-login { display: none !important; }</style>
   <style>
     /* ===== DESIGN SYSTEM ENTERPRISE (token identik dgn web GAS Theme.gs) ===== */
     :root{

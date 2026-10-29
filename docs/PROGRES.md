@@ -5,6 +5,21 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · bersama (perbaikan login langsung dari pintu dan anti-kedip layar token)
+- Berubah:
+  - `pwa/kmbprojek/`:
+    - `index.html`: Ditambahkan script deteksi URL hash/query `#token=` di `<head>` dengan CSS `html.dari-pintu #screen-login { display: none !important; }` agar layar "Masukkan Token" tidak pernah muncul sekilas saat datang dari pintu.
+    - `app.js`: Fungsi `masukDariPintu` diperbaiki agar langsung mengesahkan token baru tanpa terblokir oleh sesi lama, memanggil `showScreen('main')` seketika, dan menangani fallback offline. Versi di-bump ke `projek-v15`.
+    - `sw.js`: Versi cache di-bump ke `mar-projek-v15` agar browser klien otomatis menarik pembaruan `app.js` dan membuang cache lama.
+  - `pwa/sum/` & `pwa/kmb/`:
+    - Penyesuaian identik di `index.html`, `app.js`, dan `sw.js` (SUM bump `mar-sum-v47`, KMB TRA bump `mar-kmb-v93`).
+  - Deploy & Verifikasi Cloudflare:
+    - Worker `abadiops-porject-kmb` berhasil di-deploy ke Cloudflare (Version `5bf19255…`).
+    - Worker `abadiops-sum` berhasil di-deploy ke Cloudflare (Version `f93b0530…`).
+    - Worker `abadiops-kmb` berhasil di-deploy ke Cloudflare (Version `3cb6945c…`).
+    - Verifikasi publik: `sw.js` live menyajikan `mar-projek-v15` dan `index.html` menyajikan inline script `dari-pintu`.
+- Belum selesai / berikutnya: Menunggu `GOOGLE_SA_KEY_FILE` dari Gabriel untuk eksekusi cermin spreadsheet (§5 Langkah 2).
+
 ### 2026-10-29 · Raka (+ AI) · bersama (fondasi rumah SUM dan KMB V2 berbasis Supabase)
 - Berubah:
   - `db/sum/rpc_baca.sql`:
