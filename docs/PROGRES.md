@@ -5,6 +5,57 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · bersama (audit menyeluruh status migrasi: apa yang sudah & apa yang belum)
+- Ringkasan Status Selesai (Fondasi, Pintu, & Tiga Rumah 100% Siap):
+  - **Pintu Masuk Netral (`abadiops.com`)**:
+    - Worker `abadiops-pintu` live di Cloudflare (Version `907aff98…`).
+    - Login Zero-Select berjalan di 3 rumah (KMB Project, SUM V2, KMB TRA) tanpa salah kamar.
+    - Layar pemilihan 2 mode akses (📱 Aplikasi PWA vs 🖥️ Web Biasa) berjalan normal.
+  - **Aplikasi PWA Lapangan Tiga Rumah**:
+    - Salinan 1:1 PWA lama berjalan di Cloudflare Workers:
+      - KMB Project: `https://kmbprojek.abadiops.com/` (Worker `abadiops-porject-kmb`, PWA `mar-projek-v15`).
+      - SUM V2: `https://sum.abadiops.com/` (Worker `abadiops-sum`, PWA `mar-sum-v47`).
+      - KMB TRA: `https://kmbtra.abadiops.com/` (Worker `abadiops-kmb`, PWA `mar-kmb-v93`).
+    - Mekanisme `masukDariPintu` + anti-kedip inline CSS di `<head>` aktif di ketiga rumah: pengguna langsung masuk ke dashboard tanpa melihat layar token sekilas pun.
+  - **Fondasi Supabase Tiga Rumah**:
+    - Skema cermin mentah JSONB siap di `db/sum/cermin_sheet.sql`, `db/kmb/cermin_sheet.sql`, dan `db/kmb_projek/cermin_sheet_mentah.sql`.
+    - Skrip sinkronisasi siap di `tools/sum/sinkron-cermin.mjs`, `tools/kmb/sinkron-cermin.mjs`, dan `tools/kmb_projek/sinkron-cermin.mjs` (mendukung dry-run `--kering`).
+    - Skrip pemeriksa token kembar otomatis siap di `tools/cek-token-kembar.mjs`.
+    - Fungsi RPC baca Supabase siap di `db/sum/rpc_baca.sql`, `db/kmb/rpc_baca.sql`, dan `db/kmb_projek/rpc_baca.sql`.
+    - Dual-Engine router (Supabase + fallback GAS) terpasang di ketiga worker rumah.
+    - 7 Berkas HTML asli Web Desktop SUM V2 tersimpan di `workers/sum/web/`.
+- Daftar Rinci Apa yang Belum Selesai (Sesuai Rencana §5 & docs/SERAH-TERIMA-2026-10-29.md):
+  - [ ] **1. Kunci Akun Layanan Google (`GOOGLE_SA_KEY_FILE`)** [Menunggu Gabriel]:
+    - Pemblokir utama: Kunci JSON Service Account Google (Viewer ke 3 spreadsheet dan Editor ke 1 folder Google Drive cadangan) belum diserahkan.
+  - [ ] **2. Langkah 2: Eksekusi Sinkronisasi Cermin Mentah**:
+    - Menjalankan sinkronisasi pertama kali ke Supabase produksi (`--kering` lalu tulis).
+    - Memasang pemicu sinkronisasi berkala tiap 5 menit (GitHub Actions atau Cron Cloudflare).
+    - Menjaga laporan selisih harian nol selama 7 hari berturut-turut.
+  - [ ] **3. Langkah 3: Cadangan Terenkripsi per Jam & Uji Pulih**:
+    - Membuat skrip cadangan otomatis (`pg_dump` terenkripsi) tiap jam ke Google Drive kawanabadigrup / R2.
+    - Melakukan uji pulih (`restore`) ke database staging dan memverifikasi kesamaan jumlah baris.
+  - [ ] **4. Langkah 4: Lingkungan Staging Lengkap**:
+    - Membuat project Supabase staging kedua (gratis) di akun bersama.
+    - Menyiapkan worker staging (`staging.abadiops.com` dan `staging-<rumah>.abadiops.com`).
+  - [ ] **5. Langkah 5: Uji Kembar Aksi Baca (Twin Test)**:
+    - Menguji kesamaan byte-per-byte output JSON RPC Supabase vs GAS untuk aksi baca (`ping`, `pull_create_refs`, `pull_monitoring`, `pull_my_wos`, `pull_pending`).
+    - Memasukkan aksi yang lulus ke `AKSI_SUPABASE_LULUS_KEMBAR` di worker rumah.
+  - [ ] **6. Langkah 6: Halaman Web Desktop 1:1 di Cloudflare**:
+    - Mengadaptasi 7 halaman web SUM V2 (`workers/sum/web/`) dan template KMB Project agar memanggil API Worker Cloudflare (`fetch('./api')`), bukan `google.script.run`.
+    - Mengubah rujukan `web` di `workers/pintu/wrangler.toml` dari `script.google.com` ke domain web Cloudflare masing-masing rumah.
+  - [ ] **7. Langkah 7: Jalur Tulis WO Baru di Belakang Saklar**:
+    - Menyiapkan logika penulisan WO baru di Supabase dengan nomor WO 4 digit (`WO-YYYYMMDD-XXXX`) dan buku tamu kiriman (`op_id`).
+    - Menyiapkan kalkulasi payroll gabungan (WO lama cermin + WO baru Supabase).
+    - Memastikan jalur ini tetap mati selama saklar di posisi `gas`.
+  - [ ] **8. Langkah 8: Panel Saklar Visual di abadiops.com**:
+    - Membuat panel Durable Object berpelindung kata sandi (secret dipasang Gabriel) dengan fitur peringatan maju dan mundur cepat (penyelamat).
+    - Latihan saklar balik di staging (nyala → mati → nyala).
+  - [ ] **9. Langkah 9: Titik Henti & Go-Live Serentak**:
+    - Menyusun laporan kesiapan akhir sesuai daftar syarat di `docs/SAKLAR.md`.
+    - **Berhenti**: Menyerahkan keputusan penyalaan saklar serentak kepada Gabriel.
+- Langkah Kerja Berikutnya:
+  - Meminta file `GOOGLE_SA_KEY_FILE` ke Gabriel untuk membuka eksekusi Langkah 2 (Cermin Tiga Rumah).
+
 ### 2026-10-29 · Raka (+ AI) · bersama (perbaikan login langsung dari pintu dan anti-kedip layar token)
 - Berubah:
   - `pwa/kmbprojek/`:
