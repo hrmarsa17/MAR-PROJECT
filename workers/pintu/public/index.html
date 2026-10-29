@@ -63,11 +63,12 @@
       <input id="token" name="token" type="text" inputmode="text" autocapitalize="off" spellcheck="false" required>
       <button type="submit" id="tombolMasuk">Masuk</button>
     </form>
-    <!-- Setelah token diverifikasi: langsung dialihkan otomatis ke aplikasi rumah di Cloudflare. -->
+    <!-- Sesudah token dikenali: tawarkan pilihan Aplikasi (PWA) atau Web Biasa -->
     <div id="pilih">
       <p id="salam"></p>
       <p id="salamRumah"></p>
-      <button type="button" id="tombolAplikasi">🚀 Masuk ke Aplikasi<span class="pilih-ket">klik bila tidak beralih otomatis</span></button>
+      <button type="button" id="tombolAplikasi">📱 Aplikasi PWA<span class="pilih-ket">untuk HP / lapangan (offline-first)</span></button>
+      <button type="button" class="kedua" id="tombolWeb">🖥️ Web Biasa<span class="pilih-ket">untuk laptop / desktop (menu lengkap)</span></button>
       <button type="button" class="tautan" id="tombolGanti">Bukan Anda? Ganti token</button>
     </div>
     <div id="pesan" role="status" aria-live="polite"></div>
@@ -106,39 +107,46 @@
     }
   } catch (e) {}
 
-  function alihkanKeAplikasi(token, j) {
+  function tawarkanPilihan(token, j) {
     form.style.display = 'none';
     kotakLanjut.style.display = 'none';
-    document.getElementById('sub').textContent = 'Menghubungkan ke aplikasi...';
+    document.getElementById('sub').textContent = 'Pilih mode akses yang Anda inginkan:';
     document.getElementById('salam').textContent = 'Halo' + (j.nama ? ', ' + j.nama : '') + '!';
     document.getElementById('salamRumah').textContent = j.nama_rumah;
     
-    var urlTujuan = j.alamat_rumah + '#token=' + encodeURIComponent(token);
-    try { localStorage.setItem(KUNCI_RUMAH, JSON.stringify({ alamat: j.alamat_rumah, nama: j.nama_rumah })); } catch (e) {}
-
     var tApl = document.getElementById('tombolAplikasi');
+    var tWeb = document.getElementById('tombolWeb');
+
     tApl.onclick = function () {
-      tampil('Membuka aplikasi ' + j.nama_rumah + '…', 'ok');
-      location.replace(urlTujuan);
+      try { localStorage.setItem(KUNCI_RUMAH, JSON.stringify({ alamat: j.alamat_rumah, nama: j.nama_rumah })); } catch (e) {}
+      tampil('Membuka aplikasi PWA ' + j.nama_rumah + '…', 'ok');
+      location.replace(j.alamat_rumah + '#token=' + encodeURIComponent(token));
     };
 
-    tampil('Membuka ' + j.nama_rumah + '…', 'ok');
-    kotakPilih.style.display = 'block';
+    if (j.web_rumah) {
+      tWeb.style.display = '';
+      tWeb.onclick = function () {
+        tampil('Membuka web ' + j.nama_rumah + '…', 'ok');
+        location.replace(j.web_rumah + '?token=' + encodeURIComponent(token));
+      };
+    } else {
+      tWeb.style.display = 'none';
+    }
 
-    // Langsung arahkan otomatis detik itu juga
-    location.replace(urlTujuan);
+    tampil('');
+    kotakPilih.style.display = 'block';
   }
 
   function masuk(token) {
     tombol.disabled = true;
-    tampil('Memeriksa token… (bisa sampai 15 detik)');
+    tampil('Memeriksa token di semua rumah… (bisa sampai 15 detik)');
     fetch('/api/pintu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: token })
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (j && j.success && j.alamat_rumah) {
-        alihkanKeAplikasi(token, j);
+        tawarkanPilihan(token, j);
         return;
       }
       tombol.disabled = false;

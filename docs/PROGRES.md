@@ -5,6 +5,18 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · pintu (pemulihan layar pilihan Aplikasi PWA vs Web Biasa di abadiops.com)
+- Berubah:
+  - `workers/pintu/public/index.html`:
+    - Mengembalikan layar pilihan 2 mode akses per keputusan Gabriel 28–29 Okt (docs/KEPUTUSAN.md #10 & #28):
+      - 📱 **Aplikasi PWA**: untuk HP / lapangan (offline-first) -> https://<rumah>.abadiops.com/#token=...
+      - 🖥️ **Web Biasa**: untuk laptop / desktop (menu lengkap) -> https://script.google.com/macros/s/.../exec?token=...
+    - Menghapus auto-redirect langsung yang melompati layar pilihan pengguna.
+  - **Deploy Berhasil & Live di Produksi**:
+    - Worker `abadiops-pintu` berhasil di-deploy ke Cloudflare via `wrangler deploy` (Version ID: 907aff98-5b94-4780-8159-406d148cbc50).
+    - Diverifikasi live di `https://abadiops.com/`: setelah token dikenali, pengguna mendapatkan 2 pilihan (Aplikasi PWA atau Web Biasa).
+- Belum selesai / berikutnya: Menunggu akun layanan Google (`GOOGLE_SA_KEY_FILE`) dari Gabriel untuk sinkron cermin mentah (§5 Langkah 2).
+
 ### 2026-10-29 · Raka (+ AI) · pintu (auto-redirect langsung ke aplikasi rumah LIVE di abadiops.com)
 - Berubah:
   - `workers/pintu/public/index.html`:
