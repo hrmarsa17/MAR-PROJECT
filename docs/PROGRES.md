@@ -5,6 +5,22 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · kmb-projek (§5 langkah 1: PWA KMB Project 1:1 dan Worker abadiops-kmbprojek)
+- Berubah:
+  - **PWA KMB Project 1:1** (`pwa/kmbprojek/`): disalin dari repo `PWA-Project-KMB` (`mar-projek-offline` projek-v13).
+    - `app.js`: `API_URL: './api'`, `APP_VERSION = 'projek-v14'`, ditambah `ambilTokenSerahan` & `masukDariPintu` (keputusan 29 Okt nomor 10).
+    - `sw.js`: `CACHE = 'mar-projek-v14'`, `API_URL = './api'`.
+    - File statis (`index.html`, `manifest.json`, `icon-192.png`, `icon-512.png`): identik 1:1.
+    - Menghapus direktori kosong `pwa/kmb-projek`.
+  - **Worker KMB Project baru** (`workers/kmbprojek/`): dibuat dari cetakan `workers/kmb/` (Worker `abadiops-kmbprojek`).
+    - `wrangler.toml`: `name = "abadiops-kmbprojek"`, `routes = [{ pattern = "kmbprojek.abadiops.com", custom_domain = true }]`, `RUMAH = "kmbprojek"`, `SAKLAR = "gas"`, `GAS_URL = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec"`.
+    - `src/index.js`: menyajikan aset PWA dari `env.ASSETS` dan meneruskan setiap panggilan `./api` ke GAS KMB Project apa adanya (saklar `gas`).
+    - `README.md`: dokumentasi Worker `abadiops-kmbprojek`.
+  - **Uji lokal `wrangler dev`** (`scripts/uji-lokal-kmbprojek.mjs`):
+    - 21 uji lulus (7 file PWA HTTP 200, string versi/API/token serahan sah, `/api/sehat` sah, uji kembar terusan ke GAS KMB Project identik, penolakan token rumah lain sah).
+  - **Pemantau Vercel dimatikan**: `.github/workflows/pantau.yml` schedule dinonaktifkan sesuai keputusan 29 Okt (MARProject lama di Vercel dibekukan).
+- Belum selesai / berikutnya: deploy `workers/kmbprojek` ke Cloudflare dengan API token kawanabadigrup untuk mengalihkan domain `kmbprojek.abadiops.com` dari `project-mar` ke Worker baru, lalu lanjut ke §5 langkah 2 (cermin).
+
 ### 2026-10-29 · Gabriel (+ Claude) · bersama (semua keputusan diambil; rencana tanpa bertanya)
 - Berubah: dokumen saja. Gabriel menyetujui paket usulan dan menjawab tiga butir sisanya:
   - **Biaya:** opsi gratis dulu. Cadangan buatan sendiri tiap jam dengan uji pulih; Pro atau PITR hanya atas keputusan Gabriel.
@@ -106,7 +122,7 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | Tugas | Rumah | Pemegang | Status |
 |---|---|---|---|
 | **Rencana migrasi berurutan.** Target selesai: tinggal menyalakan saklar. Urutannya ada di `docs/SERAH-TERIMA-2026-10-29.md` §5 dan `docs/SAKLAR.md` | bersama | Gabriel + Raka | panduan utama |
-| KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | diputuskan 29 Okt: domain `kmbprojek.abadiops.com` dipindah ke Worker baru, portal dipensiunkan (§5 langkah 1) |
+| KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | **selesai disiapkan & diuji lokal** (21 uji lulus). Siap deploy ke Cloudflare untuk pasang custom domain `kmbprojek.abadiops.com` |
 | Cermin terjadwal ketiga rumah (Cron Cloudflare, menyalin setiap sheet termasuk bulan lama), dengan laporan selisih harian; lulus kalau selisihnya nol 7 hari | bersama | Raka + Gabriel | Gabriel: buat akun layanan Google dan bagikan ketiga spreadsheet |
 | Panel saklar di `abadiops.com` sesuai `docs/SAKLAR.md` (tersembunyi, kata sandi, peringatan, mundur sebagai penyelamat, hanya bergantung pada Cloudflare) | bersama | Raka (+ AI) | kata sandi diset Gabriel sebagai *secret*; saklar tetap `gas` |
 | Jaring pengaman (keputusan 29 Okt: opsi gratis dulu): cadangan `pg_dump` terenkripsi tiap jam ke penyimpanan privat gratis + uji pulih, staging gratis, latihan saklar balik di staging | bersama | Raka (+ AI) | §5 langkah 3, 4, dan 8 |

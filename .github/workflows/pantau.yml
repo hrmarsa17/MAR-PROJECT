@@ -22,10 +22,7 @@ name: Pantau kesehatan
 # dihapus.
 
 on:
-  schedule:
-    # Menit 23, bukan 0. Menit bulat adalah tempat setiap cron di dunia
-    # berkumpul, dan jadwal GitHub memang tergeser saat sedang ramai.
-    - cron: '23 * * * *'
+# schedule dimatikan per keputusan 29 Okt (MARProject lama Vercel dibekukan)
   workflow_dispatch:        # supaya bisa dicoba sekarang, tanpa menunggu
 
 permissions:
