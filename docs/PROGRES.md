@@ -5,6 +5,14 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · pintu (auto-redirect langsung ke aplikasi rumah, buang rute GAS lama)
+- Berubah:
+  - `workers/pintu/public/index.html`:
+    - Menghilangkan tombol "Web" yang mengarahkan ke `script.google.com` (GAS lama).
+    - Menerapkan auto-redirect langsung (`location.replace`) ke aplikasi rumah di Cloudflare (`<rumah>.abadiops.com#token=...`) begitu token diverifikasi.
+    - Menghapus potensi kebingungan pengguna terlempar ke URL Google Apps Script.
+- Belum selesai / berikutnya: Deploy `workers/pintu` ke Cloudflare (memerlukan penambahan izin token Cloudflare untuk service `abadiops-pintu`).
+
 ### 2026-10-29 · Raka (+ AI) · kmb-projek (verifikasi token uji L1 & L2 KMB Project di pintu & live backend)
 - Berubah:
   - **Verifikasi Token Uji KMB Project (§5 Langkah 0 selesai)**:
