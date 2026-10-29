@@ -2,33 +2,28 @@
  * Rumah KMB V2: Worker `abadiops-kmb`
  * Rumah: kmb · Pemegang: Gabriel · Penjelasan: workers/kmb/README.md
  *
- * Tahap 3 (Pintu). Worker ini melakukan dua hal:
+ * Tahap 4 (Dual-Engine):
  *   1. menyajikan file PWA KMB V2 (pwa/kmb/, salinan 1:1 dari mar-offline v91);
- *   2. meneruskan SETIAP panggilan API (POST ./api) apa adanya ke GAS KMB V2.
- * Tidak ada logika bisnis di sini. Buat WO, kirim kerja, approve, dan semua aksi
- * lainnya tetap dikerjakan GAS. Saklar rumah ini: `gas` (docs/SAKLAR.md).
- *
- * Yang ditiru persis dari jalur lama PWA → GAS (MIGRASI-STACK.md §4):
- *   - body diteruskan apa adanya, dengan Content-Type text/plain;
- *   - jawaban GAS dikembalikan apa adanya, termasuk "MAINTENANCE|…", jawaban retry_later (server ramai), dan pesan
- *     token ditolak yang dikenali PWA lewat pola teks;
- *   - redirect 302 dari GAS ke googleusercontent diikuti;
- *   - kalau GAS tidak terjangkau, jawabannya berupa teks yang BUKAN JSON. PWA
- *     menganggap itu koneksi putus, sehingga kiriman tetap di antrean dan dikirim
- *     ulang otomatis, sama seperti saat ini ketika GAS tidak terjangkau.
+ *   2. melayani aksi baca dari Supabase skema `kmb` jika diaktifkan atau lulus kembar;
+ *   3. meneruskan panggilan tulis dan fallback aksi baca ke GAS KMB V2.
+ * Saklar rumah ini: `gas` (docs/SAKLAR.md).
  */
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Active-Engine',
 };
+
+// Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
+const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.endsWith('/api/sehat')) return sehat(env);
-    if (/\/api\/?$/.test(url.pathname)) return teruskanKeGas(request, env);
+    if (/\/api\/?$/.test(url.pathname)) return tanganiApi(request, env, url);
+    
     // Akar folder → index.html, disajikan langsung tanpa redirect (lihat wrangler.toml).
     if (url.pathname.endsWith('/')) {
       return env.ASSETS.fetch(new Request(new URL(url.pathname + 'index.html', url), request));
@@ -37,14 +32,98 @@ export default {
   },
 };
 
-async function teruskanKeGas(request, env) {
+async function tanganiApi(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (request.method !== 'POST') {
     return new Response('Hanya POST', { status: 405, headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' } });
   }
-  const body = await request.text();
+
+  const bodyText = await request.text();
+  let parsed = {};
+  try {
+    parsed = JSON.parse(bodyText);
+  } catch (_) {}
+
+  const action = parsed.action || '';
+  const token = parsed.token || '';
+  const reqEngine = (
+    request.headers.get('x-active-engine') ||
+    url.searchParams.get('engine') ||
+    parsed.engine ||
+    env.STORAGE_MODE ||
+    'GAS'
+  ).toUpperCase();
+
+  const ujiSupabase = url.searchParams.get('uji') === 'supabase';
+  const bolehSupabase = (aksi) => ujiSupabase || (reqEngine === 'SUPABASE' && AKSI_SUPABASE_LULUS_KEMBAR.has(aksi));
+
+  // Coba jalur Supabase jika diizinkan atau sedang diuji
+  if (bolehSupabase(action) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    const resSupa = await cobaSupabaseKmbTra(action, token, parsed, env);
+    if (resSupa) {
+      return resSupa;
+    }
+  }
+
+  // Jalur utama / fallback ke GAS
+  return teruskanKeGas(bodyText, action, env);
+}
+
+async function cobaSupabaseKmbTra(action, token, parsed, env) {
+  const supaHeaders = {
+    'apikey': env.SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + env.SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    let rpcName = '';
+    let payload = {};
+
+    if (action === 'ping' && token) {
+      rpcName = 'kmbtra_ping';
+      payload = { p_token: token };
+    } else if (action === 'pull_create_refs') {
+      rpcName = 'kmbtra_create_refs';
+      payload = {};
+    } else if (action === 'pull_monitoring' && token) {
+      rpcName = 'kmbtra_monitoring_bertoken';
+      payload = { p_token: token };
+    }
+
+    if (!rpcName) return null;
+
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcName}`, {
+      method: 'POST',
+      headers: supaHeaders,
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        catat(env, { aksi: action, jalur: 'supabase', status: 200 });
+        return new Response(JSON.stringify(data), {
+          status: 200,
+          headers: {
+            ...CORS,
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Abadi-Rumah': env.RUMAH,
+            'X-Abadi-Jalur': 'supabase',
+          },
+        });
+      }
+    }
+  } catch (err) {
+    catat(env, { aksi: action, galat_supabase: String((err && err.message) || err) });
+  }
+
+  return null; // Fallback ke GAS
+}
+
+async function teruskanKeGas(body, aksi, env) {
   const mulai = Date.now();
-  const aksi = namaAksi(body);
   try {
     const res = await fetch(env.GAS_URL, {
       method: 'POST',
@@ -53,7 +132,7 @@ async function teruskanKeGas(request, env) {
       redirect: 'follow',
     });
     const teks = await res.text();
-    catat(env, { aksi, status: res.status, ms: Date.now() - mulai });
+    catat(env, { aksi, status: res.status, ms: Date.now() - mulai, jalur: 'gas' });
     return new Response(teks, {
       status: res.status,
       headers: {
@@ -73,22 +152,18 @@ async function teruskanKeGas(request, env) {
   }
 }
 
-// Nama aksi hanya untuk log. Token TIDAK PERNAH dicatat.
-function namaAksi(body) {
-  try {
-    const a = JSON.parse(body).action;
-    return typeof a === 'string' ? a.replace(/[^A-Za-z0-9_]/g, '').slice(0, 40) : '?';
-  } catch {
-    return '?';
-  }
-}
-
 function catat(env, isi) {
-  console.log(JSON.stringify({ rumah: env.RUMAH, jalur: 'gas', ...isi }));
+  console.log(JSON.stringify({ rumah: env.RUMAH, ...isi }));
 }
 
 function sehat(env) {
-  return new Response(JSON.stringify({ ok: true, rumah: env.RUMAH, saklar: env.SAKLAR, jalur: 'gas' }), {
+  return new Response(JSON.stringify({
+    ok: true,
+    rumah: env.RUMAH,
+    saklar: env.SAKLAR,
+    jalur: env.STORAGE_MODE || 'gas',
+    supabase_configured: !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY),
+  }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
 }

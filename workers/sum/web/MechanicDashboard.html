@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; padding: 20px; color: #2d3748;
+    }
+    .navbar {
+      background: white; border-radius: 12px; padding: 1rem 1.5rem;
+      margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+    }
+    .nav-brand { font-weight: 700; font-size: 1rem; color: #1a202c; margin-right: 1rem; }
+    .nav-link {
+      padding: 0.4rem 0.9rem; color: #6b7280; text-decoration: none;
+      border-radius: 6px; font-weight: 500; font-size: 0.875rem;
+      transition: all 0.2s; display: inline-block;
+    }
+    .nav-link:hover { background: #f3f4f6; color: #1f2937; }
+    .nav-link.active { background: #667eea; color: white; font-weight: 600; }
+
+    /* ═══ MECHANIC SELECTOR (SPV/SUPT view) ═══ */
+    .selector-header {
+      background: white; border-radius: 16px; padding: 24px 32px;
+      margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    .selector-header h1 { font-size: 28px; font-weight: 700; color: #1a202c; margin-bottom: 4px; }
+    .selector-subtitle { color: #718096; font-size: 14px; margin-bottom: 16px; }
+    .selector-search {
+      width: 100%; max-width: 400px; padding: 10px 16px 10px 40px;
+      border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px;
+      transition: border-color 0.2s; background: #f7fafc;
+    }
+    .selector-search:focus { outline: none; border-color: #667eea; background: white; }
+    .selector-search-wrap { position: relative; display: inline-block; width: 100%; max-width: 400px; }
+    .selector-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #a0aec0; font-size: 16px; }
+
+    .mechanic-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; margin-top: 20px;
+    }
+    .mechanic-card {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06); cursor: pointer;
+      border: 2px solid transparent; transition: all 0.2s;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .mechanic-card:hover {
+      transform: translateY(-2px); border-color: #667eea;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+    .mechanic-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 18px; flex-shrink: 0;
+    }
+    .mechanic-card-info { flex: 1; overflow: hidden; }
+    .mechanic-card-name { font-weight: 700; font-size: 16px; color: #1a202c; margin-bottom: 2px; }
+    /* TOKEN mekanik — dibaca & disalin pengawas untuk dibagikan.
+       Sudah terkandung di href kartu, jadi menampilkannya tak menambah paparan. */
+    .mechanic-card-token { display: inline-block; margin: 2px 0 4px; padding: 2px 8px; border-radius: 6px;
+      background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe;
+      font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+      font-size: 12px; font-weight: 700; letter-spacing: .3px; user-select: all; cursor: text; }
+    .mechanic-card-token-lbl { font-size: 11px; color: #94a3b8; margin-right: 4px; }
+    .mechanic-card-email { font-size: 12px; color: #a0aec0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mechanic-card-arrow { color: #cbd5e0; font-size: 20px; flex-shrink: 0; }
+    .mechanic-card:hover .mechanic-card-arrow { color: #667eea; }
+    .selector-empty { text-align: center; padding: 40px; color: #a0aec0; font-size: 14px; }
+    .mon-stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    .mon-stat { flex: 1; min-width: 88px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 8px; text-align: center; }
+    .mon-num { font-size: 22px; font-weight: 800; color: #1e40af; }
+    .mon-lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .mon-mini { font-size: 12px; color: #475569; margin-top: 4px; }
+    .mon-mini b { color: #1e40af; }
+    /* Monitoring bisa diklik (9 Okt 2026) */
+    .mon-klik { cursor: pointer; transition: transform .08s, box-shadow .08s; }
+    .mon-klik:hover { box-shadow: 0 2px 10px rgba(30,64,175,.15); transform: translateY(-1px); }
+    .mon-merah .mon-num { color: #dc2626; }
+    .mon-petunjuk { font-size: 12px; color: #64748b; margin: -4px 0 10px; }
+    .mon-modal { position: fixed; inset: 0; background: rgba(15,23,42,.6); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 12px; }
+    .mon-modal.tampil { display: flex; }
+    .mon-modal-kotak { background: #fff; border-radius: 14px; width: 100%; max-width: 640px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+    .mon-modal-kepala { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #e5e7eb; }
+    .mon-modal-kepala b { flex: 1; font-size: 15px; }
+    .mon-kembali, .mon-x { border: none; background: #f1f5f9; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+    .mon-modal-isi { overflow-y: auto; padding: 10px 14px 16px; }
+    .mon-baris { border: 1px solid #e5e7eb; border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; cursor: pointer; }
+    .mon-baris:hover { background: #f8fafc; }
+    .mon-baris .no { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; }
+    .mon-baris .ket { font-size: 12.5px; color: #475569; margin-top: 3px; line-height: 1.45; }
+    .mon-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #e0e7ff; color: #3730a3; margin-left: 4px; }
+    .mon-chip.merah { background: #fee2e2; color: #b91c1c; }
+    .mon-chip.hijau { background: #dcfce7; color: #166534; }
+    .mon-cari { width: 100%; box-sizing: border-box; padding: 9px 11px; border: 1px solid #d1d5db; border-radius: 9px; margin: 2px 0 10px; font-size: 14px; }
+    .mon-memuat, .mon-kosong { text-align: center; color: #64748b; padding: 24px 8px; }
+    .mon-galat { text-align: center; color: #991b1b; background: #fef2f2; border-radius: 10px; padding: 16px; }
+    .mon-bagian { margin-top: 12px; }
+    .mon-bagian h4 { font-size: 12px; letter-spacing: .5px; color: #64748b; margin: 0 0 6px; text-transform: uppercase; }
+    .mon-kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; }
+    .mon-kv span:first-child { color: #64748b; }
+    .mon-kv span:last-child { text-align: right; font-weight: 600; color: #1f2937; }
+    .mon-no-token { font-size: 11px; color: #b45309; margin-top: 4px; }
+    .btn-back-monitoring { display: inline-block; background: #1e40af; color: #fff; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin: 12px 0; }
+
+    /* ═══ IMPERSONATE BANNER ═══ */
+    .impersonate-banner {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #78350f; padding: 16px 24px; border-radius: 12px;
+      margin-bottom: 20px; display: flex; align-items: center;
+      justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      border: 2px solid #fcd34d;
+    }
+    .impersonate-banner.hidden { display: none; }
+    .impersonate-info { display: flex; align-items: center; gap: 12px; }
+    .impersonate-icon {
+      width: 40px; height: 40px; background: rgba(255,255,255,0.3);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 20px;
+    }
+    .impersonate-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .impersonate-text p { font-size: 18px; font-weight: 700; }
+    .btn-back-to-self {
+      background: rgba(255,255,255,0.9); color: #78350f;
+      border: none; padding: 10px 20px; border-radius: 8px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 14px;
+    }
+    .btn-back-to-self:hover { background: white; transform: translateY(-1px); }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header {
+      background: white; border-radius: 16px; padding: 24px 32px;
+      margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header h1 { font-size: 32px; font-weight: 700; color: #1a202c; margin-bottom: 4px; }
+    .header-subtitle { color: #718096; font-size: 14px; }
+    .filter-tabs { display: flex; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; }
+    .filter-tab {
+      background: none; border: none; padding: 12px 20px; font-weight: 600;
+      cursor: pointer; color: #718096; position: relative; transition: all 0.2s;
+      border-radius: 8px 8px 0 0;
+    }
+    .filter-tab:hover { background: #f7fafc; color: #4a5568; }
+    .filter-tab.active { color: #667eea; background: #f7fafc; }
+    .filter-tab.active::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+      height: 3px; background: #667eea;
+    }
+    .filter-tab .count {
+      display: inline-block; background: #e2e8f0; color: #4a5568;
+      padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 6px;
+    }
+    .filter-tab.active .count { background: #667eea; color: white; }
+    .wo-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px; margin-top: 24px;
+    }
+    .wo-card {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06); transition: all 0.2s;
+      cursor: pointer; border: 2px solid transparent;
+    }
+    .wo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.12); border-color: #667eea; }
+    .wo-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .wo-id { font-weight: 700; color: #2d3748; font-size: 16px; }
+    .wo-status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .status-assigned { background: #fef3c7; color: #92400e; }
+    .status-in_progress { background: #dbeafe; color: #1e3a8a; }
+    .status-pending_approval { background: #fce7f3; color: #831843; }
+    .status-done { background: #d1fae5; color: #065f46; }
+    .status-done-incident { background: #fee2e2; color: #991b1b; }
+    .wo-card.incident-card { border-color: #fca5a5; }
+    .wo-card.incident-card:hover { border-color: #ef4444; box-shadow: 0 8px 16px rgba(239,68,68,0.15); }
+    .incident-badge { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #991b1b; font-weight: 700; margin-bottom: 8px; text-align: center; }
+    .wo-component { font-size: 18px; font-weight: 600; color: #1a202c; margin-bottom: 8px; }
+    .wo-details {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+      margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;
+    }
+    .wo-detail-item { display: flex; flex-direction: column; }
+    .wo-detail-label { font-size: 11px; text-transform: uppercase; color: #718096; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .wo-detail-value { font-size: 14px; font-weight: 600; color: #2d3748; }
+    .empty-state { background: white; border-radius: 12px; padding: 60px 40px; text-align: center; margin-top: 24px; }
+    .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-state h3 { font-size: 20px; color: #4a5568; margin-bottom: 8px; }
+    .empty-state p { color: #718096; font-size: 14px; }
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal {
+      background: white; border-radius: 16px; width: 90%; max-width: 600px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      animation: slideUp 0.3s;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-header { padding: 24px 32px; border-bottom: 1px solid #e2e8f0; }
+    .modal-header h2 { font-size: 24px; color: #1a202c; margin-bottom: 4px; }
+    .modal-subtitle { color: #718096; font-size: 14px; }
+    .modal-body { padding: 32px; }
+    .modal-section { margin-bottom: 24px; }
+    .modal-section h3 { font-size: 14px; text-transform: uppercase; color: #718096; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; background: #f7fafc; padding: 16px; border-radius: 8px; }
+    .info-item { display: flex; flex-direction: column; }
+    .info-label { font-size: 12px; color: #718096; margin-bottom: 4px; font-weight: 600; }
+    .info-value { font-size: 16px; color: #2d3748; font-weight: 600; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-weight: 600; margin-bottom: 8px; color: #2d3748; font-size: 14px; }
+    .form-input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: all 0.2s; }
+    .form-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+    .parttype-group { display: flex; gap: 8px; }
+    .parttype-btn { flex: 1; padding: 12px 8px; border: 2px solid #e2e8f0; border-radius: 8px; background: #f7fafc; color: #4a5568; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .parttype-btn:hover { border-color: #cbd5e0; }
+    .parttype-btn.active { background: #667eea; color: white; border-color: #667eea; }
+    .modal-footer { padding: 24px 32px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; }
+    .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 14px; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #5568d3; transform: translateY(-1px); }
+    .btn-primary:disabled { background: #cbd5e0; cursor: not-allowed; }
+    .btn-secondary { background: #e2e8f0; color: #4a5568; }
+    .btn-secondary:hover { background: #cbd5e0; }
+    .loading { text-align: center; padding: 60px 20px; color: white; }
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white;
+      border-radius: 50%; width: 40px; height: 40px;
+      animation: spin 1s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .header, .selector-header { padding: 20px; }
+      .header h1 { font-size: 24px; }
+      .header-top { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .filter-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .wo-grid, .mechanic-grid { grid-template-columns: 1fr; }
+      .modal { width: 95%; }
+      .modal-body { padding: 20px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .impersonate-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .navbar { gap: 0.25rem; }
+    }
+  </style>
+</head>
+<body>
+<script>
+var PAGE_TOKEN='<?= token ?>';try{if(PAGE_TOKEN)localStorage.setItem('mar_sum_token',PAGE_TOKEN);}catch(e){}
+function urlWithToken(u){return (PAGE_TOKEN&&u&&u.indexOf('token=')===-1)?(u+(u.indexOf('?')!==-1?'&':'?')+'token='+encodeURIComponent(PAGE_TOKEN)):u;}
+document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;var L=document.querySelectorAll('a[href*="?page="]');for(var i=0;i<L.length;i++){L[i].setAttribute('href',urlWithToken(L[i].getAttribute('href')||''));}});
+</script>
+  <div class="container">
+    <nav class="navbar">
+      <div class="nav-brand">⚙️ MAR SUM V2</div>
+      <? if (canAccessDashboard(user.role)) { ?>
+        <a href="<?= getScriptUrl() ?>?page=dashboard" class="nav-link" target="_top">Dashboard</a>
+      <? } ?>
+      <? if (canAccessCreateWO(user.role)) { ?><a href="<?= getScriptUrl() ?>?page=create" class="nav-link" target="_top">Create WO</a><? } ?>
+      <a href="<?= getScriptUrl() ?>?page=mechanic" class="nav-link active" target="_top">Monitoring</a>
+      <? if (canAccessApprovals(user.role)) { ?>
+        <a href="<?= getScriptUrl() ?>?page=approvals" class="nav-link" target="_top">Approvals</a>
+      <? } ?>
+      <? if (bolehMenuCancelWo(user.role)) { ?><a href="<?= getScriptUrl() ?>?page=cancel" class="nav-link" target="_top">Cancel WO</a><? } ?>
+      <? if (canAccessReports(user.role)) { ?>
+        <a href="<?= getScriptUrl() ?>?page=reports" class="nav-link" target="_top">Reports</a>
+      <? } ?>
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;flex-wrap:wrap;">
+        <? if (user.role === 'mechanic') { ?><span style="background:#dbeafe;color:#1e40af;padding:0.25rem 0.6rem;border-radius:12px;font-weight:700;font-size:0.7rem;text-transform:uppercase;">Mechanic</span>
+        <? } else if (user.role === 'supervisor') { ?><span style="background:#fed7aa;color:#c2410c;padding:0.25rem 0.6rem;border-radius:12px;font-weight:700;font-size:0.7rem;text-transform:uppercase;">Supervisor</span>
+        <? } else if (user.role === 'superintendent') { ?><span style="background:#e9d5ff;color:#7c3aed;padding:0.25rem 0.6rem;border-radius:12px;font-weight:700;font-size:0.7rem;text-transform:uppercase;">Project Manager</span>
+        <? } else if (user.role === 'foreman') { ?><span style="background:#d1fae5;color:#047857;padding:0.25rem 0.6rem;border-radius:12px;font-weight:700;font-size:0.7rem;text-transform:uppercase;">Foreman</span>
+        <? } ?>
+        <span style="color:#4a5568;font-weight:600;font-size:0.85rem;"><?= namaOrang(user.mechanic_name, user.email) ?></span>
+      </div>
+    </nav>
+
+    <? if (user.role !== 'mechanic') { ?>
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- MONITORING PENGAWAS (1:1 KMB): statistik pipeline + kartu link per-mekanik bertoken -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <? var mon = monitoringData || {overall:{}, mechanics:[]}; var ov = mon.overall || {}; var mons = mon.mechanics || []; var monPeriode = mon.periode || ''; ?>
+    <div class="selector-header">
+      <h1>📊 Monitoring</h1>
+      <p class="selector-subtitle">Statistik pipeline &amp; buka tampilan tiap mekanik (klik kartu → masuk atas nama mekanik)<?= monPeriode ? ' · Approved dihitung untuk ' + monPeriode + '; bulan lampau lewat export Excel' : '' ?></p>
+      <div class="mon-stats">
+        <div class="mon-stat mon-klik" onclick="monBukaMekanik()" title="Klik: daftar mekanik"><div class="mon-num"><?= ov.mechanics || 0 ?></div><div class="mon-lbl">Mekanik</div></div>
+        <div class="mon-stat mon-klik" onclick="monBukaDaftar('belum')" title="Klik: daftar WO"><div class="mon-num"><?= ov.pending_mechanic_work || 0 ?></div><div class="mon-lbl">Belum Dikerjakan<br>(&lt; 12 jam)</div></div>
+        <div class="mon-stat mon-klik mon-merah" onclick="monBukaDaftar('expired')" title="Klik: daftar WO"><div class="mon-num"><?= ov.expired || 0 ?></div><div class="mon-lbl">Expired<br>(lewat 12 jam)</div></div>
+        <div class="mon-stat mon-klik" onclick="monBukaDaftar('l1')" title="Klik: daftar WO"><div class="mon-num"><?= ov.pending_l1 || 0 ?></div><div class="mon-lbl">Pending L1</div></div>
+        <div class="mon-stat mon-klik" onclick="monBukaDaftar('l2')" title="Klik: daftar WO"><div class="mon-num"><?= ov.pending_l2 || 0 ?></div><div class="mon-lbl">Pending L2</div></div>
+        <div class="mon-stat mon-klik" onclick="monBukaDaftar('approved')" title="Klik: daftar WO"><div class="mon-num"><?= ov.approved || 0 ?></div><div class="mon-lbl">Approved<?= monPeriode ? ' ' + monPeriode : '' ?></div></div>
+      </div>
+      <div class="mon-petunjuk">👆 Klik angka mana pun untuk melihat daftarnya, lalu klik WO untuk detail lengkapnya.</div>
+      <div class="selector-search-wrap">
+        <span class="selector-search-icon">🔍</span>
+        <input type="text" class="selector-search" id="mechSearch" placeholder="Cari nama mekanik..." oninput="filterMechanics(this.value)">
+      </div>
+    </div>
+    <div class="mechanic-grid" id="mechanicGrid">
+      <? if (mons.length > 0) { ?>
+        <? for (var mi = 0; mi < mons.length; mi++) { var mc = mons[mi]; ?>
+          <? if (mc.has_token) { var mlink = baseUrl + '?page=mechanic&token=' + encodeURIComponent(mc.token) + (token ? '&back=' + encodeURIComponent(token) : ''); ?>
+          <a class="mechanic-card" href="<?= mlink ?>" target="_top" data-name="<?= (mc.name || '').toLowerCase() ?>" style="text-decoration:none;color:inherit;">
+            <div class="mechanic-avatar"><?= (mc.name || '?').charAt(0).toUpperCase() ?></div>
+            <div class="mechanic-card-info">
+              <div class="mechanic-card-name"><?= mc.name ?></div>
+              <div><span class="mechanic-card-token-lbl">Token:</span><span class="mechanic-card-token" onclick="event.preventDefault();event.stopPropagation();salinToken(this)" title="klik untuk menyalin"><?= mc.token ?></span></div>
+              <div class="mon-mini">Belum kerja <b><?= mc.pending_mechanic_work ?></b> · Expired <b style="color:#dc2626"><?= mc.expired || 0 ?></b> · L1 <b><?= mc.pending_l1 ?></b> · L2 <b><?= mc.pending_l2 ?></b> · ✓ <?= mc.approved ?></div>
+            </div>
+            <div class="mechanic-card-arrow">→</div>
+          </a>
+          <? } else { ?>
+          <div class="mechanic-card" data-name="<?= (mc.name || '').toLowerCase() ?>" style="opacity:0.65;">
+            <div class="mechanic-avatar"><?= (mc.name || '?').charAt(0).toUpperCase() ?></div>
+            <div class="mechanic-card-info">
+              <div class="mechanic-card-name"><?= mc.name ?></div>
+              <div class="mon-no-token">⚠️ Belum ada token — jalankan generateMissingTokens di editor</div>
+            </div>
+          </div>
+          <? } ?>
+        <? } ?>
+      <? } else { ?>
+        <div class="selector-empty">Belum ada mekanik terdaftar di Config_Mechanics.</div>
+      <? } ?>
+    </div>
+    <div id="mechSearchEmpty" class="selector-empty" style="display:none;">Tidak ditemukan mekanik dengan nama tersebut.</div>
+
+    <script>
+      function salinToken(el) {
+        var t = el.textContent.trim();
+        if (navigator.clipboard) navigator.clipboard.writeText(t);
+        var asal = el.style.background;
+        el.style.background = '#bbf7d0';
+        setTimeout(function() { el.style.background = asal; }, 700);
+      }
+      function filterMechanics(query) {
+        var q = query.toLowerCase().trim();
+        var cards = document.querySelectorAll('#mechanicGrid .mechanic-card');
+        var visible = 0;
+        for (var i = 0; i < cards.length; i++) {
+          var show = !q || (cards[i].getAttribute('data-name') || '').indexOf(q) !== -1;
+          cards[i].style.display = show ? '' : 'none';
+          if (show) visible++;
+        }
+        document.getElementById('mechSearchEmpty').style.display = visible === 0 ? 'block' : 'none';
+      }
+
+      // ══ Monitoring bisa diklik (9 Okt 2026) ═══════════════════════════════
+      // Daftar dimuat SAAT kartu diklik (handleMonitoringDaftar), detail WO saat
+      // barisnya diklik (handleMonitoringDetail) — isi & penjaganya di server,
+      // sumber yang sama dengan PWA. Daftar mekanik dari data halaman ini, TANPA token.
+      var MON_MEKANIK = <?!= JSON.stringify((mons || []).map(function (m) { return {id: m.id, name: m.name, belum: m.pending_mechanic_work || 0, expired: m.expired || 0, l1: m.pending_l1 || 0, l2: m.pending_l2 || 0, approved: m.approved || 0}; })).replace(/</g, '\\u003c') ?>;
+      var _monDaftar = null, _monCari = '';
+      function monEsc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); }
+      function monTgl(iso) { if (!iso) return '-'; var d = new Date(iso); return isNaN(d.getTime()) ? '-' : d.toLocaleString('id-ID', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}); }
+      function monJam(h) { var x = parseFloat(h); if (isNaN(x)) return '-'; var j = Math.floor(x), m = Math.round((x - j) * 60); return (j ? j + ' jam ' : '') + m + ' menit'; }
+      function monTampil(judul, html, bisaKembali) {
+        document.getElementById('monJudul').textContent = judul;
+        document.getElementById('monIsi').innerHTML = html;
+        document.getElementById('monKembali').style.display = bisaKembali ? '' : 'none';
+        document.getElementById('monModal').className = 'mon-modal tampil';
+      }
+      function monTutup() { document.getElementById('monModal').className = 'mon-modal'; }
+      function monKembali() { if (_monDaftar) monGambarDaftar(_monDaftar); }
+      function monGagal(pesan) { monTampil('Gagal memuat', '<div class="mon-galat">' + monEsc(pesan) + '</div>', !!_monDaftar); }
+
+      function monBukaMekanik() {
+        _monDaftar = null;
+        var h = '<div class="mon-kosong" style="padding:2px 0 8px;text-align:left">' + MON_MEKANIK.length + ' mekanik · yang paling banyak pekerjaan terbengkalai di atas</div>';
+        h += MON_MEKANIK.map(function (m) {
+          return '<div class="mon-baris" style="cursor:default"><b>' + monEsc(m.name) + '</b> <span style="color:#94a3b8;font-size:12px">' + monEsc(m.id) + '</span>' +
+            '<div class="ket">Belum kerja <b>' + m.belum + '</b> · Expired <b style="color:#dc2626">' + m.expired + '</b> · L1 <b>' + m.l1 + '</b> · L2 <b>' + m.l2 + '</b> · ✓ ' + m.approved + '</div></div>';
+        }).join('');
+        monTampil('👥 Daftar Mekanik', h, false);
+      }
+
+      function monBukaDaftar(kategori) {
+        _monDaftar = null; _monCari = '';
+        monTampil('Memuat…', '<div class="mon-memuat">⏳ Memuat daftar…</div>', false);
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (!res || res.success === false) { monGagal((res && res.error && res.error.message) || 'Daftar gagal dimuat.'); return; }
+            _monDaftar = res.data; monGambarDaftar(_monDaftar);
+          })
+          .withFailureHandler(function (err) { monGagal('Koneksi terputus — coba lagi. ' + ((err && err.message) || '')); })
+          .handleMonitoringDaftar({kategori: kategori, token: PAGE_TOKEN});
+      }
+
+      function monGambarDaftar(d) {
+        var q = String(_monCari || '').toLowerCase().trim();
+        var items = (d.items || []).filter(function (w) {
+          if (!q) return true;
+          return [w.wo_number, w.component_name, w.unit_name, (w.team_names || []).join(' '), w.created_by_name, w.l1_name].join(' ').toLowerCase().indexOf(q) !== -1;
+        });
+        var h = '<input class="mon-cari" id="monCari" type="search" placeholder="🔍 Cari nomor WO, komponen, unit, mekanik…" value="' + monEsc(_monCari) + '">';
+        h += '<div class="mon-kosong" style="padding:2px 0 8px;text-align:left">' + (d.total > d.ditampilkan ? d.ditampilkan + ' terbaru dari ' + d.total + ' WO' : d.total + ' WO') + (q ? ' · ' + items.length + ' cocok' : '') + '</div>';
+        if (!items.length) h += '<div class="mon-kosong">' + (d.total ? 'Tidak ada yang cocok.' : 'Tidak ada WO di kategori ini.') + '</div>';
+        h += items.map(function (w) {
+          var chip = '';
+          if (d.kategori === 'expired') chip = '<span class="mon-chip merah">' + (w.umur_jam !== null ? w.umur_jam + ' jam' : '') + (w.dilaporkan ? ' · dilaporkan' : '') + '</span>';
+          else if (d.kategori === 'belum') chip = '<span class="mon-chip">' + (w.umur_jam !== null ? w.umur_jam + ' jam' : '') + '</span>';
+          else if (d.kategori === 'approved') chip = '<span class="mon-chip hijau">' + w.final_points + ' poin</span>';
+          var waktu = d.kategori === 'l1' ? 'Dikirim ' + monTgl(w.submitted_at) + ' oleh ' + monEsc(w.submitted_by_name || '-')
+                    : d.kategori === 'l2' ? 'L1 ' + monTgl(w.l1_at) + ' oleh ' + monEsc(w.l1_name || '-')
+                    : d.kategori === 'approved' ? 'L2 ' + monTgl(w.l2_at) + ' oleh ' + monEsc(w.l2_name || '-')
+                    : 'Dibuat ' + monTgl(w.created_at) + ' oleh ' + monEsc(w.created_by_name || '-') + (w.dibuka_ulang ? ' · dibuka ulang' : '');
+          return '<div class="mon-baris" data-id="' + monEsc(w.id) + '"><span class="no">' + monEsc(w.wo_number) + '</span>' + chip +
+            '<div class="ket">' + monEsc(w.component_name) + '<br>Unit: ' + monEsc(w.unit_name) + ' · ' + monEsc(w.location) +
+            '<br>Tim: ' + monEsc((w.team_names || []).join(', ') || '-') + '<br>' + waktu + '</div></div>';
+        }).join('');
+        monTampil(d.judul, h, false);
+        var c = document.getElementById('monCari');
+        if (c) c.oninput = function () {
+          _monCari = this.value; var pos = this.selectionStart; monGambarDaftar(d);
+          var c2 = document.getElementById('monCari'); if (c2) { c2.focus(); try { c2.setSelectionRange(pos, pos); } catch (e) {} }
+        };
+      }
+
+      function monBukaDetail(id) {
+        monTampil('Memuat…', '<div class="mon-memuat">⏳ Memuat detail WO…</div>', !!_monDaftar);
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (!res || res.success === false) { monGagal((res && res.error && res.error.message) || 'Detail gagal dimuat.'); return; }
+            monGambarDetail(res.data);
+          })
+          .withFailureHandler(function (err) { monGagal('Koneksi terputus — coba lagi. ' + ((err && err.message) || '')); })
+          .handleMonitoringDetail({wo_id: id, token: PAGE_TOKEN});
+      }
+
+      function monKv(k, v) { return '<div class="mon-kv"><span>' + monEsc(k) + '</span><span>' + monEsc(v === null || v === undefined || v === '' ? '-' : v) + '</span></div>'; }
+      function monBagian(judul, isi) { return '<div class="mon-bagian"><h4>' + monEsc(judul) + '</h4>' + isi + '</div>'; }
+      function monGambarDetail(k) {
+        var kondisi = {normal: 'Normal', difficult: 'Malam/Hujan', extreme: 'Resiko Tinggi'}[k.work_condition] || k.work_condition;
+        var part = {baru: 'Baru', repair: 'Repair', canibal: 'Kanibal'}[k.part_type] || k.part_type;
+        var sumber = {superintendent: ' (override L2)', supervisor: ' (override L1)', original: ''};
+        var chips = '<span class="mon-chip">' + monEsc(k.status_label) + '</span>';
+        if (k.lewat_12_jam) chips += '<span class="mon-chip merah">Expired · ' + k.umur_jam + ' jam</span>';
+        if (k.is_reported_expired) chips += '<span class="mon-chip merah">Dilaporkan expired</span>';
+        if (k.timeliness) chips += '<span class="mon-chip hijau">' + monEsc(k.timeliness.label) + '</span>';
+        if (k.safety_incident) chips += '<span class="mon-chip merah">Insiden safety</span>';
+        var comp = k.component || {}, unit = k.unit || {};
+        var h = '<div><span style="font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:16px">' + monEsc(k.wo_number) + '</span> ' + chips + '</div>';
+        h += monBagian('Komponen', monKv('No', comp.component_no) + monKv('Nama', k.is_others ? 'Others — ' + (k.others_description || 'Custom Job') : comp.component_name) +
+          monKv('Kategori', comp.category) + monKv('Keterangan', k.keterangan));
+        h += monBagian('Unit', monKv('ID', unit.unit_id) + monKv('Nama', unit.unit_name) + monKv('Lokasi', k.location));
+        h += monBagian('Pekerjaan',
+          monKv('Kondisi', kondisi) + monKv('Jam kerja aktual', k.actual_hours ? monJam(k.actual_hours) : '-') +
+          monKv('Mulai – selesai', k.start_time ? monTgl(k.start_time) + ' – ' + monTgl(k.end_time) : '-') +
+          monKv('Hour meter', k.hour_meter) + monKv('Kilometer', k.kilometers) + monKv('Jenis part', part) +
+          monKv('Target jam', (k.effective_target_hours || 0) + ' jam' + (sumber[k.effective_target_hours_source] || '')) +
+          monKv('Base points', (k.effective_base_points || 0) + (sumber[k.effective_base_points_source] || '')) +
+          monKv('Unit factor', unit.unit_factor));
+        h += monBagian('Tim' + (sumber[k.effective_team_source] || ''), monKv('Anggota', (k.effective_team || []).map(function (m) { return m.mechanic_name; }).join(', ')));
+        h += monBagian('Riwayat',
+          monKv('Dibuat', monTgl(k.created_at) + ' · ' + (k.created_by_name || '-')) +
+          monKv('Dikirim mekanik', k.submitted_at ? monTgl(k.submitted_at) + ' · ' + (k.submitted_by_name || '-') : '-') +
+          (k.reopened_at ? monKv('Dibuka ulang', monTgl(k.reopened_at)) : '') +
+          monKv('Approve L1', k.supervisor_approved_at ? monTgl(k.supervisor_approved_at) + ' · ' + (k.approved_by_supervisor_name || '-') : '-') +
+          monKv('Approve L2', k.l2_at ? monTgl(k.l2_at) + ' · ' + (k.l2_name || '-') : '-'));
+        if ((k.override_summary || []).length) {
+          h += monBagian('Override', k.override_summary.map(function (o) {
+            return monKv(o.level_label + ' · ' + (o.by_name || '-'), (o.changes || []).map(function (c) { return c.label + ': ' + c.to; }).join(' · '));
+          }).join(''));
+        }
+        if (k.final_points !== null && k.final_points !== undefined) {
+          var p = monKv('Final points', k.final_points);
+          (k.poin_terbit || []).forEach(function (r) { p += monKv(r.nama, r.poin + ' poin · Rp ' + Math.round(r.rupiah).toLocaleString('id-ID')); });
+          h += monBagian('Poin', p);
+        }
+        if (k.dibatalkan) h += monBagian('Dibatalkan / ditolak', monKv('Oleh', k.dibatalkan.oleh) + monKv('Pada', monTgl(k.dibatalkan.pada)) + monKv('Alasan', k.dibatalkan.alasan));
+        monTampil('Detail WO', h, !!_monDaftar);
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var isi = document.getElementById('monIsi');
+        if (isi) isi.addEventListener('click', function (e) {
+          var el = e.target;
+          while (el && el !== isi && !(el.getAttribute && el.getAttribute('data-id'))) el = el.parentNode;
+          if (el && el !== isi) monBukaDetail(el.getAttribute('data-id'));
+        });
+      });
+    </script>
+    <div class="mon-modal" id="monModal" onclick="if (event.target === this) monTutup()">
+      <div class="mon-modal-kotak">
+        <div class="mon-modal-kepala">
+          <button class="mon-kembali" id="monKembali" onclick="monKembali()" style="display:none">← Daftar</button>
+          <b id="monJudul">…</b>
+          <button class="mon-x" onclick="monTutup()">✕</button>
+        </div>
+        <div class="mon-modal-isi" id="monIsi"></div>
+      </div>
+    </div>
+
+    <? } else { ?>
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- NORMAL WO VIEW (Mechanic atau impersonate)     -->
+    <!-- ═══════════════════════════════════════════════ -->
+
+    <!-- IMPERSONATE BANNER -->
+    <div id="impersonateBanner" class="impersonate-banner hidden">
+      <div class="impersonate-info">
+        <div class="impersonate-icon">👤</div>
+        <div class="impersonate-text">
+          <h3>Viewing As</h3>
+          <p id="viewingAsName">Loading...</p>
+        </div>
+      </div>
+      <button class="btn-back-to-self" onclick="backToSelfView()">← Kembali ke Pilih Mekanik</button>
+    </div>
+
+    <? if (backToken) { ?>
+    <a href="<?= baseUrl ?>?page=mechanic&token=<?= backToken ?>" target="_top" class="btn-back-monitoring">← Kembali ke Monitoring</a>
+    <? } ?>
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <h1>My Work Orders</h1>
+          <p class="header-subtitle">
+            <?= user.role === 'mechanic' ? 'Track and submit your assigned work' : 'Kelola work order mekanik ini' ?>
+          </p>
+        </div>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="assigned" onclick="changeFilter('assigned')">Assigned <span class="count" id="count-assigned">0</span></button>
+        <button class="filter-tab" data-filter="pending_approval" onclick="changeFilter('pending_approval')">Pending <span class="count" id="count-pending_approval">0</span></button>
+        <button class="filter-tab" data-filter="done" onclick="changeFilter('done')">Done</button>
+      </div>
+    </div>
+
+    <div id="woContainer">
+      <div class="loading"><div class="spinner"></div><p>Loading work orders...</p></div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2 id="modalWoId">WO-xxxxx</h2>
+          <p class="modal-subtitle" id="modalComponent">Loading...</p>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <h3>Work Order Details</h3>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Unit</span><span class="info-value" id="modalUnit">-</span></div>
+              <div class="info-item"><span class="info-label">Target Hours</span><span class="info-value" id="modalTargetHours">-</span></div>
+              <div class="info-item"><span class="info-label">Status</span><span class="info-value" id="modalStatus">-</span></div>
+            </div>
+          </div>
+          <div class="modal-section" id="submitTimeSection">
+            <!-- ─── FITUR LIVE TIMER (ADDITIONAL) ─── -->
+            <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:20px;">
+              <span style="font-size:11px;text-transform:uppercase;color:#0369a1;font-weight:700;letter-spacing:0.5px;display:block;margin-bottom:8px;">⏱️ Live Work Timer</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div id="liveTimerDisplay" style="font-family:monospace;font-size:24px;font-weight:700;color:#0369a1;">00:00:00</div>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" class="btn" id="btnTimerStart" onclick="startLiveTimer()" style="background:#10b981;color:white;padding:6px 12px;font-size:12px;border-radius:6px;">▶ Start</button>
+                  <button type="button" class="btn" id="btnTimerPause" onclick="pauseLiveTimer()" style="background:#f59e0b;color:white;padding:6px 12px;font-size:12px;border-radius:6px;display:none;">⏸ Pause</button>
+                  <button type="button" class="btn" id="btnTimerStop" onclick="stopLiveTimer()" style="background:#ef4444;color:white;padding:6px 12px;font-size:12px;border-radius:6px;display:none;">⏹ Stop</button>
+                  <button type="button" class="btn" id="btnTimerReset" onclick="resetLiveTimer()" style="background:#fff;color:#475569;border:1px solid #cbd5e1;padding:8px 16px;border-radius:8px;font-weight:700;display:none;">↺ Reset</button>
+                </div>
+              </div>
+              <!-- Ringkasan setelah Stop: total waktu pengerjaan (jam & menit) -->
+              <div id="timerSummary" style="display:none;background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-weight:700;font-size:13px;text-align:center;"></div>
+              <p style="font-size:11px;color:#0284c7;margin:0;">▶ Start saat mulai kerja · ⏸ Pause bila berhenti sementara · ⏹ Stop bila selesai. Durasi terhitung otomatis (aman meski pindah WO atau tutup halaman). Memulai WO lain akan menjeda WO ini.</p>
+            </div>
+
+            <!-- Info Jam Sebelumnya (Bila WO ini merupakan transferan) -->
+            <div id="partialHoursInfo" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;margin-bottom:20px;display:none;">
+              <span style="font-size:11px;text-transform:uppercase;color:#166534;font-weight:700;display:block;margin-bottom:4px;">📥 Lintas Shift / Transferan</span>
+              <p style="font-size:13px;color:#14532d;margin:0 0 6px;">Jam terakumulasi dari shift sebelumnya: <b id="textPartialHours">0</b> jam.</p>
+              <div id="wrapperTransferNote" style="font-size:12px;color:#15803d;background:white;padding:8px;border-radius:6px;border:1px dashed #86efac;display:none;">
+                <b>Catatan transfer:</b> <span id="textTransferNote">-</span>
+              </div>
+            </div>
+
+            <h3>Submit Work Time</h3>
+            <!-- Input jam manual TERLIHAT untuk semua, termasuk mekanik (24 Sep 2026).
+                 Sebelumnya disembunyikan "agar tak salah isi"; keputusan itu dibalik karena
+                 timer tak selalu sempat ditekan — dan tanpa jalan keluar, jam yang salah
+                 justru lebih sering terjadi, bukan lebih jarang.
+                 Timer tetap sumber kebenaran terakhir: menekan Stop MENIMPA apa pun yang
+                 sudah diketik (lihat pengisian di initLiveTimer/stop). -->
+            <div id="manualTimeWrapper">
+              <div id="manualTimeBanner" style="display:none;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:11px;padding:8px 10px;border-radius:8px;margin-bottom:10px;">
+                ✍️ Mode pengawas — isi jam manual (dipakai bila mekanik tak sempat memakai timer).
+              </div>
+              <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;font-size:11px;padding:8px 10px;border-radius:8px;margin-bottom:10px;">
+                🕒 Jam terisi otomatis dari timer. Ubah manual hanya bila timer tak sempat dipakai —
+                menekan ⏹ Stop akan menimpa jam yang Anda ketik.
+              </div>
+              <div class="form-group">
+                <label class="form-label">Start Time</label>
+                <input type="datetime-local" id="inputStartTime" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">End Time</label>
+                <input type="datetime-local" id="inputEndTime" class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hour Meter <span style="color:#e53e3e;">*</span></label>
+              <input type="number" id="inputHourMeter" class="form-input" min="0.1" step="any" onwheel="this.blur()" placeholder="cth: 1250.5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kilometer (KM) <span style="color:#e53e3e;">*</span></label>
+              <input type="number" id="inputKilometers" class="form-input" min="0.1" step="any" onwheel="this.blur()" placeholder="cth: 45000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Jenis Part <span style="color:#e53e3e;">*</span></label>
+              <div class="parttype-group" id="partTypeGroup">
+                <button type="button" class="parttype-btn" data-part="baru" onclick="selectPartType('baru')">🆕 Baru</button>
+                <button type="button" class="parttype-btn" data-part="repair" onclick="selectPartType('repair')">🔧 Repair</button>
+                <button type="button" class="parttype-btn" data-part="canibal" onclick="selectPartType('canibal')">♻️ Kanibal</button>
+              </div>
+            </div>
+            <div class="form-group" id="durationPreview" style="display:none;">
+              <label class="form-label">Duration</label>
+              <div style="background:#f7fafc;padding:12px;border-radius:8px;font-weight:600;color:#2d3748;">
+                <span id="durationText">-</span>
+              </div>
+            </div>
+
+            <!-- Form/Panel Request Transfer WO -->
+            <div id="transferFormSection" style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;display:none;">
+              <h3 style="color:#4a5568;">🔄 Minta Transfer Work Order</h3>
+              <p style="font-size:12px;color:#718096;margin-bottom:12px;">Gunakan ini untuk mengalihkan WO ke shift berikutnya. Sesi pengerjaan Anda saat ini akan dihentikan dan dicatat.</p>
+              <div class="form-group">
+                <label class="form-label">Catatan Transfer (opsional)</label>
+                <textarea id="inputTransferNote" class="form-input" rows="2" placeholder="Tulis catatan serah terima pekerjaan di sini..."></textarea>
+              </div>
+              <button class="btn" onclick="requestTransfer()" style="background:#4f46e5;color:white;width:100%;">Kirim Permintaan Transfer</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:12px;">
+          <div>
+            <button class="btn" id="btnTriggerTransfer" onclick="toggleTransferForm()" style="background:#e0e7ff;color:#4338ca;display:none;">🔄 Minta Transfer</button>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="btnSubmit" onclick="submitWork()" disabled>Submit Work</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function safeParse(val, fallback) {
+        if (val === null || val === undefined) return fallback;
+        if (typeof val === 'string') { try { return JSON.parse(val); } catch(e) { return fallback; } }
+        return val;
+      }
+      var _rawWos    = <?!= JSON.stringify(initialData.wos || []) ?>;
+      var _rawCounts = <?!= JSON.stringify(initialData.counts || {all:0,assigned:0,in_progress:0,pending_approval:0,done:0}) ?>;
+      var _rawViewAs = <?!= JSON.stringify(initialData.viewing_as || null) ?>;
+      var _rawMech   = <?!= JSON.stringify(initialData.mechanic || null) ?>;
+      var _wos = safeParse(_rawWos, []);
+      if (!Array.isArray(_wos)) _wos = [];
+
+      var appState = {
+        wos: _wos,
+        counts: safeParse(_rawCounts, {all:0,assigned:0,in_progress:0,pending_approval:0,done:0}),
+        activeFilter: '<?= activeFilter || "all" ?>',
+        user: safeParse(<?!= JSON.stringify(user) ?>, {}),
+        mechanic: safeParse(_rawMech, null),
+        viewingAs: safeParse(_rawViewAs, null),
+        currentWo: null,
+        selectedPartType: null,
+        baseUrl: '<?= ScriptApp.getService().getUrl() ?>'
+      };
+
+      function showSuccessAndRedirect(message, redirectUrl) {
+        var old = document.getElementById('successOverlay');
+        if (old) old.parentNode.removeChild(old);
+        var overlay = document.createElement('div');
+        overlay.id = 'successOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99999;';
+        overlay.innerHTML = '<div style="background:white;padding:2rem;border-radius:12px;text-align:center;max-width:360px;box-shadow:0 25px 50px rgba(0,0,0,0.3);">' +
+          '<div style="font-size:3rem;margin-bottom:0.75rem;">✅</div>' +
+          '<p style="margin-bottom:1.5rem;font-size:0.95rem;color:#374151;white-space:pre-line;">' + message + '</p>' +
+          '<a href="' + urlWithToken(redirectUrl) + '" target="_top" style="display:inline-block;background:#667eea;color:white;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;">🔄 Lihat Status</a>' +
+          '</div>';
+        document.body.appendChild(overlay);
+        try { window.top.location.href = urlWithToken(redirectUrl); } catch (e) {}
+      }
+
+      function formatJamMenit(h) {
+        h = parseFloat(h) || 0;
+        var j = Math.floor(h); var m = Math.round((h - j) * 60);
+        if (m === 60) { j++; m = 0; }
+        if (j > 0 && m > 0) return j + ' jam ' + m + ' menit';
+        if (j > 0) return j + ' jam';
+        if (m > 0) return m + ' menit';
+        return '0 menit';
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        initImpersonateBanner(); setActiveTab(); renderWOs(); updateCounts();
+        var si = document.getElementById('inputStartTime');
+        var ei = document.getElementById('inputEndTime');
+        if (si && ei) { si.addEventListener('change', validateTimes); ei.addEventListener('change', validateTimes); }
+        var hmEl = document.getElementById('inputHourMeter');
+        var kmEl = document.getElementById('inputKilometers');
+        if (hmEl) hmEl.addEventListener('input', validateTimes);
+        if (kmEl) kmEl.addEventListener('input', validateTimes);
+      });
+
+      function initImpersonateBanner() {
+        var banner = document.getElementById('impersonateBanner');
+        var nameEl = document.getElementById('viewingAsName');
+        if (appState.viewingAs && appState.viewingAs.name) {
+          nameEl.textContent = appState.viewingAs.name;
+          banner.classList.remove('hidden');
+        } else { banner.classList.add('hidden'); }
+      }
+      function backToSelfView() {
+        window.top.location.href = urlWithToken(appState.baseUrl + '?page=mechanic');
+      }
+      function parseDateClient(input) {
+        if (!input) return null;
+        if (input instanceof Date) return isNaN(input.getTime()) ? null : input;
+        if (typeof input === 'number') { var d = new Date(input); return isNaN(d.getTime()) ? null : d; }
+        if (typeof input === 'string') {
+          var str = input.trim();
+          var d = new Date(str);
+          if (!isNaN(d.getTime())) return d;
+          var match = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+          if (match) {
+            var day = parseInt(match[1], 10);
+            var month = parseInt(match[2], 10) - 1;
+            var year = parseInt(match[3], 10);
+            var hours = match[4] ? parseInt(match[4], 10) : 0;
+            var minutes = match[5] ? parseInt(match[5], 10) : 0;
+            var seconds = match[6] ? parseInt(match[6], 10) : 0;
+            var parsedDate = new Date(year, month, day, hours, minutes, seconds);
+            if (!isNaN(parsedDate.getTime())) return parsedDate;
+          }
+        }
+        return null;
+      }
+
+      function renderWOs() {
+        var container = document.getElementById('woContainer');
+        var wos = appState.wos;
+        if (!wos || !Array.isArray(wos) || wos.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>No work orders</h3><p>No work orders found for this filter.</p></div>';
+          return;
+        }
+        var html = '<div class="wo-grid">';
+        wos.forEach(function(wo) {
+          var isIncident = wo.status_group === 'done' && (wo.safety_incident === true || wo.safety_incident === 'true' || wo.safety_incident === 'TRUE');
+          var isExpired = wo.is_expired === true;
+          if (!isExpired && (wo.created_at || wo.reopened_at) && (wo.status_group === 'assigned' || wo.status === 'pending_mechanic_work' || wo.status === 'in_progress' || wo.status === 'created')) {
+            var refT = parseDateClient(wo.reopened_at || wo.created_at);
+            if (refT && !isNaN(refT.getTime()) && (Date.now() - refT.getTime() >= 12 * 3600 * 1000)) {
+              isExpired = true;
+            }
+          }
+          var isReported = wo.is_reported_expired === true;
+          // Tanggal + jam WO dibuat (mis. "30 Jul 2026 14:05")
+          var submitDate = '-';
+          if (wo.created_at) {
+            var _cd = new Date(wo.created_at);
+            if (!isNaN(_cd.getTime())) {
+              submitDate = _cd.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) +
+                           ' ' + ('0' + _cd.getHours()).slice(-2) + ':' + ('0' + _cd.getMinutes()).slice(-2);
+            }
+          }
+
+          var cardStyle = isExpired ? 'border:2px solid #ef4444;background:#fff5f5;' : '';
+          var cardClass = 'wo-card' + (isIncident ? ' incident-card' : '') + (isExpired ? ' expired-card' : '');
+
+          var cardClickAttr = isExpired
+            ? (isReported ? 'onclick="alert(\'WO ini telah dilaporkan ke pengawas. Mohon tunggu pengawas me-reopen WO ini.\')"' : 'onclick="reportExpiredWOAction(\'' + wo.id + '\')"')
+            : 'onclick="openWoDetail(\'' + wo.id + '\')"';
+
+          // Badge status timer langsung di kartu — mekanik tahu WO mana yang sedang
+          // berjalan / dijeda tanpa harus membuka modal satu per satu.
+          var timerBadge = '';
+          try {
+            var ts = getTimerState(wo.id);
+            if (ts && ts.state === 'running') {
+              var runMs = (parseFloat(ts.elapsed_ms) || 0) + (Date.now() - (parseFloat(ts.start_epoch) || Date.now()));
+              timerBadge = '<div style="display:inline-block;background:#dcfce7;color:#166534;border:1px solid #86efac;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;margin-bottom:8px;">⏱ Berjalan · ' + formatMsToHms(runMs) + '</div>';
+            } else if (ts && ts.state === 'paused' && (parseFloat(ts.elapsed_ms) || 0) > 0) {
+              timerBadge = '<div style="display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;margin-bottom:8px;">⏸ Jeda · ' + formatMsToHms(parseFloat(ts.elapsed_ms) || 0) + '</div>';
+            }
+          } catch (eTb) {}
+
+          html +=
+            '<div class="' + cardClass + '" style="' + cardStyle + '" ' + cardClickAttr + '>' +
+            '<div class="wo-header"><div class="wo-id">' + (wo.wo_number || wo.id) + '</div>' +
+            '<div class="wo-status ' + (isExpired ? 'status-expired' : (isIncident ? 'status-done-incident' : ('status-' + wo.status_group))) + '" style="' + (isExpired ? 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;' : '') + '">' + (isExpired ? '⚠️ Expired' : (isIncident ? '⚠️ Insiden' : (wo.status_label || wo.status))) + '</div></div>' +
+            (isExpired ? '<div class="incident-badge" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">⚠️ WO Expired (>12 jam) — Terkunci. ' + (isReported ? 'Sudah Dilaporkan' : 'Harap Lapor Pengawas') + '</div>' : (isIncident ? '<div class="incident-badge">⚠️ Safety Incident — Poin = 0</div>' : '')) +
+            timerBadge +
+            '<div class="wo-component">' + (wo.component_name || 'Unknown Component') + '</div>' +
+            (wo.keterangan ? '<div style="font-size:13px;color:#4a5568;margin-bottom:8px;">📝 ' + String(wo.keterangan).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '') +
+            '<div style="font-size:12px;color:#1e40af;margin-bottom:8px;font-weight:600;">📅 Dibuat: ' + submitDate + '</div>' +
+            '<div class="wo-details">' +
+            '<div class="wo-detail-item"><span class="wo-detail-label">Unit</span><span class="wo-detail-value">' + (wo.unit_name || '-') + '</span></div>' +
+            '<div class="wo-detail-item"><span class="wo-detail-label">Target Hours</span><span class="wo-detail-value">' + formatJamMenit(wo.target_hours) + '</span></div>' +
+            '<div class="wo-detail-item"><span class="wo-detail-label">Team</span><span class="wo-detail-value">' + (wo.team_count || 1) + ' member' + (wo.team_count > 1 ? 's' : '') + '</span></div>' +
+            '<div class="wo-detail-item"><span class="wo-detail-label">Location</span><span class="wo-detail-value">' + (wo.location === 'field' ? '🚜 Field' : '🏭 Workshop') + '</span></div>' +
+            (wo.hour_meter ? '<div class="wo-detail-item"><span class="wo-detail-label">Hour Meter</span><span class="wo-detail-value">' + wo.hour_meter + '</span></div>' : '') +
+            (wo.kilometers ? '<div class="wo-detail-item"><span class="wo-detail-label">Kilometer</span><span class="wo-detail-value">' + wo.kilometers + '</span></div>' : '') +
+            '</div>';
+
+          if (isExpired) {
+            if (isReported) {
+              html += '<div style="margin-top:12px;padding:8px;background:#edf2f7;color:#4a5568;border-radius:6px;font-size:12px;font-weight:700;text-align:center;">✅ Sudah Dilaporkan ke Pengawas</div>';
+            } else {
+              html += '<div style="margin-top:12px;"><button type="button" class="btn" onclick="event.stopPropagation();reportExpiredWOAction(\'' + wo.id + '\', this)" style="width:100%;background:#ef4444;color:white;font-weight:700;padding:8px;border:none;border-radius:6px;cursor:pointer;">⚠️ Lapor Pengawas</button></div>';
+            }
+          }
+
+          html += '</div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      }
+      function updateCounts() {
+        var c = appState.counts;
+        document.getElementById('count-assigned').textContent = c.assigned || 0;
+        document.getElementById('count-pending_approval').textContent = c.pending_approval || 0;
+        // badge angka "Done" sengaja disembunyikan (permintaan Gabriel) — elemen sudah dihapus dari tab
+      }
+      function setActiveTab() {
+        var tabs = document.querySelectorAll('.filter-tab');
+        for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+        var at = document.querySelector('.filter-tab[data-filter="' + (appState.activeFilter || 'all') + '"]');
+        if (at) at.classList.add('active');
+      }
+      function changeFilter(filter) {
+        var url = urlWithToken(appState.baseUrl + '?page=mechanic&filter=' + filter);
+        if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
+        window.top.location.href = url;
+      }
+      var activeTimerInterval = null;
+
+      function openWoDetail(woId) {
+        // Cek awal jika WO di appState.wos sudah expired / 12 jam
+        var targetWo = null;
+        if (appState.wos && Array.isArray(appState.wos)) {
+          for (var i = 0; i < appState.wos.length; i++) {
+            if (String(appState.wos[i].id) === String(woId) || String(appState.wos[i].wo_number) === String(woId)) {
+              targetWo = appState.wos[i];
+              break;
+            }
+          }
+        }
+        var isExpClient = false;
+        var isRepClient = false;
+        if (targetWo) {
+          isExpClient = targetWo.is_expired === true;
+          isRepClient = targetWo.is_reported_expired === true;
+          if (!isExpClient && (targetWo.created_at || targetWo.reopened_at)) {
+            var refT = new Date(targetWo.reopened_at || targetWo.created_at);
+            if (!isNaN(refT.getTime()) && (Date.now() - refT.getTime() >= 12 * 3600 * 1000)) {
+              isExpClient = true;
+            }
+          }
+        }
+
+        if (isExpClient) {
+          if (isRepClient) {
+            alert('WO ini telah dilaporkan ke pengawas. Mohon tunggu pengawas me-reopen WO ini.');
+          } else {
+            reportExpiredWOAction(woId);
+          }
+          return;
+        }
+
+        // Panggil backend via google.script.run untuk data detail ter-enrich terbaru
+        var container = document.getElementById('woContainer');
+        var viewAsParam = appState.viewingAs ? appState.viewingAs.id : null;
+        
+        // ── RENDER INSTAN (tanpa loading) ──
+        // Data kartu sudah lengkap di appState.wos → modal langsung terisi, TIDAK menunggu server.
+        // Fetch di bawah tetap jalan sebagai penyegar diam-diam (silent refresh).
+        var isImpersonating = !!(appState.viewingAs && appState.viewingAs.id);
+        // Medan jamnya sekarang terlihat untuk SEMUA, mekanik sekalipun (24 Sep 2026).
+        // Yang masih dibedakan hanya spanduknya: peringatan "mode pengawas" cuma
+        // relevan saat seseorang mengisi ATAS NAMA orang lain.
+        var manualBanner = document.getElementById('manualTimeBanner');
+        if (manualBanner) manualBanner.style.display = isImpersonating ? 'block' : 'none';
+
+        var fastRendered = false;
+        if (targetWo) {
+          fastRendered = true;
+          appState.currentWo = targetWo;
+          document.getElementById('modalWoId').textContent = targetWo.wo_number || targetWo.id;
+          document.getElementById('modalComponent').textContent = targetWo.component_name || '-';
+          document.getElementById('modalUnit').textContent = targetWo.unit_name || '-';
+          document.getElementById('modalTargetHours').textContent = formatJamMenit(targetWo.target_hours);
+          document.getElementById('modalStatus').textContent = targetWo.status_label || targetWo.status || '-';
+
+          var canSubmitFast = (targetWo.status === 'pending_mechanic_work' || targetWo.status === 'in_progress');
+          var secFast = document.getElementById('submitTimeSection');
+          if (secFast) secFast.style.display = canSubmitFast ? 'block' : 'none';
+
+          var idsFast = ['inputStartTime', 'inputEndTime', 'inputHourMeter', 'inputKilometers'];
+          for (var idf = 0; idf < idsFast.length; idf++) {
+            var elf = document.getElementById(idsFast[idf]);
+            if (elf) elf.value = '';
+          }
+          appState.selectedPartType = null;
+          var ptFast = document.querySelectorAll('#partTypeGroup .parttype-btn');
+          for (var pf = 0; pf < ptFast.length; pf++) ptFast[pf].classList.remove('active');
+          var dpFast = document.getElementById('durationPreview');
+          if (dpFast) dpFast.style.display = 'none';
+          var bsFast = document.getElementById('btnSubmit');
+          if (bsFast) bsFast.disabled = true;
+
+          initLiveTimer(targetWo.id);   // timer langsung siap dipakai
+        } else {
+          document.getElementById('modalWoId').textContent = 'Memuat…';
+          document.getElementById('modalComponent').textContent = '';
+        }
+        document.getElementById('modalOverlay').classList.add('active');
+
+        google.script.run
+          .withSuccessHandler(function(r) {
+            try {
+              if (!r.success) {
+                alert('Gagal memuat detail WO: ' + r.error.message);
+                closeModal();
+                return;
+              }
+              var wo = r.data ? r.data.wo : null;
+              if (!wo) {
+                alert('Gagal memuat: Objek WO kosong');
+                closeModal();
+                return;
+              }
+
+              // Cek ulang expired dari server response
+              var isExpServer = r.data.is_expired === true || (wo && wo.is_expired === true);
+              var isRepServer = r.data.is_reported_expired === true || (wo && wo.is_reported_expired === true);
+              if (!isExpServer && wo && (wo.created_at || wo.reopened_at)) {
+                var refTS = new Date(wo.reopened_at || wo.created_at);
+                if (!isNaN(refTS.getTime()) && (Date.now() - refTS.getTime() >= 12 * 3600 * 1000)) {
+                  isExpServer = true;
+                }
+              }
+
+              if (isExpServer) {
+                closeModal();
+                if (isRepServer) {
+                  alert('WO ini telah dilaporkan ke pengawas. Mohon tunggu pengawas me-reopen WO ini.');
+                } else {
+                  reportExpiredWOAction(wo.id || woId);
+                }
+                return;
+              }
+
+              wo.component_name = (r.data && r.data.component) ? (r.data.component.component_name || r.data.component.component_no) : (wo.component_id || 'Unknown');
+              wo.unit_name = (r.data && r.data.unit) ? (r.data.unit.unit_name || r.data.unit.unit_id) : (wo.unit_id || '-');
+              wo.target_hours = r.data ? (parseFloat(r.data.target_hours) || 0) : 0;
+              
+              appState.currentWo = wo;
+              
+              document.getElementById('modalWoId').textContent = wo.wo_number || wo.id;
+              document.getElementById('modalComponent').textContent = wo.component_name;
+              document.getElementById('modalUnit').textContent = wo.unit_name;
+              document.getElementById('modalTargetHours').textContent = formatJamMenit(wo.target_hours);
+              document.getElementById('modalStatus').textContent = r.data.status_label || wo.status;
+              
+              // Tampilkan info transferan jika partial_hours > 0
+              var pVal = parseFloat(r.data.partial_hours) || 0;
+              var infoBox = document.getElementById('partialHoursInfo');
+              if (infoBox) {
+                if (pVal > 0) {
+                  infoBox.style.display = 'block';
+                  var tPartial = document.getElementById('textPartialHours');
+                  if (tPartial) tPartial.textContent = pVal;
+                  
+                  var wrapNote = document.getElementById('wrapperTransferNote');
+                  var textNote = document.getElementById('textTransferNote');
+                  if (wrapNote && textNote) {
+                    if (r.data.transfer_note) {
+                      wrapNote.style.display = 'block';
+                      textNote.textContent = r.data.transfer_note;
+                    } else {
+                      wrapNote.style.display = 'none';
+                    }
+                  }
+                } else {
+                  infoBox.style.display = 'none';
+                }
+              }
+
+              var canSubmit = (!isExpServer && (wo.status === 'pending_mechanic_work' || wo.status === 'in_progress'));
+              var submitSec = document.getElementById('submitTimeSection');
+              if (submitSec) submitSec.style.display = canSubmit ? 'block' : 'none';
+              
+              // Reset field HANYA bila modal belum dirender instan — supaya isian/timer
+              // yang sudah disentuh user dalam 1-2 detik pertama tidak terhapus saat
+              // respons server (silent refresh) tiba.
+              if (!fastRendered) {
+                var inStart = document.getElementById('inputStartTime');
+                var inEnd = document.getElementById('inputEndTime');
+                var inHM = document.getElementById('inputHourMeter');
+                var inKM = document.getElementById('inputKilometers');
+                if (inStart) inStart.value = '';
+                if (inEnd) inEnd.value = '';
+                if (inHM) inHM.value = '';
+                if (inKM) inKM.value = '';
+              }
+              
+              // Reset panel transfer
+              var transSec = document.getElementById('transferFormSection');
+              var transNote = document.getElementById('inputTransferNote');
+              if (transSec) transSec.style.display = 'none';
+              if (transNote) transNote.value = '';
+              
+              // Tombol transfer hanya untuk anggota tim WO yang berstatus active
+              var btnTransfer = document.getElementById('btnTriggerTransfer');
+              if (btnTransfer) {
+                if (canSubmit && r.data.is_in_team) {
+                  btnTransfer.style.display = 'block';
+                } else {
+                  btnTransfer.style.display = 'none';
+                }
+              }
+
+              if (!fastRendered) {
+                appState.selectedPartType = null;
+                var ptBtns = document.querySelectorAll('#partTypeGroup .parttype-btn');
+                for (var pi = 0; pi < ptBtns.length; pi++) ptBtns[pi].classList.remove('active');
+
+                var durPrev = document.getElementById('durationPreview');
+                if (durPrev) durPrev.style.display = 'none';
+
+                var btnSub = document.getElementById('btnSubmit');
+                if (btnSub) btnSub.disabled = true;
+
+                // Inisialisasi/Restore Live Timer untuk WO ini
+                initLiveTimer(wo.id);
+              }
+            } catch (errInner) {
+              console.error('Error rendering WO details in modal:', errInner);
+              alert('Terjadi kesalahan saat memproses data detail: ' + errInner.message);
+              closeModal();
+            }
+          })
+          .withFailureHandler(function(err) {
+            alert('System error: ' + err.message);
+            closeModal();
+          })
+          .handleGetWoDetailForMechanic({
+            wo_id: woId,
+            view_as: viewAsParam,
+            token: PAGE_TOKEN
+          });
+      }
+
+      function closeModal(event) {
+        if (event && event.target !== document.getElementById('modalOverlay')) return;
+        document.getElementById('modalOverlay').classList.remove('active');
+        appState.currentWo = null;
+        if (activeTimerInterval) {
+          clearInterval(activeTimerInterval);
+          activeTimerInterval = null;
+        }
+      }
+
+      // ─── LOGIKA LIVE TIMER (UI / LOCAL STORAGE) ──────────────────────────
+
+      // Kunci timer WAJIB mengandung identitas mekanik: satu HP/browser bisa dipakai
+      // lebih dari satu orang, dan pengawas bisa membuka tampilan mekanik lain
+      // (impersonate). Tanpa ini, timer antar-orang bisa tertukar → jam kerja salah.
+      var _lastStoppedWoId = null;  // WO terakhir yang di-Stop (agar ringkasan durasi tetap tampil)
+
+      function getTimerOwnerId() {
+        if (appState.viewingAs && appState.viewingAs.id) return appState.viewingAs.id;
+        if (appState.mechanic && appState.mechanic.id) return appState.mechanic.id;
+        return 'unknown';
+      }
+
+      function getTimerKey(woId) {
+        return 'mar_sum_timer_' + getTimerOwnerId() + '_' + woId;
+      }
+
+      /**
+       * Anti dobel-hitung jam (jalur UANG): pastikan hanya SATU WO yang berjalan
+       * untuk orang ini. WO lain yang masih 'running' otomatis dijeda (elapsed
+       * tersimpan utuh, tidak hilang).
+       * @return {Array} daftar woId yang barusan dijeda otomatis
+       */
+      function pauseOtherRunningTimers(currentWoId) {
+        var paused = [];
+        try {
+          var prefix = 'mar_sum_timer_' + getTimerOwnerId() + '_';
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (!k || k.indexOf(prefix) !== 0) continue;
+            var otherWoId = k.substring(prefix.length);
+            if (String(otherWoId) === String(currentWoId)) continue;
+            var st = null;
+            try { st = JSON.parse(localStorage.getItem(k)); } catch (eP) { continue; }
+            if (!st || st.state !== 'running') continue;
+            st.elapsed_ms = (parseFloat(st.elapsed_ms) || 0) + (Date.now() - (parseFloat(st.start_epoch) || Date.now()));
+            st.state = 'paused';
+            st.start_epoch = 0;
+            localStorage.setItem(k, JSON.stringify(st));
+            paused.push(otherWoId);
+          }
+        } catch (e) {}
+        return paused;
+      }
+
+      function initLiveTimer(woId) {
+        if (activeTimerInterval) clearInterval(activeTimerInterval);
+        activeTimerInterval = null;
+
+        // Ringkasan hasil Stop hanya relevan untuk WO yang barusan dihentikan
+        var sumInit = document.getElementById('timerSummary');
+        if (sumInit && _lastStoppedWoId !== String(woId)) { sumInit.style.display = 'none'; sumInit.innerHTML = ''; }
+
+        var key = getTimerKey(woId);
+        var timerState = null;
+        try {
+          var s = localStorage.getItem(key);
+          if (s) timerState = JSON.parse(s);
+        } catch(e) {}
+
+        if (!timerState) {
+          timerState = { state: 'idle', elapsed_ms: 0, start_epoch: 0 };
+        }
+
+        updateTimerUI(timerState);
+
+        if (timerState.state === 'running') {
+          activeTimerInterval = setInterval(function() {
+            var state = getTimerState(woId);
+            if (state.state === 'running') {
+              var totalMs = state.elapsed_ms + (Date.now() - state.start_epoch);
+              document.getElementById('liveTimerDisplay').textContent = formatMsToHms(totalMs);
+            }
+          }, 1000);
+        }
+      }
+
+      function getTimerState(woId) {
+        try {
+          var s = localStorage.getItem(getTimerKey(woId));
+          return s ? JSON.parse(s) : { state: 'idle', elapsed_ms: 0, start_epoch: 0 };
+        } catch(e) {
+          return { state: 'idle', elapsed_ms: 0, start_epoch: 0 };
+        }
+      }
+
+      function saveTimerState(woId, state) {
+        try {
+          localStorage.setItem(getTimerKey(woId), JSON.stringify(state));
+        } catch(e) {}
+      }
+
+      function updateTimerUI(state) {
+        var display = document.getElementById('liveTimerDisplay');
+        var btnStart = document.getElementById('btnTimerStart');
+        var btnPause = document.getElementById('btnTimerPause');
+        var btnStop = document.getElementById('btnTimerStop');
+        var btnReset = document.getElementById('btnTimerReset');
+        // Reset hanya saat ADA yang bisa direset. Di keadaan idle tombol itu cuma
+        // menambah peluang salah pencet tanpa manfaat apa pun.
+        if (btnReset) btnReset.style.display = (state.state === 'idle') ? 'none' : 'inline-block';
+
+        if (state.state === 'idle') {
+          display.textContent = '00:00:00';
+          btnStart.style.display = 'inline-block';
+          btnStart.textContent = '▶ Start';
+          btnPause.style.display = 'none';
+          btnStop.style.display = 'none';
+        } else if (state.state === 'running') {
+          var curMs = state.elapsed_ms + (Date.now() - state.start_epoch);
+          display.textContent = formatMsToHms(curMs);
+          btnStart.style.display = 'none';
+          btnPause.style.display = 'inline-block';
+          btnPause.textContent = '⏸ Pause';
+          btnStop.style.display = 'inline-block';
+        } else if (state.state === 'paused') {
+          display.textContent = formatMsToHms(state.elapsed_ms);
+          btnStart.style.display = 'inline-block';
+          btnStart.textContent = '▶ Resume';
+          btnPause.style.display = 'none';
+          btnStop.style.display = 'inline-block';
+        }
+      }
+
+      /**
+       * RESET: kembalikan timer WO ini ke 00:00:00.
+       *
+       * Ini MENGHAPUS jam kerja yang sudah terekam, dan jam itu JALUR UANG
+       * (actual_hours -> faktor ketepatan waktu -> poin -> rupiah). Tiga
+       * penjagaan, sama persis dengan sisi PWA:
+       *
+       * 1. Konfirmasi MENYEBUTKAN berapa yang akan hilang. "Yakin reset?" tidak
+       *    cukup - mekanik harus tahu nilainya sebelum menekan.
+       * 2. Kolom Jam Mulai/Selesai ikut dikosongkan, begitu juga ringkasan
+       *    hijaunya. Tanpa ini muncul bug paling berbahaya dari tombol ini:
+       *    layar sudah 00:00:00 tapi kolom MASIH menyimpan jam lama lalu
+       *    terkirim apa adanya - mekanik dibayar untuk waktu yang baru saja
+       *    dia hapus. Di web bahayanya LEBIH besar karena kolom jam sengaja
+       *    disembunyikan dari mekanik, jadi isi lamanya tak terlihat sama sekali.
+       * 3. partial_hours dari sesi yang sudah ditransfer TIDAK tersentuh; itu
+       *    ada di server. Disebutkan di dialog supaya tak dikira ikut hilang.
+       */
+      function resetLiveTimer() {
+        var wo = appState.currentWo;
+        if (!wo) return;
+        var state = getTimerState(wo.id);
+        var totalMs = (parseFloat(state.elapsed_ms) || 0) +
+                      (state.state === 'running' ? (Date.now() - (parseFloat(state.start_epoch) || Date.now())) : 0);
+
+        if (totalMs > 0) {
+          var pesan = 'Reset timer ke 00:00:00?\n\n' +
+                      'Waktu terekam ' + msToJamMenit(totalMs) + ' akan DIHAPUS dan tidak bisa dikembalikan.';
+          var ph = parseFloat(wo.partial_hours) || 0;
+          if (ph > 0) {
+            pesan += '\n\nJam dari sesi yang sudah ditransfer (' + msToJamMenit(ph * 3600000) + ') TIDAK ikut terhapus.';
+          }
+          if (!confirm(pesan)) return;
+        }
+
+        saveTimerState(wo.id, { state: 'idle', elapsed_ms: 0, start_epoch: 0 });
+        _lastStoppedWoId = null;   // ringkasan durasi ikut disembunyikan lagi
+
+        var si = document.getElementById('inputStartTime');
+        var ei = document.getElementById('inputEndTime');
+        if (si) si.value = '';
+        if (ei) ei.value = '';
+        var sumEl = document.getElementById('timerSummary');
+        if (sumEl) { sumEl.style.display = 'none'; sumEl.innerHTML = ''; }
+        try { validateTimes(); } catch (eV) {}
+
+        initLiveTimer(wo.id);
+        renderWOs();
+        if (totalMs > 0) showTimerToast('\u21ba Timer direset ke 00:00:00');
+      }
+
+      function startLiveTimer() {
+        var wo = appState.currentWo;
+        if (!wo) return;
+
+        // Jeda otomatis WO lain yang masih berjalan (cegah jam kerja dobel-hitung)
+        var autoPaused = pauseOtherRunningTimers(wo.id);
+
+        var state = getTimerState(wo.id);
+        state.state = 'running';
+        state.start_epoch = Date.now();
+        saveTimerState(wo.id, state);
+        initLiveTimer(wo.id);
+        renderWOs();  // segarkan badge status timer di kartu
+
+        if (autoPaused.length > 0) {
+          showTimerToast('⏸ ' + autoPaused.length + ' WO lain otomatis dijeda (waktunya tersimpan).');
+        }
+      }
+
+      /** Toast ringan untuk info timer (tanpa alert yang memblokir kerja). */
+      function showTimerToast(msg) {
+        var t = document.getElementById('timerToast');
+        if (!t) {
+          t = document.createElement('div');
+          t.id = 'timerToast';
+          t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:92vw;text-align:center;';
+          document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.style.display = 'block';
+        clearTimeout(t._h);
+        t._h = setTimeout(function() { t.style.display = 'none'; }, 3500);
+      }
+
+      function pauseLiveTimer() {
+        var wo = appState.currentWo;
+        if (!wo) return;
+        var state = getTimerState(wo.id);
+        if (state.state !== 'running') return;
+
+        state.state = 'paused';
+        state.elapsed_ms += (Date.now() - state.start_epoch);
+        state.start_epoch = 0;
+        saveTimerState(wo.id, state);
+        initLiveTimer(wo.id);
+        renderWOs();  // segarkan badge status timer di kartu
+      }
+
+      function stopLiveTimer() {
+        var wo = appState.currentWo;
+        if (!wo) return;
+        var state = getTimerState(wo.id);
+        var totalMs = state.elapsed_ms;
+        if (state.state === 'running') {
+          totalMs += (Date.now() - state.start_epoch);
+        }
+
+        // Hentikan timer & bersihkan state
+        state.state = 'idle';
+        state.elapsed_ms = 0;
+        state.start_epoch = 0;
+        saveTimerState(wo.id, state);
+        _lastStoppedWoId = String(wo.id);   // supaya ringkasan durasi tidak ikut tersembunyi
+        initLiveTimer(wo.id);
+
+        // Isi field datetime (tersembunyi bagi mekanik — diisi otomatis dari timer)
+        if (totalMs > 0) {
+          if (totalMs < 60000 && !confirm('Durasi kerja hanya ' + formatMsToHms(totalMs) + '.\nYakin ingin menghentikan timer dan memakai durasi ini?')) {
+            // batal stop → kembalikan state seperti semula (paused, elapsed dipertahankan)
+            state.state = 'paused';
+            state.elapsed_ms = totalMs;
+            state.start_epoch = 0;
+            saveTimerState(wo.id, state);
+            initLiveTimer(wo.id);
+            renderWOs();
+            return;
+          }
+          var now = new Date();
+          var start = new Date(now.getTime() - totalMs);
+          document.getElementById('inputStartTime').value = formatToDatetimeLocal(start);
+          document.getElementById('inputEndTime').value = formatToDatetimeLocal(now);
+          validateTimes();
+
+          // Kesimpulan waktu pengerjaan (tetap terlihat walau timer sudah 00:00:00)
+          var sumEl = document.getElementById('timerSummary');
+          if (sumEl) {
+            sumEl.style.display = 'block';
+            sumEl.innerHTML = '✅ Total waktu pengerjaan: <span style="font-size:15px;">' + msToJamMenit(totalMs) + '</span>' +
+              '<div style="font-weight:600;font-size:11px;margin-top:3px;color:#15803d;">' +
+              formatToDatetimeLocal(start).replace('T', ' ') + '  →  ' + formatToDatetimeLocal(now).replace('T', ' ') + '</div>';
+          }
+          showTimerToast('⏹ Timer dihentikan · ' + msToJamMenit(totalMs) + ' siap disubmit.');
+        }
+        renderWOs();  // segarkan badge status timer di kartu
+      }
+
+      /** Milidetik → "2 jam 15 menit" (kesimpulan yang mudah dibaca mekanik). */
+      function msToJamMenit(ms) {
+        var totalMin = Math.round((parseFloat(ms) || 0) / 60000);
+        var jam = Math.floor(totalMin / 60);
+        var menit = totalMin % 60;
+        if (jam > 0 && menit > 0) return jam + ' jam ' + menit + ' menit';
+        if (jam > 0) return jam + ' jam';
+        return menit + ' menit';
+      }
+
+      function formatMsToHms(ms) {
+        var sec = Math.floor(ms / 1000);
+        var hr = Math.floor(sec / 3600);
+        var min = Math.floor((sec - (hr * 3600)) / 60);
+        sec = sec - (hr * 3600) - (min * 60);
+
+        if (hr < 10) hr = "0" + hr;
+        if (min < 10) min = "0" + min;
+        if (sec < 10) sec = "0" + sec;
+        return hr + ':' + min + ':' + sec;
+      }
+
+      // Koreksi helper format agar menggunakan ':' pemisah menit
+      function formatToDatetimeLocal(date) {
+        var pad = function(num) { return (num < 10 ? '0' : '') + num; };
+        return date.getFullYear() +
+          '-' + pad(date.getMonth() + 1) +
+          '-' + pad(date.getDate()) +
+          'T' + pad(date.getHours()) +
+          ':' + pad(date.getMinutes());
+      }
+
+      // ─── LOGIKA TRANSFER WORK ORDER ──────────────────────────────────────
+
+      function toggleTransferForm() {
+        var sec = document.getElementById('transferFormSection');
+        if (sec.style.display === 'none') {
+          sec.style.display = 'block';
+          sec.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          sec.style.display = 'none';
+        }
+      }
+
+      function requestTransfer() {
+        var wo = appState.currentWo;
+        if (!wo) return;
+
+        var note = document.getElementById('inputTransferNote').value;
+        
+        // Logika jam sesi ini:
+        // Cek apakah ada timer yang sedang berjalan/paused untuk WO ini.
+        // Jika ada, kita ambil start_epoch sebagai session_start_time.
+        // Jika tidak, tanyakan start time sesi ini via dialog/fallback.
+        var timerState = getTimerState(wo.id);
+        var sessionStart = null;
+        
+        if (timerState.state === 'running' || timerState.state === 'paused') {
+          // Ada timer aktif: start sesi adalah epoch timer start.
+          // (Jika paused, kita pakai estimasi back-date dari elapsed_ms)
+          var startMs = (timerState.state === 'running') ? timerState.start_epoch : (Date.now() - timerState.elapsed_ms);
+          sessionStart = new Date(startMs).toISOString();
+        } else {
+          // Timer idle. Cek apakah ada input manual startTime.
+          var manualStart = document.getElementById('inputStartTime').value;
+          if (manualStart) {
+            sessionStart = new Date(manualStart).toISOString();
+          } else {
+            // Fallback: anggap sesi baru mulai 30 menit lalu
+            sessionStart = new Date(Date.now() - 30 * 60000).toISOString();
+          }
+        }
+
+        var confirmMsg = "Apakah Anda yakin ingin meminta transfer Work Order ini?\n";
+        if (timerState.state === 'running' || timerState.state === 'paused') {
+          confirmMsg += "Waktu berjalan akan dihentikan saat Anda menekan tombol transfer.";
+        }
+        if (!confirm(confirmMsg)) return;
+
+        // Hentikan timer lokal jika ada
+        if (timerState.state !== 'idle') {
+          timerState.state = 'idle';
+          timerState.elapsed_ms = 0;
+          timerState.start_epoch = 0;
+          saveTimerState(wo.id, timerState);
+          initLiveTimer(wo.id);
+        }
+
+        var btn = document.querySelector('#transferFormSection button');
+        var oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Mengirim Permintaan...';
+
+        google.script.run
+          .withSuccessHandler(function(r) {
+            if (r.success) {
+              closeModal();
+              showSuccessAndRedirect('Permintaan transfer WO berhasil dikirim ke Supervisor (L1)!\nWO: ' + wo.id, appState.baseUrl + '?page=mechanic&filter=pending_approval');
+            } else {
+              alert('❌ Error: ' + (r.error.message || 'Gagal'));
+              btn.disabled = false;
+              btn.textContent = oldText;
+            }
+          })
+          .withFailureHandler(function(err) {
+            pesanPutus(err, 'permintaan transfer ini');
+            btn.disabled = false;
+            btn.textContent = oldText;
+          })
+          .handleRequestTransfer({
+            wo_id: wo.id,
+            transfer_note: note,
+            session_start_time: sessionStart,
+            token: PAGE_TOKEN
+          });
+      }
+      function validateTimes() {
+        var s = document.getElementById('inputStartTime').value;
+        var e = document.getElementById('inputEndTime').value;
+        var btn = document.getElementById('btnSubmit');
+        var dp = document.getElementById('durationPreview');
+        var dt = document.getElementById('durationText');
+        if (!s || !e) { btn.disabled = true; dp.style.display = 'none'; return; }
+        var sd = new Date(s), ed = new Date(e);
+        if (ed <= sd) { btn.disabled = true; dp.style.display = 'block'; dt.textContent = '⚠️ End time must be after start time'; dt.style.color = '#e53e3e'; return; }
+        dp.style.display = 'block';
+        dt.textContent = formatJamMenit((ed - sd) / 3600000); dt.style.color = '#2d3748';
+        var hmv = parseFloat(document.getElementById('inputHourMeter').value);
+        var kmv = parseFloat(document.getElementById('inputKilometers').value);
+        btn.disabled = !(hmv > 0 && kmv > 0 && appState.selectedPartType);
+      }
+      function selectPartType(val) {
+        appState.selectedPartType = val;
+        var btns = document.querySelectorAll('#partTypeGroup .parttype-btn');
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].classList.toggle('active', btns[i].getAttribute('data-part') === val);
+        }
+        validateTimes();
+      }
+      /**
+       * Kegagalan TRANSPOR, bukan jawaban server.
+       *
+       * withFailureHandler menyala saat sambungan putus — dan gerbang berdiri
+       * di dua arah: putusnya bisa terjadi saat permintaan BERANGKAT (server
+       * tak pernah menerima) atau saat jawaban PULANG (server sudah selesai
+       * menulis). Dari layar keduanya terlihat persis sama, jadi "System error"
+       * mengaku tahu sesuatu yang tidak kita punya buktinya.
+       *
+       * 12 Agu 2026 membuktikan ongkosnya: 17 WO masuk SELURUHNYA sementara
+       * layar berbunyi gagal, dan pembuatnya nyaris mengirim ulang semuanya.
+       */
+      function pesanPutus(err, aksi) {
+        alert('⚠️ Sambungan putus — belum tentu gagal\n\n' +
+              (err && err.message ? err.message : String(err || 'NetworkError')) + '\n\n' +
+              'Jawaban server tidak sampai ke layar, jadi ' + (aksi || 'tindakan ini') +
+              ' BISA JADI sudah berhasil.\n\n' +
+              'MUAT ULANG halaman dan periksa dulu keadaannya. Jangan langsung mengulang.');
+      }
+
+      function submitWork() {
+        var wo = appState.currentWo;
+        if (!wo) return;
+        var st = document.getElementById('inputStartTime').value;
+        var et = document.getElementById('inputEndTime').value;
+        if (!st || !et) { alert('Mohon isi Start Time dan End Time'); return; }
+        var hm = parseFloat(document.getElementById('inputHourMeter').value);
+        var km = parseFloat(document.getElementById('inputKilometers').value);
+        if (isNaN(hm) || hm <= 0) { alert('Hour Meter wajib diisi dan harus lebih dari 0'); return; }
+        if (isNaN(km) || km <= 0) { alert('Kilometer (KM) wajib diisi dan harus lebih dari 0'); return; }
+        if (!appState.selectedPartType) { alert('Mohon pilih Jenis Part (Baru / Repair / Kanibal)'); return; }
+        var btn = document.getElementById('btnSubmit');
+        btn.disabled = true; btn.textContent = 'Submitting...';
+        google.script.run
+          .withSuccessHandler(function(r) {
+            if (r.success) {
+              closeModal();
+              var url = appState.baseUrl + '?page=mechanic';
+              if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
+              showSuccessAndRedirect('Work submitted!\nWO: ' + wo.id + '\nDurasi: ' + formatJamMenit(r.data.actual_hours), url);
+            } else {
+              alert('❌ Error: ' + (r.error.message || 'Failed')); btn.disabled = false; btn.textContent = 'Submit Work';
+            }
+          })
+          .withFailureHandler(function(err) {
+            pesanPutus(err, 'submit kerja ini'); btn.disabled = false; btn.textContent = 'Submit Work';
+          })
+          .handleSubmitMechanicWork({wo_id: wo.id, start_time: st, end_time: et, hour_meter: hm, kilometers: km, part_type: appState.selectedPartType, view_as: appState.viewingAs ? appState.viewingAs.id : null, token: PAGE_TOKEN});
+      }
+
+      function showLoadingOverlay(title, desc) {
+        var el = document.getElementById('loadingReportOverlay');
+        if (!el) return;
+        if (title) document.getElementById('loadingReportTitle').textContent = title;
+        if (desc) document.getElementById('loadingReportDesc').textContent = desc;
+        el.style.display = 'flex';
+      }
+
+      function hideLoadingOverlay() {
+        var el = document.getElementById('loadingReportOverlay');
+        if (el) el.style.display = 'none';
+      }
+
+      function reportExpiredWOAction(woId, btn) {
+        if (!confirm('WO ini sudah Expired (>12 jam). Laporkan ke Pengawas untuk membuka kembali WO ini?')) return;
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = 'Melaporkan…';
+        }
+        showLoadingOverlay('Melaporkan WO Expired...', 'Mohon tunggu, sedang mengirimkan laporan ke Pengawas...');
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              hideLoadingOverlay();
+              var targetUrl = appState.baseUrl + '?page=mechanic' + (appState.activeFilter ? '&filter=' + appState.activeFilter : '') + (appState.viewingAs ? '&as=' + appState.viewingAs.id : '');
+              showSuccessAndRedirect('✅ WO Expired berhasil dilaporkan ke pengawas!\nPengawas dapat me-reopen WO ini di halaman Approval.', targetUrl);
+            } else {
+              hideLoadingOverlay();
+              alert('❌ Gagal melaporkan: ' + (res && res.error ? res.error.message : (res ? res.message : 'Unknown error')));
+              if (btn) {
+                btn.disabled = false;
+                btn.innerText = '⚠️ Lapor Pengawas';
+              }
+            }
+          })
+          .withFailureHandler(function(err) {
+            hideLoadingOverlay();
+            pesanPutus(err, 'laporan WO kadaluwarsa ini');
+            if (btn) {
+              btn.disabled = false;
+              btn.innerText = '⚠️ Lapor Pengawas';
+            }
+          })
+          .reportExpiredWO(woId);
+      }
+    </script>
+
+    <!-- Full-screen Loading Overlay untuk Lapor Expired -->
+    <div id="loadingReportOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);z-index:99999;align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center;padding:20px;">
+      <div style="width:54px;height:54px;border:5px solid rgba(255,255,255,0.2);border-top-color:#ef4444;border-radius:50%;animation:spinOverlay 0.8s linear infinite;margin-bottom:16px;"></div>
+      <h3 id="loadingReportTitle" style="font-size:18px;font-weight:700;margin-bottom:6px;">Melaporkan WO Expired...</h3>
+      <p id="loadingReportDesc" style="font-size:13px;color:#cbd5e1;max-width:320px;line-height:1.5;">Mohon tunggu, sedang mengirimkan laporan ke Pengawas...</p>
+    </div>
+    <style>
+      @keyframes spinOverlay { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <? } ?>
+  </div>
+</body>
+</html>

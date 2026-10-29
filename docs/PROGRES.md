@@ -5,6 +5,24 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-29 · Raka (+ AI) · bersama (fondasi rumah SUM dan KMB V2 berbasis Supabase)
+- Berubah:
+  - `db/sum/rpc_baca.sql`:
+    - Membuat fungsi RPC Supabase untuk SUM V2 (`sum_ping`, `sum_create_refs`, `sum_monitoring_bertoken`, `sum_my_wos_bertoken`) yang membaca langsung dari tabel cermin `sum.*`.
+  - `db/kmb/rpc_baca.sql`:
+    - Membuat fungsi RPC Supabase untuk KMB V2 (`kmbtra_ping`, `kmbtra_create_refs`, `kmbtra_monitoring_bertoken`) yang membaca langsung dari tabel cermin `kmb.*`.
+  - `workers/sum/`:
+    - `wrangler.toml`: Menambahkan binding `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `STORAGE_MODE`.
+    - `src/index.js`: Mengaktifkan gerbang Dual-Engine (Supabase Read Router dengan fallback otomatis ke GAS).
+    - `web/`: Menyimpan 7 berkas asli web desktop SUM V2 (`Main.html`, `MechanicDashboard.html`, `Approval.html`, `WorkOrder.html`, `Reports.html`, `CancelWO.html`, `Styles.html`) dari remote `marsum/master`.
+  - `workers/kmb/`:
+    - `wrangler.toml`: Menambahkan binding `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `STORAGE_MODE`.
+    - `src/index.js`: Mengaktifkan gerbang Dual-Engine (Supabase Read Router dengan fallback otomatis ke GAS).
+  - Verifikasi:
+    - Seluruh sintaks JavaScript (`node --check`) lulus 100%.
+    - `wrangler deploy --dry-run` pada `workers/sum` dan `workers/kmb` lulus 100%.
+- Belum selesai / berikutnya: Menjalankan eksekusi cermin mentah setelah `GOOGLE_SA_KEY_FILE` diterima dari Gabriel (§5 Langkah 2).
+
 ### 2026-10-29 · Raka (+ AI) · pintu (pemulihan layar pilihan Aplikasi PWA vs Web Biasa di abadiops.com)
 - Berubah:
   - `workers/pintu/public/index.html`:

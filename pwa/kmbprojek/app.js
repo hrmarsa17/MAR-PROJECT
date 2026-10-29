@@ -4304,6 +4304,7 @@ openDb().then(function() {
   // memperlihatkannya — berkedip sebentar lalu hilang, yang terbaca sebagai
   // aplikasi rusak, bukan sebagai medan yang memang ditiadakan.
   setelMeterCreate();
+  masukDariPintu(ambilTokenSerahan());
   syncVersionFromCache().then(function(){ showScreen(S.token?'main':'login'); renderAll(); });
   showScreen(S.token?'main':'login');
   // Timer bisa masih berjalan dari sesi sebelumnya (state tersimpan di IndexedDB)

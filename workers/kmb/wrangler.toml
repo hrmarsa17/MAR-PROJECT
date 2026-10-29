@@ -35,6 +35,9 @@ RUMAH = "kmb"
 SAKLAR = "gas"
 # Web app GAS produksi KMB V2 (script 17sBKK…). Alamat ini juga tertulis di PWA lama.
 GAS_URL = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec"
+SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
+STORAGE_MODE = "GAS"
 
 [observability]
 enabled = true

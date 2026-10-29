@@ -1,7 +1,7 @@
 # Rumah KMB Project: Worker yang menyajikan PWA KMB Project dan meneruskan setiap panggilan API ke GAS KMB Project.
 # Rumah: kmbprojek · Pemegang: Raka · Tahap 3 (Pintu): 100% diteruskan ke GAS. Saklar: gas.
 # Penjelasan: workers/kmbprojek/README.md
-name = "abadiops-porject-kmb"
+name = "abadiops-kmbprojek"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
