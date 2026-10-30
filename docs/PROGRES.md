@@ -12,6 +12,25 @@ Formatnya:
 
 ---
 
+### 2026-10-30 · Raka (+ AI) · bersama (Verifikasi akses spreadsheet dan persiapan sinkron staging)
+- **Berubah:**
+  - Service Account `abadi-operation-sync@cermin-spreadsheet.iam.gserviceaccount.com` berhasil membaca tiga spreadsheet produksi dengan mode `--kering`.
+  - SUM V2: seluruh sheet berhasil dibaca setelah retry sheet yang terkena quota Google Sheets API `429`.
+  - KMB V2: seluruh sheet yang tersedia berhasil dibaca setelah retry `AuditLogs`, `ProcessedOps`, dan `PushSubs`; beberapa sheet memang tidak ada di spreadsheet sumber.
+  - KMB Project: seluruh sheet yang tersedia berhasil dibaca; beberapa sheet target memang tidak ada di spreadsheet sumber.
+  - ID spreadsheet dipakai melalui environment variable, bukan ditambahkan ke kode atau dokumentasi sebagai konfigurasi hardcode.
+- **Belum selesai / berikutnya:**
+  - Sinkron penuh ke Supabase staging belum dinyatakan selesai. Percobaan SUM menulis sebagian lalu berhenti pada beberapa sheet karena quota `429`; KMB dan KMB Project belum dijalankan dalam mode tulis.
+  - `DATABASE_URL` yang terakhir diuji adalah placeholder sehingga menghasilkan `Invalid URL`. Gabriel harus mengisi connection string baru dari project Supabase staging `dnnqrslftndcbmnvuveb` secara lokal.
+  - Connection string database staging yang pernah tertulis di percakapan harus di-reset sebelum dipakai lagi. Jangan menaruh password, connection string, atau isi JSON Service Account di repo atau chat.
+  - Setelah password di-reset, set environment variable di PowerShell yang sama, pastikan menunjuk staging, lalu jalankan satu per satu:
+    `node tools\sum\sinkron-cermin.mjs`
+    `node tools\kmb\sinkron-cermin.mjs`
+    `node tools\kmb_projek\sinkron-cermin.mjs`
+  - Setelah sinkron selesai, verifikasi `cermin_header` dan `cermin_log` pada skema `sum`, `kmb`, dan `kmb_projek`; baru setelah itu siapkan jadwal sinkron rutin.
+
+---
+
 ### 2026-10-30 · Raka (+ AI) · bersama (Langkah 8 Selesai: Panel Saklar Visual di Pintu abadiops.com & Dynamic House Integration)
 - **Eksekusi Langkah 8: Membangun Panel Saklar Visual di Pintu (`abadiops.com/saklar`)**:
   - Sesuai `docs/SAKLAR.md` § Panel saklar di abadiops.com dan `docs/SERAH-TERIMA-2026-10-29.md` §5 langkah 8, panel visual tersembunyi telah dibangun dan aktif di Worker Pintu (`abadiops-pintu`).

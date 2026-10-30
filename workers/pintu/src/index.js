@@ -122,9 +122,9 @@ export default {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       const auth = await verifikasiKataSandi(body.password || '', env, clientIp);
       if (!auth.ok) {
-        return json({ success: false, error: auth.error }, 401);
+        return json({ success: false, ok: false, error: auth.error }, 401);
       }
-      return json({ success: true, token: auth.token }, 200, {
+      return json({ success: true, ok: true, token: auth.token }, 200, {
         'Set-Cookie': `abadi_saklar_session=${encodeURIComponent(auth.token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=7200`,
       });
     }

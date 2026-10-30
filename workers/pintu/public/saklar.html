@@ -243,7 +243,7 @@
           body: JSON.stringify({ password: pw })
         });
         const data = await res.json();
-        if (data.ok && data.token) {
+        if ((data.success || data.ok) && data.token) {
           TOKEN_SESI = data.token;
           localStorage.setItem('abadi_saklar_token', TOKEN_SESI);
           document.getElementById('inputPassword').value = '';
@@ -444,3 +444,4 @@
   </script>
 </body>
 </html>
+
