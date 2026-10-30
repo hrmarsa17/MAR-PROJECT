@@ -32,11 +32,14 @@ function json(obj, status = 200) {
 }
 
 // Badan ping sama dengan yang dikirim PWA lama ke GAS.
-async function tanyaGas(rumah, token) {
+async function tanyaGas(rumah, token, env) {
   const ctrl = new AbortController();
   const batas = setTimeout(() => ctrl.abort(), BATAS_GAS_MS);
   try {
-    const res = await fetch(rumah.gas, {
+    const fetcher = (env && env.GAS_TIRUAN && typeof env.GAS_TIRUAN.fetch === 'function')
+      ? env.GAS_TIRUAN.fetch.bind(env.GAS_TIRUAN)
+      : fetch;
+    const res = await fetcher(rumah.gas, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ token, action: 'ping', data: {} }),
@@ -55,7 +58,7 @@ async function tanyaGas(rumah, token) {
 }
 
 async function kenaliRumah(token, env) {
-  const hasil = await Promise.all(daftarRumah(env).map((r) => tanyaGas(r, token)));
+  const hasil = await Promise.all(daftarRumah(env).map((r) => tanyaGas(r, token, env)));
   const cocok = hasil.filter((h) => h.cocok);
   const gagal = hasil.filter((h) => h.gagal);
   if (gagal.length) console.log('pintu: rumah tidak menjawab: ' + gagal.map((h) => `${h.rumah.kode} (${h.err})`).join(', '));

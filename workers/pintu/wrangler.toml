@@ -31,3 +31,19 @@ RUMAH = [
 
 [observability]
 enabled = true
+
+# Panggung Latihan (Staging) - docs/GEDUNG-DAN-STAGING.md §2
+[env.staging]
+name = "abadiops-pintu-staging"
+workers_dev = true
+
+services = [
+  { binding = "GAS_TIRUAN", service = "abadiops-gas-tiruan" }
+]
+
+[env.staging.vars]
+RUMAH = [
+  { kode = "kmbprojek", nama = "KMB Projek (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek", alamat = "https://staging-kmbprojek.abadiops.com/", web = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek" },
+  { kode = "sum", nama = "SUM (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum", alamat = "https://staging-sum.abadiops.com/", web = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum" },
+  { kode = "kmbtra", nama = "KMB TRA (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbtra", alamat = "https://staging-kmbtra.abadiops.com/", web = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbtra" },
+]

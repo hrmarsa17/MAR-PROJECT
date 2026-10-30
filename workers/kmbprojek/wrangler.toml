@@ -28,6 +28,26 @@ RUMAH = "kmbprojek"
 SAKLAR = "gas"
 # Web app GAS produksi KMB Project (script 1cKrVdmxH_hD4yVTwqLAXKdUjwM5wd7Glh4MdlpT7oP8KDOaGNgJCJVyh).
 GAS_URL = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec"
+SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
+STORAGE_MODE = "GAS"
 
 [observability]
 enabled = true
+
+# Panggung Latihan (Staging) - docs/GEDUNG-DAN-STAGING.md §2
+[env.staging]
+name = "abadiops-kmbprojek-staging"
+workers_dev = true
+
+services = [
+  { binding = "GAS_TIRUAN", service = "abadiops-gas-tiruan" }
+]
+
+[env.staging.vars]
+RUMAH = "kmbprojek"
+SAKLAR = "gas"
+GAS_URL = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek"
+SUPABASE_URL = "https://dnnqrslftndcbmnvuveb.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_HgQd9sXhK3-CrFyUId-LEw_q_ah2S0O"
+STORAGE_MODE = "GAS"

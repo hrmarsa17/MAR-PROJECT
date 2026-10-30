@@ -5,6 +5,31 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### YYYY-MM-DD · Nama (+ AI) · rumah
+- Berubah: …
+- Belum selesai / berikutnya: …
+```
+
+---
+
+### 2026-10-30 · Raka (+ AI) · bersama (Panggung Staging Gedung 2 dnnqrslftndcbmnvuveb dan Worker gas-tiruan siap & teruji)
+- **Alih Fungsi Project `dnnqrslftndcbmnvuveb` Menjadi Gedung 2 (Staging)**:
+  - 3 Kamar skema cermin (`sum` 22 tabel, `kmb` 24 tabel, `kmb_projek` 10 tabel) dan 18 RPC bertoken telah dipasang lengkap di Gedung 2 (`dnnqrslftndcbmnvuveb`).
+  - Verifikasi keamanan RPC Gedung 2: akses anon langsung ke `sum_create_refs` & `kmbtra_create_refs` ditolak (HTTP 401), hanya `*_bertoken` yang diizinkan.
+- **Worker GAS Tiruan (`workers/gas-tiruan/`) Selesai & Tayang Live**:
+  - Dibuat khusus untuk staging (`abadiops-gas-tiruan.kawanabadigrup.workers.dev`) sesuai mandat `docs/GEDUNG-DAN-STAGING.md` §2.
+  - HARAM kontak GAS produksi: Aksi baca dijawab dari RPC Gedung 2, aksi tulis (`create_wo`, `submit_work`, `approve`, `reject`, `cancel`) dijawab dengan format resmi nomor WO GAS (`WO-YYYYMMDD-XXX`) tanpa pernah menyentuh Google Sheets asli.
+  - Teruji live: `ping` bertoken uji direspon akurat per rumah, `create_wo` menghasilkan ID unik simulasi.
+- **Konfigurasi `[env.staging]` di Seluruh Worker (Pintu, SUM, KMB TRA, KMB Projek)**:
+  - Blok `[env.staging]` aktif dengan Service Binding `GAS_TIRUAN` menuju `abadiops-gas-tiruan`.
+  - Pintu staging (`abadiops-pintu-staging`) memvalidasi token uji zero-select langsung mengarahkan ke rumah yang tepat (`sum`, `kmbtra`, `kmbprojek`).
+  - Seluruh Worker staging (`abadiops-pintu-staging`, `abadiops-sum-staging`, `abadiops-kmb-staging`, `abadiops-kmbprojek-staging`) telah di-deploy dan terverifikasi live.
+  - `routes = []` dikunci pada staging agar tidak merebut domain kustom produksi (`sum.abadiops.com`, `kmbtra.abadiops.com`).
+  - Uji serah-terima token `node scripts/uji-serahan-token.mjs` tetap 24/24 lulus.
+- **Belum selesai / berikutnya**:
+  - Latihan saklar dua arah & uji rekam-putar WO di staging.
+  - Langkah 0 (kunci akun layanan Google) & Langkah 2 (sinkron cermin spreadsheet pertama).
+
 ### 2026-10-30 · Raka (+ AI) · bersama (kamar SUM disatukan di Gedung 1, Bug #22 tuntas, deploy 3 Worker PWA v49/v95/v17)
 - **Eksekusi Penyatuan Kamar SUM & KMB TRA ke Gedung 1 Produksi (`sptgqsjgszwbreikxdph`)**:
   - Sesuai konsep gedung dan kamar (`docs/GEDUNG-DAN-STAGING.md`), seluruh rumah disatukan di satu project Supabase produksi.

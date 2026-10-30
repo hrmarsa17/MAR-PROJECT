@@ -128,7 +128,10 @@ async function cobaSupabaseSum(action, token, parsed, env) {
 async function teruskanKeGas(body, aksi, env) {
   const mulai = Date.now();
   try {
-    const res = await fetch(env.GAS_URL, {
+    const fetcher = (env && env.GAS_TIRUAN && typeof env.GAS_TIRUAN.fetch === 'function')
+      ? env.GAS_TIRUAN.fetch.bind(env.GAS_TIRUAN)
+      : fetch;
+    const res = await fetcher(env.GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body,

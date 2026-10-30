@@ -37,9 +37,7 @@ Berlaku untuk semua orang dan semua AI di repo ini. Ditulis 30 Okt 2026 atas per
 4. **Gedung ketiga berarti pembayaran**, jadi itu titik henti: tanya Gabriel dulu. Sebagai gambaran, paket Pro sekitar $25/bulan dan setiap project tambahan sekitar +$10/bulan. Alasan yang sah untuk Pro adalah ukuran database atau cadangan, **bukan** jumlah rumah (`docs/KEPUTUSAN.md`, baris "Biaya").
 5. **Awasi ukuran database.** Paket gratis memberi 500 MB per gedung, dan jatah itu dipakai bersama oleh semua rumah. Kalau mendekati 400 MB, lapor ke Gabriel (keputusan Biaya 29 Okt).
 
-**Contoh yang salah (29 Okt):** project terpisah `dnnqrslftndcbmnvuveb` untuk SUM.
-- Rumah dijadikan gedung, sehingga jatah dua gedung habis dan staging tidak bisa dibuat.
-- Penanganannya ada di `docs/KEPUTUSAN.md`, bagian "Belum diputuskan".
+**Selesai ditangani (30 Okt 2026):** Project `dnnqrslftndcbmnvuveb` telah resmi dialihfungsikan menjadi **Gedung 2 (Staging)** lengkap dengan 3 skema (`sum`, `kmb`, `kmb_projek`) dan Worker GAS Tiruan (`workers/gas-tiruan/`). Skema SUM produksi telah disatukan di Gedung 1 bersama `kmb` dan `kmb_projek`. Jatah 2 gedung gratis tetap terjaga (0 rupiah).
 
 ## 2. Staging (panggung latihan)
 
