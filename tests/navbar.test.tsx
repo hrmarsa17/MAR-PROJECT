@@ -78,7 +78,7 @@ describe('NavBar', () => {
     expect(m).not.toContain('Koreksi Meter');
     expect(m).not.toContain('Approvals');
     expect(m).not.toContain('Admin');
-    expect(m).toContain('Dashboard Performa');
+    expect(m).not.toContain('Dashboard Performa');
   });
 
   it('tanpa hak teknis, Dashboard Teknis tidak muncul — Performa tetap', () => {

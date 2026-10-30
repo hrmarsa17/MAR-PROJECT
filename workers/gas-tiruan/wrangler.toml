@@ -14,3 +14,4 @@ SUPABASE_ANON_KEY = "sb_publishable_HgQd9sXhK3-CrFyUId-LEw_q_ah2S0O"
 
 [observability]
 enabled = true
+

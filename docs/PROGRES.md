@@ -26,9 +26,16 @@ Formatnya:
   - Seluruh Worker staging (`abadiops-pintu-staging`, `abadiops-sum-staging`, `abadiops-kmb-staging`, `abadiops-kmbprojek-staging`) telah di-deploy dan terverifikasi live.
   - `routes = []` dikunci pada staging agar tidak merebut domain kustom produksi (`sum.abadiops.com`, `kmbtra.abadiops.com`).
   - Uji serah-terima token `node scripts/uji-serahan-token.mjs` tetap 24/24 lulus.
+- **Penyelesaian Bug #23 & Penyelarasan CI (`tests/navbar.test.tsx`)**:
+  - `tests/navbar.test.tsx` diselaraskan dengan `NavBar.tsx` (mengecek bahwa mekanik tidak melihat Dashboard Performa pasca commit `0f7c548`).
+  - Uji `npx vitest run tests/navbar.test.tsx` lulus 8/8. `npm run typecheck` lulus bersih.
+  - `docs/BUG-DICATAT.md` diperbarui: Bug #23 ditandai diperbaiki.
+- **Pembersihan Dokumen Keputusan (`docs/KEPUTUSAN.md`)**:
+  - Bagian "Belum diputuskan" di `docs/KEPUTUSAN.md` dibersihkan dan ditandai tuntas setelah penyatuan kamar SUM di Gedung 1 dan alih fungsi Gedung 2 staging berhasil.
 - **Belum selesai / berikutnya**:
-  - Latihan saklar dua arah & uji rekam-putar WO di staging.
-  - Langkah 0 (kunci akun layanan Google) & Langkah 2 (sinkron cermin spreadsheet pertama).
+  - Langkah 2 (Cermin ketiga rumah: sinkron sheet -> Supabase) menunggu kunci akun layanan Google (`GOOGLE_SA_KEY_FILE`).
+  - Langkah 6 (Halaman Web 1:1 di domain Abadi) sebelum saklar dinyalakan.
+  - Langkah 8 (Panel saklar visual di pintu `abadiops.com` berbasis Durable Object / KV).
 
 ### 2026-10-30 · Raka (+ AI) · bersama (kamar SUM disatukan di Gedung 1, Bug #22 tuntas, deploy 3 Worker PWA v49/v95/v17)
 - **Eksekusi Penyatuan Kamar SUM & KMB TRA ke Gedung 1 Produksi (`sptgqsjgszwbreikxdph`)**:
