@@ -5,6 +5,35 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-30 · Raka (+ AI) · bersama (kamar SUM disatukan di Gedung 1, Bug #22 tuntas, deploy 3 Worker PWA v49/v95/v17)
+- **Eksekusi Penyatuan Kamar SUM & KMB TRA ke Gedung 1 Produksi (`sptgqsjgszwbreikxdph`)**:
+  - Sesuai konsep gedung dan kamar (`docs/GEDUNG-DAN-STAGING.md`), seluruh rumah disatukan di satu project Supabase produksi.
+  - DDL `db/sum/cermin_sheet.sql` & `db/sum/rpc_baca.sql` dieksekusi ke Gedung 1: skema `sum` (22 tabel) dan 4 RPC baca aktif di project utama.
+  - DDL `db/kmb/cermin_sheet.sql` & `db/kmb/rpc_baca.sql` dieksekusi ke Gedung 1: skema `kmb` (24 tabel) dan 3 RPC baca aktif di project utama.
+  - Verifikasi kamar di Gedung 1: `kmb` (24 tabel), `kmb_projek` (11 tabel), dan `sum` (22 tabel) berdampingan dalam satu gedung tanpa saling mengintip.
+  - Konfigurasi `workers/sum/wrangler.toml` diselaraskan kembali ke Gedung 1 (`sptgqsjgszwbreikxdph.supabase.co`).
+- **Penyelesaian Tuntas Bug #22 (Wajib Token & Faktor Dinamis)**:
+  - Akses langsung tanpa token ke katalog referensi ditutup: `_sum_create_refs_internal` dan `_kmbtra_create_refs_internal` di-REVOKE dari `anon` & `authenticated`.
+  - Pintu masuk publik diganti menjadi `sum_create_refs_bertoken(p_token)` dan `kmbtra_create_refs_bertoken(p_token)` yang memvalidasi token di tabel `api_tokens`.
+  - Hardcode `work_conditions` di SQL dibuang; faktor dibaca dinamis dari cermin tabel `config_factors` dengan label 1:1 persis GAS (SUM: "Normal", "Malam/Hujan", "Resiko Tinggi"; KMB TRA: "Shift 1", "Shift 2", "Kondisi Ekstrim").
+  - Verifikasi REST live: panggilan tanpa token ditolak (HTTP 401 permission denied), panggilan bertoken palsu dijawab aman (`success: false, error: 'Token tidak dikenal / nonaktif'`).
+  - `docs/BUG-DICATAT.md` diperbarui: Bug #22 status diperbaiki.
+- **Deploy Ketiga Worker Rumah ke Cloudflare (Perbaikan #19–#21 Tayang Live)**:
+  - Uji serah-terima token `node scripts/uji-serahan-token.mjs` lulus 24/24 skenario.
+  - Deploy produksi berhasil:
+    - SUM V2: Worker `abadiops-sum` Version `b5ef781a…`, PWA `mar-sum-v49`.
+    - KMB TRA: Worker `abadiops-kmb` Version `72daf6d9…`, PWA `mar-v95`.
+    - KMB Project: Worker `abadiops-porject-kmb` Version `e2138562…`, PWA `mar-projek-v17`.
+  - Verifikasi live:
+    - `https://sum.abadiops.com/api/sehat` mengembalikan `ok: true`, `saklar: gas`, `supabase_configured: true`.
+    - `https://kmbtra.abadiops.com/api/sehat` mengembalikan `ok: true`, `saklar: gas`, `supabase_configured: true`.
+    - Cache `sw.js` live terverifikasi: `mar-sum-v49`, `mar-v95`, `mar-projek-v17`.
+- **Status Gedung 2 (Staging)**:
+  - Project `dnnqrslftndcbmnvuveb` telah dilepaskan dari produksi dan dialokasikan sebagai Gedung 2 (Staging) sesuai rencana `docs/GEDUNG-DAN-STAGING.md`.
+  - `docs/KEPUTUSAN.md` diperbarui: daftar "Belum diputuskan" kembali kosong.
+- **Belum selesai / berikutnya**:
+  - Langkah 0 (kunci akun layanan Google) & Langkah 2 (eksekusi sinkron cermin pertama dari spreadsheet).
+
 ### 2026-10-30 · Gabriel (+ Claude) · bersama (konsep gedung, kamar, dan staging ditulis)
 - Berubah: dokumen saja.
   - **Baru: `docs/GEDUNG-DAN-STAGING.md`**, atas permintaan Gabriel, karena konsep ini belum dipahami sama. Isinya:

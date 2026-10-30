@@ -83,9 +83,9 @@ async function cobaSupabaseKmbTra(action, token, parsed, env) {
     if (action === 'ping' && token) {
       rpcName = 'kmbtra_ping';
       payload = { p_token: token };
-    } else if (action === 'pull_create_refs') {
-      rpcName = 'kmbtra_create_refs';
-      payload = {};
+    } else if (action === 'pull_create_refs' && token) {
+      rpcName = 'kmbtra_create_refs_bertoken';
+      payload = { p_token: token };
     } else if (action === 'pull_monitoring' && token) {
       rpcName = 'kmbtra_monitoring_bertoken';
       payload = { p_token: token };

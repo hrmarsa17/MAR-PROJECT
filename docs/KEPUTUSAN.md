@@ -55,6 +55,7 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 | 29 Okt 2026 | **Jalur tulis WO baru** dibangun lengkap **di belakang saklar** dan tidak aktif sampai saklar dinyalakan. Buku tamu kiriman ada di Cloudflare, dan ID WO Supabase memakai awalan yang berbeda. | Siap pakai tanpa risiko sebelum go-live. |
 | 29 Okt 2026 | **Payroll selama dua cabang**: gabungan WO lama dari cermin dan WO baru dari Supabase. Sebelum go-live, payroll ini diuji sama dengan GAS untuk bulan-bulan lalu. | Uang tidak boleh berubah karena migrasi. |
 | 29 Okt 2026 | **Go-live serentak** di ketiga rumah (keputusan Gabriel), setelah semua syarat di `docs/SAKLAR.md` terpenuhi di ketiganya. Panel tetap per rumah, sehingga penyelamatan bisa dilakukan per rumah. | Satu momen peralihan untuk semua. |
+| 30 Okt 2026 | **Kamar SUM disatukan di Gedung 1 Produksi (`sptgqsjgszwbreikxdph`)**: Skema `sum` (22 tabel) dan RPC baca (bebas Bug #22) terpasang di project utama bersama `kmb` dan `kmb_projek`. Project `dnnqrslftndcbmnvuveb` dialokasikan untuk Gedung 2 (Staging). | Sesuai konsep Gedung & Kamar (docs/GEDUNG-DAN-STAGING.md), menghemat kuota gratis Supabase untuk panggung latihan. |
 
 ## Tahapan per rumah
 

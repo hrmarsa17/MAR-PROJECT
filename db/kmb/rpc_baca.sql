@@ -2,6 +2,7 @@
 -- FUNGSI RPC BACA SUPABASE UNTUK RUMAH KMB V2 / TRA (Skema `kmb`)
 -- Sesuai Tahap 4: Aksi Baca Cermin Langsung dari kmb
 -- Berdasarkan db/kmb/cermin_sheet.sql
+-- Diperbarui: 30 Okt 2026 (Perbaikan Bug #22: Wajib Token & Faktor Dinamis 1:1 GAS)
 -- ==============================================================================
 
 -- 1. RPC kmbtra_ping: Resolusi token instan KMB V2
@@ -9,6 +10,7 @@ CREATE OR REPLACE FUNCTION public.kmbtra_ping(p_token text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_user record;
@@ -53,17 +55,21 @@ BEGIN
 END;
 $$;
 
--- 2. RPC kmbtra_create_refs: Katalog unit, komponen, mekanik KMB V2
-CREATE OR REPLACE FUNCTION public.kmbtra_create_refs()
+-- 2. Fungsi Internal: Katalog unit, komponen, mekanik KMB V2 (Tidak boleh dipanggil langsung)
+CREATE OR REPLACE FUNCTION public._kmbtra_create_refs_internal()
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_units json;
     v_comps json;
     v_mechs json;
     v_factors json;
+    v_f_normal numeric := 1.0;
+    v_f_difficult numeric := 1.1;
+    v_f_extreme numeric := 1.2;
 BEGIN
     -- Units
     SELECT coalesce(json_agg(json_build_object(
@@ -89,7 +95,7 @@ BEGIN
     FROM kmb.config_components
     WHERE data->>'status' IS NULL OR data->>'status' = 'ACTIVE';
 
-    -- Mechanics
+    -- Mechanics (role = mechanic)
     SELECT coalesce(json_agg(json_build_object(
         'mechanic_id', data->>'mechanic_id',
         'name', data->>'name',
@@ -110,6 +116,25 @@ BEGIN
     INTO v_factors
     FROM kmb.config_factors;
 
+    -- Work Conditions dinamis dari cermin config_factors (Bug #22, 1:1 GAS KMB TRA getWorkConditionOptionsForView)
+    SELECT coalesce((data->>'value')::numeric, 1.0) INTO v_f_normal
+      FROM kmb.config_factors
+     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
+       AND (data->>'key' = 'normal' OR data->>'factor_key' = 'normal')
+     LIMIT 1;
+
+    SELECT coalesce((data->>'value')::numeric, 1.1) INTO v_f_difficult
+      FROM kmb.config_factors
+     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
+       AND (data->>'key' = 'difficult' OR data->>'factor_key' = 'difficult')
+     LIMIT 1;
+
+    SELECT coalesce((data->>'value')::numeric, 1.2) INTO v_f_extreme
+      FROM kmb.config_factors
+     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
+       AND (data->>'key' = 'extreme' OR data->>'factor_key' = 'extreme')
+     LIMIT 1;
+
     RETURN json_build_object(
         'success', true,
         'source', 'SUPABASE',
@@ -119,13 +144,49 @@ BEGIN
             'mechanics', v_mechs,
             'factors', v_factors,
             'work_conditions', json_build_array(
-                json_build_object('key', 'normal', 'label', 'Normal (Shift 1)', 'factor', 1.0),
-                json_build_object('key', 'difficult', 'label', 'Difficult (Shift 2)', 'factor', 1.1),
-                json_build_object('key', 'extreme', 'label', 'Extreme', 'factor', 1.2)
+                json_build_object('key', 'normal', 'label', 'Shift 1', 'factor', coalesce(v_f_normal, 1.0)),
+                json_build_object('key', 'difficult', 'label', 'Shift 2', 'factor', coalesce(v_f_difficult, 1.1)),
+                json_build_object('key', 'extreme', 'label', 'Kondisi Ekstrim', 'factor', coalesce(v_f_extreme, 1.2))
             ),
             'pulled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF')
         )
     );
+END;
+$$;
+
+-- 2b. Pembungkus Bertoken Publik: kmbtra_create_refs_bertoken (Wajib Token Sah, Bug #22)
+CREATE OR REPLACE FUNCTION public.kmbtra_create_refs_bertoken(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM kmb.api_tokens t
+         WHERE trim(t.data->>'token') = btrim(coalesce(p_token, ''))
+           AND (t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
+    ) THEN
+        RETURN json_build_object(
+            'success', false,
+            'result', null,
+            'error', 'Token tidak dikenal / nonaktif',
+            'source', 'SUPABASE'
+        );
+    END IF;
+
+    RETURN public._kmbtra_create_refs_internal();
+END;
+$$;
+
+-- Alias backward compatibility (diproteksi hanya untuk service_role)
+CREATE OR REPLACE FUNCTION public.kmbtra_create_refs()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN public._kmbtra_create_refs_internal();
 END;
 $$;
 
@@ -134,6 +195,7 @@ CREATE OR REPLACE FUNCTION public.kmbtra_monitoring_bertoken(p_token text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_user record;
@@ -203,6 +265,11 @@ BEGIN
     INTO v_mechs
     FROM per_mech;
 
+    -- Jika yang memanggil hanya mekanik biasa, sembunyikan daftar mekanik lain (privasi)
+    IF lower(coalesce(v_user.role, 'mechanic')) = 'mechanic' THEN
+        v_mechs := '[]'::json;
+    END IF;
+
     RETURN json_build_object(
         'success', true,
         'source', 'SUPABASE',
@@ -221,3 +288,16 @@ BEGIN
 END;
 $$;
 
+-- ==============================================================================
+-- HAK AKSES PERIZINAN (Bug #13 & Bug #22)
+-- Tutup fungsi tanpa token dari publik/anon, hanya buka fungsi bertoken.
+-- ==============================================================================
+REVOKE EXECUTE ON FUNCTION public._kmbtra_create_refs_internal() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.kmbtra_create_refs() FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public._kmbtra_create_refs_internal() TO service_role;
+GRANT EXECUTE ON FUNCTION public.kmbtra_create_refs() TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.kmbtra_ping(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.kmbtra_create_refs_bertoken(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.kmbtra_monitoring_bertoken(text) TO anon, authenticated, service_role;

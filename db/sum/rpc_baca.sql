@@ -2,6 +2,7 @@
 -- FUNGSI RPC BACA SUPABASE UNTUK RUMAH SUM V2 (Skema `sum`)
 -- Sesuai Tahap 4: Aksi Baca Cermin Langsung dari sum
 -- Berdasarkan db/sum/cermin_sheet.sql & docs/INVENTARIS-SUM.md
+-- Diperbarui: 30 Okt 2026 (Perbaikan Bug #22: Wajib Token & Faktor Dinamis 1:1 GAS)
 -- ==============================================================================
 
 -- 1. RPC sum_ping: Resolusi token instan SUM V2
@@ -9,6 +10,7 @@ CREATE OR REPLACE FUNCTION public.sum_ping(p_token text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_user record;
@@ -55,17 +57,21 @@ BEGIN
 END;
 $$;
 
--- 2. RPC sum_create_refs: Katalog unit, komponen, mekanik SUM V2
-CREATE OR REPLACE FUNCTION public.sum_create_refs()
+-- 2. Fungsi Internal: Katalog unit, komponen, mekanik SUM V2 (Tidak boleh dipanggil langsung)
+CREATE OR REPLACE FUNCTION public._sum_create_refs_internal()
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_units json;
     v_comps json;
     v_mechs json;
     v_factors json;
+    v_f_normal numeric := 1.0;
+    v_f_difficult numeric := 1.1;
+    v_f_extreme numeric := 1.2;
 BEGIN
     -- Units
     SELECT coalesce(json_agg(json_build_object(
@@ -113,6 +119,25 @@ BEGIN
     INTO v_factors
     FROM sum.config_factors;
 
+    -- Work Conditions dinamis dari cermin config_factors (Bug #22, 1:1 GAS SUM getWorkConditionOptionsForView)
+    SELECT coalesce((data->>'value')::numeric, 1.0) INTO v_f_normal
+      FROM sum.config_factors
+     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
+       AND (data->>'key' = 'normal' OR data->>'factor_key' = 'normal')
+     LIMIT 1;
+
+    SELECT coalesce((data->>'value')::numeric, 1.1) INTO v_f_difficult
+      FROM sum.config_factors
+     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
+       AND (data->>'key' = 'difficult' OR data->>'factor_key' = 'difficult')
+     LIMIT 1;
+
+    SELECT coalesce((data->>'value')::numeric, 1.2) INTO v_f_extreme
+      FROM sum.config_factors
+     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
+       AND (data->>'key' = 'extreme' OR data->>'factor_key' = 'extreme')
+     LIMIT 1;
+
     RETURN json_build_object(
         'success', true,
         'source', 'SUPABASE',
@@ -122,13 +147,49 @@ BEGIN
             'mechanics', v_mechs,
             'factors', v_factors,
             'work_conditions', json_build_array(
-                json_build_object('key', 'normal', 'label', 'Normal (Shift 1)', 'factor', 1.0),
-                json_build_object('key', 'difficult', 'label', 'Difficult (Shift 2)', 'factor', 1.1),
-                json_build_object('key', 'extreme', 'label', 'Extreme', 'factor', 1.2)
+                json_build_object('key', 'normal', 'label', 'Normal', 'factor', coalesce(v_f_normal, 1.0)),
+                json_build_object('key', 'difficult', 'label', 'Malam/Hujan', 'factor', coalesce(v_f_difficult, 1.1)),
+                json_build_object('key', 'extreme', 'label', 'Resiko Tinggi', 'factor', coalesce(v_f_extreme, 1.2))
             ),
             'pulled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF')
         )
     );
+END;
+$$;
+
+-- 2b. Pembungkus Bertoken Publik: sum_create_refs_bertoken (Wajib Token Sah, Bug #22)
+CREATE OR REPLACE FUNCTION public.sum_create_refs_bertoken(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM sum.api_tokens t
+         WHERE trim(t.data->>'token') = btrim(coalesce(p_token, ''))
+           AND (t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
+    ) THEN
+        RETURN json_build_object(
+            'success', false,
+            'result', null,
+            'error', 'Token tidak dikenal / nonaktif',
+            'source', 'SUPABASE'
+        );
+    END IF;
+
+    RETURN public._sum_create_refs_internal();
+END;
+$$;
+
+-- Alias backward compatibility (diproteksi hanya untuk service_role)
+CREATE OR REPLACE FUNCTION public.sum_create_refs()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN public._sum_create_refs_internal();
 END;
 $$;
 
@@ -137,6 +198,7 @@ CREATE OR REPLACE FUNCTION public.sum_monitoring_bertoken(p_token text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_user record;
@@ -184,7 +246,7 @@ BEGIN
     WITH per_mech AS (
         SELECT m.data->>'mechanic_id' as mechanic_id,
                m.data->>'name' as name,
-               m.data->>'jabatan_aktual' as jabatan_aktual,
+               coalesce(m.data->>'jabatan_aktual', '') as jabatan,
                coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) IN ('OPEN', 'ACTIVE', 'ASSIGNED')), 0)::int as pending_work,
                coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'EXPIRED'), 0)::int as expired,
                coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'PENDING_L1'), 0)::int as pending_l1,
@@ -200,7 +262,7 @@ BEGIN
     SELECT coalesce(json_agg(json_build_object(
         'mechanic_id', mechanic_id,
         'name', name,
-        'jabatan_aktual', jabatan_aktual,
+        'jabatan', jabatan,
         'pending_work', pending_work,
         'expired', expired,
         'pending_l1', pending_l1,
@@ -209,6 +271,11 @@ BEGIN
     ) ORDER BY name), '[]'::json)
     INTO v_mechs
     FROM per_mech;
+
+    -- Jika yang memanggil hanya mekanik biasa, sembunyikan daftar mekanik lain (privasi)
+    IF lower(coalesce(v_user.role, 'mechanic')) = 'mechanic' THEN
+        v_mechs := '[]'::json;
+    END IF;
 
     RETURN json_build_object(
         'success', true,
@@ -229,53 +296,54 @@ BEGIN
 END;
 $$;
 
--- 4. RPC sum_my_wos_bertoken: Pekerjaan Aktif Milik Mekanik SUM V2
+-- 4. RPC sum_my_wos_bertoken: Daftar WO spesifik mekanik pemegang token
 CREATE OR REPLACE FUNCTION public.sum_my_wos_bertoken(p_token text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_mech_id text;
+    v_user record;
     v_wos json;
 BEGIN
-    SELECT t.data->>'mechanic_id' INTO v_mech_id
+    SELECT t.data->>'mechanic_id' as mechanic_id
+      INTO v_user
       FROM sum.api_tokens t
      WHERE trim(t.data->>'token') = trim(p_token)
        AND (t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
      LIMIT 1;
 
-    IF v_mech_id IS NULL THEN
-        RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif');
+    IF v_user.mechanic_id IS NULL THEN
+        RETURN json_build_object('success', false, 'result', '[]'::json, 'error', 'Token tidak dikenal / nonaktif');
     END IF;
 
-    SELECT coalesce(json_agg(json_build_object(
-        'id', w.data->>'id',
-        'wo_number', w.data->>'wo_number',
-        'unit_id', w.data->>'unit_id',
-        'component_id', w.data->>'component_id',
-        'component_name', coalesce(c.data->>'component_name', w.data->>'component_name', ''),
-        'status', w.data->>'status',
-        'work_condition', coalesce(w.data->>'work_condition', 'normal'),
-        'target_hours', coalesce((w.data->>'target_hours')::numeric, 0),
-        'created_at', w.data->>'created_at',
-        'created_by', coalesce(w.data->>'created_by', '')
-    ) ORDER BY w.data->>'created_at' DESC), '[]'::json)
-    INTO v_wos
-    FROM sum.work_order_team t
-    JOIN sum.work_orders w ON trim(w.data->>'id') = trim(t.data->>'wo_id')
-    LEFT JOIN sum.config_components c ON trim(c.data->>'component_id') = trim(w.data->>'component_id')
-    WHERE trim(t.data->>'mechanic_id') = trim(v_mech_id);
+    SELECT coalesce(json_agg(w.data ORDER BY w.data->>'created_at' DESC), '[]'::json)
+      INTO v_wos
+      FROM sum.work_orders w
+      JOIN sum.work_order_team t ON trim(t.data->>'wo_id') = trim(w.data->>'id')
+     WHERE trim(t.data->>'mechanic_id') = trim(v_user.mechanic_id);
 
     RETURN json_build_object(
         'success', true,
         'source', 'SUPABASE',
-        'result', json_build_object(
-            'mechanic_id', v_mech_id,
-            'wos', v_wos,
-            'pulled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF')
-        )
+        'result', v_wos,
+        'pulled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF')
     );
 END;
 $$;
 
+-- ==============================================================================
+-- HAK AKSES PERIZINAN (Bug #13 & Bug #22)
+-- Tutup fungsi tanpa token dari publik/anon, hanya buka fungsi bertoken.
+-- ==============================================================================
+REVOKE EXECUTE ON FUNCTION public._sum_create_refs_internal() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sum_create_refs() FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public._sum_create_refs_internal() TO service_role;
+GRANT EXECUTE ON FUNCTION public.sum_create_refs() TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.sum_ping(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sum_create_refs_bertoken(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sum_monitoring_bertoken(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sum_my_wos_bertoken(text) TO anon, authenticated, service_role;
