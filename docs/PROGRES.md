@@ -5,6 +5,19 @@ Entri terbaru selalu di **atas**. Setiap sesi kerja, baik oleh orang maupun AI, 
 Formatnya:
 
 ```
+### 2026-10-30 · Gabriel (+ Claude) · bersama (konsep gedung, kamar, dan staging ditulis)
+- Berubah: dokumen saja.
+  - **Baru: `docs/GEDUNG-DAN-STAGING.md`**, atas permintaan Gabriel, karena konsep ini belum dipahami sama. Isinya:
+    - Project Supabase = gedung, skema = kamar, rumah = kamar. Rumah baru = skema baru, bukan project baru.
+    - Paket gratis = 2 gedung: produksi dan staging. Gedung ketiga = pembayaran (titik henti).
+    - Staging dijelaskan sebagai panggung latihan: alamat, `[env.staging]`, sumber data, dan daftar latihan wajib.
+    - **GAS tiruan:** staging tidak pernah menyentuh GAS produksi, karena aksi tulis ke sana sama dengan menulis ke spreadsheet asli (turunan garis merah §5).
+  - `AGENTS.md`: bacaan wajib nomor 5, dan koridor butir 14.
+  - `docs/SERAH-TERIMA-2026-10-29.md`:
+    - §1: kalimat "push ke `main` = deploy `kmbprojek.abadiops.com`" yang sudah basi diperbaiki.
+    - Langkah 0 dan 4 ditambah acuan ke dokumen baru.
+- Belum selesai / berikutnya: keputusan project Supabase SUM (`docs/KEPUTUSAN.md`, "Belum diputuskan"); deploy ketiga Worker rumah (perbaikan #19–#21).
+
 ### 2026-10-29 · Gabriel (+ Claude) · bersama (audit kerja Raka 29 Okt di semua sistem; serah-terima token dipulihkan)
 - Dicek: GitHub (15 commit Raka, 54 file, `cf56a7c..1dd9166`), situs live (pintu dan ketiga rumah), Supabase (dua project), GitHub Actions, dan Cloudflare dari luar (mesin audit tidak punya wrangler).
 - **Aman dan sesuai rencana:**

@@ -6,7 +6,8 @@ Untuk Raka dan AI-nya. Baca dari atas sampai bawah sebelum mulai. Rinciannya ada
 
 - Jalankan `git pull --rebase`. Sejak 28 Okt masuk sekitar 40 commit, termasuk ke `worker.js`, `scripts/patched-app.js`, `scripts/built-index.html`, `pwa/`, dan `workers/`.
 - Baca `AGENTS.md`, terutama §0a (koridor cara kerja) dan §5 (garis merah, termasuk **HARAM hardcode**). Pastikan AI-mu memuat `AGENTS.md` di awal setiap sesi. `GEMINI.md` sudah menunjuk ke sana; kalau Antigravity tidak membacanya otomatis, pasang `AGENTS.md` sebagai aturan workspace.
-- **Push ke `main` = deploy produksi** `kmbprojek.abadiops.com` (Worker `project-mar`, Workers Builds), yang tayang sekitar 1–4 menit kemudian. Uji dulu dengan `wrangler dev`. Sesudah push, pantau sampai versi baru tayang.
+- **Push ke `main`** memicu build otomatis Worker `project-mar` (portal lama). Sejak 29 Okt Worker itu tidak punya domain produksi yang diketahui. Pintu dan ketiga rumah di-deploy **manual** dengan `npx wrangler deploy` di folder Worker-nya. Uji dulu dengan `wrangler dev`, lalu pantau sampai versi baru tayang.
+- Baca `docs/GEDUNG-DAN-STAGING.md` sebelum langkah 0, 2, 3, 4, 7, dan 8. Di sana dijelaskan bahwa satu project Supabase memuat semua rumah, project kedua adalah staging, dan staging memakai GAS tiruan, bukan GAS produksi.
 
 ## 2. Susunan sekarang (live dan diuji 29 Okt)
 
@@ -111,7 +112,7 @@ Rencana yang mengikat (`docs/KEPUTUSAN.md`, `docs/SAKLAR.md`):
   - token uji SPV-001 baru KMB Project, yang dimasukkan dulu ke sheet `ApiTokens` KMB Project;
   - token uji SUM dan KMB TRA.
 - Akun layanan Google baca-saja dibuat di akun Google kawanabadigrup. Kalau Raka punya akses, ia membuatnya sendiri; kalau tidak, Gabriel yang membuatnya. Ketiga spreadsheet dibagikan ke akun itu sebagai Viewer, dan satu folder Drive privat dibagikan sebagai Editor untuk cadangan.
-- Raka membuat project Supabase kedua (gratis) untuk staging di akun bersama.
+- Raka membuat project Supabase kedua (gratis) untuk staging di akun bersama. Ini Gedung 2 di `docs/GEDUNG-DAN-STAGING.md`. Rumah **tidak** dibuatkan project sendiri.
 - Rahasia hanya disimpan di *secret* Cloudflare atau GitHub, atau di environment lokal.
 - *Selesai kalau:* Raka memegang semua akses itu dan `node scripts/buat-token-tiga-rumah.mjs --cek <token SPV-001 baru>` menjawab "dipakai di: KMB Project".
 
@@ -141,6 +142,8 @@ Rencana yang mengikat (`docs/KEPUTUSAN.md`, `docs/SAKLAR.md`):
 
 **4. Staging lengkap.**
 - Worker staging untuk pintu (`staging.abadiops.com`) dan tiap rumah (`staging-<rumah>.abadiops.com`) memakai Supabase staging.
+- Worker staging dibuat lewat `[env.staging]` di `wrangler.toml` yang sama, lalu di-deploy dengan `npx wrangler deploy --env staging`.
+- Bagian GAS di staging dilayani **GAS tiruan** (`workers/gas-tiruan/`), **tidak pernah** GAS produksi. Rinciannya di `docs/GEDUNG-DAN-STAGING.md` §2.
 - *Selesai kalau:* alur masuk lewat pintu staging sampai dashboard tiap rumah berjalan.
 
 **5. Aksi baca pindah ke cermin.**

@@ -11,6 +11,7 @@ Bacaan wajib sebelum mengubah apa pun, berurutan:
 2. `docs/KEPUTUSAN.md`: semua keputusan yang sudah diambil, dan yang masih menunggu.
 3. Lima entri teratas `docs/PROGRES.md`: apa yang terakhir dikerjakan, plus daftar tugas terbuka.
 4. `docs/SAKLAR.md`, kalau pekerjaanmu menyentuh alur WO lama atau WO baru.
+5. `docs/GEDUNG-DAN-STAGING.md`, kalau pekerjaanmu menyentuh Supabase, staging, panel saklar, atau rumah baru.
 
 ---
 
@@ -81,6 +82,11 @@ Cara kerja yang terbukti 28–29 Okt 2026. Ikuti seperti aturan, bukan saran.
     - Strategi `sw.js`, cara antrean membaca jawaban server, dan alur boot **tidak** diubah tanpa keputusan Gabriel.
     - Sebelum deploy PWA: `node scripts/uji-serahan-token.mjs` harus lulus 24/24. Lalu bandingkan `sw.js` dengan aslinya (`diff --strip-trailing-cr`); bedanya hanya boleh di baris resep.
     - Pelajaran 29 Okt: bug #19–#21.
+14. **Satu gedung, banyak kamar; yang berisiko dilatih di staging** (`docs/GEDUNG-DAN-STAGING.md`).
+    - Satu project Supabase (gedung) memuat semua rumah, masing-masing satu skema (kamar). Rumah baru = skema baru, **bukan** project baru.
+    - Project kedua adalah staging. Project ketiga berarti pembayaran (titik henti).
+    - Hal berisiko (saklar, aksi tulis Supabase, pemulihan cadangan, migrasi yang mengubah atau menghapus, antrean kiriman) dilatih di staging dulu.
+    - Staging **tidak pernah** menyentuh GAS produksi; ia memakai GAS tiruan.
 
 ---
 

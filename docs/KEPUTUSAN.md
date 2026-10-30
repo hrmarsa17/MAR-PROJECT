@@ -82,7 +82,7 @@ Keputusan rencana 29 Okt sudah diambil (baris 29 Okt di tabel atas; nomor lama 1
      - Raka membuat project terpisah `dnnqrslftndcbmnvuveb` (Singapura) dan memasang skema cermin `sum.cermin_*` serta 4 RPC di sana.
      - `workers/sum` sudah diarahkan ke project itu. Jalur Supabase SUM masih tertutup, dan tabelnya masih kosong.
      - Alasannya tidak tercatat.
-   - **Rancangan yang diputuskan:** satu project `sptgqsjgszwbreikxdph` dengan skema per rumah (`sum`, `kmb`, `kmb_projek`), ditambah satu project gratis untuk staging. Paket gratis Supabase hanya mengizinkan dua project aktif, jadi project SUM terpisah memakai slot staging.
+   - **Rancangan yang diputuskan** (dijelaskan dengan perumpamaan gedung dan kamar di `docs/GEDUNG-DAN-STAGING.md`): satu project `sptgqsjgszwbreikxdph` dengan skema per rumah (`sum`, `kmb`, `kmb_projek`), ditambah satu project gratis untuk staging. Paket gratis Supabase hanya mengizinkan dua project aktif, jadi project SUM terpisah memakai slot staging.
    - **Usulan:** kembali ke rancangan.
      1. Jalankan `db/sum/cermin_sheet.sql` dan `db/sum/rpc_baca.sql` (sesudah bug #22 diperbaiki) di project utama.
      2. Arahkan `workers/sum` ke project utama.
