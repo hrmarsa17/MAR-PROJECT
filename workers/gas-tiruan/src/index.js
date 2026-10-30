@@ -66,13 +66,21 @@ export default {
       } catch (_) {}
     }
 
-    // Fallback bila parameter dikirim lewat query URL
-    const action = parsed.action || url.searchParams.get('action') || '';
-    const token = parsed.token || url.searchParams.get('token') || '';
+    let dataObj = {};
+    if (typeof parsed.data === 'string') {
+      try { dataObj = JSON.parse(parsed.data); } catch(_) {}
+    } else if (parsed.data && typeof parsed.data === 'object') {
+      dataObj = parsed.data;
+    }
+
+    // Fallback bila parameter dikirim lewat query URL atau dataObj
+    const action = parsed.action || url.searchParams.get('action') || dataObj.action || '';
+    const token = parsed.token || url.searchParams.get('token') || dataObj.token || '';
     if (!rumah && parsed.rumah) rumah = String(parsed.rumah).toLowerCase();
+    if (!rumah && dataObj.rumah) rumah = String(dataObj.rumah).toLowerCase();
 
     // Jalankan penanganan aksi
-    return tanganiAksi(action, token, rumah, parsed, env);
+    return tanganiAksi(action, token, rumah, { ...parsed, ...dataObj }, env);
   },
 };
 
@@ -109,7 +117,7 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
   }
 
   // 6. Aksi Tulis (Simulasi Mandiri Tanpa Google Sheets)
-  if (action === 'create_wo') {
+  if (action === 'create_wo' || action === 'createWO') {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100 + Math.random() * 900);
     const mockWoId = `WO-${today}-${randomSuffix}`;
@@ -121,10 +129,15 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
         status: 'pending',
         message: 'Work order berhasil dibuat (Simulasi Staging)',
       },
+      data: {
+        wo_id: mockWoId,
+        id: mockWoId,
+        created: [{ wo_id: mockWoId, id: mockWoId }],
+      },
     });
   }
 
-  if (action === 'submit_work' || action === 'submit_job') {
+  if (['submit_work', 'submit_job', 'submitMechanicWork'].includes(action)) {
     return responJson({
       success: true,
       result: {
@@ -133,7 +146,7 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     });
   }
 
-  if (action === 'approve') {
+  if (['approve', 'supervisorApprove', 'superintendentApprove', 'handleSupervisorApprove', 'handleSuperintendentApprove', 'handleBulkApprove'].includes(action)) {
     return responJson({
       success: true,
       result: {
@@ -142,7 +155,7 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     });
   }
 
-  if (action === 'reject') {
+  if (['reject', 'supervisorReject', 'superintendentReject', 'handleSupervisorReject', 'handleSuperintendentReject'].includes(action)) {
     return responJson({
       success: true,
       result: {
@@ -151,12 +164,40 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     });
   }
 
-  if (action === 'cancel') {
+  if (['cancel', 'cancelWO', 'handleCancelWO'].includes(action)) {
     return responJson({
       success: true,
       result: {
         message: 'Work order dibatalkan (Simulasi Staging)',
       },
+    });
+  }
+
+  if (['dataDashboardTeknis', 'dataDashboardField'].includes(action)) {
+    return responJson({
+      success: true,
+      data: { units: [], summary: {} },
+    });
+  }
+
+  if (['riwayatHmUnit', 'riwayatKmUnit'].includes(action)) {
+    return responJson({
+      success: true,
+      data: [],
+    });
+  }
+
+  if (action === 'loadJobsCatalog') {
+    return responJson({
+      success: true,
+      data: { jobs: [] },
+    });
+  }
+
+  if (action === 'getWODetails') {
+    return responJson({
+      success: true,
+      data: { id: parsed.wo_id || 'WO-STAGING', status: 'approved' },
     });
   }
 

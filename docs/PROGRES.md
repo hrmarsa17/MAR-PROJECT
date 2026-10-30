@@ -12,6 +12,35 @@ Formatnya:
 
 ---
 
+### 2026-10-30 · Raka (+ AI) · bersama (Langkah 6 Selesai: Halaman Web Desktop 1:1 di Domain Abadi, Pintu Bebas script.google.com)
+- **Eksekusi Langkah 6: Pemindahan Web Desktop 1:1 ke Domain Abadi (`abadiops.com`)**:
+  - Sesuai keputusan Gabriel (`docs/KEPUTUSAN.md` 28 & 29 Okt) dan `docs/SERAH-TERIMA-2026-10-29.md` §5 langkah 6, ketergantungan tombol **🖥️ Web** ke `script.google.com` telah dihilangkan total.
+  - Template HTML GAS KMB TRA (11 file) disalin dari `d:\GAS\KMB v2/` ke `workers/kmb/web/`.
+  - Bersama 11 template KMB Project (`workers/kmbprojek/web/`) dan 7 template SUM V2 (`workers/sum/web/`), seluruh template (total 29 file HTML) dipertahankan 100% identik tanpa perubahan logika.
+- **Generator Kompilasi Template Build-Time (`scripts/build-web-templates.mjs`)**:
+  - Mengonversi scriptlet GAS (`<? ... ?>`, `<?= ... ?>`, `<?!= ... ?>`, `include('...')`, `getThemeCSS()`) menjadi modul ES JavaScript murni (`src/web-templates.js`) di ketiga rumah.
+  - Zero-eval saat runtime: aman 100% terhadap batasan sandbox V8 Cloudflare Workers dan memiliki performa instan tanpa parsing regex saat melayani permintaan pengguna.
+  - Mendukung alias rute standar GAS: `dashboard` (`main`), `create` (`workorder`), `approvals` (`approval`), `mechanic` / `monitoring` (`mechanicdashboard`), `reports`, `teknis`, `hm`, `km`, `cancel` (`cancelwo`).
+- **Client Shim `window.google.script.run` via JavaScript Proxy**:
+  - Shim ringan disuntikkan otomatis ke dalam `<head>` halaman web.
+  - Menangkap seluruh panggilan metode interaktif klien (`handleSupervisorApprove`, `createWO`, `dataDashboardTeknis`, `riwayatHmUnit`, `getWODetails`, dll.) dan meneruskannya ke `/api/web`.
+  - Event delegation otomatis menjaga parameter `?token=` pada setiap navigasi tautan `/web` internal agar token tidak hilang saat berpindah antar menu/tab.
+- **Rute Web & API Bridge di Seluruh Worker Rumah**:
+  - Handler `handleWebRequest` (`GET /web`) dan `handleWebBridgeApi` (`POST /api/web`) diimplementasikan di `workers/kmbprojek/src/index.js`, `workers/sum/src/index.js`, dan `workers/kmb/src/index.js`.
+  - Guard token ketat: tanpa token mengembalikan HTTP 401 ("Perlu Token"), token salah/nonaktif mengembalikan HTTP 403 ("Akses Ditolak"), token sah memvalidasi profil dan merender tampilan 1:1.
+- **Pintu (`workers/pintu/wrangler.toml`) Diarahkan ke Domain Abadi**:
+  - Konfigurasi `web` di pintu produksi resmi diarahkan ke `https://<rumah>.abadiops.com/web` (`kmbprojek.abadiops.com/web`, `sum.abadiops.com/web`, `kmbtra.abadiops.com/web`).
+  - Konfigurasi `web` di pintu staging diarahkan ke `https://staging-<rumah>.abadiops.com/web`.
+- **Deploy & Verifikasi Lengkap**:
+  - `workers/gas-tiruan` diperbarui dengan dukungan alias router web.
+  - Staging (`abadiops-kmbprojek-staging`, `abadiops-sum-staging`, `abadiops-kmb-staging`, `abadiops-pintu-staging`) di-deploy dan diverifikasi live (semua halaman merender HTTP 200, HTML valid, shim aktif).
+  - Produksi (`abadiops-porject-kmb`, `abadiops-sum`, `abadiops-kmb`, `abadiops-pintu`) di-deploy dan diverifikasi live.
+  - `npm run typecheck` lulus bersih. `npx vitest run tests/pintu.test.ts` lulus 4/4.
+- **Belum selesai / berikutnya**:
+  - Langkah 2: Cermin ketiga rumah (sinkron sheet -> Supabase berkala) menunggu kunci akun layanan Google (`GOOGLE_SA_KEY_FILE`).
+  - Langkah 8: Panel saklar visual di `abadiops.com` berbasis Durable Object dengan proteksi kata sandi.
+
+
 ### 2026-10-30 · Raka (+ AI) · bersama (Panggung Staging Gedung 2 dnnqrslftndcbmnvuveb dan Worker gas-tiruan siap & teruji)
 - **Alih Fungsi Project `dnnqrslftndcbmnvuveb` Menjadi Gedung 2 (Staging)**:
   - 3 Kamar skema cermin (`sum` 22 tabel, `kmb` 24 tabel, `kmb_projek` 10 tabel) dan 18 RPC bertoken telah dipasang lengkap di Gedung 2 (`dnnqrslftndcbmnvuveb`).

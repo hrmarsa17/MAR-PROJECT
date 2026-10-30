@@ -18,6 +18,8 @@
  *     ulang otomatis, sama seperti saat ini ketika GAS tidak terjangkau.
  */
 
+import { handleWebRequest, handleWebBridgeApi } from './web-handler.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -28,6 +30,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.endsWith('/api/sehat')) return sehat(env);
+    if (url.pathname === '/api/web' || url.pathname === '/api/web/') return handleWebBridgeApi(request, env, url);
+    if (url.pathname === '/web' || url.pathname === '/web/' || url.pathname.startsWith('/web/')) return handleWebRequest(request, env, url);
     if (/\/api\/?$/.test(url.pathname)) return teruskanKeGas(request, env);
     // Akar folder → index.html, disajikan langsung tanpa redirect (lihat wrangler.toml).
     if (url.pathname.endsWith('/')) {

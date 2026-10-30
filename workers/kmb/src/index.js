@@ -15,6 +15,8 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, X-Active-Engine',
 };
 
+import { handleWebRequest, handleWebBridgeApi } from './web-handler.js';
+
 // Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
 const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
 
@@ -22,6 +24,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.endsWith('/api/sehat')) return sehat(env);
+    if (url.pathname === '/api/web' || url.pathname === '/api/web/') return handleWebBridgeApi(request, env, url);
+    if (url.pathname === '/web' || url.pathname === '/web/' || url.pathname.startsWith('/web/')) return handleWebRequest(request, env, url);
     if (/\/api\/?$/.test(url.pathname)) return tanganiApi(request, env, url);
     
     // Akar folder → index.html, disajikan langsung tanpa redirect (lihat wrangler.toml).
