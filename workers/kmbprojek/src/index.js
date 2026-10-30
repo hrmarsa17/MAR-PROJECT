@@ -94,8 +94,38 @@ function catat(env, isi) {
   console.log(JSON.stringify({ rumah: env.RUMAH, jalur: 'gas', ...isi }));
 }
 
-function sehat(env) {
-  return new Response(JSON.stringify({ ok: true, rumah: env.RUMAH, saklar: env.SAKLAR, jalur: 'gas' }), {
+let cacheSaklar = { nilai: null, waktu: 0 };
+
+async function bacaStatusSaklar(env) {
+  const sekarang = Date.now();
+  if (cacheSaklar.nilai && cacheSaklar.waktu > sekarang) {
+    return cacheSaklar.nilai;
+  }
+  let hasil = env.SAKLAR || 'gas';
+  try {
+    const isStaging = (env.GAS_URL && env.GAS_URL.includes('gas-tiruan')) || (env.RUMAH && env.RUMAH.includes('staging'));
+    const url = isStaging
+      ? 'https://abadiops-pintu-staging.kawanabadigrup.workers.dev/api/saklar/status'
+      : 'https://abadiops.com/api/saklar/status';
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 1200);
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (r.ok) {
+      const data = await r.json();
+      const val = data?.switches?.[env.RUMAH];
+      if (val) {
+        hasil = val;
+        cacheSaklar = { nilai: hasil, waktu: sekarang + 5000 };
+      }
+    }
+  } catch (_) {}
+  return hasil;
+}
+
+async function sehat(env) {
+  const liveSaklar = await bacaStatusSaklar(env);
+  return new Response(JSON.stringify({ ok: true, rumah: env.RUMAH, saklar: liveSaklar, jalur: liveSaklar === 'gas' ? 'gas' : 'dua_cabang' }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
 }

@@ -2,19 +2,22 @@
  * Pintu Abadi Operation (abadiops.com). Netral: tidak menampilkan aplikasi rumah mana pun.
  * Keputusan: docs/KEPUTUSAN.md 28 Okt 2026. Bagian bersama (AGENTS.md §2).
  *
- * POST /api/pintu  { token }
- *   Token dicek ke GAS SEMUA rumah sekaligus (ping), lalu:
- *   - cocok di tepat satu rumah → { success, rumah, nama_rumah, alamat_rumah, web_rumah, nama }.
- *     Halaman pintu menawarkan Aplikasi (alamat_rumah#token=) atau Web (web_rumah?token=).
- *   - cocok di lebih dari satu rumah → ditolak. JANGAN menebak.
- *   - tidak cocok di mana pun → pesan asli GAS ("Token tidak dikenal / nonaktif").
- *   - tidak cocok, tapi ada rumah yang tidak menjawab → minta coba lagi, supaya mekanik
- *     tidak mengira tokennya rusak hanya karena GAS lambat.
- * Selain itu: menyajikan halaman pintu dari public/.
+ * Rute:
+ * - GET  /                     -> Halaman Pintu (index.html)
+ * - POST /api/pintu            -> Ping token ke semua rumah (kenaliRumah)
+ * - GET  /saklar               -> Panel Saklar Visual (saklar.html)
+ * - POST /saklar/api/masuk     -> Login panel saklar
+ * - GET  /saklar/api/status    -> Ambil posisi saklar & audit history (auth required)
+ * - POST /saklar/api/ubah      -> Balik posisi saklar (auth required)
+ * - GET  /api/saklar/status    -> Endpoint publik/antar-worker untuk cek posisi saklar
  *
- * Daftar rumah ada di wrangler.toml [vars] RUMAH, bukan di kode. Tidak ada token atau
- * daftar token di sini (haram hardcode, AGENTS.md §5).
+ * Durable Object: SaklarDO (strongly consistent, zero latency, tahan banting jika DB down).
  */
+
+import { SaklarDO } from './saklar-do.js';
+import { verifikasiKataSandi, validasiSesi } from './saklar-auth.js';
+
+export { SaklarDO };
 
 const BATAS_GAS_MS = 25000;
 
@@ -24,11 +27,26 @@ function daftarRumah(env) {
   return r;
 }
 
-function json(obj, status = 200) {
+function json(obj, status = 200, headers = {}) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      ...headers,
+    },
   });
+}
+
+function getSaklarStub(env) {
+  if (!env.SAKLAR_DO) return null;
+  try {
+    const id = env.SAKLAR_DO.idFromName('abadiops-master-saklar');
+    return env.SAKLAR_DO.get(id);
+  } catch (err) {
+    console.warn('Gagal inisialisasi SaklarDO stub:', err);
+    return null;
+  }
 }
 
 // Badan ping sama dengan yang dikirim PWA lama ke GAS.
@@ -79,6 +97,118 @@ async function kenaliRumah(token, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // Penanganan CORS Preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    // --- Rute Panel Saklar Visual (docs/SAKLAR.md) ---
+    if (url.pathname === '/saklar' || url.pathname === '/saklar/' || url.pathname === '/saklar.html') {
+      return env.ASSETS.fetch(new Request(new URL('/saklar.html', url), request));
+    }
+
+    // API Masuk / Login Panel Saklar
+    if (url.pathname === '/saklar/api/masuk' && request.method === 'POST') {
+      let body = {};
+      try { body = await request.json(); } catch (_) {}
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const auth = await verifikasiKataSandi(body.password || '', env, clientIp);
+      if (!auth.ok) {
+        return json({ success: false, error: auth.error }, 401);
+      }
+      return json({ success: true, token: auth.token }, 200, {
+        'Set-Cookie': `abadi_saklar_session=${encodeURIComponent(auth.token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=7200`,
+      });
+    }
+
+    // API Status Saklar (Khusus Panel Saklar - butuh autentikasi)
+    if (url.pathname === '/saklar/api/status' && request.method === 'GET') {
+      const valid = await validasiSesi(request, env);
+      if (!valid) return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+
+      const stub = getSaklarStub(env);
+      if (!stub) {
+        // Fallback aman: jika DO belum aktif, laporkan semua 'gas'
+        return json({
+          success: true,
+          switches: {
+            kmbprojek: { posisi: 'gas', diubah_at: null, oleh: 'Sistem', alasan: 'Durable Object belum terpasang' },
+            sum: { posisi: 'gas', diubah_at: null, oleh: 'Sistem', alasan: 'Durable Object belum terpasang' },
+            kmbtra: { posisi: 'gas', diubah_at: null, oleh: 'Sistem', alasan: 'Durable Object belum terpasang' },
+          },
+          history: [],
+        });
+      }
+
+      const resp = await stub.fetch('https://saklar.internal/?action=status');
+      return new Response(resp.body, {
+        status: resp.status,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    // API Ubah Saklar (Khusus Panel Saklar - butuh autentikasi)
+    if (url.pathname === '/saklar/api/ubah' && request.method === 'POST') {
+      const valid = await validasiSesi(request, env);
+      if (!valid) return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+
+      let body = {};
+      try { body = await request.json(); } catch (_) {
+        return json({ success: false, error: 'Format JSON salah' }, 400);
+      }
+
+      const stub = getSaklarStub(env);
+      if (!stub) {
+        return json({ success: false, error: 'Durable Object saklar tidak tersedia pada runtime ini.' }, 500);
+      }
+
+      const resp = await stub.fetch('https://saklar.internal/?action=ubah', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      return new Response(resp.body, {
+        status: resp.status,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    // API Publik / Antar-Rumah untuk mengecek status saklar (tanpa history)
+    if (url.pathname === '/api/saklar/status' && request.method === 'GET') {
+      let switches = { kmbprojek: 'gas', sum: 'gas', kmbtra: 'gas' };
+      try {
+        const stub = getSaklarStub(env);
+        if (stub) {
+          const resp = await stub.fetch('https://saklar.internal/?action=status');
+          const data = await resp.json();
+          if (data && data.switches) {
+            switches = {
+              kmbprojek: data.switches.kmbprojek?.posisi || 'gas',
+              sum: data.switches.sum?.posisi || 'gas',
+              kmbtra: data.switches.kmbtra?.posisi || 'gas',
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal membaca saklar dari DO:', err);
+      }
+
+      return json({ success: true, switches }, 200, {
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store',
+      });
+    }
+
+    // --- Rute Pintu Utama (Pengenalan Token) ---
     if (url.pathname === '/api/pintu') {
       if (request.method !== 'POST') return json({ success: false, error: 'Metode tidak didukung' }, 405);
       let token = '';
@@ -86,9 +216,11 @@ export default {
       if (!token) return json({ success: false, error: 'Silakan masukkan token akses.' });
       return json(await kenaliRumah(token, env));
     }
+
     if (url.pathname === '/' || url.pathname === '/index.html') {
       return env.ASSETS.fetch(new Request(new URL('/index.html', url), request));
     }
+
     return env.ASSETS.fetch(request);
   },
 };

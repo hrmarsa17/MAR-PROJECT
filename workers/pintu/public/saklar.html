@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Saklar Dua Cabang — Abadi Operation</title>
+  <style>
+    :root {
+      --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0;
+      --text: #0F172A; --text-muted: #64748B;
+      --primary: #4F633F; --primary-hover: #384B2B;
+      --danger: #DC2626; --danger-hover: #B91C1C;
+      --warning: #D97706; --warning-bg: #FEF3C7;
+      --info: #0284C7; --info-bg: #E0F2FE;
+      --success: #16A34A; --success-bg: #DCFCE7;
+      --purple: #7C3AED; --purple-bg: #F3E8FF;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    .logo { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
+    .logo span { color: var(--primary); }
+    .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+    /* Login Box */
+    #viewLogin { max-width: 400px; margin: 5rem auto; background: var(--card); padding: 2.5rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .form-group { margin-bottom: 1.25rem; text-align: left; }
+    .form-group label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem; color: var(--text-muted); }
+    .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; }
+    .form-control:focus { outline: none; border-color: var(--primary); ring: 2px rgba(79,99,63,0.2); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .btn-block { width: 100%; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-secondary { background: #E2E8F0; color: var(--text); }
+    .btn-secondary:hover { background: #CBD5E1; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Banner Darurat */
+    .emergency-banner { background: #FEE2E2; border: 1px solid #FCA5A5; color: #991B1B; padding: 1rem 1.25rem; border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .emergency-text { font-size: 0.95rem; font-weight: 600; }
+
+    /* Grid Kartu Saklar */
+    .switch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
+    .switch-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
+    .switch-card.active-cabang { border-color: var(--info); ring: 2px rgba(2,132,199,0.15); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .house-title { font-size: 1.15rem; font-weight: 700; }
+    .house-sub { font-size: 0.8rem; color: var(--text-muted); }
+    
+    /* Badges */
+    .badge { padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; }
+    .badge-gas { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+    .badge-dua_cabang { background: var(--info-bg); color: var(--info); border: 1px solid #BAE6FD; }
+    .badge-supabase { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
+
+    .switch-meta { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.25rem; background: #F8FAFC; padding: 0.75rem; border-radius: 8px; }
+    .meta-row { display: flex; justify-content: space-between; }
+    .meta-val { font-weight: 600; color: var(--text); }
+
+    .switch-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    /* History Table */
+    .history-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+    .history-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.75rem; background: #F8FAFC; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+    td { padding: 0.75rem; border-bottom: 1px solid #F1F5F9; }
+    tr:hover td { background: #F8FAFC; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); }
+    .modal-box { background: white; border-radius: var(--radius); max-width: 580px; width: 90%; max-height: 90vh; overflow-y: auto; padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .modal-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: #991B1B; }
+    .modal-caution { background: #FEF2F2; border: 1px solid #FCA5A5; color: #991B1B; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.25rem; }
+    .checklist-container { margin-bottom: 1.5rem; }
+    .checklist-item { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; line-height: 1.4; color: #334155; }
+    .checklist-item input { margin-top: 0.2rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+
+    .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; margin-bottom: 1rem; }
+    .alert-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+    .alert-success { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span>⚙️</span> Abadi Operation — Panel Saklar Dua Cabang
+      </div>
+      <div class="header-actions" id="headerNav" style="display:none;">
+        <span class="badge badge-gas" id="envBadge">PRODUKSI</span>
+        <button class="btn btn-secondary" onclick="logout()" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Keluar</button>
+      </div>
+    </header>
+
+    <!-- Tampilan 1: Form Login Sandi -->
+    <div id="viewLogin">
+      <h2 style="font-size:1.35rem; font-weight:700; margin-bottom:0.5rem; text-align:center;">Masuk ke Panel Saklar</h2>
+      <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.5rem; text-align:center;">Hanya untuk pengelola berwenang (Gabriel / Admin).</p>
+      <div id="loginAlert" class="alert alert-danger hidden"></div>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="inputPassword">Kata Sandi Pengelola</label>
+          <input type="password" id="inputPassword" class="form-control" placeholder="••••••••••••" required autofocus autocomplete="current-password">
+        </div>
+        <button type="submit" id="btnLogin" class="btn btn-primary btn-block">Masuk ke Panel</button>
+      </form>
+    </div>
+
+    <!-- Tampilan 2: Dashboard Saklar -->
+    <div id="viewDashboard" class="hidden">
+      <!-- Banner Darurat Global -->
+      <div class="emergency-banner">
+        <div>
+          <div class="emergency-text">🚨 Tombol Penyelamat Darurat Global</div>
+          <div style="font-size:0.8rem; opacity:0.9;">Jika terjadi gangguan sistemik pada Supabase, kembalikan seluruh rumah ke GAS dalam 1 klik.</div>
+        </div>
+        <button class="btn btn-danger" onclick="daruratMundurSemua()">Balikkan Semua ke GAS</button>
+      </div>
+
+      <!-- Kartu 3 Rumah -->
+      <div class="switch-grid" id="switchCards">
+        <!-- Render dinamis via JS -->
+      </div>
+
+      <!-- Riwayat Audit Log -->
+      <div class="history-card">
+        <div class="history-title">Riwayat Pembalikan Saklar (Audit Log)</div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu (WIB)</th>
+                <th>Rumah</th>
+                <th>Peralihan</th>
+                <th>Alasan</th>
+                <th>Oleh</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Memuat riwayat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Maju (Safety Gates) -->
+  <div id="modalMaju" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-title">⚠️ Peringatan Pembalikan ke Dua Cabang</div>
+      <div class="modal-caution">
+        <strong>Perhatian Penting:</strong> Saklar akan mengarahkan pembuatan <strong>WO BARU</strong> langsung ke basis data Supabase. WO lama tetap diselesaikan di GAS. Pastikan seluruh 10 syarat migrasi di bawah sudah terpenuhi!
+      </div>
+
+      <div class="checklist-container">
+        <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.75rem;">Checklist Syarat Wajib (docs/SAKLAR.md §3):</div>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 1. Cermin rumah tidak punya selisih selama 7 hari berturut-turut.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 2. Semua aksi tulis & web lulus uji rekam-putar di staging.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 3. Buku tamu kiriman sudah aktif di Cloudflare.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 4. Cermin ikut menyalin ProcessedOps dari GAS.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 5. Nomor WO Supabase 4 angka (tidak akan kembar dengan GAS).</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 6. Payroll gabungan sama dengan GAS untuk bulan-bulan lalu.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 7. Cadangan per jam berjalan dan uji pulih ke staging berhasil.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 8. Halaman web GAS sudah ditutup atau dibuat hanya-baca.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 9. Latihan saklar balik sudah dilakukan di staging.</label>
+        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 10. Persetujuan resmi diperoleh dari Gabriel (Titik Henti).</label>
+      </div>
+
+      <div class="form-group">
+        <label id="lblKonfirmasiRumah">Ketik kode rumah untuk konfirmasi:</label>
+        <input type="text" id="inputKonfirmasiRumah" class="form-control" placeholder="kode rumah" oninput="checkSyaratForm()">
+      </div>
+      <div class="form-group">
+        <label for="inputAlasanMaju">Alasan Pembalikan Saklar:</label>
+        <input type="text" id="inputAlasanMaju" class="form-control" placeholder="Contoh: Seluruh uji rekam-putar lulus di staging" oninput="checkSyaratForm()">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="tutupModalMaju()">Batal</button>
+        <button class="btn btn-danger" id="btnKonfirmasiMaju" onclick="submitMajuSaklar()" disabled>Konfirmasi & Nyalakan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let TOKEN_SESI = localStorage.getItem('abadi_saklar_token') || '';
+    let TARGET_RUMAH_MODAL = '';
+    let TARGET_POSISI_MODAL = '';
+
+    const RUMAH_INFO = {
+      kmbprojek: { nama: 'KMB Projek', sub: 'Manpower Panggilan Proyek' },
+      sum: { nama: 'SUM V2', sub: 'PT SUM Site SUM' },
+      kmbtra: { nama: 'KMB TRA', sub: 'PT KMB Site TRA' }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (location.host.includes('staging')) {
+        document.getElementById('envBadge').textContent = 'STAGING';
+        document.getElementById('envBadge').className = 'badge badge-dua_cabang';
+      }
+      if (TOKEN_SESI) {
+        muatStatus();
+      } else {
+        tampilkanLogin();
+      }
+    });
+
+    function tampilkanLogin() {
+      document.getElementById('viewLogin').classList.remove('hidden');
+      document.getElementById('viewDashboard').classList.add('hidden');
+      document.getElementById('headerNav').style.display = 'none';
+    }
+
+    function tampilkanDashboard() {
+      document.getElementById('viewLogin').classList.add('hidden');
+      document.getElementById('viewDashboard').classList.remove('hidden');
+      document.getElementById('headerNav').style.display = 'flex';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const pw = document.getElementById('inputPassword').value;
+      const btn = document.getElementById('btnLogin');
+      const alertBox = document.getElementById('loginAlert');
+      btn.disabled = true; btn.textContent = 'Memeriksa...';
+      alertBox.classList.add('hidden');
+
+      try {
+        const res = await fetch('/saklar/api/masuk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw })
+        });
+        const data = await res.json();
+        if (data.ok && data.token) {
+          TOKEN_SESI = data.token;
+          localStorage.setItem('abadi_saklar_token', TOKEN_SESI);
+          document.getElementById('inputPassword').value = '';
+          muatStatus();
+        } else {
+          alertBox.textContent = data.error || 'Kata sandi salah';
+          alertBox.classList.remove('hidden');
+        }
+      } catch (err) {
+        alertBox.textContent = 'Koneksi gagal: ' + err.message;
+        alertBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Masuk ke Panel';
+      }
+    }
+
+    function logout() {
+      TOKEN_SESI = '';
+      localStorage.removeItem('abadi_saklar_token');
+      tampilkanLogin();
+    }
+
+    async function muatStatus() {
+      try {
+        const res = await fetch('/saklar/api/status', {
+          headers: { 'Authorization': 'Bearer ' + TOKEN_SESI }
+        });
+        if (res.status === 401) {
+          logout();
+          return;
+        }
+        const data = await res.json();
+        if (data.success) {
+          tampilkanDashboard();
+          renderCards(data.switches);
+          renderHistory(data.history);
+        }
+      } catch (err) {
+        console.error('Gagal memuat status saklar:', err);
+      }
+    }
+
+    function renderCards(switches) {
+      const grid = document.getElementById('switchCards');
+      grid.innerHTML = '';
+      const order = ['kmbprojek', 'sum', 'kmbtra'];
+
+      for (const kode of order) {
+        const s = switches[kode] || { posisi: 'gas', diubah_at: '—', oleh: 'Sistem', alasan: 'Bawaan' };
+        const info = RUMAH_INFO[kode] || { nama: kode, sub: '' };
+        const isCabang = s.posisi === 'dua_cabang';
+        const isSupa = s.posisi === 'supabase';
+
+        let badgeClass = 'badge-gas';
+        let statusTeks = '100% GAS (Spreadsheet)';
+        if (isCabang) { badgeClass = 'badge-dua_cabang'; statusTeks = 'Dua Cabang (Supabase + GAS)'; }
+        if (isSupa) { badgeClass = 'badge-supabase'; statusTeks = '100% Supabase (GAS Tutup)'; }
+
+        let actionBtns = '';
+        if (s.posisi === 'gas') {
+          actionBtns = `
+            <button class="btn btn-primary btn-block" onclick="bukaModalMaju('${kode}', 'dua_cabang')">
+              Nyalakan Dua Cabang
+            </button>
+          `;
+        } else if (s.posisi === 'dua_cabang') {
+          actionBtns = `
+            <button class="btn btn-primary btn-block" style="background:var(--purple);" onclick="bukaModalMaju('${kode}', 'supabase')">
+              Tuntaskan ke Supabase 100%
+            </button>
+            <button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">
+              🚨 Balik ke GAS Segera
+            </button>
+          `;
+        } else {
+          actionBtns = `
+            <button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">
+              🚨 Balik ke GAS Segera
+            </button>
+          `;
+        }
+
+        grid.innerHTML += `
+          <div class="switch-card ${isCabang ? 'active-cabang' : ''}">
+            <div>
+              <div class="card-header">
+                <div>
+                  <div class="house-title">${info.nama}</div>
+                  <div class="house-sub">${info.sub}</div>
+                </div>
+                <span class="badge ${badgeClass}">${s.posisi.toUpperCase()}</span>
+              </div>
+              <div class="switch-meta">
+                <div class="meta-row"><span>Arsitektur:</span><span class="meta-val">${statusTeks}</span></div>
+                <div class="meta-row"><span>Perubahan:</span><span class="meta-val">${s.diubah_at || 'Bawaan'}</span></div>
+                <div class="meta-row"><span>Oleh:</span><span class="meta-val">${s.oleh || 'Sistem'}</span></div>
+                <div style="margin-top:0.4rem; font-style:italic;">"${s.alasan || '—'}"</div>
+              </div>
+            </div>
+            <div class="switch-actions">
+              ${actionBtns}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function renderHistory(history) {
+      const tbody = document.getElementById('historyTableBody');
+      if (!history || !history.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Belum pernah ada pembalikan saklar.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = history.map(h => `
+        <tr>
+          <td>${h.waktu_wib || '—'}</td>
+          <td><strong>${h.rumah}</strong></td>
+          <td><span class="badge badge-${h.dari}">${h.dari}</span> ➔ <span class="badge badge-${h.ke}">${h.ke}</span></td>
+          <td>${escapeHtml(h.alasan || '—')}</td>
+          <td>${escapeHtml(h.oleh || '—')}</td>
+        </tr>
+      `).join('');
+    }
+
+    /* Alur Modal Maju */
+    function bukaModalMaju(rumah, posisi) {
+      TARGET_RUMAH_MODAL = rumah;
+      TARGET_POSISI_MODAL = posisi;
+      document.querySelectorAll('.chk-syarat').forEach(c => c.checked = false);
+      document.getElementById('inputKonfirmasiRumah').value = '';
+      document.getElementById('inputAlasanMaju').value = '';
+      document.getElementById('lblKonfirmasiRumah').textContent = `Ketik "${rumah}" untuk konfirmasi:`;
+      document.getElementById('modalMaju').classList.remove('hidden');
+      checkSyaratForm();
+    }
+
+    function tutupModalMaju() {
+      document.getElementById('modalMaju').classList.add('hidden');
+    }
+
+    function checkSyaratForm() {
+      const allChecked = Array.from(document.querySelectorAll('.chk-syarat')).every(c => c.checked);
+      const rumahMatch = document.getElementById('inputKonfirmasiRumah').value.trim() === TARGET_RUMAH_MODAL;
+      const alasanFilled = document.getElementById('inputAlasanMaju').value.trim().length >= 5;
+      document.getElementById('btnKonfirmasiMaju').disabled = !(allChecked && rumahMatch && alasanFilled);
+    }
+
+    async function submitMajuSaklar() {
+      const alasan = document.getElementById('inputAlasanMaju').value.trim();
+      tutupModalMaju();
+      await kirimPerubahanSaklar(TARGET_RUMAH_MODAL, TARGET_POSISI_MODAL, alasan);
+    }
+
+    /* Alur Mundur Cepat (Penyelamat) */
+    async function daruratMundur(rumah) {
+      if (!confirm(`🚨 TINDAKAN PENYELAMATAN DARURAT\n\nApakah Anda yakin ingin SEGERA mengembalikan ${rumah} ke posisi GAS?\n\nWO baru akan langsung lahir di Spreadsheet kembali.`)) {
+        return;
+      }
+      const alasan = prompt('Alasan penyelamatan / pengembalian ke GAS:', 'Penyelamatan darurat via panel saklar') || 'Penyelamatan darurat';
+      await kirimPerubahanSaklar(rumah, 'gas', alasan);
+    }
+
+    async function daruratMundurSemua() {
+      if (!confirm('🚨 TINDAKAN PENYELAMATAN GLOBAL\n\nApakah Anda yakin ingin membalikkan SELURUH rumah ke posisi GAS?\n\nSemua WO baru di semua site akan diarahkan kembali ke Spreadsheet.')) {
+        return;
+      }
+      const alasan = prompt('Alasan penyelamatan global:', 'Penyelamatan global darurat via panel') || 'Penyelamatan global';
+      for (const r of ['kmbprojek', 'sum', 'kmbtra']) {
+        await kirimPerubahanSaklar(r, 'gas', alasan, false);
+      }
+      muatStatus();
+    }
+
+    async function kirimPerubahanSaklar(rumah, posisi, alasan, reload = true) {
+      try {
+        const res = await fetch('/saklar/api/ubah', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ rumah, posisi, alasan, oleh: 'Gabriel' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (reload) muatStatus();
+        } else {
+          alert('Gagal membalik saklar: ' + (data.error || 'Galat server'));
+        }
+      } catch (err) {
+        alert('Koneksi terputus: ' + err.message);
+      }
+    }
+
+    function escapeHtml(s) {
+      return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>

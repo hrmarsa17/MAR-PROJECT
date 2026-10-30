@@ -88,9 +88,13 @@ Saklar dioperasikan dari **satu panel visual di domain pintu**. Kode rumah sekar
 - Worker rumah yang **gagal membaca** saklar memakai posisi `gas`. Itu posisi yang paling aman.
 
 **Teknis**
-- Nilai saklar disimpan di **Durable Object** Cloudflare (keputusan 29 Okt): berlaku seketika di semua lokasi dan tersedia di paket gratis. Pintu menulis, Worker rumah membaca, dan perubahan tidak memerlukan deploy.
-- Pintu menulis, Worker rumah membaca. Perubahan saklar tidak memerlukan deploy.
-- Setiap perubahan dicatat otomatis (siapa, kapan, dari → ke, alasan), lalu disalin ke tabel "Catatan pembalikan" di bawah.
+- Nilai saklar disimpan di **Durable Object SQLite-backed** Cloudflare (`workers/pintu/src/saklar-do.js`): berlaku seketika (strongly consistent, zero latency) di semua lokasi edge Cloudflare dan didukung di paket gratis Cloudflare Workers.
+- Panel visual aktif di rute `/saklar` pada Worker Pintu (`abadiops.com/saklar` dan `abadiops-pintu-staging.kawanabadigrup.workers.dev/saklar`).
+- Pintu menulis lewat antarmuka panel, Worker rumah membaca secara dinamis via `/api/saklar/status` (dengan in-memory cache 5 detik dan fallback aman ke `gas`). Perubahan saklar tidak memerlukan deploy worker sama sekali.
+- Setiap perubahan dicatat otomatis hingga 50 riwayat terakhir di Durable Object (siapa, kapan WIB, dari → ke, alasan), lalu disalin ke tabel "Catatan pembalikan" di bawah saat terjadi pembalikan produksi.
+
+
+
 
 ## Target selesai migrasi (keputusan Gabriel, 29 Okt 2026)
 

@@ -12,6 +12,37 @@ Formatnya:
 
 ---
 
+### 2026-10-30 · Raka (+ AI) · bersama (Langkah 8 Selesai: Panel Saklar Visual di Pintu abadiops.com & Dynamic House Integration)
+- **Eksekusi Langkah 8: Membangun Panel Saklar Visual di Pintu (`abadiops.com/saklar`)**:
+  - Sesuai `docs/SAKLAR.md` § Panel saklar di abadiops.com dan `docs/SERAH-TERIMA-2026-10-29.md` §5 langkah 8, panel visual tersembunyi telah dibangun dan aktif di Worker Pintu (`abadiops-pintu`).
+  - Halaman UI responsif (`workers/pintu/public/saklar.html`) menyajikan 3 kartu saklar per rumah (`kmbprojek`, `sum`, `kmbtra`) dengan indikator status warna dinamis (`gas` = netral slate, `dua_cabang` = info blue, `supabase` = purple).
+  - Dilengkapi tombol darurat global dan per-rumah **"🚨 Penyelamat (Kembalikan ke GAS)"** yang bekerja instan 1-klik tanpa modal berbelit untuk mitigasi insiden di lapangan.
+- **Autentikasi & Keamanan Sesi Panel (`workers/pintu/src/saklar-auth.js`)**:
+  - Dilindungi verifikasi kata sandi via secret `PANEL_SAKLAR_SECRET` (dukungan plaintext atau hash SHA-256 64-karakter).
+  - Rate limiting anti brute force: maksimal 5 kegagalan per IP, penguncian otomatis selama 15 menit jika terlampaui.
+  - Sesi bertanda tangan HMAC-SHA256 berumur 2 jam (mendukung Bearer token dan HttpOnly Cookie).
+- **Penyimpanan Persisten & Konsisten: Cloudflare SQLite-backed Durable Object (`workers/pintu/src/saklar-do.js`)**:
+  - Menggunakan SQLite-backed Durable Objects (`new_sqlite_classes = ["SaklarDO"]`) yang 100% didukung pada paket Cloudflare gratis.
+  - Strongly consistent seketika (zero latency) di seluruh jaringan edge Cloudflare tanpa memerlukan deploy ulang worker setiap kali saklar dibalik.
+  - Menjaga independensi total: Panel dan penyimpanan saklar berdiri sendiri di atas Cloudflare, tidak bergantung pada Supabase maupun GAS (tetap bisa diakses untuk penyelamatan darurat jika Supabase/GAS down).
+  - Audit trail otomatis hingga 50 entri terakhir (menyimpan waktu WIB, pelaku, status awal, status baru, dan alasan pembalikan).
+- **Modal Pengaman Maju (10 Syarat Wajib & Konfirmasi Ganda)**:
+  - Sebelum membalik saklar ke `dua_cabang`, modal mewajibkan konfirmasi checklist 10 poin (cermin 7 hari tanpa selisih, uji rekam-putar lulus, buku tamu aktif, ProcessedOps tersinkron, nomor WO 4 angka, payroll identik, cadangan per jam teruji, web GAS ditutup/read-only, latihan saklar balik lulus, go-live serentak).
+  - Wajib mengetik kode rumah yang tepat dan mengisi alasan minimal 5 karakter sebelum tombol konfirmasi aktif.
+- **Integrasi Status Saklar Dinamis di Seluruh Worker Rumah**:
+  - `workers/kmbprojek/src/index.js`, `workers/sum/src/index.js`, dan `workers/kmb/src/index.js` dilengkapi helper `bacaStatusSaklar` yang memeriksa `/api/saklar/status` dengan in-memory cache 5 detik.
+  - Fallback aman: jika terjadi kegagalan jaringan atau keterlambatan jawaban pintu, seluruh worker rumah langsung kembali ke mode aman `gas` (spreadsheet).
+  - Endpoint `/api/sehat` di ketiga rumah melaporkan status live saklar secara real-time.
+- **Pelatihan di Staging & Verifikasi Produksi**:
+  - Telah dilatih di staging (`abadiops-pintu-staging`) sesuai protokol `docs/GEDUNG-DAN-STAGING.md` §2 dan `AGENTS.md` §0a point 14. Pembalikan ke `dua_cabang`, verifikasi konsistensi seketika, dan pengembalian darurat ke `gas` teruji 100% lulus.
+  - Seluruh komponen telah di-deploy ke produksi (`abadiops-pintu`, `abadiops-porject-kmb`, `abadiops-sum`, `abadiops-kmb`).
+  - **GARIS MERAH TERJAGA:** Seluruh saklar di produksi terkunci pada posisi awal bawaan: `gas`. Pembalikan saklar produksi adalah **Titik Henti** yang hanya boleh dilakukan oleh Gabriel (`AGENTS.md` §0a nomor 12).
+- **Belum selesai / berikutnya**:
+  - Langkah 7: Sinkron penuh dan cermin sheet berjalan rutin di skema `kmb_projek` dan `sum`.
+  - Langkah 9: Mengaktifkan buku tamu kiriman di pintu depan sebelum saklar dibalik.
+
+---
+
 ### 2026-10-30 · Raka (+ AI) · bersama (Langkah 6 Selesai: Halaman Web Desktop 1:1 di Domain Abadi, Pintu Bebas script.google.com)
 - **Eksekusi Langkah 6: Pemindahan Web Desktop 1:1 ke Domain Abadi (`abadiops.com`)**:
   - Sesuai keputusan Gabriel (`docs/KEPUTUSAN.md` 28 & 29 Okt) dan `docs/SERAH-TERIMA-2026-10-29.md` §5 langkah 6, ketergantungan tombol **🖥️ Web** ke `script.google.com` telah dihilangkan total.

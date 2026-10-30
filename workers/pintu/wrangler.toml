@@ -18,6 +18,16 @@ binding = "ASSETS"
 html_handling = "none"
 not_found_handling = "none"
 
+# Durable Object untuk Panel Saklar Dua Cabang (docs/SAKLAR.md)
+[durable_objects]
+bindings = [
+  { name = "SAKLAR_DO", class_name = "SaklarDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SaklarDO"]
+
 # Daftar rumah. Ini konfigurasi, bukan kode (haram hardcode, AGENTS.md §5): menambah rumah,
 # misalnya kmbbupr, cukup menambah satu baris di sini lalu deploy. Alamat GAS disalin dari
 # GAS_URLS di worker.js; alamat aplikasi = <kode>.abadiops.com; web = halaman web GAS rumah itu
@@ -39,6 +49,11 @@ workers_dev = true
 
 services = [
   { binding = "GAS_TIRUAN", service = "abadiops-gas-tiruan" }
+]
+
+[env.staging.durable_objects]
+bindings = [
+  { name = "SAKLAR_DO", class_name = "SaklarDO" }
 ]
 
 [env.staging.vars]
