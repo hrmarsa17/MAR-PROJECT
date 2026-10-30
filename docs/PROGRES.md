@@ -12,6 +12,17 @@ Formatnya:
 
 ---
 
+### 2026-10-30 · Raka (+ AI) · bersama (Secret panel saklar produksi)
+- **Berubah:**
+  - Secret `PANEL_SAKLAR_SECRET` sudah ditambahkan pada environment **Production** Worker `abadiops-pintu` melalui Cloudflare Dashboard.
+  - Nilai password tidak dicatat di repo, dokumen, atau chat.
+  - Panel produksi dapat diakses melalui `https://abadiops.com/saklar`.
+- **Belum selesai / berikutnya:**
+  - Semua saklar produksi tetap `gas`.
+  - Checklist migrasi, sinkronisasi rutin, uji kembar, jalur tulis, backup/restore, dan persetujuan Gabriel masih diperlukan sebelum saklar dinyalakan.
+
+---
+
 ### 2026-10-30 · Raka (+ AI) · bersama (Verifikasi akses spreadsheet dan persiapan sinkron staging)
 - **Berubah:**
   - Service Account `abadi-operation-sync@cermin-spreadsheet.iam.gserviceaccount.com` berhasil membaca tiga spreadsheet produksi dengan mode `--kering`.
