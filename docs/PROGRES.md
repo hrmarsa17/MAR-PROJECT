@@ -12,6 +12,18 @@ Formatnya:
 
 ---
 
+### 2026-11-02 · Raka (+ AI) · staging
+- Berubah:
+  - Bug #28: Rute staging di `workers/pintu/wrangler.toml` diarahkan ke `*.workers.dev` aktif (bukan `staging-*.abadiops.com` yang belum ada DNS). GAS Tiruan sekarang simpan aksi tulis ke Gedung 2 (`dnnqrslftndcbmnvuveb`).
+  - Bug #26: Panel saklar dinamis - daftar rumah dibaca dari `GET /api/pintu?cek=1`, validasi di `saklar-do.js` tidak lagi hardcode.
+  - Bug #24: `web-handler.js` diperbaiki untuk baca response GAS dari properti `result` maupun `data`.
+  - Bug #27: `tanganiApi()` di `workers/kmb/src/index.js` sekarang baca `liveSaklar` via `bacaStatusSaklar()` sebelum routing.
+- Belum selesai / berikutnya:
+  - Bug #25: Template KMB V2 asli (`workers/kmb/web/`) - butuh source dari GAS script `17sBKK…` (kode Gabriel, izinkan sebelum kerjakan).
+  - Uji staging: akses pintu staging, panel saklar staging,web KMB, saklar balik.
+
+---
+
 ### 2026-10-30 · Gabriel (+ Claude) · bersama (audit kerja Raka 30 Okt di semua sistem)
 - Berubah:
   - Yang dicek: 7 commit Raka (`1c87734` sampai `b06ca6d`), Worker yang tayang, Supabase Gedung 1 dan Gedung 2, serta CI.
