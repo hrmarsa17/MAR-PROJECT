@@ -42,6 +42,7 @@ async function tanganiApi(request, env, url) {
     return new Response('Hanya POST', { status: 405, headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' } });
   }
 
+  const liveSaklar = await bacaStatusSaklar(env);
   const bodyText = await request.text();
   let parsed = {};
   try {
@@ -50,26 +51,17 @@ async function tanganiApi(request, env, url) {
 
   const action = parsed.action || '';
   const token = parsed.token || '';
-  const reqEngine = (
-    request.headers.get('x-active-engine') ||
-    url.searchParams.get('engine') ||
-    parsed.engine ||
-    env.STORAGE_MODE ||
-    'GAS'
-  ).toUpperCase();
-
   const ujiSupabase = url.searchParams.get('uji') === 'supabase';
-  const bolehSupabase = (aksi) => ujiSupabase || (reqEngine === 'SUPABASE' && AKSI_SUPABASE_LULUS_KEMBAR.has(aksi));
 
-  // Coba jalur Supabase jika diizinkan atau sedang diuji
-  if (bolehSupabase(action) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+  // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji
+  if ((liveSaklar !== 'gas' || ujiSupabase) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     const resSupa = await cobaSupabaseSum(action, token, parsed, env);
     if (resSupa) {
       return resSupa;
     }
   }
 
-  // Jalur utama / fallback ke GAS
+  // Fallback ke GAS
   return teruskanKeGas(bodyText, action, env);
 }
 

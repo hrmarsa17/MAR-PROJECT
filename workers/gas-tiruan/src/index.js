@@ -359,14 +359,20 @@ async function simpanWoGedung2(rumah, woId, data, env) {
   const url = `${env.SUPABASE_URL}/rest/v1/work_orders`;
   
   const payload = {
-    wo_id: woId,
+    id: woId,
+    wo_number: woId,
+    date: new Date().toISOString().split('T')[0],
     status: 'pending',
+    unit_code: (data.unit_code || data.unit) || 'UNKNOWN',
+    component: (data.component || data.comp) || 'UNKNOWN',
+    activity: (data.activity || data.pekerjaan) || 'Work Order dari GAS Tiruan',
+    created_by: (data.mechanic_id || data.created_by) || 'SYSTEM',
     created_at: new Date().toISOString(),
-    raw_data: data
+    source: 'GAS'
   };
 
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': env.SUPABASE_ANON_KEY,
@@ -378,5 +384,11 @@ async function simpanWoGedung2(rumah, woId, data, env) {
       },
       body: JSON.stringify(payload)
     });
-  } catch (_) {}
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn(`GAS Tiruan: INSERT work_orders ${schema} gagal HTTP ${res.status}: ${err}`);
+    }
+  } catch (err) {
+    console.warn(`GAS Tiruan: simpan WO ke ${schema} error: ${err.message}`);
+  }
 }

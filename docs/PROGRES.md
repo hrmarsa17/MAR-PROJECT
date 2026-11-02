@@ -14,13 +14,14 @@ Formatnya:
 
 ### 2026-11-02 · Raka (+ AI) · staging
 - Berubah:
-  - Bug #28: Rute staging di `workers/pintu/wrangler.toml` diarahkan ke `*.workers.dev` aktif (bukan `staging-*.abadiops.com` yang belum ada DNS). GAS Tiruan sekarang simpan aksi tulis ke Gedung 2 (`dnnqrslftndcbmnvuveb`).
-  - Bug #26: Panel saklar dinamis - daftar rumah dibaca dari `GET /api/pintu?cek=1`, validasi di `saklar-do.js` tidak lagi hardcode.
-  - Bug #24: `web-handler.js` diperbaiki untuk baca response GAS dari properti `result` maupun `data`.
-  - Bug #27: `tanganiApi()` di `workers/kmb/src/index.js` sekarang baca `liveSaklar` via `bacaStatusSaklar()` sebelum routing.
+  - Bug #28: Rute staging ke `*.workers.dev`, GAS Tiruan simpan WO ke Gedung 2 dengan payload lengkap (id, wo_number, date, unit_code, component, activity, created_by, source).
+  - Bug #26: Secret `PANEL_SAKLAR_SECRET` staging terpasang. Panel saklar dinamis - daftar rumah dari `GET /api/pintu?cek=1`.
+  - Bug #24: `web-handler.js` semua rumah (kmb, sum, kmbprojek) baca response GAS dari properti `result` maupun `data`.
+  - Bug #27: `tanganiApi()` di ketiga worker rumah sekarang baca `liveSaklar` via `bacaStatusSaklar()` sebelum routing. Parameter `?uji=supabase` masih berfungsi untuk uji kembar.
+  - Deploy staging: pintu, GAS tiruan, kmb, sum, kmbprojek semua ke `*.workers.dev`.
 - Belum selesai / berikutnya:
-  - Bug #25: Template KMB V2 asli (`workers/kmb/web/`) - butuh source dari GAS script `17sBKK…` (kode Gabriel, izinkan sebelum kerjakan).
-  - Uji staging: akses pintu staging, panel saklar staging,web KMB, saklar balik.
+  - Bug #25: Template KMB V2 asli (`workers/kmb/web/`) - butuh source dari GAS script `17sBKK…` (kode Gabriel, izinkan).
+  - Sinkron cermin ke Gedung 2 (Langkah 2): butuh environment variable dan Service Account.
 
 ---
 
