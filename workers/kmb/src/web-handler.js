@@ -82,43 +82,49 @@ export async function handleWebRequest(request, env, url) {
   try {
     if (['create', 'workorder'].includes(page)) {
       const refs = await panggilAksiInternal('pull_create_refs', token, {}, env);
-      if (refs && refs.success && refs.data) {
-        context.components = refs.data.components || [];
-        context.units = refs.data.units || [];
-        context.mechanics = refs.data.mechanics || [];
-        context.workConditions = refs.data.work_conditions || [];
-        context.userScope = refs.data.user_scope || null;
+      const refsData = refs && refs.result ? refs.result : (refs && refs.data ? refs.data : {});
+      if (refs && refs.success && refsData) {
+        context.components = refsData.components || [];
+        context.units = refsData.units || [];
+        context.mechanics = refsData.mechanics || [];
+        context.workConditions = refsData.work_conditions || [];
+        context.userScope = refsData.user_scope || null;
       }
     } else if (['approvals', 'approval'].includes(page)) {
       const pending = await panggilAksiInternal('pull_pending', token, {}, env);
-      if (pending && pending.success && pending.data) {
-        context.pendingApprovals = pending.data.pending || [];
-        context.pendingTransfers = pending.data.transfers || [];
-        context.activeWos = pending.data.active || [];
-        context.approvedWos = pending.data.approved || [];
-        context.rejectedWos = pending.data.rejected || [];
+      const pendingData = pending && pending.result ? pending.result : (pending && pending.data ? pending.data : {});
+      if (pending && pending.success && pendingData) {
+        context.pendingApprovals = pendingData.pending || pendingData.approvals || [];
+        context.pendingTransfers = pendingData.transfers || [];
+        context.activeWos = pendingData.active || [];
+        context.approvedWos = pendingData.approved || [];
+        context.rejectedWos = pendingData.rejected || [];
       }
       const mechList = await panggilAksiInternal('pull_create_refs', token, {}, env);
-      if (mechList && mechList.success && mechList.data && mechList.data.mechanics) {
-        context.allMechanics = mechList.data.mechanics;
+      const mechData = mechList && mechList.result ? mechList.result : (mechList && mechList.data ? mechList.data : {});
+      if (mechList && mechList.success && mechData && mechData.mechanics) {
+        context.allMechanics = mechData.mechanics;
       }
     } else if (['mechanic', 'monitoring', 'mechanicdashboard'].includes(page)) {
       const myWos = await panggilAksiInternal('pull_my_wos', token, {}, env);
       const mon = await panggilAksiInternal('pull_monitoring', token, {}, env);
+      const myWosData = myWos && myWos.result ? myWos.result : (myWos && myWos.data ? myWos.data : {});
+      const monData = mon && mon.result ? mon.result : (mon && mon.data ? mon.data : []);
       context.initialData = {
-        wos: (myWos && myWos.data && myWos.data.wos) || [],
-        counts: (myWos && myWos.data && myWos.data.counts) || { all:0, assigned:0, in_progress:0, pending_approval:0, done:0 },
+        wos: (myWosData && myWosData.wos) || [],
+        counts: (myWosData && myWosData.counts) || { all:0, assigned:0, in_progress:0, pending_approval:0, done:0 },
         viewing_as: context.viewAsMechanicId || null,
         mechanic: user,
       };
-      context.monitoringData = (mon && mon.data) || [];
-      context.mons = (mon && mon.data) || [];
+      context.monitoringData = monData;
+      context.mons = monData;
     } else if (['dashboard', 'main'].includes(page)) {
       const mon = await panggilAksiInternal('pull_monitoring', token, {}, env);
+      const monData = mon && mon.result ? mon.result : (mon && mon.data ? mon.data : {});
       context.dashboardData = {
-        stats: (mon && mon.data && mon.data.stats) || { totalWOs: 0, approved: 0, pending: 0, totalPoints: 0 },
-        recentWOs: (mon && mon.data && mon.data.recentWOs) || [],
-        charts: (mon && mon.data && mon.data.charts) || { pointsTrend: { labels: [], data: [] } },
+        stats: (monData && monData.stats) || { totalWOs: 0, approved: 0, pending: 0, totalPoints: 0 },
+        recentWOs: (monData && monData.recentWOs) || [],
+        charts: (monData && monData.charts) || { pointsTrend: { labels: [], data: [] } },
       };
     }
   } catch (err) {

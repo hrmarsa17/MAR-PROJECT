@@ -121,6 +121,10 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100 + Math.random() * 900);
     const mockWoId = `WO-${today}-${randomSuffix}`;
+    
+    // Simpan ke Gedung 2
+    await simpanWoGedung2(rumah, mockWoId, parsed, env);
+
     return responJson({
       success: true,
       result: {
@@ -348,4 +352,31 @@ function responJson(obj, status = 200) {
       'X-Abadi-Simulasi': 'gas-tiruan',
     },
   });
+}
+
+async function simpanWoGedung2(rumah, woId, data, env) {
+  const schema = rumah === 'sum' ? 'sum' : (rumah === 'kmbtra' || rumah === 'kmb' ? 'kmb' : 'kmb_projek');
+  const url = `${env.SUPABASE_URL}/rest/v1/work_orders`;
+  
+  const payload = {
+    wo_id: woId,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    raw_data: data
+  };
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': env.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept-Profile': schema,
+        'Content-Profile': schema,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (_) {}
 }

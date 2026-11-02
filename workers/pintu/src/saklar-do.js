@@ -67,11 +67,10 @@ export class SaklarDO {
       }
 
       const { rumah, posisi, oleh, alasan } = body;
-      const validRumah = ['kmbprojek', 'sum', 'kmbtra'];
       const validPosisi = ['gas', 'dua_cabang', 'supabase'];
 
-      if (!validRumah.includes(rumah)) {
-        return new Response(JSON.stringify({ success: false, error: 'Kode rumah tidak sah: ' + rumah }), {
+      if (!rumah || typeof rumah !== 'string') {
+        return new Response(JSON.stringify({ success: false, error: 'Kode rumah wajib diisi' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         });

@@ -60,7 +60,7 @@ bindings = [
 
 [env.staging.vars]
 RUMAH = [
-  { kode = "kmbprojek", nama = "KMB Projek (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek", alamat = "https://staging-kmbprojek.abadiops.com/", web = "https://staging-kmbprojek.abadiops.com/web" },
-  { kode = "sum", nama = "SUM (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum", alamat = "https://staging-sum.abadiops.com/", web = "https://staging-sum.abadiops.com/web" },
-  { kode = "kmbtra", nama = "KMB TRA (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbtra", alamat = "https://staging-kmbtra.abadiops.com/", web = "https://staging-kmbtra.abadiops.com/web" },
+  { kode = "kmbprojek", nama = "KMB Projek (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek", alamat = "https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev/web" },
+  { kode = "sum", nama = "SUM (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum", alamat = "https://abadiops-sum-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-sum-staging.kawanabadigrup.workers.dev/web" },
+  { kode = "kmbtra", nama = "KMB TRA (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbtra", alamat = "https://abadiops-kmb-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-kmb-staging.kawanabadigrup.workers.dev/web" },
 ]

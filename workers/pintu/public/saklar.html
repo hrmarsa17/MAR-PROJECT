@@ -201,8 +201,23 @@
     const RUMAH_INFO = {
       kmbprojek: { nama: 'KMB Projek', sub: 'Manpower Panggilan Proyek' },
       sum: { nama: 'SUM V2', sub: 'PT SUM Site SUM' },
-      kmbtra: { nama: 'KMB TRA', sub: 'PT KMB Site TRA' }
+      kmbtra: { nama: 'KMB TRA', sub: 'PT KMB Site TRA' },
+      kmbbupr: { nama: 'KMB BUPR', sub: 'PT KMB Site BUPR' }
     };
+
+    // Ambil daftar rumah dari API, fallback ke statis jika gagal
+    async function ambilDaftarRumah() {
+      try {
+        const res = await fetch('/api/pintu?cek=1');
+        const data = await res.json();
+        if (data && data.rumah && Array.isArray(data.rumah)) {
+          return data.rumah.map(r => ({ kode: r.kode, nama: r.nama, sub: r.nama }));
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    let DAFTAR_RUMAH = null;
 
     window.addEventListener('DOMContentLoaded', () => {
       if (location.host.includes('staging')) {
@@ -286,14 +301,19 @@
       }
     }
 
-    function renderCards(switches) {
+    async function renderCards(switches) {
       const grid = document.getElementById('switchCards');
       grid.innerHTML = '';
-      const order = ['kmbprojek', 'sum', 'kmbtra'];
+      
+      // Ambil daftar rumah dinamis atau fallback ke statis
+      if (!DAFTAR_RUMAH) {
+        DAFTAR_RUMAH = await ambilDaftarRumah();
+      }
+      const order = DAFTAR_RUMAH ? DAFTAR_RUMAH.map(r => r.kode) : ['kmbprojek', 'sum', 'kmbtra'];
 
       for (const kode of order) {
         const s = switches[kode] || { posisi: 'gas', diubah_at: '—', oleh: 'Sistem', alasan: 'Bawaan' };
-        const info = RUMAH_INFO[kode] || { nama: kode, sub: '' };
+        const info = DAFTAR_RUMAH ? DAFTAR_RUMAH.find(r => r.kode === kode) : (RUMAH_INFO[kode] || { nama: kode, sub: '' });
         const isCabang = s.posisi === 'dua_cabang';
         const isSupa = s.posisi === 'supabase';
 
@@ -411,7 +431,8 @@
         return;
       }
       const alasan = prompt('Alasan penyelamatan global:', 'Penyelamatan global darurat via panel') || 'Penyelamatan global';
-      for (const r of ['kmbprojek', 'sum', 'kmbtra']) {
+      const daftar = DAFTAR_RUMAH ? DAFTAR_RUMAH.map(function (r) { return r.kode; }) : ['kmbprojek', 'sum', 'kmbtra'];
+      for (const r of daftar) {
         await kirimPerubahanSaklar(r, 'gas', alasan, false);
       }
       muatStatus();

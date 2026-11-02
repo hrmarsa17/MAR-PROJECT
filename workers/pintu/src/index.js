@@ -210,6 +210,9 @@ export default {
 
     // --- Rute Pintu Utama (Pengenalan Token) ---
     if (url.pathname === '/api/pintu') {
+      if (request.method === 'GET' && url.searchParams.get('cek')) {
+        return json({ success: true, rumah: daftarRumah(env) }, 200, { 'Access-Control-Allow-Origin': '*' });
+      }
       if (request.method !== 'POST') return json({ success: false, error: 'Metode tidak didukung' }, 405);
       let token = '';
       try { token = String((await request.json()).token || '').trim(); } catch (_) { /* badan kosong / bukan JSON */ }
