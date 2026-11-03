@@ -16,6 +16,7 @@ const CORS = {
 };
 
 import { handleWebRequest, handleWebBridgeApi } from './web-handler.js';
+import { eksekusiSupabaseBackendKmb } from './supabase-backend.js';
 
 // Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
 const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
@@ -55,9 +56,19 @@ async function tanganiApi(request, env, url) {
   
   // Logic routing berdasarkan status saklar atau mode uji kembar
   if ((liveSaklar !== 'gas' || ujiSupabase) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-      // Jalur Supabase atau dua_cabang di sini
-      const resSupa = await cobaSupabaseKmbTra(action, token, parsed, env);
-      if (resSupa) return resSupa;
+      const resSupa = await eksekusiSupabaseBackendKmb(action, token, parsed, env);
+      if (resSupa && resSupa.status === 200) {
+        catat(env, { aksi: action, jalur: 'supabase', status: 200 });
+        return resSupa;
+      }
+      if (liveSaklar === 'supabase') {
+        return resSupa || new Response(JSON.stringify({ success: false, error: 'Supabase backend gagal', source: 'SUPABASE' }), {
+          status: 500,
+          headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      }
+      const fallbackSupa = await cobaSupabaseKmbTra(action, token, parsed, env);
+      if (fallbackSupa) return fallbackSupa;
   }
 
   // Fallback ke GAS
