@@ -12,6 +12,25 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · bersama (Backend Mandiri Penuh Supabase Tanpa GAS, Mesin Skor ESM, Lulus Uji 24/24)
+- Berubah:
+  - Penerapan Backend Mandiri Supabase (Tanpa GAS) sesuai `docs/panduan_deploy_staging_kamis 2.md`:
+    - Commit 1 (`[kmb]`): `db/kmb/rpc_backend_penuh.sql` (`kmbtra_eksekusi_aksi_bertoken`), `workers/kmb/src/supabase-backend.js`, dan integrasi worker kmb (tanpa fallback GAS saat `liveSaklar === 'supabase'`).
+    - Commit 2 (`[sum]`): `db/sum/rpc_backend_penuh.sql` (`sum_eksekusi_aksi_bertoken`), `workers/sum/src/supabase-backend.js`, dan integrasi worker sum.
+    - Commit 3 (`[kmb-projek]`): `db/kmb_projek/rpc_backend_penuh.sql` (`kmb_eksekusi_aksi_bertoken`), `workers/kmbprojek/src/supabase-backend.js`, dan integrasi worker kmbprojek.
+    - Commit 4 (`[bersama]`): `src/domain/scoring.mjs` (mesin skor murni JavaScript tahan galat biner), `scripts/uji-backend-mandiri.mjs` (24/24 kasus uji lulus 100%), dan panduan deploy staging.
+  - Penomoran WO 4 digit urut WIB (`WO-YYYYMMDD-XXXX`) diimplementasikan di semua RPC per kamar.
+  - Uji otomatis 100% hijau:
+    - `node scripts/uji-backend-mandiri.mjs`: 24/24 LULUS.
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS.
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS.
+    - `node --check` pada seluruh 10 file worker: 0 galat sintaks.
+- Belum selesai / berikutnya:
+  - Eksekusi SQL `rpc_backend_penuh.sql` di Gedung 2 (`dnnqrslftndcbmnvuveb`) dan deploy staging Cloudflare Workers.
+  - Push branch `staging` ke remote `origin` dan `kmb`.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · bersama (Manajemen Pengguna & Token Terpusat di Pintu, RPC 3 Rumah, Lulus Uji 27/27)
 - Berubah:
   - Implementasi Manajemen Pengguna & Token Terpusat sesuai `docs/panduan_deploy_staging_kamis.md`:
