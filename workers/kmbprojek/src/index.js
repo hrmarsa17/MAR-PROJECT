@@ -67,7 +67,7 @@ async function tanganiApi(request, env, url) {
   }
 
   // Fallback ke GAS
-  return teruskanKeGas(request, env);
+  return teruskanKeGas(bodyText, action, env);
 }
 
 async function cobaSupabaseKmbProjek(action, token, parsed, env) {
@@ -126,14 +126,8 @@ async function cobaSupabaseKmbProjek(action, token, parsed, env) {
   return null; // Fallback ke GAS
 }
 
-async function teruskanKeGas(req, env) {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-  if (req.method !== 'POST') {
-    return new Response('Hanya POST', { status: 405, headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' } });
-  }
-  const body = await req.text();
+async function teruskanKeGas(body, aksi, env) {
   const mulai = Date.now();
-  const aksi = namaAksi(body);
   try {
     const fetcher = (env && env.GAS_TIRUAN && typeof env.GAS_TIRUAN.fetch === 'function')
       ? env.GAS_TIRUAN.fetch.bind(env.GAS_TIRUAN)
@@ -145,7 +139,7 @@ async function teruskanKeGas(req, env) {
       redirect: 'follow',
     });
     const teks = await res.text();
-    catat(env, { aksi, status: res.status, ms: Date.now() - mulai });
+    catat(env, { aksi, status: res.status, ms: Date.now() - mulai, jalur: 'gas' });
     return new Response(teks, {
       status: res.status,
       headers: {

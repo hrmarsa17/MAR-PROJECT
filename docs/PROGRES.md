@@ -19,6 +19,7 @@ Formatnya:
   - Penyelarasan Worker Rumah di staging:
     - workers/kmb/src/index.js: Ditambahkan dukungan query param ?uji=supabase dan penjaga env.SUPABASE_URL + env.SUPABASE_ANON_KEY agar seragam dengan kmbprojek dan sum.
     - workers/kmbprojek/src/index.js: Ditambahkan penanganan aksi baca pull_my_wos ke RPC kmb_my_wos_bertoken.
+    - workers/kmbprojek/src/index.js: Perbaikan TypeError double-read body (req.text()) pada fallback teruskanKeGas() saat cobaSupabase gagal/fallback.
   - Uji serahan token: node scripts/uji-serahan-token.mjs tetap 100% lulus (24/24).
 - Belum selesai / berikutnya:
   - Sinkron cermin mentah (Langkah 2): menunggu penempatan file JSON GOOGLE_SA_KEY_FILE di disk laptop untuk uji kering (--kering) dan sinkronisasi snapshot awal ke Gedung 2.
