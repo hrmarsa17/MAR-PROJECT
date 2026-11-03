@@ -19,6 +19,7 @@
  */
 
 import { handleWebRequest, handleWebBridgeApi } from './web-handler.js';
+import { eksekusiSupabaseBackendKmbp } from './supabase-backend.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -60,9 +61,20 @@ async function tanganiApi(request, env, url) {
 
   // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji
   if ((liveSaklar !== 'gas' || ujiSupabase) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    const resSupa = await cobaSupabaseKmbProjek(action, token, parsed, env);
-    if (resSupa) {
+    const resSupa = await eksekusiSupabaseBackendKmbp(action, token, parsed, env);
+    if (resSupa && resSupa.status === 200) {
+      catat(env, { aksi: action, jalur: 'supabase', status: 200 });
       return resSupa;
+    }
+    if (liveSaklar === 'supabase') {
+      return resSupa || new Response(JSON.stringify({ success: false, error: 'Supabase backend gagal', source: 'SUPABASE' }), {
+        status: 500,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+      });
+    }
+    const fallbackSupa = await cobaSupabaseKmbProjek(action, token, parsed, env);
+    if (fallbackSupa) {
+      return fallbackSupa;
     }
   }
 
