@@ -51,9 +51,10 @@ async function tanganiApi(request, env, url) {
 
   const action = parsed.action || '';
   const token = parsed.token || '';
+  const ujiSupabase = url.searchParams.get('uji') === 'supabase';
   
-  // Logic routing berdasarkan status saklar
-  if (liveSaklar !== 'gas') {
+  // Logic routing berdasarkan status saklar atau mode uji kembar
+  if ((liveSaklar !== 'gas' || ujiSupabase) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
       // Jalur Supabase atau dua_cabang di sini
       const resSupa = await cobaSupabaseKmbTra(action, token, parsed, env);
       if (resSupa) return resSupa;

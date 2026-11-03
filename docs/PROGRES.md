@@ -12,6 +12,20 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · staging (Verifikasi RPC Gedung 2, Penyelarasan ?uji=supabase & pull_my_wos)
+- Berubah:
+  - Verifikasi live Gedung 2 Staging (dnnqrslftndcbmnvuveb): Seluruh RPC bertoken (kmb_create_refs_bertoken, kmb_monitoring_bertoken, kmb_my_wos_bertoken, kmb_wos_by_status_bertoken, sum_create_refs_bertoken, sum_monitoring_bertoken, sum_my_wos_bertoken, kmbtra_create_refs_bertoken, kmbtra_monitoring_bertoken, kmb_ping, sum_ping, kmbtra_ping) terverifikasi aktif (status 200).
+  - Menemukan karakteristik PostgREST: skema kustom (kmb, kmb_projek, sum) tidak diekspos di endpoint tabel langsung (menghasilkan HTTP 406), sehingga seluruh akses data operasional wajib melalui RPC SECURITY DEFINER di skema public.
+  - Penyelarasan Worker Rumah di staging:
+    - workers/kmb/src/index.js: Ditambahkan dukungan query param ?uji=supabase dan penjaga env.SUPABASE_URL + env.SUPABASE_ANON_KEY agar seragam dengan kmbprojek dan sum.
+    - workers/kmbprojek/src/index.js: Ditambahkan penanganan aksi baca pull_my_wos ke RPC kmb_my_wos_bertoken.
+  - Uji serahan token: node scripts/uji-serahan-token.mjs tetap 100% lulus (24/24).
+- Belum selesai / berikutnya:
+  - Sinkron cermin mentah (Langkah 2): menunggu penempatan file JSON GOOGLE_SA_KEY_FILE di disk laptop untuk uji kering (--kering) dan sinkronisasi snapshot awal ke Gedung 2.
+  - Penyiapan RPC tulis WO baru (simpan_wo_baru) di skema public Gedung 2 untuk mendukung pembuatan WO nomor 4 digit (WO-YYYYMMDD-XXXX) di belakang saklar dua_cabang.
+
+---
+
 ### 2026-11-02 · Raka (+ AI) · staging
 - Berubah:
   - Bug #28: Rute staging ke `*.workers.dev`, GAS Tiruan simpan WO ke Gedung 2 dengan payload lengkap (id, wo_number, date, unit_code, component, activity, created_by, source).

@@ -90,6 +90,9 @@ async function cobaSupabaseKmbProjek(action, token, parsed, env) {
     } else if (action === 'pull_monitoring' && token) {
       rpcName = 'kmb_monitoring_bertoken';
       payload = { p_token: token };
+    } else if (action === 'pull_my_wos' && token) {
+      rpcName = 'kmb_my_wos_bertoken';
+      payload = { p_token: token };
     }
 
     if (!rpcName) return null;
