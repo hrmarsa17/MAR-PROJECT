@@ -461,10 +461,11 @@
         var _sec = String(rawScope[_usi] || '').toLowerCase().trim();
         if (_sec === 'field') _sec = 'maintenance';
         if (_sec === 'tyreman' || _sec === 'tyre') _sec = 'vessel';
+        if (_sec === 'workshop') continue; // KMB Project tidak memiliki section workshop
         if (_sec && USER_SCOPE.indexOf(_sec) === -1) USER_SCOPE.push(_sec);
       }
     }
-    var ALLOWED_SECTIONS = (USER_SCOPE && USER_SCOPE.length) ? USER_SCOPE : ['vessel', 'maintenance', 'workshop'];
+    var ALLOWED_SECTIONS = (USER_SCOPE && USER_SCOPE.length) ? USER_SCOPE : ['vessel', 'maintenance'];
 
     var blockCount = 0;
 
@@ -507,13 +508,19 @@
     // ⚠️ KEMBAR dengan isiDropdownUnit() di PWA (app.js). Kalau salah satu
     // diubah, ubah keduanya — kalau tidak katalog unit web dan PWA beda isi.
     function _scopeArr(u) {
-      if (!u || !u.unit_scope) return [];
-      var raw = Array.isArray(u.unit_scope) ? u.unit_scope : String(u.unit_scope).split(',');
+      if (!u) return [];
+      var raw = [];
+      if (u.unit_scope) {
+        raw = Array.isArray(u.unit_scope) ? u.unit_scope : String(u.unit_scope).split(',');
+      } else if (u.unit_type || u.section) {
+        raw = [u.unit_type || u.section];
+      }
       var res = [];
       for (var i = 0; i < raw.length; i++) {
         var s = String(raw[i] || '').toLowerCase().trim();
         if (s === 'tyreman' || s === 'tyre') s = 'vessel';
         if (s === 'field') s = 'maintenance';
+        if (s === 'workshop') continue;
         if (s && res.indexOf(s) === -1) res.push(s);
       }
       return res;
@@ -538,10 +545,13 @@
       }
 
       function opsi(u) {
-        return '<option value="' + escapeHtml(u.unit_id) + '" data-factor="' + u.unit_factor + '"' +
-               (pakaiModelAttr ? ' data-model="' + escapeHtml(String(u.unit_model || '').toLowerCase()) + '"' : '') +
+        var val = u.unit_id || u.unit_code || u.unit_name || '';
+        var nama = u.unit_name || u.unit_code || val;
+        var tipe = u.unit_type || u.section || '';
+        return '<option value="' + escapeHtml(val) + '" data-factor="' + (u.unit_factor || 1) + '"' +
+               (pakaiModelAttr ? ' data-model="' + escapeHtml(String(u.unit_model || u.model || '').toLowerCase()) + '"' : '') +
                ' data-others="' + (_isUnitOthers(u) ? '1' : '0') + '">' +
-               escapeHtml(u.unit_name) + ' (' + escapeHtml(u.unit_type) + ')</option>';
+               escapeHtml(nama) + (tipe ? ' (' + escapeHtml(tipe) + ')' : '') + '</option>';
       }
       function grup(judul, arr) {
         if (!arr.length) return '';
@@ -1056,23 +1066,23 @@
       var labels = {
         vessel: '🚛 Rekondisi',
         maintenance: '🚜 Maintenance',
-        workshop: '🏭 Workshop',
         field: '🚜 Maintenance',
         tyreman: '🚛 Rekondisi',
         tyre: '🚛 Rekondisi'
       };
       var html = '';
-      var sections = (ALLOWED_SECTIONS && ALLOWED_SECTIONS.length) ? ALLOWED_SECTIONS : ['vessel', 'maintenance', 'workshop'];
+      var sections = (ALLOWED_SECTIONS && ALLOWED_SECTIONS.length) ? ALLOWED_SECTIONS : ['vessel', 'maintenance'];
       for (var i = 0; i < sections.length; i++) {
         var s = String(sections[i]).toLowerCase().trim();
         if (s === 'field') s = 'maintenance';
         if (s === 'tyreman' || s === 'tyre') s = 'vessel';
+        if (s === 'workshop') continue;
         if (!labels[s]) continue;
         if (html.indexOf('value="' + s + '"') !== -1) continue;
         html += '<label class="section-option"><input type="radio" name="section_' + id + '" value="' + s + '"' + (html === '' ? ' checked' : '') + '><div class="section-card">' + labels[s] + '</div></label>';
       }
       if (!html) {
-        var defs = ['vessel', 'maintenance', 'workshop'];
+        var defs = ['vessel', 'maintenance'];
         for (var d = 0; d < defs.length; d++) {
           html += '<label class="section-option"><input type="radio" name="section_' + id + '" value="' + defs[d] + '"' + (d === 0 ? ' checked' : '') + '><div class="section-card">' + labels[defs[d]] + '</div></label>';
         }
@@ -1139,13 +1149,13 @@
           '<div class="cascade-row">' +
             '<div class="form-group cas-unit-group">' +
               '<label class="form-label">Unit <span class="required">*</span></label>' +
-              '<select class="form-control cas-unit"><option value="">-- Select Unit --</option></select>' +
+              '<select class="form-control cas-unit"><option value="">-- Pilih Unit --</option></select>' +
               '<div class="unit-info unit-info-field"></div>' +
               '<div class="terkunci-tanda tanda-unit">🔒 Unit dikunci oleh grup — hapus joblist lain untuk mengubah</div>' +
             '</div>' +
             '<div class="form-group cas-model-group" style="display:none;">' +
               '<label class="form-label">Model Rebuild <span class="required">*</span></label>' +
-              '<select class="form-control cas-model"><option value="">-- Select Model --</option></select>' +
+              '<select class="form-control cas-model"><option value="">-- Pilih Model --</option></select>' +
             '</div>' +
             '<div class="form-group">' +
               '<label class="form-label">Component <span class="required">*</span></label>' +
@@ -1260,8 +1270,9 @@
       if (loadEl) loadEl.style.display = 'block';
       google.script.run.withSuccessHandler(function(res) {
         CATALOG_LOADING[section] = false;
-        if (res && res.success && res.data && res.data.jobs) {
-          CATALOG[section] = res.data.jobs;
+        var jobs = (res && res.data && res.data.jobs) || (res && res.result && res.result.jobs) || (res && res.jobs) || (Array.isArray(res) ? res : null);
+        if (jobs && jobs.length >= 0) {
+          CATALOG[section] = jobs;
           var blocks = document.querySelectorAll('.wo-block');
           for (var i = 0; i < blocks.length; i++) {
             var le = blocks[i].querySelector('.cas-loading');
@@ -1282,7 +1293,7 @@
       }).withFailureHandler(function(err) {
         CATALOG_LOADING[section] = false;
         if (loadEl) loadEl.style.display = 'none';
-        showNotification('Gagal memuat katalog: ' + err.message, 'error');
+        showNotification('Gagal memuat katalog: ' + ((err && err.message) || err || 'Koneksi backend terputus'), 'error');
       }).getJobCatalogCached(section);
     }
 
@@ -1329,16 +1340,23 @@
       for (var i = 0; i < UNITS.length; i++) {
         var u = UNITS[i];
         if (_isUnitOthers(u)) { layak.push(u); continue; }
-        var model = String(u.unit_model || '').toLowerCase().trim();
+        var model = String(u.unit_model || u.model || '').toLowerCase().trim();
         var sc = _scopeArr(u);
         if (!sc.length || sc.indexOf(section) !== -1 || (model && validModels[model])) {
           layak.push(u);
         }
       }
       if (layak.length === 0) layak = UNITS.slice();
-      isiDropdownUnit(blockEl.querySelector('.cas-unit'), layak, section, true,
+      var us = blockEl.querySelector('.cas-unit');
+      var prevVal = us ? us.value : '';
+      isiDropdownUnit(us, layak, section, true,
                       blockEl.querySelector('.unit-info-field'));
-      resetCascadeFrom(blockEl, 'component');
+      if (us && prevVal) {
+        us.value = prevVal;
+      }
+      if (!prevVal) {
+        resetCascadeFrom(blockEl, 'component');
+      }
     }
 
     function resetCascadeFrom(blockEl, level) {
@@ -1454,8 +1472,10 @@
       var defLoc = (section === 'workshop') ? 'workshop' : 'field';
       for (var r = 0; r < radios.length; r++) radios[r].checked = (radios[r].value === defLoc);
 
+      // Populate unit dropdown segera agar unit langsung muncul tanpa delay network
+      populateCascadeRoot(blockEl, section);
+
       loadCatalog(section, blockEl);
-      if (CATALOG[section]) populateCascadeRoot(blockEl, section);
 
       refreshMechanicSelects(blockEl);
       if (typeof hmKakiUpdate === 'function') hmKakiUpdate(blockEl);

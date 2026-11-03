@@ -12,6 +12,26 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari ALLOWED_SECTIONS, sectionRadiosHtml, dan daftar default di workers/kmbprojek/web/WorkOrder.html, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (vessel) dan 'Maintenance' (maintenance) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (.cas-unit): populateCascadeRoot(blockEl, section) kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous loadCatalog(). Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (prevVal) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder <option value="">-- Pilih Unit --</option> dan -- Pilih Model -- dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan scripts/build-web-templates.mjs ke workers/kmbprojek/src/web-templates.js.
+    - Deploy pembaruan ke staging: Worker abadiops-kmbprojek-staging sukses ter-deploy ke Cloudflare Workers (eb437691-dbe5-42e5-a538-0e68b1b2a5fa).
+  - Verifikasi:
+    - HTTP GET /web?token=52fdb552231348ffb143&page=create:
+      - ALLOWED_SECTIONS: ['vessel', 'maintenance'] (Workshop: nihil/dihapus).
+      - UNITS: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging POST /api/pintu dengan token 52fdb552231348ffb143: sukses mengenali kmbprojek (L1 Test).
+    - Suite uji menyeluruh tetap 100% lulus: uji-backend-mandiri.mjs 24/24 LULUS, uji-serahan-token.mjs 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Perbaikan Muat Katalog Vessel & Daftar Unit Web Work Order di Staging)
 - Berubah:
   - Menyelesaikan bug "Gagal memuat katalog vessel" dan dropdown Unit kosong di Web Work Order KMB Project:
