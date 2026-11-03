@@ -16,6 +16,7 @@ const CORS = {
 };
 
 import { handleWebRequest, handleWebBridgeApi } from './web-handler.js';
+import { eksekusiSupabaseBackendSum } from './supabase-backend.js';
 
 // Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
 const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
@@ -53,11 +54,24 @@ async function tanganiApi(request, env, url) {
   const token = parsed.token || '';
   const ujiSupabase = url.searchParams.get('uji') === 'supabase';
 
-  // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji
+  // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji (?uji=supabase)
   if ((liveSaklar !== 'gas' || ujiSupabase) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    const resSupa = await cobaSupabaseSum(action, token, parsed, env);
-    if (resSupa) {
+    const resSupa = await eksekusiSupabaseBackendSum(action, token, parsed, env);
+    if (resSupa && resSupa.status === 200) {
+      catat(env, { aksi: action, jalur: 'supabase', status: 200 });
       return resSupa;
+    }
+    // Jika saklar 'supabase' murni, jangan fallback ke GAS
+    if (liveSaklar === 'supabase') {
+      return resSupa || new Response(JSON.stringify({ success: false, error: 'Supabase backend gagal', source: 'SUPABASE' }), {
+        status: 500,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+      });
+    }
+    // Fallback lama cobaSupabaseSum jika ada rpc spesifik
+    const fallbackSupa = await cobaSupabaseSum(action, token, parsed, env);
+    if (fallbackSupa) {
+      return fallbackSupa;
     }
   }
 
