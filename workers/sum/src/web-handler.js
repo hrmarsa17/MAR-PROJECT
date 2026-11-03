@@ -25,7 +25,9 @@ const ROUTER_ACTIONS = new Set([
   'handleOverrideTargetHours', 'handleSaveOverride',
   'handleApproveTransfer', 'handleRejectTransfer',
   'handleKembalikanKeMekanik', 'handleBulkApprove',
-  'loadJobsCatalog', 'getWODetails',
+  'loadJobsCatalog', 'getJobCatalogCached',
+  'handleCreateWO', 'cekStatusKiriman',
+  'getWODetails',
   'generatePayrollReport', 'generateReport',
 ]);
 
@@ -84,11 +86,12 @@ export async function handleWebRequest(request, env, url) {
       const refs = await panggilAksiInternal('pull_create_refs', token, {}, env);
       const refsData = refs && refs.result ? refs.result : (refs && refs.data ? refs.data : {});
       if (refs && refs.success && refsData) {
-        context.components = refsData.components || [];
-        context.units = refsData.units || [];
-        context.mechanics = refsData.mechanics || [];
-        context.workConditions = refsData.work_conditions || [];
-        context.userScope = refsData.user_scope || null;
+        const actualRefs = (refsData && refsData.refs) ? refsData.refs : refsData;
+        context.components = actualRefs.components || refsData.components || [];
+        context.units = actualRefs.units || refsData.units || [];
+        context.mechanics = actualRefs.mechanics || refsData.mechanics || [];
+        context.workConditions = actualRefs.work_conditions || refsData.work_conditions || [];
+        context.userScope = actualRefs.user_scope || refsData.user_scope || null;
       }
     } else if (['approvals', 'approval'].includes(page)) {
       const pending = await panggilAksiInternal('pull_pending', token, {}, env);
@@ -102,8 +105,9 @@ export async function handleWebRequest(request, env, url) {
       }
       const mechList = await panggilAksiInternal('pull_create_refs', token, {}, env);
       const mechData = mechList && mechList.result ? mechList.result : (mechList && mechList.data ? mechList.data : {});
-      if (mechList && mechList.success && mechData && mechData.mechanics) {
-        context.allMechanics = mechData.mechanics;
+      const actualMechRefs = (mechData && mechData.refs) ? mechData.refs : mechData;
+      if (mechList && mechList.success && actualMechRefs && (actualMechRefs.mechanics || actualMechRefs.allMechanics)) {
+        context.allMechanics = actualMechRefs.mechanics || actualMechRefs.allMechanics || [];
       }
     } else if (['mechanic', 'monitoring', 'mechanicdashboard'].includes(page)) {
       const myWos = await panggilAksiInternal('pull_my_wos', token, {}, env);
@@ -179,12 +183,14 @@ export async function handleWebBridgeApi(request, env, url) {
       // Format URL encoded untuk Router.gs
       const params = new URLSearchParams();
       params.append('action', action);
-      params.append('data', JSON.stringify(data));
+      if (token) params.append('token', token);
+      params.append('data', typeof data === 'string' ? data : JSON.stringify(data));
       res = await fetcher(env.GAS_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Abadi-Rumah': env.RUMAH || '',
+          'X-Abadi-Token': token || '',
         },
         body: params.toString(),
         redirect: 'follow',
@@ -196,6 +202,7 @@ export async function handleWebBridgeApi(request, env, url) {
         headers: {
           'Content-Type': 'text/plain;charset=utf-8',
           'X-Abadi-Rumah': env.RUMAH || '',
+          'X-Abadi-Token': token || '',
         },
         body: JSON.stringify({ token, action, data }),
         redirect: 'follow',

@@ -31,9 +31,13 @@ BEGIN
         CREATE INDEX IF NOT EXISTS sum_api_tokens_role_idx  ON sum.api_tokens ((data->>'role'));
     END IF;
 
-    -- kmb_projek
+    -- kmb_projek (dukung skema relasional maupun skema cermin jsonb)
     IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'kmb_projek') THEN
-        CREATE INDEX IF NOT EXISTS kmbp_api_tokens_token_idx ON kmb_projek.api_tokens ((data->>'token'));
-        CREATE INDEX IF NOT EXISTS kmbp_api_tokens_role_idx  ON kmb_projek.api_tokens ((data->>'role'));
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'kmb_projek' AND table_name = 'api_tokens' AND column_name = 'data') THEN
+            CREATE INDEX IF NOT EXISTS kmbp_api_tokens_token_idx ON kmb_projek.api_tokens ((data->>'token'));
+            CREATE INDEX IF NOT EXISTS kmbp_api_tokens_role_idx  ON kmb_projek.api_tokens ((data->>'role'));
+        ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'kmb_projek' AND table_name = 'api_tokens' AND column_name = 'token') THEN
+            CREATE INDEX IF NOT EXISTS kmbp_api_tokens_role_idx  ON kmb_projek.api_tokens (role);
+        END IF;
     END IF;
 END $$;

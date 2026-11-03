@@ -75,7 +75,7 @@ export default {
 
     // Fallback bila parameter dikirim lewat query URL atau dataObj
     const action = parsed.action || url.searchParams.get('action') || dataObj.action || '';
-    const token = parsed.token || url.searchParams.get('token') || dataObj.token || '';
+    const token = parsed.token || url.searchParams.get('token') || dataObj.token || request.headers.get('X-Abadi-Token') || '';
     if (!rumah && parsed.rumah) rumah = String(parsed.rumah).toLowerCase();
     if (!rumah && dataObj.rumah) rumah = String(dataObj.rumah).toLowerCase();
 
@@ -117,7 +117,7 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
   }
 
   // 6. Aksi Tulis (Simulasi Mandiri Tanpa Google Sheets)
-  if (action === 'create_wo' || action === 'createWO') {
+  if (action === 'create_wo' || action === 'createWO' || action === 'handleCreateWO') {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100 + Math.random() * 900);
     const mockWoId = `WO-${today}-${randomSuffix}`;
@@ -125,19 +125,43 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     // Simpan ke Gedung 2
     await simpanWoGedung2(rumah, mockWoId, parsed, env);
 
+    const blocks = (parsed.data && parsed.data.blocks) || parsed.blocks || [];
+    const created = blocks.length > 0
+      ? blocks.map((b, idx) => ({
+          wo_number: `WO-${today}-${Math.floor(1000 + Math.random() * 9000)}`,
+          wo_id: `WO-${today}-${randomSuffix}-${idx + 1}`,
+          unit_id: b.unit_id || b.unit_name || '',
+          component: b.component || '',
+          activity: b.job_description || '',
+          lead_mechanic_id: b.lead_mechanic_id || '',
+          status: 'pending'
+        }))
+      : [{ wo_number: mockWoId, wo_id: mockWoId, id: mockWoId, status: 'pending' }];
+
     return responJson({
       success: true,
       result: {
         wo_id: mockWoId,
         id: mockWoId,
+        created: created,
         status: 'pending',
         message: 'Work order berhasil dibuat (Simulasi Staging)',
       },
       data: {
         wo_id: mockWoId,
         id: mockWoId,
-        created: [{ wo_id: mockWoId, id: mockWoId }],
+        created: created,
+        failed: [],
       },
+    });
+  }
+
+  if (action === 'cekStatusKiriman') {
+    return responJson({
+      success: true,
+      keadaan: 'selesai',
+      pesan: 'Kiriman selesai diproses (Simulasi Staging).',
+      struk: { created: [] },
     });
   }
 
@@ -191,10 +215,37 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     });
   }
 
-  if (action === 'loadJobsCatalog') {
+  if (action === 'loadJobsCatalog' || action === 'getJobCatalogCached') {
+    const rawSec = typeof parsed.data === 'string' ? parsed.data : (parsed.section || (parsed.args && parsed.args[0]) || 'vessel');
+    const sec = String(rawSec).toLowerCase().trim();
+    let jobs = [];
+    try {
+      let refsObj = null;
+      if (token) {
+        const refsRes = await panggilRpcBertoken(rumah, 'create_refs', token, env);
+        refsObj = refsRes ? await refsRes.json().catch(() => null) : null;
+      }
+      if (!refsObj || !refsObj.result) {
+        const rpcDirect = dapatkanNamaRpc(rumah || 'kmbprojek', 'create_refs');
+        const directRes = await panggilRpcGedung2(rpcDirect, {}, env).catch(() => null);
+        if (directRes) refsObj = directRes;
+      }
+      const rData = refsObj && refsObj.result ? refsObj.result : (refsObj && refsObj.data ? refsObj.data : {});
+      const refs = (rData && rData.refs) ? rData.refs : rData;
+      if (sec === 'vessel') {
+        jobs = refs.jobs_vessel || [];
+      } else if (sec === 'maintenance' || sec === 'field') {
+        jobs = refs.jobs_field || [];
+      } else if (sec === 'workshop') {
+        jobs = refs.jobs_workshop || [];
+      } else {
+        jobs = refs['jobs_' + sec] || [];
+      }
+    } catch (_) {}
+
     return responJson({
       success: true,
-      data: { jobs: [] },
+      data: { jobs },
     });
   }
 

@@ -5,6 +5,7 @@
 -- ==============================================================================
 
 -- 1. Helper internal pengecekan admin KMB (Hanya service_role)
+-- Support struktur flat (token, role, status) dan JSONB (data->>'token')
 CREATE OR REPLACE FUNCTION kmb._cek_is_admin(p_token text)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -14,18 +15,31 @@ AS $$
 DECLARE
     v_role text;
     v_clean text := btrim(coalesce(p_token, ''));
+    v_has_data boolean;
 BEGIN
     IF v_clean = '' THEN
         RETURN false;
     END IF;
 
-    -- Cek dari tabel cermin api_tokens
-    SELECT lower(coalesce(t.data->>'role', 'mechanic'))
-      INTO v_role
-      FROM kmb.api_tokens t
-     WHERE btrim(coalesce(t.data->>'token', '')) = v_clean
-       AND (t.data->>'status' = 'ACTIVE' OR t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
-     LIMIT 1;
+    SELECT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'kmb' AND table_name = 'api_tokens' AND column_name = 'data')
+      INTO v_has_data;
+
+    IF v_has_data THEN
+        SELECT lower(coalesce(t.data->>'role', 'mechanic'))
+          INTO v_role
+          FROM kmb.api_tokens t
+         WHERE btrim(coalesce(t.data->>'token', '')) = v_clean
+           AND (t.data->>'status' = 'ACTIVE' OR t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
+         LIMIT 1;
+    ELSE
+        SELECT lower(coalesce(t.role, 'mechanic'))
+          INTO v_role
+          FROM kmb.api_tokens t
+         WHERE btrim(coalesce(t.token, '')) = v_clean
+           AND (t.status = 'ACTIVE' OR t.status IS NULL)
+         LIMIT 1;
+    END IF;
 
     IF v_role IS NULL THEN
         RETURN false;

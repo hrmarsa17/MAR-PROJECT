@@ -5,6 +5,7 @@
 -- ==============================================================================
 
 -- 1. Helper internal pengecekan admin SUM (Hanya service_role)
+-- Support struktur flat (token, role, status) dan JSONB (data->>'token')
 CREATE OR REPLACE FUNCTION sum._cek_is_admin(p_token text)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -14,21 +15,37 @@ AS $$
 DECLARE
     v_role text;
     v_clean text := btrim(coalesce(p_token, ''));
+    v_has_data boolean;
 BEGIN
     IF v_clean = '' THEN
         RETURN false;
     END IF;
 
-    -- Cek dari tabel cermin api_tokens + config_mechanics
-    SELECT lower(coalesce(m.data->>'role', t.data->>'role', 'mechanic'))
-      INTO v_role
-      FROM sum.api_tokens t
-      LEFT JOIN sum.config_mechanics m 
-        ON lower(trim(t.data->>'email')) = lower(trim(m.data->>'email'))
-        OR trim(t.data->>'mechanic_id') = trim(m.data->>'mechanic_id')
-     WHERE btrim(coalesce(t.data->>'token', '')) = v_clean
-       AND (t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
-     LIMIT 1;
+    SELECT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'sum' AND table_name = 'api_tokens' AND column_name = 'data')
+      INTO v_has_data;
+
+    IF v_has_data THEN
+        SELECT lower(coalesce(m.data->>'role', t.data->>'role', 'mechanic'))
+          INTO v_role
+          FROM sum.api_tokens t
+          LEFT JOIN sum.config_mechanics m 
+            ON lower(trim(t.data->>'email')) = lower(trim(m.data->>'email'))
+            OR trim(t.data->>'mechanic_id') = trim(m.data->>'mechanic_id')
+         WHERE btrim(coalesce(t.data->>'token', '')) = v_clean
+           AND (t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
+         LIMIT 1;
+    ELSE
+        SELECT lower(coalesce(m.role, t.role, 'mechanic'))
+          INTO v_role
+          FROM sum.api_tokens t
+          LEFT JOIN sum.config_mechanics m 
+            ON lower(trim(t.email)) = lower(trim(m.email))
+            OR trim(t.mechanic_id) = trim(m.mechanic_id)
+         WHERE btrim(coalesce(t.token, '')) = v_clean
+           AND (t.is_active IS NULL OR t.is_active <> false)
+         LIMIT 1;
+    END IF;
 
     IF v_role IS NULL THEN
         RETURN false;

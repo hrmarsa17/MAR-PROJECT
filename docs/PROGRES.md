@@ -12,6 +12,32 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Perbaikan Muat Katalog Vessel & Daftar Unit Web Work Order di Staging)
+- Berubah:
+  - Menyelesaikan bug "Gagal memuat katalog vessel" dan dropdown Unit kosong di Web Work Order KMB Project:
+    - Akar masalah 1: web-handler.js mengekstrak refsData.units. Pada respons KMB Project (baik GAS maupun Supabase), unit berada di bawah refsData.refs.units, sehingga context.units menjadi [] dan <select name="unit"> kosong.
+    - Akar masalah 2: Di Gedung 2 Supabase, tabel kmb_projek.catalog_jobs belum ada dan reference data belum terisi. Selain itu, pemanggilan google.script.run.getJobCatalogCached(section) dari WorkOrder.html via /api/web belum dikenali oleh workers/gas-tiruan, sehingga memicu toast merah gagal memuat katalog.
+    - Akar masalah 3: Kode job_id di KMB Project tidak unik secara global, melainkan unik per section (contoh JOB-1038 dipakai di vessel dan maintenance), sehingga primary key tabel katalog harus komposit (section, job_id).
+  - Penambahan & Perbaikan:
+    - db/kmb_projek/014-catalog-jobs.sql: Membuat tabel kmb_projek.catalog_jobs dengan primary key (section, job_id) dan indeks section/model. Diterapkan di Gedung 2 Staging (dnnqrslftndcbmnvuveb).
+    - Sinkronisasi data referensi staging ke Gedung 2 kmb_projek: 28 unit, 276 katalog vessel, 1.257 katalog maintenance, 276 komponen, 21 mekanik, dan faktor kondisi kerja.
+    - workers/kmbprojek/src/web-handler.js, workers/kmb/src/web-handler.js, workers/sum/src/web-handler.js: Menangani actualRefs = (refsData && refsData.refs) ? refsData.refs : refsData, meneruskan token pada URLSearchParams, dan menambahkan getJobCatalogCached, handleCreateWO, dan cekStatusKiriman ke ROUTER_ACTIONS.
+    - workers/gas-tiruan/src/index.js: Menangani getJobCatalogCached & loadJobsCatalog dengan mengembalikan katalog sesuai section (jobs_vessel, jobs_field, jobs_workshop), serta simulasi handleCreateWO dan cekStatusKiriman.
+    - db/contoh-user-admin.sql & db/migrasi/013-admin-user-tenant.sql: Penyesuaian indeks token/role untuk skema relasional maupun cermin jsonb.
+  - Deploy & Verifikasi Live Staging:
+    - abadiops-gas-tiruan & abadiops-kmbprojek-staging berhasil di-deploy.
+    - Pengujian live endpoint staging via fetch/curl:
+      - POST /api/web (getJobCatalogCached, section: vessel): status 200, mengembalikan 276 pekerjaan vessel (JOB-1038, dll).
+      - POST /api/web (getJobCatalogCached, section: maintenance): status 200, mengembalikan 1.257 pekerjaan maintenance.
+      - GET /web?page=create: status 200, var UNITS di HTML memuat 28 unit lengkap.
+      - POST /api/web (handleCreateWO): status 200, berhasil membuat WO simulasi tanpa galat.
+    - Uji otomatis seluruh suite tetap 100% hijau: uji-backend-mandiri.mjs 24/24 LULUS, uji-user-admin-pusat.mjs 27/27 LULUS, uji-serahan-token.mjs 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+  - Berikan panduan verifikasi browser kepada Gabriel / user.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · bersama (Backend Mandiri Penuh Supabase Tanpa GAS, Mesin Skor ESM, Lulus Uji 24/24)
 - Berubah:
   - Penerapan Backend Mandiri Supabase (Tanpa GAS) sesuai `docs/panduan_deploy_staging_kamis 2.md`:
