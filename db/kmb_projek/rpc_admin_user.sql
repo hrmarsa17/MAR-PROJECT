@@ -105,7 +105,7 @@ BEGIN
                    coalesce(m.name, t.name, '') AS name,
                    coalesce(t.role, m.role, 'mechanic') AS role,
                    coalesce(m.section, '') AS section,
-                   coalesce(m.email, t.email, '') AS email,
+                   coalesce(m.email, '') AS email,
                    coalesce(t.token, m.token, '') AS token,
                    coalesce(t.status, 'ACTIVE') AS status,
                    'kmbprojek' AS rumah

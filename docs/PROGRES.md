@@ -12,6 +12,27 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · bersama (Perbaikan RPC Admin User Terpusat & Data Token Admin Staging Gedung 2)
+- Berubah:
+  - Memperbaiki kegagalan pemuatan daftar pengguna & token pada tab "Manajemen Pengguna & Token (Pusat 3 Rumah)" di Panel Saklar Staging (/saklar):
+    - Akar masalah 1: Pada db/kmb_projek/rpc_admin_user.sql, baris coalesce(m.email, t.email, '') memicu galat Postgres 42703: column t.email does not exist karena kolom email tidak berada di tabel kmb_projek.api_tokens melainkan di config_mechanics.
+    - Akar masalah 2: Token admin master uji-spv-admin-master belum didaftarkan pada skema sum.api_tokens dan kmb.api_tokens di database Staging Gedung 2 (dnnqrslftndcbmnvuveb), sehingga RPC validasi _cek_is_admin menolak dengan error "Token tidak dikenal / nonaktif". Akibatnya endpoint /saklar/api/admin/users mengembalikan users: [] (tampil "Tidak ada pengguna ditemukan.").
+    - Perbaikan:
+      1. Memperbaiki db/kmb_projek/rpc_admin_user.sql dengan mengganti referensi email menjadi coalesce(m.email, '') AS email.
+      2. Memperbarui db/token-admin-staging.sql dengan data token admin master untuk ketiga kamar (kmb_projek, sum, kmb).
+      3. Menjalankan migrasi SQL pembaruan ke Gedung 2 Supabase (dnnqrslftndcbmnvuveb).
+  - Verifikasi:
+    - RPC kmb_admin_daftar_user_bertoken('uji-spv-admin-master'): sukses mengembalikan 3 pengguna (KMB Project).
+    - RPC sum_admin_daftar_user_bertoken('uji-spv-admin-master'): sukses mengembalikan 58 pengguna (SUM).
+    - RPC kmbtra_admin_daftar_user_bertoken('uji-spv-admin-master'): sukses mengembalikan 43 pengguna (KMB TRA).
+    - Total 104 pengguna dari 3 rumah kini sukses dimuat ke Panel Saklar Staging.
+    - node scripts/uji-backend-mandiri.mjs: 24/24 LULUS.
+    - node scripts/uji-serahan-token.mjs: 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Perbaikan Bocoran Kode JavaScript di Halaman Web Approvals)
 - Berubah:
   - Memperbaiki bocoran teks kode JavaScript di bagian bawah halaman web Approvals:
