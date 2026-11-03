@@ -88,6 +88,15 @@ async function cobaSupabaseSum(action, token, parsed, env) {
     } else if (action === 'pull_my_wos' && token) {
       rpcName = 'sum_my_wos_bertoken';
       payload = { p_token: token };
+    } else if (action === 'admin_daftar_user' && token) {
+      rpcName = 'sum_admin_daftar_user_bertoken';
+      payload = { p_token: token };
+    } else if (action === 'admin_simpan_user' && token) {
+      rpcName = 'sum_admin_simpan_user_bertoken';
+      payload = { p_token: token, p_user: parsed.user || parsed.data || {} };
+    } else if (action === 'admin_set_token_status' && token) {
+      rpcName = 'sum_admin_set_token_status_bertoken';
+      payload = { p_token: token, p_target_token: parsed.target_token || parsed.token_target || '', p_status: parsed.status || 'ACTIVE' };
     }
 
     if (!rpcName) return null;
