@@ -100,9 +100,16 @@ export async function identitasDariTokenSupabase(
 
         void q`UPDATE kmb_projek.api_tokens SET last_used_at = now() WHERE token = ${cleanToken}`.catch(() => {});
 
+        // Resolusi dinamis tenant_id dari tabel tenants
+        let tenantId = 1;
+        try {
+          const tRows = await q<{ id: number }[]>`SELECT id FROM tenants WHERE code = 'KMB' LIMIT 1`;
+          if (tRows[0]?.id) tenantId = Number(tRows[0].id);
+        } catch (_) {}
+
         return {
           mechanicId,
-          tenantId: 1,
+          tenantId,
           tenantCode: 'KMB',
           nama: sr.name,
           peran,
