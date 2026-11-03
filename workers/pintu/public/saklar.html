@@ -116,6 +116,12 @@
       </form>
     </div>
 
+    <!-- Navigasi Tab Panel -->
+    <div id="panelTabs" class="hidden" style="display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+      <button class="btn btn-primary" id="tabBtnSaklar" onclick="pindahTab('saklar')">🎛️ Status Saklar Dua Cabang</button>
+      <button class="btn btn-secondary" id="tabBtnUser" onclick="pindahTab('users')">👷 Manajemen Pengguna & Token (Pusat 3 Rumah)</button>
+    </div>
+
     <!-- Tampilan 2: Dashboard Saklar -->
     <div id="viewDashboard" class="hidden">
       <!-- Banner Darurat Global -->
@@ -148,6 +154,46 @@
             </thead>
             <tbody id="historyTableBody">
               <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Memuat riwayat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tampilan 3: Manajemen Pengguna & Token Terpusat (docs/panduan_deploy_staging_kamis.md) -->
+    <div id="viewUserAdmin" class="hidden">
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+          <div>
+            <h2 style="font-size:1.25rem; font-weight:700;">Daftar Pengguna & Token Terpusat</h2>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Kelola akses mekanik & supervisor untuk 3 rumah di Supabase</p>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <select id="filterRumahUser" class="form-control" style="width:auto; padding:0.5rem 0.75rem; font-size:0.875rem;" onchange="filterUsers()">
+              <option value="semua">Semua Rumah</option>
+              <option value="kmbprojek">KMB Projek</option>
+              <option value="sum">SUM V2</option>
+              <option value="kmbtra">KMB TRA</option>
+            </select>
+            <input type="text" id="cariUser" class="form-control" placeholder="Cari nama / token..." style="width:180px; padding:0.5rem 0.75rem; font-size:0.875rem;" oninput="filterUsers()">
+            <button class="btn btn-primary" onclick="bukaModalTambahUser()" style="padding:0.5rem 1rem; font-size:0.875rem;">+ Tambah Pengguna</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Rumah</th>
+                <th>Nama</th>
+                <th>User ID</th>
+                <th>Peran</th>
+                <th>Token</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody">
+              <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna...</td></tr>
             </tbody>
           </table>
         </div>
@@ -193,6 +239,55 @@
     </div>
   </div>
 
+  <!-- Modal Tambah Pengguna Baru -->
+  <div id="modalTambahUser" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:500px;">
+      <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:1rem;">Tambah Pengguna & Terbitkan Token</h3>
+      <form onsubmit="submitTambahUser(event)">
+        <div class="form-group">
+          <label>Target Rumah</label>
+          <select id="inputUserRumah" class="form-control" required>
+            <option value="kmbprojek">KMB Projek</option>
+            <option value="sum">SUM V2</option>
+            <option value="kmbtra">KMB TRA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ID Pengguna (Mechanic ID / SPV ID)</label>
+          <input type="text" id="inputUserId" class="form-control" placeholder="Contoh: MECH-101 / SPV-001" required>
+        </div>
+        <div class="form-group">
+          <label>Nama Lengkap</label>
+          <input type="text" id="inputUserName" class="form-control" placeholder="Nama pengguna" required>
+        </div>
+        <div class="form-group">
+          <label>Peran (Role)</label>
+          <select id="inputUserRole" class="form-control" required>
+            <option value="mechanic">Mechanic</option>
+            <option value="supervisor">Supervisor / Foreman</option>
+            <option value="superintendent">Superintendent / Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Email (Opsional)</label>
+          <input type="email" id="inputUserEmail" class="form-control" placeholder="email@abadiops.com">
+        </div>
+        <div class="form-group">
+          <label>Token Akses</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="inputUserToken" class="form-control" placeholder="Token akses unik" required>
+            <button type="button" class="btn btn-secondary" onclick="generateRandomToken()" style="white-space:nowrap; padding:0.5rem 0.75rem;">Acak</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="tutupModalTambahUser()">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan & Terbitkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     let TOKEN_SESI = localStorage.getItem('abadi_saklar_token') || '';
     let TARGET_RUMAH_MODAL = '';
@@ -234,12 +329,21 @@
     function tampilkanLogin() {
       document.getElementById('viewLogin').classList.remove('hidden');
       document.getElementById('viewDashboard').classList.add('hidden');
+      document.getElementById('viewUserAdmin').classList.add('hidden');
+      document.getElementById('panelTabs').classList.add('hidden');
       document.getElementById('headerNav').style.display = 'none';
     }
 
     function tampilkanDashboard() {
       document.getElementById('viewLogin').classList.add('hidden');
-      document.getElementById('viewDashboard').classList.remove('hidden');
+      document.getElementById('panelTabs').classList.remove('hidden');
+      if (TAB_AKTIF === 'saklar') {
+        document.getElementById('viewDashboard').classList.remove('hidden');
+        document.getElementById('viewUserAdmin').classList.add('hidden');
+      } else {
+        document.getElementById('viewDashboard').classList.add('hidden');
+        document.getElementById('viewUserAdmin').classList.remove('hidden');
+      }
       document.getElementById('headerNav').style.display = 'flex';
     }
 
@@ -453,6 +557,166 @@
           if (reload) muatStatus();
         } else {
           alert('Gagal membalik saklar: ' + (data.error || 'Galat server'));
+        }
+      } catch (err) {
+        alert('Koneksi terputus: ' + err.message);
+      }
+    }
+
+    /* --- Alur Manajemen Pengguna & Token Terpusat (docs/panduan_deploy_staging_kamis.md) --- */
+    let TAB_AKTIF = 'saklar';
+    let SEMUA_USERS = [];
+
+    function pindahTab(tab) {
+      TAB_AKTIF = tab;
+      if (tab === 'saklar') {
+        document.getElementById('viewDashboard').classList.remove('hidden');
+        document.getElementById('viewUserAdmin').classList.add('hidden');
+        document.getElementById('tabBtnSaklar').className = 'btn btn-primary';
+        document.getElementById('tabBtnUser').className = 'btn btn-secondary';
+        muatStatus();
+      } else {
+        document.getElementById('viewDashboard').classList.add('hidden');
+        document.getElementById('viewUserAdmin').classList.remove('hidden');
+        document.getElementById('tabBtnSaklar').className = 'btn btn-secondary';
+        document.getElementById('tabBtnUser').className = 'btn btn-primary';
+        muatDaftarUsers();
+      }
+    }
+
+    async function muatDaftarUsers() {
+      const tbody = document.getElementById('userTableBody');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna dari 3 rumah...</td></tr>';
+      try {
+        const res = await fetch('/saklar/api/admin/users', {
+          headers: { 'Authorization': 'Bearer ' + TOKEN_SESI }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.users)) {
+          SEMUA_USERS = data.users;
+          renderUsers(SEMUA_USERS);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--danger);">${data.error || 'Gagal memuat pengguna'}</td></tr>`;
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--danger);">Koneksi terputus: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('userTableBody');
+      if (!users || !users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Tidak ada pengguna ditemukan.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => {
+        const isAktif = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+        const badgeRumah = u.rumah === 'sum' ? 'badge-supabase' : (u.rumah === 'kmbtra' ? 'badge-dua_cabang' : 'badge-gas');
+        const badgeStatus = isAktif ? 'badge-supabase' : 'badge-gas';
+        return `
+          <tr>
+            <td><span class="badge ${badgeRumah}">${escapeHtml(u.rumah || '')}</span></td>
+            <td><strong>${escapeHtml(u.name || '—')}</strong></td>
+            <td><code>${escapeHtml(u.user_id || '—')}</code></td>
+            <td>${escapeHtml(u.role || 'mechanic')}</td>
+            <td><code>${escapeHtml((u.token || '').slice(0, 4) + '…' + (u.token || '').slice(-4))}</code></td>
+            <td><span class="badge ${badgeStatus}">${escapeHtml(u.status || 'ACTIVE')}</span></td>
+            <td>
+              <button class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="toggleTokenStatus('${u.rumah}', '${escapeHtml(u.token)}', '${isAktif ? 'ACTIVE' : 'INACTIVE'}')">
+                ${isAktif ? 'Nonaktifkan' : 'Aktifkan'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterUsers() {
+      const rumah = document.getElementById('filterRumahUser').value;
+      const q = document.getElementById('cariUser').value.toLowerCase().trim();
+      let filtered = SEMUA_USERS;
+      if (rumah !== 'semua') {
+        filtered = filtered.filter(u => (u.rumah || '').toLowerCase() === rumah);
+      }
+      if (q) {
+        filtered = filtered.filter(u => 
+          (u.name || '').toLowerCase().includes(q) ||
+          (u.user_id || '').toLowerCase().includes(q) ||
+          (u.token || '').toLowerCase().includes(q)
+        );
+      }
+      renderUsers(filtered);
+    }
+
+    async function toggleTokenStatus(rumah, token, statusSekarang) {
+      const statusBaru = statusSekarang === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      if (!confirm(`Ubah status token ${token.slice(0, 4)}… di ${rumah} menjadi ${statusBaru}?`)) return;
+      try {
+        const res = await fetch('/saklar/api/admin/tokens/status', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ rumah, target_token: token, status: statusBaru })
+        });
+        const data = await res.json();
+        if (data.success) {
+          muatDaftarUsers();
+        } else {
+          alert('Gagal mengubah status token: ' + (data.error || 'Galat server'));
+        }
+      } catch (err) {
+        alert('Koneksi terputus: ' + err.message);
+      }
+    }
+
+    function bukaModalTambahUser() {
+      document.getElementById('inputUserId').value = '';
+      document.getElementById('inputUserName').value = '';
+      document.getElementById('inputUserEmail').value = '';
+      generateRandomToken();
+      document.getElementById('modalTambahUser').classList.remove('hidden');
+    }
+
+    function tutupModalTambahUser() {
+      document.getElementById('modalTambahUser').classList.add('hidden');
+    }
+
+    function generateRandomToken() {
+      const rumah = document.getElementById('inputUserRumah').value;
+      const prefix = rumah === 'sum' ? 'sum' : (rumah === 'kmbtra' ? 'kmb' : 'kmbp');
+      const rand = Math.random().toString(36).substring(2, 10);
+      document.getElementById('inputUserToken').value = `${prefix}-${rand}`;
+    }
+
+    async function submitTambahUser(e) {
+      e.preventDefault();
+      const rumah = document.getElementById('inputUserRumah').value;
+      const user = {
+        user_id: document.getElementById('inputUserId').value.trim(),
+        name: document.getElementById('inputUserName').value.trim(),
+        role: document.getElementById('inputUserRole').value,
+        email: document.getElementById('inputUserEmail').value.trim(),
+        token: document.getElementById('inputUserToken').value.trim(),
+        status: 'ACTIVE'
+      };
+      tutupModalTambahUser();
+      try {
+        const res = await fetch('/saklar/api/admin/users/simpan', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ rumah, user })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Pengguna & token berhasil disimpan!');
+          muatDaftarUsers();
+        } else {
+          alert('Gagal menyimpan pengguna: ' + (data.error || 'Galat server'));
         }
       } catch (err) {
         alert('Koneksi terputus: ' + err.message);

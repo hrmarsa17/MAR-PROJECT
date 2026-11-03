@@ -16,6 +16,7 @@
 
 import { SaklarDO } from './saklar-do.js';
 import { verifikasiKataSandi, validasiSesi } from './saklar-auth.js';
+import { handleAdminDaftarUsers, handleAdminSimpanUser, handleAdminSetTokenStatus } from './user-admin.js';
 
 export { SaklarDO };
 
@@ -153,6 +154,17 @@ export default {
         status: resp.status,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
+    }
+
+    // --- Rute Manajemen Pengguna & Token Terpusat (docs/panduan_deploy_staging_kamis.md) ---
+    if (url.pathname === '/saklar/api/admin/users' && request.method === 'GET') {
+      return handleAdminDaftarUsers(request, env);
+    }
+    if (url.pathname === '/saklar/api/admin/users/simpan' && request.method === 'POST') {
+      return handleAdminSimpanUser(request, env);
+    }
+    if (url.pathname === '/saklar/api/admin/tokens/status' && request.method === 'POST') {
+      return handleAdminSetTokenStatus(request, env);
     }
 
     // API Ubah Saklar (Khusus Panel Saklar - butuh autentikasi)

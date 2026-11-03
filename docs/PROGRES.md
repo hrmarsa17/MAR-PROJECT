@@ -12,6 +12,27 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · bersama (Manajemen Pengguna & Token Terpusat di Pintu, RPC 3 Rumah, Lulus Uji 27/27)
+- Berubah:
+  - Implementasi Manajemen Pengguna & Token Terpusat sesuai `docs/panduan_deploy_staging_kamis.md`:
+    - Commit 1 (`[kmb]`): `db/kmb/rpc_admin_user.sql` RPC `kmbtra_admin_daftar_user_bertoken`, `kmbtra_admin_simpan_user_bertoken`, `kmbtra_admin_set_token_status_bertoken`, dan rute worker kmb.
+    - Commit 2 (`[sum]`): `db/sum/rpc_admin_user.sql` RPC `sum_admin_daftar_user_bertoken`, `sum_admin_simpan_user_bertoken`, `sum_admin_set_token_status_bertoken`, dan rute worker sum.
+    - Commit 3 (`[kmb-projek]`): `db/kmb_projek/rpc_admin_user.sql` RPC `kmb_admin_daftar_user_bertoken`, `kmb_admin_simpan_user_bertoken`, `kmb_admin_set_token_status_bertoken`, rute worker kmbprojek, dan hapus hardcode tenant_id di `src/backends/supabase/auth.ts`.
+    - Commit 4 (`[bersama]`):
+      - `db/migrasi/013-admin-user-tenant.sql` & `db/contoh-user-admin.sql`.
+      - `workers/pintu/src/user-admin.js` (stateless, SaklarDO tetap murni v1).
+      - `workers/pintu/src/index.js` (rute `/saklar/api/admin/users`, `/saklar/api/admin/users/simpan`, `/saklar/api/admin/tokens/status`).
+      - `workers/pintu/public/saklar.html` (tab Manajemen Pengguna & Token Terpusat 3 Rumah + modal tambah pengguna).
+      - `workers/pintu/wrangler.toml` (SUPABASE_URL & SUPABASE_ANON_KEY untuk vars & env.staging).
+      - `scripts/uji-user-admin-pusat.mjs` memverifikasi 27/27 kasus uji protokol dan fungsional lulus 100%.
+  - Uji serahan token `scripts/uji-serahan-token.mjs` tetap lulus 24/24.
+  - Pemeriksaan sintaks `node --check` valid untuk semua worker (pintu, sum, kmb, kmbprojek, gas-tiruan).
+- Belum selesai / berikutnya:
+  - Eksekusi SQL di Gedung 2 (`dnnqrslftndcbmnvuveb`) dan deploy staging Cloudflare Workers (`--env staging`).
+  - Push branch `staging` ke remote `origin` dan `kmb`.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · staging (Verifikasi RPC Gedung 2, Penyelarasan ?uji=supabase & pull_my_wos)
 - Berubah:
   - Verifikasi live Gedung 2 Staging (dnnqrslftndcbmnvuveb): Seluruh RPC bertoken (kmb_create_refs_bertoken, kmb_monitoring_bertoken, kmb_my_wos_bertoken, kmb_wos_by_status_bertoken, sum_create_refs_bertoken, sum_monitoring_bertoken, sum_my_wos_bertoken, kmbtra_create_refs_bertoken, kmbtra_monitoring_bertoken, kmb_ping, sum_ping, kmbtra_ping) terverifikasi aktif (status 200).
