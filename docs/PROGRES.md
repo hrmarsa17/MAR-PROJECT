@@ -12,6 +12,41 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Perbaikan Bocoran Kode JavaScript di Halaman Web Approvals)
+- Berubah:
+  - Memperbaiki bocoran teks kode JavaScript di bagian bawah halaman web Approvals:
+    - Akar masalah: Di dalam komentar docstring DateTime24.html terdapat tag <?!= include('DateTime24') ?>. Saat build-web-templates.mjs mengompilasi include, tag tersebut memicu include rekursif ke dirinya sendiri di tengah komentar JS. Tag </script> penutup dari include dalam menutup blok script lebih awal sehingga seluruh baris JS berikutnya tumpah ke halaman web sebagai teks HTML biasa.
+    - Perbaikan: Mengubah docstring DateTime24.html agar tidak lagi memuat sintaks tag template, dan mengompilasi ulang web-templates.js.
+    - Deploy pembaruan ke staging: Worker abadiops-kmbprojek-staging ter-deploy ke Cloudflare Workers (2c64828f-b320-4c5a-a0cf-da26cd9d4dc3).
+  - Verifikasi:
+    - HTTP GET /web?page=approvals&token=52fdb552231348ffb143:
+      - Bocoran kode JS di bawah tabel persetujuan: nihil / bersih 100%.
+      - Seluruh suite uji tetap lulus: uji-backend-mandiri.mjs 24/24 LULUS, uji-serahan-token.mjs 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di origin dan kmb.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -58,6 +93,26 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · bersama (Backend Mandiri Penuh Supabase Tanpa GAS, Mesin Skor ESM, Lulus Uji 24/24)
 - Berubah:
   - Penerapan Backend Mandiri Supabase (Tanpa GAS) sesuai `docs/panduan_deploy_staging_kamis 2.md`:
@@ -74,6 +129,26 @@ Formatnya:
 - Belum selesai / berikutnya:
   - Eksekusi SQL `rpc_backend_penuh.sql` di Gedung 2 (`dnnqrslftndcbmnvuveb`) dan deploy staging Cloudflare Workers.
   - Push branch `staging` ke remote `origin` dan `kmb`.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 
@@ -98,6 +173,26 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · staging (Verifikasi RPC Gedung 2, Penyelarasan ?uji=supabase & pull_my_wos)
 - Berubah:
   - Verifikasi live Gedung 2 Staging (dnnqrslftndcbmnvuveb): Seluruh RPC bertoken (kmb_create_refs_bertoken, kmb_monitoring_bertoken, kmb_my_wos_bertoken, kmb_wos_by_status_bertoken, sum_create_refs_bertoken, sum_monitoring_bertoken, sum_my_wos_bertoken, kmbtra_create_refs_bertoken, kmbtra_monitoring_bertoken, kmb_ping, sum_ping, kmbtra_ping) terverifikasi aktif (status 200).
@@ -113,6 +208,26 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
 ### 2026-11-02 · Raka (+ AI) · staging
 - Berubah:
   - Bug #28: Rute staging ke `*.workers.dev`, GAS Tiruan simpan WO ke Gedung 2 dengan payload lengkap (id, wo_number, date, unit_code, component, activity, created_by, source).
@@ -123,6 +238,26 @@ Formatnya:
 - Belum selesai / berikutnya:
   - Bug #25: Template KMB V2 asli (`workers/kmb/web/`) - butuh source dari GAS script `17sBKK…` (kode Gabriel, izinkan).
   - Sinkron cermin ke Gedung 2 (Langkah 2): butuh environment variable dan Service Account.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 
@@ -156,6 +291,26 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
 ### 2026-10-30 · Raka (+ AI) · bersama (Secret panel saklar produksi)
 - **Berubah:**
   - Secret `PANEL_SAKLAR_SECRET` sudah ditambahkan pada environment **Production** Worker `abadiops-pintu` melalui Cloudflare Dashboard.
@@ -164,6 +319,26 @@ Formatnya:
 - **Belum selesai / berikutnya:**
   - Semua saklar produksi tetap `gas`.
   - Checklist migrasi, sinkronisasi rutin, uji kembar, jalur tulis, backup/restore, dan persetujuan Gabriel masih diperlukan sebelum saklar dinyalakan.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 
@@ -183,6 +358,26 @@ Formatnya:
     `node tools\kmb\sinkron-cermin.mjs`
     `node tools\kmb_projek\sinkron-cermin.mjs`
   - Setelah sinkron selesai, verifikasi `cermin_header` dan `cermin_log` pada skema `sum`, `kmb`, dan `kmb_projek`; baru setelah itu siapkan jadwal sinkron rutin.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 
@@ -214,6 +409,26 @@ Formatnya:
 - **Belum selesai / berikutnya**:
   - Langkah 7: Sinkron penuh dan cermin sheet berjalan rutin di skema `kmb_projek` dan `sum`.
   - Langkah 9: Mengaktifkan buku tamu kiriman di pintu depan sebelum saklar dibalik.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 
@@ -633,12 +848,112 @@ Formatnya:
 
 ---
 
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
 ## Tugas terbuka
 
 Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. Dirapikan 29 Okt 2026 untuk serah terima ke Raka (lihat `docs/SERAH-TERIMA-2026-10-29.md`).
 
 | Tugas | Rumah | Pemegang | Status |
-|---|---|---|---|
+|---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---|---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---|---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---|---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---|
 | **Rencana migrasi berurutan.** Target selesai: tinggal menyalakan saklar. Urutannya ada di `docs/SERAH-TERIMA-2026-10-29.md` §5 dan `docs/SAKLAR.md` | bersama | Gabriel + Raka | panduan utama |
 | KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | **SELESAI** 29 Okt: tayang di `kmbprojek.abadiops.com` via Worker `abadiops-porject-kmb`, 1:1 PWA melayani lapangan, diteruskan ke GAS (§5 langkah 1 tuntas) |
 | Cermin terjadwal ketiga rumah (Cron Cloudflare, menyalin setiap sheet termasuk bulan lama), dengan laporan selisih harian; lulus kalau selisihnya nol 7 hari | bersama | Raka + Gabriel | Gabriel: buat akun layanan Google dan bagikan ketiga spreadsheet |
@@ -665,6 +980,26 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | Pilihan mode portal KMB Project saat dibuka langsung tanpa pintu: buang atau arahkan ke pintu (bug #18) | kmb-projek | Raka | selesai sendiri setelah §5 langkah 1 (portal dipensiunkan) |
 | Uji sambungan penuh KMB Project: masukkan token uji baru SPV-001 ke sheet `ApiTokens` KMB Project, lalu bandingkan data lewat `kmbprojek.abadiops.com` dengan GAS | kmb-projek | Gabriel | KMB TRA dan SUM sudah lulus 29 Okt |
 | Rumah baru `kmbbupr` (PT KMB di site BUPR): satu baris `RUMAH` di `workers/pintu/wrangler.toml`, ditambah Worker dan PWA rumahnya | bersama | Gabriel + Raka | sesudah migrasi |
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 
@@ -859,6 +1194,26 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
     - Dicatat di Bug #11 (`docs/BUG-DICATAT.md`). Menunggu keputusan Gabriel untuk pemisahan frontend di pintu utama `abadiops.com` saat menyajikan rumah SUM.
 - Belum selesai / berikutnya:
   - Menunggu verifikasi visual dari pengguna saat login di abadiops.com dengan token SUM.
+
+---
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Penyambungan Multi-GAS Token Resolver untuk SUM V2)
