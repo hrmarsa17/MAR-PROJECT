@@ -127,8 +127,6 @@ function normalisasiAksi(action) {
     'getMyWos': 'pull_my_wos',
     'getWoDetailForMechanic': 'pull_wo_detail',
     'getWODetails': 'pull_wo_detail',
-    'getJobCatalogCached': 'pull_create_refs',
-    'loadJobsCatalog': 'pull_create_refs',
   };
   return map[a] || a;
 }
@@ -152,6 +150,73 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
       status: 401,
       headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
     });
+  }
+
+  const supaHeaders = {
+    'apikey': env.SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + env.SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  };
+
+  const rumah = (env.RUMAH || 'kmbprojek').toLowerCase();
+  const rpcPrefix = (rumah === 'sum') ? 'sum' : (rumah === 'kmbtra' || rumah === 'kmb') ? 'kmbtra' : 'kmb';
+  const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_eksekusi_aksi_bertoken`;
+
+  
+  // Khusus loadJobsCatalog / getJobCatalogCached
+  if (action === 'loadJobsCatalog' || action === 'getJobCatalogCached' || cleanAksi === 'getJobCatalogCached' || cleanAksi === 'loadJobsCatalog') {
+    const rawSec = typeof body.data === 'string' ? body.data : (body.data?.section || body.section || (body.args && body.args[0]) || 'vessel');
+    const sec = String(rawSec || 'vessel').toLowerCase().trim();
+
+    try {
+      const resRefs = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_aksi: 'pull_create_refs',
+          p_op_id: (body.op_id || 'cat-' + Date.now()),
+          p_payload: {},
+          p_extra: null,
+        }),
+      });
+
+      if (resRefs.ok) {
+        const refsData = await resRefs.json();
+        const rData = refsData && refsData.result ? refsData.result : (refsData && refsData.data ? refsData.data : {});
+        const refs = (rData && rData.refs) ? rData.refs : rData;
+
+        let jobs = [];
+        if (sec === 'vessel') {
+          jobs = refs.jobs_vessel || [];
+        } else if (sec === 'maintenance' || sec === 'field') {
+          jobs = refs.jobs_field || [];
+        } else if (sec === 'workshop') {
+          jobs = refs.jobs_workshop || [];
+        } else {
+          jobs = refs['jobs_' + sec] || refs.jobs_field || refs.jobs_vessel || [];
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          data: { jobs, section: sec },
+          result: { jobs, section: sec },
+          jobs: jobs,
+          source: 'SUPABASE'
+        }), {
+          status: 200,
+          headers: {
+            ...CORS,
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
+            'X-Abadi-Jalur': 'supabase',
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('Gagal memuat katalog Supabase:', err);
+    }
   }
 
   // Khusus cekStatusKiriman
@@ -189,16 +254,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     payload.points = skor.finalPoints;
   }
 
-  const supaHeaders = {
-    'apikey': env.SUPABASE_ANON_KEY,
-    'Authorization': 'Bearer ' + env.SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-  };
-
-  const rumah = (env.RUMAH || 'kmbprojek').toLowerCase();
-  const rpcPrefix = (rumah === 'sum') ? 'sum' : (rumah === 'kmbtra' || rumah === 'kmb') ? 'kmbtra' : 'kmb';
-  const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_eksekusi_aksi_bertoken`;
-
+  
   try {
     // 1. Batch creation jika ada blocks (format form Web WorkOrder.html)
     const blocks = payload.blocks || (payload.data && payload.data.blocks);

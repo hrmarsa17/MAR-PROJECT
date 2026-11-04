@@ -12,6 +12,26 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Respon getJobCatalogCached / loadJobsCatalog di Backend Supabase)
+- Berubah:
+  - Menyelesaikan pesan error "Gagal memuat katalog maintenance" saat membuka form Create Work Order di antarmuka Web Desktop:
+    - Akar masalah: Di `WorkOrder.html`, fungsi `loadCatalog(section)` memanggil `getJobCatalogCached(section)`. Kode sisi klien mengharapkan respon berisi properti `data.jobs` (array pekerjaan untuk section tersebut). Sebelumnya backend Supabase memetakan aksi ini ke `pull_create_refs` utuh tanpa menyaring dan mengekstrak `data.jobs` (hanya mengembalikan `jobs_field` dan `jobs_vessel`), sehingga `res.data.jobs` bernilai `undefined` dan memicu notifikasi toast merah "Gagal memuat katalog maintenance".
+    - Perbaikan:
+      1. Menangani aksi `getJobCatalogCached` dan `loadJobsCatalog` secara spesifik di `supabase-backend.js`.
+      2. Mengekstrak parameter section (`maintenance`/`field` -> `jobs_field` 1.257 pekerjaan; `vessel` -> `jobs_vessel` 276 pekerjaan).
+      3. Mengembalikan respon lengkap `{ success: true, data: { jobs: [...] }, result: { jobs: [...] }, jobs: [...], source: 'SUPABASE' }` yang 100% kompatibel dengan `WorkOrder.html`.
+  - Deploy & Verifikasi Staging:
+    - `abadiops-kmbprojek-staging`, `abadiops-kmb-staging`, `abadiops-sum-staging` ter-deploy ke Cloudflare Workers staging.
+    - Uji live `POST /api/web` (`getJobCatalogCached` section `maintenance`): Mengembalikan HTTP 200, 1.257 jobs dari Supabase.
+    - Uji live `POST /api/web` (`getJobCatalogCached` section `vessel`): Mengembalikan HTTP 200, 276 jobs dari Supabase.
+    - Notifikasi error "Gagal memuat katalog maintenance" teratasi dan dropdown bertingkat (Component, Sub Component, Job) terisi lengkap.
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS.
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penambahan Kolom Nomor Urut pada Tabel Daftar Pengguna & Token Terpusat)
 - Berubah:
   - Menambahkan kolom nomor urut (`No`) di sebelah paling kiri tabel Daftar Pengguna & Token Terpusat di Panel Saklar (`workers/pintu/public/saklar.html`):
