@@ -19,7 +19,13 @@
  */
 
 import { handleWebRequest, handleWebBridgeApi } from './web-handler.js';
-import { eksekusiSupabaseBackendKmbp, bacaStatusSaklar } from './supabase-backend.js';
+import {
+  eksekusiSupabaseBackendKmbp,
+  bacaStatusSaklar,
+  ekstrakWoId,
+  apakahWoLahirDiSupabase,
+  apakahWoLamaDariGas
+} from './supabase-backend.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -58,15 +64,23 @@ async function tanganiApi(request, env, url) {
   const action = parsed.action || '';
   const token = parsed.token || '';
   const ujiSupabase = url.searchParams.get('uji') === 'supabase';
+  const targetWoId = ekstrakWoId(parsed);
+  const woSupabase = apakahWoLahirDiSupabase(targetWoId);
+  const woGas = apakahWoLamaDariGas(targetWoId);
 
-  // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji
-  if ((liveSaklar !== 'gas' || ujiSupabase) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+  // Aturan Saklar Balik & Satu Rumah Seumur Hidup:
+  // 1. Jika WO lahir di Supabase (4 digit / WO-SB-*), WAJIB ke Supabase bahkan saat saklar 'gas'.
+  // 2. Jika WO lama lahir di GAS (3 digit), saat dua_cabang tetap diteruskan ke GAS.
+  const harusKeSupabase = woSupabase || (liveSaklar === 'supabase') || ((liveSaklar !== 'gas' || ujiSupabase) && !woGas);
+
+  // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji ATAU WO lahir di Supabase
+  if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     const resSupa = await eksekusiSupabaseBackendKmbp(action, token, parsed, env);
     if (resSupa && resSupa.status === 200) {
-      catat(env, { aksi: action, jalur: 'supabase', status: 200 });
+      catat(env, { aksi: action, jalur: 'supabase', status: 200, wo: targetWoId });
       return resSupa;
     }
-    if (liveSaklar === 'supabase') {
+    if (liveSaklar === 'supabase' || woSupabase) {
       return resSupa || new Response(JSON.stringify({ success: false, error: 'Supabase backend gagal', source: 'SUPABASE' }), {
         status: 500,
         headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }

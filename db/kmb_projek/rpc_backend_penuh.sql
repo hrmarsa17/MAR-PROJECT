@@ -239,7 +239,7 @@ BEGIN
             coalesce((p_payload->>'duration_hours')::numeric, (p_payload->>'actual_hours')::numeric, 0),
             coalesce(p_payload->>'job_type', 'maintenance'),
             coalesce(p_payload->>'section', v_user.section, 'maintenance'),
-            v_user.mechanic_id,
+            coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_user.mechanic_id),
             coalesce(p_payload->>'status', 'PENDING_L1'),
             v_user.name,
             now(),
