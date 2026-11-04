@@ -12,6 +12,26 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · kmb (Perbaikan Pemetaan Nama dan User ID pada RPC Admin User KMB TRA)
+- Berubah:
+  - Memperbaiki data nama dan ID pengguna KMB TRA yang kosong (tampil strip '—') di Panel Saklar Staging (/saklar):
+    - Akar masalah: Di tabel cermin kmb.config_mechanics, nama kolom adalah mechanic_name (bukan name) dan kmb.api_tokens menggunakan mechanic_id (bukan user_id). Kueri di db/kmb/rpc_admin_user.sql sebelumnya mencari m.data->>'name' dan melakukan FULL OUTER JOIN pada btrim(coalesce(t.data->>'user_id', '')) = btrim(coalesce(m.data->>'mechanic_id', '')). Karena t.data->>'user_id' kosong, JOIN selalu gagal dan data nama dari config_mechanics tidak pernah tergabung.
+    - Perbaikan:
+      1. Menyelaraskan join condition: btrim(coalesce(t.data->>'mechanic_id', t.data->>'user_id', '')) = btrim(coalesce(m.data->>'mechanic_id', '')).
+      2. Menyelaraskan pengambilan nama dan user_id: coalesce(m.data->>'mechanic_name', m.data->>'name', t.data->>'name', '') AS name dan coalesce(t.data->>'user_id', t.data->>'mechanic_id', m.data->>'mechanic_id', '') AS user_id.
+      3. Menyelaraskan peran (role) dari m.data->>'role' (agar superintendent tidak jatuh ke default mechanic).
+      4. Menjalankan migrasi RPC public.kmbtra_admin_daftar_user_bertoken ke Gedung 2 Supabase (dnnqrslftndcbmnvuveb).
+  - Verifikasi:
+    - Seluruh 43 baris pengguna KMB TRA kini terisi lengkap dengan Nama Mekanik dan User ID (0 nama kosong).
+    - Peran (superintendent / mechanic) dan status aktif terpetakan akurat.
+    - node scripts/uji-user-admin-pusat.mjs: 27/27 LULUS.
+    - node scripts/uji-backend-mandiri.mjs: 24/24 LULUS.
+    - node scripts/uji-serahan-token.mjs: 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-03 · Raka (+ AI) · bersama (Perbaikan RPC Admin User Terpusat & Data Token Admin Staging Gedung 2)
 - Berubah:
   - Memperbaiki kegagalan pemuatan daftar pengguna & token pada tab "Manajemen Pengguna & Token (Pusat 3 Rumah)" di Panel Saklar Staging (/saklar):

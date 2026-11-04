@@ -73,19 +73,19 @@ BEGIN
     SELECT coalesce(json_agg(u), '[]'::json)
       INTO v_users
       FROM (
-        SELECT coalesce(t.data->>'user_id', m.data->>'mechanic_id', '') AS user_id,
-               coalesce(m.data->>'name', t.data->>'name', '') AS name,
-               coalesce(t.data->>'role', m.data->>'role', 'mechanic') AS role,
+        SELECT coalesce(t.data->>'user_id', t.data->>'mechanic_id', m.data->>'mechanic_id', '') AS user_id,
+               coalesce(m.data->>'mechanic_name', m.data->>'name', t.data->>'name', '') AS name,
+               coalesce(m.data->>'role', t.data->>'role', 'mechanic') AS role,
                coalesce(m.data->>'section', '') AS section,
                coalesce(m.data->>'email', t.data->>'email', '') AS email,
-               coalesce(t.data->>'token', m.data->>'token', '') AS token,
-               coalesce(t.data->>'status', 'ACTIVE') AS status,
-               'kmb' AS rumah
+               coalesce(t.data->>'token', m.data->>'offline_token', m.data->>'token', '') AS token,
+               CASE WHEN t.data->>'is_active' = 'false' OR m.data->>'is_active' = 'false' OR t.data->>'status' = 'INACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END AS status,
+               'kmbtra' AS rumah
           FROM kmb.api_tokens t
           FULL OUTER JOIN kmb.config_mechanics m
-            ON btrim(coalesce(t.data->>'user_id', '')) = btrim(coalesce(m.data->>'mechanic_id', ''))
-         WHERE coalesce(t.data->>'token', m.data->>'token', '') <> ''
-         ORDER BY coalesce(m.data->>'name', t.data->>'name', '') ASC
+            ON btrim(coalesce(t.data->>'mechanic_id', t.data->>'user_id', '')) = btrim(coalesce(m.data->>'mechanic_id', ''))
+         WHERE coalesce(t.data->>'token', m.data->>'offline_token', m.data->>'token', '') <> ''
+         ORDER BY coalesce(m.data->>'mechanic_name', m.data->>'name', t.data->>'name', '') ASC
       ) u;
 
     RETURN json_build_object(
