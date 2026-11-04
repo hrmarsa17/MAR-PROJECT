@@ -55,6 +55,12 @@ const CLIENT_SHIM = `<script id="abadi-gas-shim">
       return p.get('token') || '';
     } catch (_) { return ''; }
   }
+  function getQueryBack() {
+    try {
+      var p = new URLSearchParams(window.location.search);
+      return p.get('back') || '';
+    } catch (_) { return ''; }
+  }
   function createRunner(successHandler, failureHandler, userObj) {
     return new Proxy({}, {
       get: function(target, prop) {
@@ -108,18 +114,44 @@ const CLIENT_SHIM = `<script id="abadi-gas-shim">
     });
   }
   window.google = { script: { run: createRunner(null, null, null) } };
-  // Event delegation untuk menjaga ?token= pada semua navigasi internal /web
+  // Event delegation untuk menjaga ?token= dan ?back= pada semua navigasi internal /web
   document.addEventListener('click', function(e) {
     var a = e.target && e.target.closest('a');
     if (a && a.href && a.origin === window.location.origin && a.pathname.startsWith('/web')) {
       var u = new URL(a.href);
       var tok = window.__PAGE_TOKEN__ || (typeof PAGE_TOKEN !== 'undefined' ? PAGE_TOKEN : '') || getQueryToken();
+      var bTok = window.__BACK_TOKEN__ || (typeof BACK_TOKEN !== 'undefined' ? BACK_TOKEN : '') || getQueryBack();
       if (tok && !u.searchParams.has('token')) {
         u.searchParams.set('token', tok);
-        a.href = u.toString();
       }
+      if (bTok && !u.searchParams.has('back')) {
+        u.searchParams.set('back', bTok);
+      }
+      a.href = u.toString();
     }
   }, true);
+
+  function fixAllInternalLinks() {
+    var tok = window.__PAGE_TOKEN__ || (typeof PAGE_TOKEN !== 'undefined' ? PAGE_TOKEN : '') || getQueryToken();
+    var bTok = window.__BACK_TOKEN__ || (typeof BACK_TOKEN !== 'undefined' ? BACK_TOKEN : '') || getQueryBack();
+    var links = document.querySelectorAll('a[href*="/web"], a[href*="?page="]');
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i];
+      try {
+        var u = new URL(a.href, window.location.origin);
+        if (u.origin === window.location.origin && u.pathname.startsWith('/web')) {
+          if (tok && !u.searchParams.has('token')) u.searchParams.set('token', tok);
+          if (bTok && !u.searchParams.has('back')) u.searchParams.set('back', bTok);
+          a.href = u.toString();
+        }
+      } catch(_) {}
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixAllInternalLinks);
+  } else {
+    fixAllInternalLinks();
+  }
 })();
 </script>`;
 
@@ -185,7 +217,7 @@ function compileGasTemplateToFunction(rawHtml, dir) {
     var activeFilter = ctx.activeFilter || 'all';
     var PAYROLL_CUTOFF_TANGGAL = ctx.PAYROLL_CUTOFF_TANGGAL || 25;
     var viewAsMechanicId = ctx.viewAsMechanicId || '';
-    var backToken = ctx.backToken || token;
+    var backToken = ctx.backToken || '';
     var tampilkanMeter = ctx.tampilkanMeter !== false;
     var hmTerakhir = ctx.hmTerakhir || {};
     var kmTerakhir = ctx.kmTerakhir || {};
@@ -202,7 +234,7 @@ function compileGasTemplateToFunction(rawHtml, dir) {
     var initialData = ctx.initialData || { wos: [], counts: { all:0, assigned:0, in_progress:0, pending_approval:0, done:0 } };
     var monitoringData = ctx.monitoringData || [];
     var mons = ctx.mons || [];
-    var dashboardData = ctx.dashboardData || { stats: {}, recentWOs: [], charts: {} };
+    var dashboardData = ctx.dashboardData || { user: user, stats: {}, recentWOs: [], charts: {} };
 
     var ScriptApp = { getService: function() { return { getUrl: function() { return baseUrl; } }; } };
     function getScriptUrl() { return baseUrl; }

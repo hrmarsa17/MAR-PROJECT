@@ -79,10 +79,13 @@ export async function handleWebRequest(request, env, url) {
          : 'dashboard';
   }
 
+  const backToken = (url.searchParams.get('back') || '').trim();
+
   // 3. Ambil data inisial halaman jika diperlukan
   const context = {
     baseUrl: '/web',
     token: token,
+    backToken: backToken,
     user: user,
     currentView: url.searchParams.get('view') || 'pending',
     viewAsMechanicId: url.searchParams.get('as') || '',
@@ -133,6 +136,7 @@ export async function handleWebRequest(request, env, url) {
       const mon = await panggilAksiInternal('pull_monitoring', token, {}, env);
       const monData = mon && mon.result ? mon.result : (mon && mon.data ? mon.data : {});
       context.dashboardData = {
+        user: user,
         stats: (monData && monData.stats) || { totalWOs: 0, approved: 0, pending: 0, totalPoints: 0 },
         recentWOs: (monData && monData.recentWOs) || [],
         charts: (monData && monData.charts) || { pointsTrend: { labels: [], data: [] } },

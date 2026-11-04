@@ -12,6 +12,39 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Perbaikan Tombol Kembali ke Monitoring & Navigasi Navbar Performa/Reports Web Desktop)
+- Berubah:
+  - Memperbaiki tombol `← Kembali ke Monitoring` di layar mekanik (`MechanicDashboard.html`) yang sebelumnya hanya reload/loading di tempat yang sama:
+    1. **Akar Masalah**:
+       - Di `scripts/build-web-templates.mjs`, deklarasi `var backToken = ctx.backToken || token;` membuat `backToken` jatuh ke token user saat ini (`token`). Akibatnya, mekanik biasa pun selalu melihat tombol `← Kembali ke Monitoring` yang mengarah ke token dirinya sendiri (`/web?page=mechanic&token=<mechanic_token>`), sehingga saat diklik hanya me-reload halaman mekanik itu sendiri.
+       - Di `workers/{kmbprojek,kmb,sum}/src/web-handler.js`, parameter URL `?back=` tidak pernah dibaca, sehingga `context.backToken` selalu kosong dan supervisor yang membuka mekanik via `Buka →` ikut terjebak di token mekanik.
+    2. **Perbaikan**:
+       - Di `scripts/build-web-templates.mjs`: Mengubah fallback menjadi `var backToken = ctx.backToken || '';` (hanya aktif jika `ctx.backToken` benar-benar dikirimkan).
+       - Di `workers/{kmbprojek,kmb,sum}/src/web-handler.js`: Mengekstrak `const backToken = (url.searchParams.get('back') || '').trim();` dan menyertakannya ke `context.backToken`.
+       - Hasil:
+         - Saat mekanik login langsung (`/web?page=mechanic&token=...` tanpa `back`): tombol `← Kembali ke Monitoring` tersembunyi secara bersih.
+         - Saat supervisor membuka mekanik dari Monitoring (`...&back=<token_supervisor>`): tombol `← Kembali ke Monitoring` muncul dan link-nya mengarah kembali ke token supervisor (`/web?page=mechanic&token=<token_supervisor>`).
+  - Memperbaiki HTTP 500 error saat membuka tab `Performa` (`/web?page=dashboard`) sebagai peran mekanik:
+    - Di `workers/{kmbprojek,kmb,sum}/src/web-handler.js`: Menyertakan `user: user` di dalam `context.dashboardData`.
+    - Di `scripts/build-web-templates.mjs`: Menjadikan default `dashboardData` mencakup `{ user: user, stats: {}, recentWOs: [], charts: {} }`. Menghilangkan exception `Cannot read properties of undefined (reading 'mechanic_name')` di `Main.html`.
+  - Memperbaiki retensi token & back token pada tautan navigasi navbar (`Performa`, `Reports`, dll.):
+    - Di `CLIENT_SHIM`, menambahkan fungsi `getQueryBack()`, menyertakan `back` token pada event delegation `click`, dan menambahkan `fixAllInternalLinks` pada event `DOMContentLoaded` untuk menempelkan `token` dan `back` secara konsisten pada semua link `a[href*="/web"]` dan `a[href*="?page="]`.
+  - Mengompilasi ulang template ketiga rumah via `node scripts/build-web-templates.mjs`.
+  - Deploy & Verifikasi Staging:
+    - Men-deploy ketiga rumah ke staging (`abadiops-kmbprojek-staging`, `abadiops-kmb-staging`, `abadiops-sum-staging`) menggunakan `npx wrangler deploy --env staging`.
+    - Uji live staging via `scratch/verify-live.mjs`:
+      1. Login langsung mekanik: tombol `← Kembali ke Monitoring` tidak muncul (LULUS).
+      2. Supervisor buka mekanik dengan `?back=52fdb552231348ffb143`: tombol muncul dan mengarah ke `token=52fdb552231348ffb143` (LULUS).
+      3. Tab Performa (`page=dashboard`): HTTP 200 OK & menampilkan nama mekanik (LULUS).
+      4. Tab Reports (`page=reports`): HTTP 200 OK (LULUS).
+    - `node scripts/uji-backend-mandiri.mjs`: **40/40 LULUS**.
+    - `node scripts/uji-user-admin-pusat.mjs`: **27/27 LULUS**.
+    - `node scripts/uji-serahan-token.mjs`: **24/24 LULUS**.
+- Belum selesai / berikutnya:
+  - Siap untuk latihan siklus penuh dan Pull Request staging -> main bersama Gabriel.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penerapan Patch Section 8 Panduan Deploy Kamis: Normalisasi Payload Web, Modal WO, & Saklar Balik)
 - Berubah:
   - Menerapkan seluruh spesifikasi teknis dan patch Section 8 dari `docs/panduan_deploy_staging_kamis (3).md`:
