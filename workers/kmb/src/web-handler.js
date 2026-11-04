@@ -4,7 +4,13 @@
  */
 
 import { renderWebPage } from './web-templates.js';
-import { eksekusiSupabaseBackendKmbp, bacaStatusSaklar } from './supabase-backend.js';
+import {
+  eksekusiSupabaseBackendKmbp,
+  bacaStatusSaklar,
+  ekstrakWoId,
+  apakahWoLahirDiSupabase,
+  apakahWoLamaDariGas
+} from './supabase-backend.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -175,20 +181,29 @@ export async function handleWebBridgeApi(request, env, url) {
   }
 
   const liveSaklar = await bacaStatusSaklar(env);
-  if ((liveSaklar !== 'gas' || url.searchParams.get('uji') === 'supabase') && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+  const targetWoId = ekstrakWoId(body);
+  const woSupabase = apakahWoLahirDiSupabase(targetWoId);
+  const woGas = apakahWoLamaDariGas(targetWoId);
+
+  // Aturan Saklar Balik & Satu Rumah Seumur Hidup:
+  // 1. Jika WO lahir di Supabase (4 digit / WO-SB-*), WAJIB ke Supabase bahkan saat saklar 'gas'.
+  // 2. Jika WO lama lahir di GAS (3 digit), saat dua_cabang tetap diteruskan ke GAS.
+  const harusKeSupabase = woSupabase || (liveSaklar === 'supabase') || ((liveSaklar !== 'gas' || url.searchParams.get('uji') === 'supabase') && !woGas);
+
+  if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     try {
       const resSupa = await eksekusiSupabaseBackendKmbp(action, token, body, env);
       if (resSupa && resSupa.status === 200) {
         return resSupa;
       }
-      if (liveSaklar === 'supabase') {
+      if (liveSaklar === 'supabase' || woSupabase) {
         return resSupa || new Response(JSON.stringify({ success: false, error: 'Supabase backend gagal', source: 'SUPABASE' }), {
           status: 500,
           headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
         });
       }
     } catch (e) {
-      if (liveSaklar === 'supabase') {
+      if (liveSaklar === 'supabase' || woSupabase) {
         return new Response(JSON.stringify({ success: false, error: 'Supabase error: ' + ((e && e.message) || e), source: 'SUPABASE' }), {
           status: 500,
           headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
@@ -252,18 +267,23 @@ export async function handleWebBridgeApi(request, env, url) {
 
 async function panggilAksiInternal(action, token, data, env) {
   const liveSaklar = await bacaStatusSaklar(env);
-  if (liveSaklar !== 'gas' && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+  const targetWoId = ekstrakWoId({ action, data });
+  const woSupabase = apakahWoLahirDiSupabase(targetWoId);
+  const woGas = apakahWoLamaDariGas(targetWoId);
+  const harusKeSupabase = woSupabase || (liveSaklar === 'supabase') || (liveSaklar !== 'gas' && !woGas);
+
+  if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     try {
       const resSupa = await eksekusiSupabaseBackendKmbp(action, token, { data: data || {} }, env);
       if (resSupa && resSupa.status === 200) {
         const json = await resSupa.json().catch(() => null);
         if (json) return json;
       }
-      if (liveSaklar === 'supabase') {
+      if (liveSaklar === 'supabase' || woSupabase) {
         return null;
       }
     } catch (_) {
-      if (liveSaklar === 'supabase') return null;
+      if (liveSaklar === 'supabase' || woSupabase) return null;
     }
   }
 
@@ -312,3 +332,4 @@ function renderPesanWeb(judul, pesan, urlTombol, teksTombol) {
 </body>
 </html>`;
 }
+

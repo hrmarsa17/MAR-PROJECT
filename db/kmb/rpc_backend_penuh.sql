@@ -251,6 +251,7 @@ BEGIN
         v_new_data := p_payload || jsonb_build_object(
             'id', v_wo_number,
             'wo_number', v_wo_number,
+            'lead_mechanic_id', coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_user.mechanic_id),
             'status', coalesce(p_payload->>'status', 'PENDING_L1'),
             'created_by', coalesce(p_payload->>'created_by', v_user.name),
             'created_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
