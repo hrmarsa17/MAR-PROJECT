@@ -131,6 +131,55 @@ function normalisasiAksi(action) {
   return map[a] || a;
 }
 
+export function normalisasiBlokWo(blk) {
+  if (!blk || typeof blk !== 'object') return {};
+  const b = { ...blk };
+  if (b.manual_base_points !== undefined && b.others_base_points === undefined) b.others_base_points = b.manual_base_points;
+  if (b.manual_target_hours !== undefined && b.others_target_hours === undefined) b.others_target_hours = b.manual_target_hours;
+  if (b.manual_unit_factor !== undefined && b.others_unit_factor === undefined) b.others_unit_factor = b.manual_unit_factor;
+  if (!Array.isArray(b.team) && b.team_distribution && typeof b.team_distribution === 'object') {
+    b.team = Object.entries(b.team_distribution)
+      .filter(([mid]) => String(mid || '').trim() !== '')
+      .map(([mid, pct]) => ({
+        mechanic_id: String(mid).trim(),
+        percentage: Number(pct) || 100,
+      }));
+  }
+  if (!b.lead_mechanic_id && Array.isArray(b.team) && b.team.length > 0) {
+    b.lead_mechanic_id = b.team[0].mechanic_id;
+  }
+  return b;
+}
+
+export function ekstrakWoId(body) {
+  if (!body) return '';
+  if (typeof body === 'string') return body.trim();
+  const d = body.data;
+  if (typeof d === 'string' && d.trim().startsWith('WO-')) return d.trim();
+  return (
+    body.wo_id ||
+    body.wo_number ||
+    body.id ||
+    (d && (d.wo_id || d.wo_number || d.id)) ||
+    ''
+  ).trim();
+}
+
+export function apakahWoLahirDiSupabase(woId) {
+  if (!woId || typeof woId !== 'string') return false;
+  const s = woId.trim().toUpperCase();
+  if (s.startsWith('WO-SB-') || s.startsWith('WO-KMBP-') || s.startsWith('WO-SUM-') || s.startsWith('WO-KMB-') || s.startsWith('SB-')) return true;
+  if (/^WO-\d{8}-\d{4}$/.test(s)) return true;
+  return false;
+}
+
+export function apakahWoLamaDariGas(woId) {
+  if (!woId || typeof woId !== 'string') return false;
+  const s = woId.trim().toUpperCase();
+  if (/^WO-\d{8}-\d{3}$/.test(s)) return true;
+  return false;
+}
+
 /**
  * Eksekusi Backend Mandiri Supabase untuk Rumah KMB Project & Multi-Rumah
  */
@@ -239,6 +288,13 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     payload = {};
   }
 
+  if (cleanAksi === 'create_wo') {
+    payload = normalisasiBlokWo(payload);
+    if (!payload.lead_mechanic_id && Array.isArray(payload.team) && payload.team.length > 0) {
+      payload.lead_mechanic_id = payload.team[0].mechanic_id;
+    }
+  }
+
   // Jika submit work, hitung poin jika belum tersedia
   if (cleanAksi === 'submit_work' && payload.actual_hours && payload.target_hours && !payload.final_points) {
     const skor = hitungSkorMandiri({
@@ -254,7 +310,6 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     payload.points = skor.finalPoints;
   }
 
-  
   try {
     // 1. Batch creation jika ada blocks (format form Web WorkOrder.html)
     const blocks = payload.blocks || (payload.data && payload.data.blocks);
@@ -262,16 +317,19 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
       const created = [];
       const failed = [];
       for (let i = 0; i < blocks.length; i++) {
-        const b = blocks[i];
+        const b = normalisasiBlokWo(blocks[i]);
         const blockPayload = {
           unit_code: b.unit_id || b.unit_name || b.unit_code || 'UNKNOWN',
           component: b.component || b.component_name || 'UNKNOWN',
           activity: b.job_description || b.activity || 'UNKNOWN',
-          lead_mechanic_id: b.lead_mechanic_id || '',
+          lead_mechanic_id: b.lead_mechanic_id || (b.team && b.team[0] && b.team[0].mechanic_id) || '',
           shift: b.shift || payload.shift || '1',
           work_condition: b.work_condition || 'normal',
           duration_hours: b.duration_hours || b.actual_hours || 0,
-          target_hours: b.target_hours || 0,
+          target_hours: b.target_hours || b.others_target_hours || 0,
+          base_points: b.base_points || b.others_base_points || 0,
+          unit_factor: b.unit_factor || b.others_unit_factor || 1.0,
+          team: b.team || [],
           data: b
         };
         const res = await fetch(rpcUrl, {
@@ -369,6 +427,12 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
         };
       } else if (cleanAksi === 'pull_create_refs' && data.result) {
         data.data = (data.result && data.result.refs) ? data.result.refs : data.result;
+      } else if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic'].includes(cleanAksi) && data.result) {
+        const woObj = data.result.wo || data.result;
+        const teamArr = woObj.team || data.result.team || [];
+        const fullDetail = { ...woObj, wo: woObj, team: teamArr };
+        data.result = fullDetail;
+        data.data = fullDetail;
       } else if (!data.data && data.result) {
         data.data = data.result;
       }
