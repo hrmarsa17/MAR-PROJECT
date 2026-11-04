@@ -183,6 +183,7 @@
           <table>
             <thead>
               <tr>
+                <th style="width:45px; text-align:center;">No</th>
                 <th>Rumah</th>
                 <th>Nama</th>
                 <th>User ID</th>
@@ -193,7 +194,7 @@
               </tr>
             </thead>
             <tbody id="userTableBody">
-              <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna...</td></tr>
+              <tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna...</td></tr>
             </tbody>
           </table>
         </div>
@@ -586,7 +587,7 @@
 
     async function muatDaftarUsers() {
       const tbody = document.getElementById('userTableBody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna dari 3 rumah...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna dari 3 rumah...</td></tr>';
       try {
         const res = await fetch('/saklar/api/admin/users', {
           headers: { 'Authorization': 'Bearer ' + TOKEN_SESI }
@@ -596,10 +597,10 @@
           SEMUA_USERS = data.users;
           renderUsers(SEMUA_USERS);
         } else {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--danger);">${data.error || 'Gagal memuat pengguna'}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--danger);">${data.error || 'Gagal memuat pengguna'}</td></tr>`;
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--danger);">Koneksi terputus: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--danger);">Koneksi terputus: ${err.message}</td></tr>`;
       }
     }
 
@@ -614,10 +615,10 @@
     function renderUsers(users) {
       const tbody = document.getElementById('userTableBody');
       if (!users || !users.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Tidak ada pengguna ditemukan.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Tidak ada pengguna ditemukan.</td></tr>';
         return;
       }
-      tbody.innerHTML = users.map(u => {
+      tbody.innerHTML = users.map((u, idx) => {
         const isAktif = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
         const rKode = (u.rumah || '').toLowerCase();
         const badgeRumah = rKode === 'sum' ? 'badge-supabase' : ((rKode === 'kmbtra' || rKode === 'kmb') ? 'badge-dua_cabang' : 'badge-gas');
@@ -625,6 +626,7 @@
         const labelRumah = formatNamaRumah(u.rumah);
         return `
           <tr>
+            <td style="text-align:center; color:var(--text-muted); font-weight:600; font-size:0.875rem;">${idx + 1}</td>
             <td><span class="badge ${badgeRumah}" style="text-transform:none; letter-spacing:normal;">${escapeHtml(labelRumah)}</span></td>
             <td><strong>${escapeHtml(u.name || '—')}</strong></td>
             <td><code>${escapeHtml(u.user_id || '—')}</code></td>

@@ -12,6 +12,22 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penambahan Kolom Nomor Urut pada Tabel Daftar Pengguna & Token Terpusat)
+- Berubah:
+  - Menambahkan kolom nomor urut (`No`) di sebelah paling kiri tabel Daftar Pengguna & Token Terpusat di Panel Saklar (`workers/pintu/public/saklar.html`):
+    - Menambahkan header `<th style="width:45px; text-align:center;">No</th>`.
+    - Mengisi setiap baris dengan nomor urut dinamis `${idx + 1}` yang secara otomatis menghitung dari 1 sesuai hasil filter dan pencarian aktif.
+    - Menyesuaikan `colspan="8"` untuk baris loading, kosong, dan galat.
+  - Deploy & Verifikasi Staging:
+    - Worker `abadiops-pintu-staging` ter-deploy ke Cloudflare Workers (`34e768d1-e8d1-4bcb-991f-9b7a34869d50`).
+    - Verifikasi live: Halaman `/saklar` menampilkan kolom `No` dengan urutan 1, 2, 3, ... di sebelah kiri kolom `Rumah`.
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS.
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Bridge Web Desktop /api/web dengan Saklar Dua Cabang & Supabase DB)
 - Berubah:
   - Menyelesaikan akar masalah pembuatan WO di antarmuka Web Desktop (/web?page=create) dan pemuatan token mekanik di Monitoring (/web?page=mechanic) yang sebelumnya mem-bypass status saklar:
