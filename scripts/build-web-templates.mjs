@@ -118,6 +118,7 @@ const CLIENT_SHIM = `<script id="abadi-gas-shim">
   document.addEventListener('click', function(e) {
     var a = e.target && e.target.closest('a');
     if (a && a.href && a.origin === window.location.origin && a.pathname.startsWith('/web')) {
+      if (a.classList.contains('btn-back-to-self') || a.getAttribute('data-back-button') === 'true') return;
       var u = new URL(a.href);
       var tok = window.__PAGE_TOKEN__ || (typeof PAGE_TOKEN !== 'undefined' ? PAGE_TOKEN : '') || getQueryToken();
       var bTok = window.__BACK_TOKEN__ || (typeof BACK_TOKEN !== 'undefined' ? BACK_TOKEN : '') || getQueryBack();
@@ -137,6 +138,7 @@ const CLIENT_SHIM = `<script id="abadi-gas-shim">
     var links = document.querySelectorAll('a[href*="/web"], a[href*="?page="]');
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
+      if (a.classList.contains('btn-back-to-self') || a.getAttribute('data-back-button') === 'true') continue;
       try {
         var u = new URL(a.href, window.location.origin);
         if (u.origin === window.location.origin && u.pathname.startsWith('/web')) {
@@ -250,6 +252,16 @@ function compileGasTemplateToFunction(rawHtml, dir) {
     function bolehMenuCancelWo(r) { r = String(r || '').toLowerCase(); return r === 'supervisor' || r === 'superintendent' || r === 'admin'; }
     function bolehBukaExpired(r) { return true; }
     function bolehCancelWo(r) { return true; }
+
+    function aksesLayarUntuk(email) {
+      var r = String(user.role || '').toLowerCase();
+      var isSpv = r === 'supervisor' || r === 'superintendent' || r === 'admin' || r === 'foreman_approver';
+      return {
+        performa: isSpv,
+        teknis: isSpv,
+        report: isSpv
+      };
+    }
 
     var _out = '';
     var _esc = function(s) { return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };

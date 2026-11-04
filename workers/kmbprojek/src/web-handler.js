@@ -169,7 +169,8 @@ export async function handleWebRequest(request, env, url) {
          : 'dashboard';
   }
 
-  const backToken = (url.searchParams.get('back') || '').trim();
+  const rawBack = (url.searchParams.get('back') || '').trim();
+  const backToken = rawBack && rawBack !== token ? rawBack : '';
 
   // 3. Ambil data inisial halaman jika diperlukan
   const context = {

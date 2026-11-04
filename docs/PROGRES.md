@@ -12,6 +12,29 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Menu Mekanik, Tombol Kembali Anti-Loop, & Mode Saklar Supabase Staging)
+- Berubah:
+  - **Penyembunyian Tab "Performa" & "Reports" untuk Mekanik**:
+    - Menambahkan fungsi `aksesLayarUntuk(email)` pada compiler `scripts/build-web-templates.mjs`.
+    - Mekanik (`user.role === 'mechanic'`) otomatis menerima `{ performa: false, teknis: false, report: false }`, sehingga navbar hanya menyajikan `Monitoring`. Menu `Performa` dan `Reports` tidak lagi muncul untuk mekanik.
+  - **Perbaikan Tombol "← Kembali ke Monitoring"**:
+    - Memastikan tombol kembali memiliki `data-back-button="true"` dan target tautan `?page=monitoring&token=backToken`.
+    - Memperbarui Client Shim (`CLIENT_SHIM`) agar tidak menambahkan `&back=` pada tautan tombol kembali, memutus loop reload.
+    - Menambahkan penjaga `backToken && backToken !== token` di `web-handler.js` dan template, sehingga mekanik yang masuk langsung tidak menampilkan tombol kembali.
+  - **Aktifkan SAKLAR = "supabase" di Staging**:
+    - Mengubah `[env.staging.vars]` pada `workers/kmbprojek/wrangler.toml`, `workers/kmb/wrangler.toml`, dan `workers/sum/wrangler.toml` menjadi `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"`.
+    - WO baru yang dibuat dari web desktop staging langsung masuk dan tersimpan di tabel `wo_supabase` (terverifikasi terbit WO 4 digit harian: `WO-20261104-0009` dengan `source: "SUPABASE"`).
+  - **Uji Otomatis & Deploy Staging**:
+    - `node scripts/uji-backend-mandiri.mjs`: **40/40 LULUS**.
+    - `node scripts/uji-user-admin-pusat.mjs`: **27/27 LULUS**.
+    - `node scripts/uji-serahan-token.mjs`: **24/24 LULUS**.
+    - Deploy ulang staging: `abadiops-kmbprojek-staging`, `abadiops-kmb-staging`, `abadiops-sum-staging`.
+- Belum selesai / berikutnya:
+  - Menjalankan SQL Langkah A dari Panduan (6) di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) agar RPC `kmb_my_wos_bertoken` di database staging membaca tabel `wo_supabase` dan menggunakan helper `_wo_milik_mekanik` secara case-insensitive (`ra` / `RA`).
+  - PR dari branch `staging` ke `main` untuk direview Gabriel saat Go-Live Kamis (JANGAN push langsung ke main).
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelesaian Error 1101 di /web?page=approvals & Normalisasi Objek WO Web Desktop)
 - Berubah:
   - Menyelesaikan `Error 1101 (Worker threw exception)` saat membuka `/web?page=approvals`:

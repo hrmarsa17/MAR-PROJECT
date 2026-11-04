@@ -472,8 +472,8 @@
     <!-- ═══════════════════════════════════════════════ -->
 
     <!-- TOMBOL KEMBALI (approver masuk via link token mekanik dari Monitoring) -->
-    <? if (typeof backToken !== 'undefined' && backToken) { ?>
-    <a href="<?= baseUrl ?>?page=mechanic&token=<?= backToken ?>" target="_top" class="btn-back-to-self"
+    <? if (typeof backToken !== 'undefined' && backToken && backToken !== token) { ?>
+    <a href="<?= baseUrl ?>?page=monitoring&token=<?= backToken ?>" target="_top" class="btn-back-to-self" data-back-button="true"
        style="display:inline-block;text-decoration:none;margin-bottom:14px;background:#F1F4EE;color:#384B2B;border:1px solid #D2E9BB;">
       ← Kembali ke Monitoring
     </a>

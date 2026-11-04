@@ -517,8 +517,8 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
       <button class="btn-back-to-self" onclick="backToSelfView()">← Kembali ke Pilih Mekanik</button>
     </div>
 
-    <? if (backToken) { ?>
-    <a href="<?= baseUrl ?>?page=mechanic&token=<?= backToken ?>" target="_top" class="btn-back-monitoring">← Kembali ke Monitoring</a>
+    <? if (backToken && backToken !== token) { ?>
+    <a href="<?= baseUrl ?>?page=monitoring&token=<?= backToken ?>" target="_top" class="btn-back-monitoring btn-back-to-self" data-back-button="true">← Kembali ke Monitoring</a>
     <? } ?>
     <div class="header">
       <div class="header-top">
