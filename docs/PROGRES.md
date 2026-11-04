@@ -12,6 +12,36 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penerapan Patch Section 8 Panduan Deploy Kamis: Normalisasi Payload Web, Modal WO, & Saklar Balik)
+- Berubah:
+  - Menerapkan seluruh spesifikasi teknis dan patch Section 8 dari `docs/panduan_deploy_staging_kamis (3).md`:
+    1. **Fungsi `normalisasiBlokWo` di `workers/{kmbprojek,kmb,sum}/src/supabase-backend.js`**:
+       - Memetakan field pekerjaan manual (Others/Custom): `manual_base_points` -> `others_base_points`, `manual_target_hours` -> `others_target_hours`, `manual_unit_factor` -> `others_unit_factor`.
+       - Mengonversi format form Web Desktop `team_distribution: { [mid]: pct }` menjadi array standar `team: [{ mechanic_id, percentage }]`.
+       - Mengisi otomatis `lead_mechanic_id` dari mekanik pertama di dalam tim jika belum terisi.
+       - Diterapkan pada batch block loop `blocks` dan pembuatan single WO `create_wo`.
+    2. **Respon Detail Work Order Modal Desktop (`r.data.wo` & `team`)**:
+       - Pada aksi `pull_wo_detail`, `getWODetails`, dan `getWoDetailForMechanic`, membungkus respon dengan `{ ...woObj, wo: woObj, team: teamArr }` baik pada `result` maupun `data` agar modal WO di `Main.html` dan `MechanicDashboard.html` tidak kosong.
+    3. **Deteksi & Invarian "Saklar Balik" (`apakahWoLahirDiSupabase` & `apakahWoLamaDariGas`)**:
+       - Ditambahkan di `workers/{kmbprojek,kmb,sum}/src/supabase-backend.js`, `src/index.js`, dan `src/web-handler.js`.
+       - Jika saklar dibalik mundur ke `gas`, Work Order yang sudah terlanjur lahir di Supabase (format 4 digit urut WIB `WO-YYYYMMDD-XXXX` atau prefix `WO-SB-*`) dijamin tetap diproses tuntas oleh Supabase tanpa dilempar ke GAS.
+       - Sebaliknya, saat mode dua cabang, Work Order lama yang lahir di GAS (3 digit `WO-YYYYMMDD-XXX`) tetap diteruskan ke GAS hingga tuntas.
+    4. **Pembaruan RPC `rpc_backend_penuh.sql` untuk 3 Rumah (`kmb`, `kmb_projek`, `sum`)**:
+       - Menggunakan `coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_user.mechanic_id)` pada `create_wo` sehingga mekanik yang ditugaskan oleh supervisor tercatat dengan benar sebagai lead mechanic.
+    5. **Ekspansi Test Suite `scripts/uji-backend-mandiri.mjs` Menjadi 40 Kasus Uji**:
+       - Menambahkan verifikasi kasus uji 25-40 untuk normalisasi Web Desktop payload, modal detail, format 4 digit, ekstraksi ID WO, integrasi deteksi Saklar Balik di ketiga worker rumah dan web bridge.
+  - Deploy & Verifikasi Staging:
+    - `abadiops-kmbprojek-staging` (Version `3a32181a-fe66-4bb9-9117-cc9259f2c1ee`), `abadiops-kmb-staging` (Version `45f77633-79d1-460a-ab48-ed8332679086`), `abadiops-sum-staging` (Version `ff9c6949-0ae5-45d6-9e22-d6e1208ba8e6`) sukses ter-deploy dengan `--env staging`.
+    - Uji live via `POST /api/web` `handleCreateWO`: berhasil membuat `WO-20261104-0006` dengan `source: 'SUPABASE'`.
+    - Uji live via `POST /api/web` `pull_wo_detail`: mengonfirmasi `data.wo exists: true`, `data.team` berisi `[{ percentage: 100, mechanic_id: 'MNT-003' }]`, dan `lead_mechanic_id: 'MNT-003'`.
+    - `node scripts/uji-backend-mandiri.mjs`: **40/40 LULUS**.
+    - `node scripts/uji-user-admin-pusat.mjs`: **27/27 LULUS**.
+    - `node scripts/uji-serahan-token.mjs`: **24/24 LULUS**.
+- Belum selesai / berikutnya:
+  - Siap untuk latihan siklus penuh dan Pull Request staging -> main bersama Gabriel menjelang hari Kamis.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Respon getJobCatalogCached / loadJobsCatalog di Backend Supabase)
 - Berubah:
   - Menyelesaikan pesan error "Gagal memuat katalog maintenance" saat membuka form Create Work Order di antarmuka Web Desktop:

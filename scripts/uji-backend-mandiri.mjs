@@ -1,22 +1,30 @@
 #!/usr/bin/env node
 /**
  * Uji Otomatis: Backend Mandiri Supabase (Tanpa GAS) & Kepatuhan Protokol AGENTS.md
- * Sesuai docs/panduan_deploy_staging_kamis 2.md §3 Langkah 2
+ * Sesuai docs/panduan_deploy_staging_kamis (3).md §3 Langkah 2 & §8
  *
- * Memverifikasi 24 kasus uji invarian protokol dan fungsional:
+ * Memverifikasi 40 kasus uji invarian protokol dan fungsional:
  * - Mesin scoring JavaScript murni (1:1 ScoringService.gs)
  * - Eksekusi RPC mandiri per kamar (kmb, sum, kmb_projek)
  * - Isolasi skema antar-kamar
  * - Penomoran WO 4 digit WIB (WO-YYYYMMDD-XXXX)
+ * - Normalisasi form payload Web Desktop (team_distribution, manual_*, dll)
+ * - Invarian Saklar Balik & Satu Rumah Seumur Hidup
  * - Integrasi Cloudflare Worker 3 rumah tanpa ketergantungan script.google.com
  */
 
 import fs from 'node:fs';
 import { bulatkan, statusKetepatanWaktu, hitungSkor, rupiahUntukPoin, FACTORS } from '../src/domain/scoring.mjs';
+import {
+  normalisasiBlokWo,
+  ekstrakWoId,
+  apakahWoLahirDiSupabase,
+  apakahWoLamaDariGas
+} from '../workers/kmbprojek/src/supabase-backend.js';
 
 let lulus = 0;
 let gagal = 0;
-const total = 24;
+const total = 40;
 
 function uji(no, deskripsi, kondisi) {
   if (kondisi) {
@@ -32,7 +40,7 @@ function stripComments(sql) {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
-console.log('=== Menjalankan 24 Uji Otomatis Backend Mandiri Supabase ===\n');
+console.log('=== Menjalankan 40 Uji Otomatis Backend Mandiri Supabase ===\n');
 
 // 1-6: Mesin Skor Murni JavaScript (src/domain/scoring.mjs)
 uji(1, 'src/domain/scoring.mjs ada dan mengekspor fungsi scoring inti', typeof bulatkan === 'function' && typeof statusKetepatanWaktu === 'function' && typeof hitungSkor === 'function' && typeof rupiahUntukPoin === 'function');
@@ -131,6 +139,73 @@ uji(24, 'Saat mode liveSaklar === "supabase", worker tidak melakukan fallback ke
   idxKmb.includes("liveSaklar === 'supabase'") &&
   idxSum.includes("liveSaklar === 'supabase'") &&
   idxKmbp.includes("liveSaklar === 'supabase'"));
+
+// 25-27: Normalisasi Form Payload Web Desktop (WorkOrder.html & Section Others)
+const blokManual = normalisasiBlokWo({
+  manual_base_points: 15,
+  manual_target_hours: 4,
+  manual_unit_factor: 1.1,
+  team_distribution: { 'MNT-003': 60, 'MNT-005': 40 }
+});
+uji(25, 'normalisasiBlokWo memetakan manual_base_points, manual_target_hours, manual_unit_factor ke others_*',
+  blokManual.others_base_points === 15 && blokManual.others_target_hours === 4 && blokManual.others_unit_factor === 1.1);
+
+uji(26, 'normalisasiBlokWo mengonversi team_distribution menjadi array team [{ mechanic_id, percentage }]',
+  Array.isArray(blokManual.team) && blokManual.team.length === 2 && blokManual.team[0].mechanic_id === 'MNT-003' && blokManual.team[0].percentage === 60);
+
+uji(27, 'normalisasiBlokWo mengisi otomatis lead_mechanic_id dari entri pertama team_distribution',
+  blokManual.lead_mechanic_id === 'MNT-003');
+
+// 28-31: Invarian Deteksi WO Supabase vs WO Lama GAS (Aturan Saklar Balik docs/SAKLAR.md)
+uji(28, 'apakahWoLahirDiSupabase mendeteksi nomor WO 4 digit urut harian WIB (WO-20261104-0001)',
+  apakahWoLahirDiSupabase('WO-20261104-0001') && apakahWoLahirDiSupabase('WO-20261104-9999'));
+
+uji(29, 'apakahWoLahirDiSupabase mendeteksi format penomoran prefix Supabase (WO-SB-*, WO-KMBP-*, WO-SUM-*, WO-KMB-*)',
+  apakahWoLahirDiSupabase('WO-SB-123') && apakahWoLahirDiSupabase('WO-KMBP-001') && apakahWoLahirDiSupabase('WO-SUM-002'));
+
+uji(30, 'apakahWoLahirDiSupabase menolak nomor WO 3 digit lama dari GAS (WO-20261028-012)',
+  !apakahWoLahirDiSupabase('WO-20261028-012') && !apakahWoLahirDiSupabase('WO-20261101-003'));
+
+uji(31, 'apakahWoLamaDariGas mendeteksi nomor WO 3 digit lama dari GAS (WO-20261028-012)',
+  apakahWoLamaDariGas('WO-20261028-012') && !apakahWoLamaDariGas('WO-20261104-0001'));
+
+// 32: Ekstraksi ID Work Order dari Berbagai Bentuk Payload
+uji(32, 'ekstrakWoId mengekstrak ID dari berbagai variasi payload (wo_id, id, data.wo_id, data string)',
+  ekstrakWoId({ wo_id: 'WO-20261104-0001' }) === 'WO-20261104-0001' &&
+  ekstrakWoId({ data: { id: 'WO-20261104-0002' } }) === 'WO-20261104-0002' &&
+  ekstrakWoId({ data: 'WO-20261104-0003' }) === 'WO-20261104-0003');
+
+// 33-35: Integrasi Saklar Balik di Index Worker Rumah
+uji(33, 'workers/kmbprojek/src/index.js mengimplementasikan deteksi Saklar Balik apakahWoLahirDiSupabase',
+  idxKmbp.includes('apakahWoLahirDiSupabase') && idxKmbp.includes('woSupabase'));
+
+uji(34, 'workers/kmb/src/index.js mengimplementasikan deteksi Saklar Balik apakahWoLahirDiSupabase',
+  idxKmb.includes('apakahWoLahirDiSupabase') && idxKmb.includes('woSupabase'));
+
+uji(35, 'workers/sum/src/index.js mengimplementasikan deteksi Saklar Balik apakahWoLahirDiSupabase',
+  idxSum.includes('apakahWoLahirDiSupabase') && idxSum.includes('woSupabase'));
+
+// 36-38: Integrasi Saklar Balik di Web Desktop Bridge (/api/web)
+const webKmb = fs.readFileSync('workers/kmb/src/web-handler.js', 'utf8');
+const webSum = fs.readFileSync('workers/sum/src/web-handler.js', 'utf8');
+const webKmbp = fs.readFileSync('workers/kmbprojek/src/web-handler.js', 'utf8');
+
+uji(36, 'workers/kmbprojek/src/web-handler.js mengimplementasikan deteksi Saklar Balik apakahWoLahirDiSupabase',
+  webKmbp.includes('apakahWoLahirDiSupabase') && webKmbp.includes('woSupabase'));
+
+uji(37, 'workers/kmb/src/web-handler.js mengimplementasikan deteksi Saklar Balik apakahWoLahirDiSupabase',
+  webKmb.includes('apakahWoLahirDiSupabase') && webKmb.includes('woSupabase'));
+
+uji(38, 'workers/sum/src/web-handler.js mengimplementasikan deteksi Saklar Balik apakahWoLahirDiSupabase',
+  webSum.includes('apakahWoLahirDiSupabase') && webSum.includes('woSupabase'));
+
+// 39: Respon Modal Detail WO Menyediakan Struktur r.data.wo dan r.result.wo
+uji(39, 'workers/kmbprojek/src/supabase-backend.js menyediakan properti wo: woObj pada aksi detail WO',
+  jsKmbp.includes('pull_wo_detail') && jsKmbp.includes('wo: woObj') && jsKmb.includes('wo: woObj') && jsSum.includes('wo: woObj'));
+
+// 40: Penanganan Katalog Mandiri getJobCatalogCached
+uji(40, 'workers/kmbprojek/src/supabase-backend.js menangani getJobCatalogCached mengembalikan jobs cascade',
+  jsKmbp.includes('getJobCatalogCached') && jsKmbp.includes('jobs_field') && jsKmbp.includes('jobs_vessel'));
 
 console.log(`\n==================================================`);
 console.log(`Hasil Uji Backend Mandiri Supabase: ${lulus}/${total} LULUS`);
