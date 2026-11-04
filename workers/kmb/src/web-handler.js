@@ -38,6 +38,96 @@ const ROUTER_ACTIONS = new Set([
   'generatePayrollReport', 'generateReport',
 ]);
 
+function lengkapiObjekWoWeb(w) {
+  if (!w || typeof w !== 'object') return {};
+  const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
+  const wo_number = String(w.wo_number || id);
+  const st = String(w.status || 'pending_mechanic_work').toLowerCase();
+  const sg = w.status_group || (
+    ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
+      ? 'pending_approval'
+      : (st === 'approved' ? 'done' : 'assigned')
+  );
+  const sl = w.status_label || (
+    sg === 'done' ? 'Approved' : (sg === 'pending_approval' ? 'Menunggu Approval' : 'Perlu Diisi Mekanik')
+  );
+  const unitObj = (w.unit && typeof w.unit === 'object') ? w.unit : {};
+  const unit_id = String(w.unit_id || w.unit_code || unitObj.unit_id || 'WORKSHOP');
+  const unit_name = String(w.unit_name || unitObj.unit_name || unit_id);
+  const unit_factor = Number(w.unit_factor ?? unitObj.unit_factor ?? 1.0);
+
+  const compObj = (w.component && typeof w.component === 'object') ? w.component : {};
+  const compStr = typeof w.component === 'string' ? w.component : '';
+  const component_id = String(w.component_id || compObj.component_no || compObj.component_id || compStr || w.job_id || 'COM-001');
+  const component_name = String(w.component_name || w.others_description || w.activity || compObj.component_name || compStr || component_id || 'Pekerjaan');
+  const base_points = Number(w.base_points ?? w.points ?? compObj.base_points ?? 1.0);
+  const target_hours = Number(w.target_hours ?? compObj.target_hours ?? 2.0);
+  const effective_base_points = Number(w.effective_base_points ?? base_points);
+  const effective_target_hours = Number(w.effective_target_hours ?? target_hours);
+
+  let team = Array.isArray(w.team) ? w.team : (Array.isArray(w.effective_team) ? w.effective_team : []);
+  if (!team.length && w.team_distribution && typeof w.team_distribution === 'object') {
+    team = Object.entries(w.team_distribution).map(([mid, pct]) => ({
+      mechanic_id: String(mid).trim(),
+      mechanic_name: String(mid).trim(),
+      name: String(mid).trim(),
+      percentage: Number(pct) || 100,
+    }));
+  }
+  if (!team.length && w.lead_mechanic_id) {
+    const mName = String(w.mechanic_name || w.lead_mechanic_name || w.lead_mechanic_id);
+    team = [{ mechanic_id: String(w.lead_mechanic_id), mechanic_name: mName, name: mName, percentage: 100 }];
+  }
+  team = team.map((m) => ({
+    ...m,
+    mechanic_id: String(m.mechanic_id || m.id || ''),
+    mechanic_name: String(m.mechanic_name || m.name || m.mechanic_id || m.id || '-'),
+    name: String(m.name || m.mechanic_name || m.mechanic_id || m.id || '-'),
+    percentage: Number(m.percentage ?? 100),
+  }));
+  const team_names = Array.isArray(w.team_names) && w.team_names.length
+    ? w.team_names
+    : team.map((m) => m.mechanic_name);
+
+  return {
+    ...w,
+    id,
+    wo_id: id,
+    wo_number,
+    status: st,
+    status_group: sg,
+    status_label: sl,
+    unit_id,
+    unit_code: unit_id,
+    unit_name,
+    unit_factor,
+    unit: {
+      unit_id,
+      unit_name,
+      unit_factor,
+    },
+    component_id,
+    component_name,
+    base_points,
+    target_hours,
+    effective_base_points,
+    effective_target_hours,
+    component: {
+      component_no: component_id,
+      component_id,
+      component_name,
+      category: String(compObj.category || w.section || 'General'),
+      base_points,
+      target_hours,
+    },
+    team,
+    effective_team: team,
+    team_names,
+    team_count: w.team_count || team.length || 1,
+    created_at_str: String(w.created_at_str || w.date || w.created_at || '-'),
+  };
+}
+
 export async function handleWebRequest(request, env, url) {
   const token = (url.searchParams.get('token') || '').trim();
   if (!token) {
@@ -106,39 +196,48 @@ export async function handleWebRequest(request, env, url) {
     } else if (['approvals', 'approval'].includes(page)) {
       const pending = await panggilAksiInternal('pull_pending', token, {}, env);
       const pendingData = pending && pending.result ? pending.result : (pending && pending.data ? pending.data : {});
-      if (pending && pending.success && pendingData) {
-        context.pendingApprovals = pendingData.pending || pendingData.approvals || [];
-        context.pendingTransfers = pendingData.transfers || [];
-        context.activeWos = pendingData.active || [];
-        context.approvedWos = pendingData.approved || [];
-        context.rejectedWos = pendingData.rejected || [];
+      if (pending && pendingData) {
+        context.pendingApprovals = (pendingData.pending || pendingData.approvals || pendingData.wos || (Array.isArray(pendingData) ? pendingData : [])).map(lengkapiObjekWoWeb);
+        context.pendingTransfers = (pendingData.transfers || []).map(lengkapiObjekWoWeb);
+        context.activeWos = (pendingData.active || []).map(lengkapiObjekWoWeb);
+        context.approvedWos = (pendingData.approved || []).map(lengkapiObjekWoWeb);
+        context.rejectedWos = (pendingData.rejected || []).map(lengkapiObjekWoWeb);
       }
       const mechList = await panggilAksiInternal('pull_create_refs', token, {}, env);
       const mechData = mechList && mechList.result ? mechList.result : (mechList && mechList.data ? mechList.data : {});
       const actualMechRefs = (mechData && mechData.refs) ? mechData.refs : mechData;
-      if (mechList && mechList.success && actualMechRefs && (actualMechRefs.mechanics || actualMechRefs.allMechanics)) {
+      if (mechList && actualMechRefs && (actualMechRefs.mechanics || actualMechRefs.allMechanics)) {
         context.allMechanics = actualMechRefs.mechanics || actualMechRefs.allMechanics || [];
       }
     } else if (['mechanic', 'monitoring', 'mechanicdashboard'].includes(page)) {
       const myWos = await panggilAksiInternal('pull_my_wos', token, {}, env);
       const mon = await panggilAksiInternal('pull_monitoring', token, {}, env);
       const myWosData = myWos && myWos.result ? myWos.result : (myWos && myWos.data ? myWos.data : {});
-      const monData = mon && mon.result ? mon.result : (mon && mon.data ? mon.data : []);
+      const monData = mon && mon.result ? mon.result : (mon && mon.data ? mon.data : {});
+      const rawWosList = myWosData.wos || (Array.isArray(myWosData) ? myWosData : []);
+      const enrichedWos = rawWosList.map(lengkapiObjekWoWeb);
+      const computedCounts = myWosData.counts || {
+        all: enrichedWos.length,
+        assigned: enrichedWos.filter((w) => w.status_group === 'assigned').length,
+        in_progress: 0,
+        pending_approval: enrichedWos.filter((w) => w.status_group === 'pending_approval').length,
+        done: enrichedWos.filter((w) => w.status_group === 'done').length,
+      };
       context.initialData = {
-        wos: (myWosData && myWosData.wos) || [],
-        counts: (myWosData && myWosData.counts) || { all:0, assigned:0, in_progress:0, pending_approval:0, done:0 },
+        wos: enrichedWos,
+        counts: computedCounts,
         viewing_as: context.viewAsMechanicId || null,
         mechanic: user,
       };
       context.monitoringData = monData;
-      context.mons = monData;
+      context.mons = (monData && monData.mechanics) || (Array.isArray(monData) ? monData : []);
     } else if (['dashboard', 'main'].includes(page)) {
       const mon = await panggilAksiInternal('pull_monitoring', token, {}, env);
       const monData = mon && mon.result ? mon.result : (mon && mon.data ? mon.data : {});
       context.dashboardData = {
         user: user,
         stats: (monData && monData.stats) || { totalWOs: 0, approved: 0, pending: 0, totalPoints: 0 },
-        recentWOs: (monData && monData.recentWOs) || [],
+        recentWOs: (monData && monData.recentWOs ? monData.recentWOs : []).map(lengkapiObjekWoWeb),
         charts: (monData && monData.charts) || { pointsTrend: { labels: [], data: [] } },
       };
     }

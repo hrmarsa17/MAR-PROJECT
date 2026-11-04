@@ -12,6 +12,33 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penyelesaian Error 1101 di /web?page=approvals & Normalisasi Objek WO Web Desktop)
+- Berubah:
+  - Menyelesaikan `Error 1101 (Worker threw exception)` saat membuka `/web?page=approvals`:
+    1. **Akar Masalah**:
+       - Template `Approval.html` membaca objek bersarang `wo.unit.unit_id`, `wo.unit.unit_name`, `wo.component.component_name`, dan `wo.effective_team.map(...)`.
+       - Data WO yang dikembalikan dari backend Supabase atau database flat tanpa objek bersarang melempar `TypeError: Cannot read properties of undefined (reading 'unit_id')`, memicu HTTP 500 / Error 1101.
+    2. **Solusi & Implementasi**:
+       - Menambahkan fungsi `lengkapiObjekWoWeb(w)` di `workers/{kmbprojek,kmb,sum}/src/web-handler.js` yang secara aman menormalisasi seluruh field WO:
+         - `unit: { unit_id, unit_name, unit_factor }`
+         - `component: { component_no, component_id, component_name, category, base_points, target_hours }`
+         - `team` & `effective_team`: Array dinormalisasi dari `team`, `team_distribution`, maupun `lead_mechanic_id`.
+         - `status_group` (`assigned` / `pending_approval` / `done`) dan `status_label`.
+       - Mengintegrasikan `lengkapiObjekWoWeb` pada:
+         - Halaman `approvals`: `pendingApprovals`, `pendingTransfers`, `activeWos`, `approvedWos`, `rejectedWos`.
+         - Halaman `mechanic`: `wos` dan kalkulasi dinamis `computedCounts` (sehingga tab `Assigned / Pending / Done` menampilkan angka akurat dan tidak selalu 0).
+         - Halaman `dashboard`: `recentWOs`.
+  - Deploy & Verifikasi Staging:
+    - Men-deploy ketiga rumah (`abadiops-kmbprojek-staging`, `abadiops-kmb-staging`, `abadiops-sum-staging`) ke Cloudflare Workers staging (`--env staging`).
+    - Verifikasi live `GET /web?page=approvals&token=52fdb552231348ffb143`: **HTTP 200 OK** (panjang HTML: 185.424 bytes, bebas crash 500).
+    - `node scripts/uji-backend-mandiri.mjs`: **40/40 LULUS**.
+    - `node scripts/uji-user-admin-pusat.mjs`: **27/27 LULUS**.
+    - `node scripts/uji-serahan-token.mjs`: **24/24 LULUS**.
+- Belum selesai / berikutnya:
+  - Siap untuk persiapan migrasi hari Kamis bersama Gabriel.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Perbaikan Tombol Kembali ke Monitoring & Navigasi Navbar Performa/Reports Web Desktop)
 - Berubah:
   - Memperbaiki tombol `← Kembali ke Monitoring` di layar mekanik (`MechanicDashboard.html`) yang sebelumnya hanya reload/loading di tempat yang sama:
