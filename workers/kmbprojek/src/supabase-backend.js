@@ -64,12 +64,48 @@ function hitungSkorMandiri(m) {
   };
 }
 
+let cacheSaklar = { nilai: null, waktu: 0 };
+
+export async function bacaStatusSaklar(env) {
+  const sekarang = Date.now();
+  if (cacheSaklar.nilai && cacheSaklar.waktu > sekarang) {
+    return cacheSaklar.nilai;
+  }
+  let hasil = env.SAKLAR || 'gas';
+  try {
+    const isStaging = (env.GAS_URL && env.GAS_URL.includes('gas-tiruan')) || (env.RUMAH && env.RUMAH.includes('staging'));
+    const url = isStaging
+      ? 'https://abadiops-pintu-staging.kawanabadigrup.workers.dev/api/saklar/status'
+      : 'https://abadiops.com/api/saklar/status';
+
+    const fetcher = (env && env.PINTU && typeof env.PINTU.fetch === 'function')
+      ? env.PINTU.fetch.bind(env.PINTU)
+      : fetch;
+
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3500);
+    const r = await fetcher(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (r.ok) {
+      const data = await r.json();
+      const val = data?.switches?.[env.RUMAH];
+      if (val) {
+        hasil = val;
+        cacheSaklar = { nilai: hasil, waktu: sekarang + 5000 };
+      }
+    }
+  } catch (_) {}
+  return hasil;
+}
+
 function normalisasiAksi(action) {
   const a = String(action || '').trim();
   const map = {
     'createWO': 'create_wo',
+    'handleCreateWO': 'create_wo',
     'buat_wo': 'create_wo',
     'submitWork': 'submit_work',
+    'handleSubmitMechanicWork': 'submit_work',
     'submitMechanicWork': 'submit_work',
     'submitWO': 'submit_work',
     'kirim_kerja': 'submit_work',
@@ -91,12 +127,14 @@ function normalisasiAksi(action) {
     'getMyWos': 'pull_my_wos',
     'getWoDetailForMechanic': 'pull_wo_detail',
     'getWODetails': 'pull_wo_detail',
+    'getJobCatalogCached': 'pull_create_refs',
+    'loadJobsCatalog': 'pull_create_refs',
   };
   return map[a] || a;
 }
 
 /**
- * Eksekusi Backend Mandiri Supabase untuk Rumah KMB Project
+ * Eksekusi Backend Mandiri Supabase untuk Rumah KMB Project & Multi-Rumah
  */
 export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
@@ -112,6 +150,20 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
       source: 'SUPABASE'
     }), {
       status: 401,
+      headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+    });
+  }
+
+  // Khusus cekStatusKiriman
+  if (cleanAksi === 'cekStatusKiriman') {
+    return new Response(JSON.stringify({
+      success: true,
+      keadaan: 'selesai',
+      pesan: 'Kiriman selesai diproses di Supabase.',
+      struk: { created: [] },
+      source: 'SUPABASE'
+    }), {
+      status: 200,
       headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
     });
   }
@@ -143,8 +195,90 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     'Content-Type': 'application/json',
   };
 
+  const rumah = (env.RUMAH || 'kmbprojek').toLowerCase();
+  const rpcPrefix = (rumah === 'sum') ? 'sum' : (rumah === 'kmbtra' || rumah === 'kmb') ? 'kmbtra' : 'kmb';
+  const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_eksekusi_aksi_bertoken`;
+
   try {
-    const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/kmb_eksekusi_aksi_bertoken`;
+    // 1. Batch creation jika ada blocks (format form Web WorkOrder.html)
+    const blocks = payload.blocks || (payload.data && payload.data.blocks);
+    if (cleanAksi === 'create_wo' && Array.isArray(blocks) && blocks.length > 0) {
+      const created = [];
+      const failed = [];
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i];
+        const blockPayload = {
+          unit_code: b.unit_id || b.unit_name || b.unit_code || 'UNKNOWN',
+          component: b.component || b.component_name || 'UNKNOWN',
+          activity: b.job_description || b.activity || 'UNKNOWN',
+          lead_mechanic_id: b.lead_mechanic_id || '',
+          shift: b.shift || payload.shift || '1',
+          work_condition: b.work_condition || 'normal',
+          duration_hours: b.duration_hours || b.actual_hours || 0,
+          target_hours: b.target_hours || 0,
+          data: b
+        };
+        const res = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: supaHeaders,
+          body: JSON.stringify({
+            p_token: cleanToken,
+            p_aksi: 'create_wo',
+            p_op_id: (body.op_id || 'op-' + Date.now()) + '-' + (i + 1),
+            p_payload: blockPayload,
+            p_extra: body.extra || null,
+          }),
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData && resData.success && resData.result) {
+            const woNum = resData.result.wo_number || resData.result.id;
+            created.push({
+              wo_number: woNum,
+              wo_id: woNum,
+              id: woNum,
+              unit_id: b.unit_id || b.unit_name || b.unit_code,
+              component: b.component || b.component_name,
+              activity: b.job_description || b.activity,
+              status: resData.result.status || 'PENDING_L1'
+            });
+          } else {
+            failed.push({ index: i, error: (resData && resData.error) || 'Gagal membuat WO' });
+          }
+        } else {
+          const errText = await res.text();
+          failed.push({ index: i, error: errText });
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: created.length > 0,
+        data: {
+          wo_id: created[0]?.wo_number || '',
+          id: created[0]?.wo_number || '',
+          created: created,
+          failed: failed,
+        },
+        result: {
+          wo_id: created[0]?.wo_number || '',
+          id: created[0]?.wo_number || '',
+          created: created,
+          status: 'PENDING_L1',
+        },
+        source: 'SUPABASE'
+      }), {
+        status: 200,
+        headers: {
+          ...CORS,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
+          'X-Abadi-Jalur': 'supabase',
+        },
+      });
+    }
+
+    // 2. Pemanggilan tunggal standar via RPC
     const res = await fetch(rpcUrl, {
       method: 'POST',
       headers: supaHeaders,
@@ -159,13 +293,37 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
 
     if (res.ok) {
       const data = await res.json();
+      // Format respon agar kompatibel penuh dengan Web Desktop & PWA
+      if (cleanAksi === 'create_wo' && data.success && data.result) {
+        const woNum = data.result.wo_number || data.result.id;
+        const singleCreated = [{
+          wo_number: woNum,
+          wo_id: woNum,
+          id: woNum,
+          unit_id: payload.unit_code || payload.unit_id || '',
+          component: payload.component || '',
+          activity: payload.activity || payload.job_description || '',
+          status: data.result.status || 'PENDING_L1'
+        }];
+        data.data = {
+          wo_id: woNum,
+          id: woNum,
+          created: singleCreated,
+          failed: []
+        };
+      } else if (cleanAksi === 'pull_create_refs' && data.result) {
+        data.data = (data.result && data.result.refs) ? data.result.refs : data.result;
+      } else if (!data.data && data.result) {
+        data.data = data.result;
+      }
+
       return new Response(JSON.stringify(data), {
         status: 200,
         headers: {
           ...CORS,
           'Content-Type': 'application/json; charset=utf-8',
           'Cache-Control': 'no-store',
-          'X-Abadi-Rumah': 'kmbprojek',
+          'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
           'X-Abadi-Jalur': 'supabase',
         },
       });
@@ -191,3 +349,6 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     });
   }
 }
+
+export const eksekusiSupabaseBackendKmb = eksekusiSupabaseBackendKmbp;
+export const eksekusiSupabaseBackendSum = eksekusiSupabaseBackendKmbp;

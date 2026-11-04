@@ -41,7 +41,8 @@ name = "abadiops-kmbprojek-staging"
 workers_dev = true
 
 services = [
-  { binding = "GAS_TIRUAN", service = "abadiops-gas-tiruan" }
+  { binding = "GAS_TIRUAN", service = "abadiops-gas-tiruan" },
+  { binding = "PINTU", service = "abadiops-pintu-staging" }
 ]
 
 [env.staging.vars]

@@ -12,6 +12,28 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Bridge Web Desktop /api/web dengan Saklar Dua Cabang & Supabase DB)
+- Berubah:
+  - Menyelesaikan akar masalah pembuatan WO di antarmuka Web Desktop (/web?page=create) dan pemuatan token mekanik di Monitoring (/web?page=mechanic) yang sebelumnya mem-bypass status saklar:
+    - Akar masalah: Di `web-handler.js`, fungsi `handleWebBridgeApi` (/api/web) dan `panggilAksiInternal` sebelumnya mem-forward semua permintaan langsung ke `env.GAS_URL` tanpa mengecek `liveSaklar`. Akibatnya saat saklar disetel ke `SUPABASE` (100% Supabase / GAS Tutup), form pembuatan WO Web Desktop tetap diteruskan ke GAS Tiruan (menghasilkan nomor acak WO-YYYYMMDD-XXXX dari mock dan gagal tersimpan di Supabase DB), serta halaman Monitoring Mekanik menampilkan peringatan kuning "Belum ada token".
+    - Perbaikan:
+      1. Integrasi Saklar di Web Bridge: `handleWebBridgeApi` dan `panggilAksiInternal` kini membaca `liveSaklar` via `bacaStatusSaklar(env)`.
+      2. Rute Supabase Penuh: Jika `liveSaklar !== 'gas'`, semua aksi web bridge dialihkan ke `eksekusiSupabaseBackendKmbp` (memanggil RPC Supabase skema rumah terkait di Gedung 2).
+      3. Format Batch `handleCreateWO`: Di `supabase-backend.js`, menambahkan penanganan payload `blocks` dari `WorkOrder.html` sehingga menerbitkan nomor WO resmi 4-digit WIB (`WO-YYYYMMDD-XXXX`) dan mengembalikan struktur `{ success: true, data: { created: [...] }, result: { created: [...] }, source: 'SUPABASE' }` yang kompatibel 100% dengan modal struk Web Desktop dan PWA.
+      4. Penambahan Service Binding PINTU: Menambahkan binding `PINTU` (`abadiops-pintu-staging`) ke `wrangler.toml` di ketiga rumah (`kmbprojek`, `kmb`, `sum`) agar Worker rumah dapat membaca status saklar seketika (sub-millisecond) via Cloudflare Service Binding tanpa terhalang isolasi cross-worker HTTP.
+      5. Token Mekanik KMB Project: Mengisi token aktif untuk seluruh 21 mekanik di `kmb_projek.config_mechanics` & `kmb_projek.api_tokens`. Kini Monitoring Mekanik menampilkan tombol 'Copy Token' & 'Buka →' secara utuh dan peringatan ketiadaan token hilang 100%.
+  - Deploy & Verifikasi Staging:
+    - `abadiops-kmbprojek-staging`, `abadiops-kmb-staging`, `abadiops-sum-staging` ter-deploy ke Cloudflare Workers staging.
+    - Uji `/api/sehat` live: `saklar: 'supabase'`.
+    - Uji pembuatan WO live: `WO-20261104-0004` berhasil dibuat dan terverifikasi tersimpan di tabel `kmb_projek.work_orders` Supabase Gedung 2.
+    - Uji monitoring live: 22 mekanik bertoken lengkap (`has_token: true`, sumber: `SUPABASE`).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS.
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Label Rumah pada Tabel Pengguna dengan Dropdown di Panel Saklar)
 - Berubah:
   - Menyelaraskan teks badge kolom Rumah pada tabel Manajemen Pengguna & Token dengan pilihan dropdown:

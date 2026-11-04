@@ -4,6 +4,7 @@
  */
 
 import { renderWebPage } from './web-templates.js';
+import { eksekusiSupabaseBackendKmbp, bacaStatusSaklar } from './supabase-backend.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -173,6 +174,29 @@ export async function handleWebBridgeApi(request, env, url) {
     data.token = token;
   }
 
+  const liveSaklar = await bacaStatusSaklar(env);
+  if ((liveSaklar !== 'gas' || url.searchParams.get('uji') === 'supabase') && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    try {
+      const resSupa = await eksekusiSupabaseBackendKmbp(action, token, body, env);
+      if (resSupa && resSupa.status === 200) {
+        return resSupa;
+      }
+      if (liveSaklar === 'supabase') {
+        return resSupa || new Response(JSON.stringify({ success: false, error: 'Supabase backend gagal', source: 'SUPABASE' }), {
+          status: 500,
+          headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      }
+    } catch (e) {
+      if (liveSaklar === 'supabase') {
+        return new Response(JSON.stringify({ success: false, error: 'Supabase error: ' + ((e && e.message) || e), source: 'SUPABASE' }), {
+          status: 500,
+          headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      }
+    }
+  }
+
   const fetcher = (env && env.GAS_TIRUAN && typeof env.GAS_TIRUAN.fetch === 'function')
     ? env.GAS_TIRUAN.fetch.bind(env.GAS_TIRUAN)
     : fetch;
@@ -219,7 +243,7 @@ export async function handleWebBridgeApi(request, env, url) {
       },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ success: false, error: 'Koneksi ke backend gagal: ' + (err.message || err) }), {
+    return new Response(JSON.stringify({ success: false, error: 'Koneksi ke backend gagal: ' + ((err && err.message) || err) }), {
       status: 502,
       headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
     });
@@ -227,6 +251,22 @@ export async function handleWebBridgeApi(request, env, url) {
 }
 
 async function panggilAksiInternal(action, token, data, env) {
+  const liveSaklar = await bacaStatusSaklar(env);
+  if (liveSaklar !== 'gas' && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    try {
+      const resSupa = await eksekusiSupabaseBackendKmbp(action, token, { data: data || {} }, env);
+      if (resSupa && resSupa.status === 200) {
+        const json = await resSupa.json().catch(() => null);
+        if (json) return json;
+      }
+      if (liveSaklar === 'supabase') {
+        return null;
+      }
+    } catch (_) {
+      if (liveSaklar === 'supabase') return null;
+    }
+  }
+
   const fetcher = (env && env.GAS_TIRUAN && typeof env.GAS_TIRUAN.fetch === 'function')
     ? env.GAS_TIRUAN.fetch.bind(env.GAS_TIRUAN)
     : fetch;
