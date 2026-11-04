@@ -12,6 +12,24 @@ Formatnya:
 
 ---
 
+### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Label Rumah pada Tabel Pengguna dengan Dropdown di Panel Saklar)
+- Berubah:
+  - Menyelaraskan teks badge kolom Rumah pada tabel Manajemen Pengguna & Token dengan pilihan dropdown:
+    - Sebelum: Kolom Rumah menampilkan kode mentah huruf kapital ('KMB', 'SUM', 'KMBPROJEK').
+    - Sesudah: Kolom Rumah menampilkan nama resmi yang sama persis dengan opsi dropdown: 'KMB Projek', 'SUM V2', dan 'KMB TRA'.
+    - Mengatur CSS badge dengan text-transform: none dan letter-spacing: normal agar tampilan huruf besar-kecil konsisten dan mudah dibaca.
+    - Menyelaraskan logika filter pencarian (cariUser) dan dropdown (filterRumahUser) agar mendukung pencarian teks nama resmi.
+    - Deploy pembaruan ke staging: Worker abadiops-pintu-staging sukses ter-deploy ke Cloudflare Workers (b69a86f8-a83f-48b4-8312-ed1b4625bccc).
+  - Verifikasi:
+    - Tampilan langsung https://abadiops-pintu-staging.kawanabadigrup.workers.dev/saklar: label badge tabel kini 100% konsisten dengan dropdown filter.
+    - node scripts/uji-user-admin-pusat.mjs: 27/27 LULUS.
+    - node scripts/uji-backend-mandiri.mjs: 24/24 LULUS.
+    - node scripts/uji-serahan-token.mjs: 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch staging di remote origin dan kmb.
+
+---
+
 ### 2026-11-04 · Raka (+ AI) · kmb (Perbaikan Pemetaan Nama dan User ID pada RPC Admin User KMB TRA)
 - Berubah:
   - Memperbaiki data nama dan ID pengguna KMB TRA yang kosong (tampil strip '—') di Panel Saklar Staging (/saklar):

@@ -603,6 +603,14 @@
       }
     }
 
+    function formatNamaRumah(kode) {
+      const k = String(kode || '').toLowerCase();
+      if (k === 'kmbprojek') return 'KMB Projek';
+      if (k === 'sum') return 'SUM V2';
+      if (k === 'kmbtra' || k === 'kmb') return 'KMB TRA';
+      return kode || '—';
+    }
+
     function renderUsers(users) {
       const tbody = document.getElementById('userTableBody');
       if (!users || !users.length) {
@@ -611,11 +619,13 @@
       }
       tbody.innerHTML = users.map(u => {
         const isAktif = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
-        const badgeRumah = u.rumah === 'sum' ? 'badge-supabase' : (u.rumah === 'kmbtra' ? 'badge-dua_cabang' : 'badge-gas');
+        const rKode = (u.rumah || '').toLowerCase();
+        const badgeRumah = rKode === 'sum' ? 'badge-supabase' : ((rKode === 'kmbtra' || rKode === 'kmb') ? 'badge-dua_cabang' : 'badge-gas');
         const badgeStatus = isAktif ? 'badge-supabase' : 'badge-gas';
+        const labelRumah = formatNamaRumah(u.rumah);
         return `
           <tr>
-            <td><span class="badge ${badgeRumah}">${escapeHtml(u.rumah || '')}</span></td>
+            <td><span class="badge ${badgeRumah}" style="text-transform:none; letter-spacing:normal;">${escapeHtml(labelRumah)}</span></td>
             <td><strong>${escapeHtml(u.name || '—')}</strong></td>
             <td><code>${escapeHtml(u.user_id || '—')}</code></td>
             <td>${escapeHtml(u.role || 'mechanic')}</td>
@@ -636,13 +646,18 @@
       const q = document.getElementById('cariUser').value.toLowerCase().trim();
       let filtered = SEMUA_USERS;
       if (rumah !== 'semua') {
-        filtered = filtered.filter(u => (u.rumah || '').toLowerCase() === rumah);
+        filtered = filtered.filter(u => {
+          const r = (u.rumah || '').toLowerCase();
+          if (rumah === 'kmbtra') return r === 'kmbtra' || r === 'kmb';
+          return r === rumah;
+        });
       }
       if (q) {
         filtered = filtered.filter(u => 
           (u.name || '').toLowerCase().includes(q) ||
           (u.user_id || '').toLowerCase().includes(q) ||
-          (u.token || '').toLowerCase().includes(q)
+          (u.token || '').toLowerCase().includes(q) ||
+          formatNamaRumah(u.rumah).toLowerCase().includes(q)
         );
       }
       renderUsers(filtered);
