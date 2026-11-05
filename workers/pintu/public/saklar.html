@@ -140,7 +140,7 @@
       <div class="nav-tabs">
         <button type="button" class="nav-tab active" id="tabBtnSaklar" onclick="pilihTab('saklar')">🎛️ Saklar Dua Cabang</button>
         <button type="button" class="nav-tab" id="tabBtnUsers" onclick="pilihTab('users')">👷 Manajemen Pengguna & Token (Pusat 3 Rumah)</button>
-        <button type="button" class="nav-tab" id="tabBtnConfig" onclick="pilihTab('config')">⚙️ CRUD Config (Units · Components · Jobs · Factors)</button>
+        <button type="button" class="nav-tab" id="tabBtnConfig" onclick="pilihTab('config')">⚙️ Manajemen Config & Master Data (Pusat 3 Rumah)</button>
       </div>
 
       <!-- TAB A: SAKLAR DUA CABANG -->
@@ -177,7 +177,7 @@
       </div>
 
       <!-- TAB B: MANAJEMEN PENGGUNA & TOKEN LINTAS RUMAH -->
-      <div id="sectionUsers" class="hidden"><div id="viewUserAdmin" class="viewUserAdmin">
+      <div id="sectionUsers" class="hidden viewUserAdmin" data-view="viewUserAdmin">
         <div class="info-banner">
           <strong>Manajemen Pengguna Terpusat (Supabase Per Kamar):</strong>
           Setiap rumah menyimpan datanya di kamarnya sendiri (<code>sum</code>, <code>kmb</code>, <code>kmb_projek</code>). Orang tidak pernah dihapus (hanya dinonaktifkan) agar riwayat WO dan payroll tetap utuh. Token baru otomatis memakai awalan rumah (<code>sum-</code>, <code>kmb-</code>, <code>kmbp-</code>) dan diperiksa lintas rumah agar tidak pernah kembar.
@@ -187,11 +187,19 @@
 
         <div class="panel-card">
           <div class="panel-title">
-            <span>👷 Daftar Pengguna & Token Akses</span>
+            <span>👷 Daftar Pengguna & Token Akses Per Sistem / Rumah</span>
             <div style="display:flex; gap:0.5rem;">
               <button type="button" class="btn btn-secondary btn-sm" onclick="muatDaftarUser()">🔄 Muat Ulang</button>
               <button type="button" class="btn btn-primary btn-sm" onclick="bukaModalUserBaru()">+ Tambah Pengguna</button>
             </div>
+          </div>
+
+          <!-- Pilihan Cepat Sistem / Rumah (Tab Per Rumah) -->
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.85rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);" id="rumahTabsUsers">
+            <button type="button" class="btn btn-primary btn-sm" data-rumah-usr="sum" onclick="pilihRumahTabUser('sum')">🚜 SUM V2 (sum)</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-rumah-usr="kmbtra" onclick="pilihRumahTabUser('kmbtra')">🚛 KMB TRA / V2 (kmb)</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-rumah-usr="kmbprojek" onclick="pilihRumahTabUser('kmbprojek')">⚙️ KMB Projek (kmb_projek)</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-rumah-usr="semua" onclick="pilihRumahTabUser('semua')">🏢 Semua Rumah (Gabungan)</button>
           </div>
 
           <div class="toolbar">
@@ -267,50 +275,78 @@
       <!-- TAB C: CRUD CONFIG LINTAS RUMAH (UNITS, COMPONENTS, CATALOG JOBS, FACTORS) -->
       <div id="sectionConfig" class="hidden">
         <div class="info-banner">
-          <strong>Manajemen Master Data Config (CRUD per Kamar Supabase):</strong>
-          Tambah (Create), Lihat (Read), Ubah (Update), dan Hapus (Delete) master data <code>config_units</code>, <code>config_components</code>, <code>catalog_jobs</code>, dan <code>config_factors</code> langsung di skema kamar masing-masing rumah (<code>sum</code>, <code>kmb</code>, <code>kmb_projek</code>).
+          <strong>Manajemen Master Data Config Terpusat (Supabase Per Kamar):</strong>
+          Sama persis seperti Manajemen Pengguna, setiap sistem/rumah menyimpan master data konfigurasinya di kamarnya sendiri (<code>sum</code>, <code>kmb</code>, <code>kmb_projek</code>). Anda dapat memfilter per sistem/rumah (<strong>SUM V2</strong>, <strong>KMB TRA / V2</strong>, <strong>KMB Projek</strong>, atau <strong>Semua Rumah</strong>) dan melakukan <strong>Tambah (Create)</strong>, <strong>Lihat (Read)</strong>, <strong>Ubah (Update)</strong>, serta <strong>Hapus (Delete)</strong> untuk <code>config_units</code>, <code>config_components</code>, <code>catalog_jobs</code>, dan <code>config_factors</code>.
         </div>
 
         <div id="configAlert" class="alert hidden"></div>
 
         <div class="panel-card">
           <div class="panel-title">
-            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-              <button type="button" class="btn btn-primary btn-sm" id="subTabCfg_unit" onclick="pilihSubTabConfig('unit')">🚜 Config Units</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_component" onclick="pilihSubTabConfig('component')">🔩 Config Components</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_job" onclick="pilihSubTabConfig('job')">📋 Catalog Jobs</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_factor" onclick="pilihSubTabConfig('factor')">⚖️ Config Factors & Tarif</button>
+            <span>⚙️ Daftar Master Config Per Sistem / Rumah</span>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="muatDataConfigPusat()">🔄 Muat Ulang</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btnTambahConfigPusat" onclick="bukaModalConfigPusat()">+ Tambah Config</button>
             </div>
-            <div style="display:flex; gap:0.5rem;">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="muatDataConfigPusat()">🔄 Muat Ulang Config</button>
-              <button type="button" class="btn btn-primary btn-sm" onclick="bukaModalConfigPusat()">+ Tambah Item Config</button>
-            </div>
+          </div>
+
+          <!-- Pilihan Cepat Sistem / Rumah (Tab Per Rumah) -->
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.85rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);" id="rumahTabsConfig">
+            <button type="button" class="btn btn-primary btn-sm" data-rumah-cfg="sum" onclick="pilihRumahTabConfig('sum')">🚜 SUM V2 (sum)</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-rumah-cfg="kmbtra" onclick="pilihRumahTabConfig('kmbtra')">🚛 KMB TRA / V2 (kmb)</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-rumah-cfg="kmbprojek" onclick="pilihRumahTabConfig('kmbprojek')">⚙️ KMB Projek (kmb_projek)</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-rumah-cfg="semua" onclick="pilihRumahTabConfig('semua')">🏢 Semua Rumah (Gabungan)</button>
+          </div>
+
+          <!-- Pilihan Kategori Master Data Config -->
+          <div style="display:flex; gap:0.45rem; flex-wrap:wrap; margin-bottom:1rem;">
+            <button type="button" class="btn btn-primary btn-sm" id="subTabCfg_unit" onclick="pilihSubTabConfig('unit')">🚜 Config Units</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_component" onclick="pilihSubTabConfig('component')">🔩 Config Components</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_job" onclick="pilihSubTabConfig('job')">📋 Catalog Jobs</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_factor" onclick="pilihSubTabConfig('factor')">⚖️ Config Factors & Tarif</button>
           </div>
 
           <div class="toolbar">
             <div class="toolbar-item">
-              <label for="filterRumahConfig">Pilih Rumah Target</label>
+              <label for="filterRumahConfig">Pilih Rumah (Kamar Supabase)</label>
               <select id="filterRumahConfig" class="form-control" onchange="gantiRumahConfigPusat()">
-                <option value="kmbprojek">KMB Projek (skema kmb_projek)</option>
                 <option value="sum">SUM V2 (skema sum)</option>
                 <option value="kmbtra">KMB TRA / V2 (skema kmb)</option>
+                <option value="kmbprojek">KMB Projek (skema kmb_projek)</option>
+                <option value="semua">Semua Rumah (Gabungan)</option>
               </select>
             </div>
             <div class="toolbar-item" style="min-width:220px;">
-              <label for="inputAdminTokenConfig">Token Admin / L2 Rumah</label>
+              <label for="inputAdminTokenConfig">Token Admin / L2 Rumah (untuk RPC *_bertoken)</label>
               <input type="password" id="inputAdminTokenConfig" class="form-control" placeholder="Token L2/Admin rumah terpilih" oninput="simpanTokenAdminConfigLokal()">
             </div>
-            <div class="toolbar-item" style="min-width:220px;">
-              <label for="filterCariConfig">Cari Kode / Nama / Deskripsi</label>
-              <input type="text" id="filterCariConfig" class="form-control" placeholder="Ketik kata kunci..." oninput="renderTabelConfigPusat()">
+            <div class="toolbar-item">
+              <label for="filterStatusConfig">Status</label>
+              <select id="filterStatusConfig" class="form-control" onchange="renderTabelConfigPusat()">
+                <option value="ALL">Semua</option>
+                <option value="ACTIVE">Aktif Saja</option>
+                <option value="INACTIVE">Nonaktif Saja</option>
+              </select>
             </div>
+            <div class="toolbar-item" style="min-width:220px;">
+              <label for="filterCariConfig">Cari Kode / Nama / Section / Deskripsi</label>
+              <input type="text" id="filterCariConfig" class="form-control" placeholder="Ketik kode atau nama..." oninput="renderTabelConfigPusat()">
+            </div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi-box"><div class="kpi-label">Config Units</div><div class="kpi-val" id="kpiCfgUnit">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Config Components</div><div class="kpi-val" id="kpiCfgComp">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Catalog Jobs</div><div class="kpi-val" id="kpiCfgJob">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Config Factors & Tarif</div><div class="kpi-val" id="kpiCfgFactor">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Ditampilkan</div><div class="kpi-val" id="kpiCfgShown">0</div></div>
           </div>
 
           <div style="overflow-x:auto;">
             <table>
               <thead id="theadConfigPusat"></thead>
               <tbody id="tbodyConfigPusat">
-                <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Pilih rumah dan klik Muat Ulang Config.</td></tr>
+                <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Pilih rumah dan klik Muat Ulang untuk menampilkan master data config dari Supabase.</td></tr>
               </tbody>
             </table>
           </div>
@@ -358,7 +394,7 @@
   </div>
 
   <!-- Modal Tambah / Ubah Pengguna -->
-  <div id="modalUser" class="modal-overlay hidden modalTambahUser" data-modal="modalTambahUser">
+  <div id="modalUser" class="modal-overlay hidden modalTambahUser">
     <div class="modal-box">
       <div class="modal-title">
         <span id="judulModalUser">Tambah Pengguna</span>
@@ -428,7 +464,7 @@
 
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" onclick="tutupModalUser()">Batal</button>
-          <button type="submit" class="btn btn-primary" id="btnSimpanUser">Simpan ke Supabase</button>
+          <button type="submit" class="btn btn-primary" id="submitTambahUser" data-alt-id="btnSimpanUser">Simpan ke Supabase</button>
         </div>
       </form>
     </div>
@@ -585,6 +621,14 @@
       const modalLama = selModal.value || 'sum';
       selModal.innerHTML = DAFTAR_RUMAH.map(r => `<option value="${escapeHtml(r.kode)}">${escapeHtml(r.nama)} (${escapeHtml(r.kode)})</option>`).join('');
       if ([...selModal.options].some(o => o.value === modalLama)) selModal.value = modalLama;
+
+      const selFilterCfg = document.getElementById('filterRumahConfig');
+      if (selFilterCfg) {
+        const cfgLama = selFilterCfg.value || 'sum';
+        selFilterCfg.innerHTML = DAFTAR_RUMAH.map(r => `<option value="${escapeHtml(r.kode)}">${escapeHtml(r.nama)} (${escapeHtml(r.kode)})</option>`).join('')
+          + '<option value="semua">Semua Rumah (Gabungan)</option>';
+        if ([...selFilterCfg.options].some(o => o.value === cfgLama)) selFilterCfg.value = cfgLama;
+      }
     }
 
     function renderCards(switches) {
@@ -720,7 +764,22 @@
 
     /* ── MANAJEMEN PENGGUNA & TOKEN LINTAS RUMAH ───────────────────────────── */
 
+    function sinkronTabRumahUserUI() {
+      const r = document.getElementById('filterRumah').value || 'sum';
+      document.querySelectorAll('#rumahTabsUsers [data-rumah-usr]').forEach((btn) => {
+        const aktif = btn.getAttribute('data-rumah-usr') === r;
+        btn.className = 'btn btn-sm ' + (aktif ? 'btn-primary' : 'btn-secondary');
+      });
+    }
+
+    function pilihRumahTabUser(rumah) {
+      const sel = document.getElementById('filterRumah');
+      if (sel) sel.value = rumah;
+      gantiPilihanRumah();
+    }
+
     function gantiPilihanRumah() {
+      sinkronTabRumahUserUI();
       sinkronInputTokenAdmin();
       muatDaftarUser();
     }
@@ -955,16 +1014,11 @@
       document.getElementById('modalUser').classList.add('hidden');
     }
 
-    function submitTambahUser(e) { return submitSimpanUser(e); }
-    window.modalTambahUser = document.getElementById('modalUser');
-    window.viewUserAdmin = document.getElementById('viewUserAdmin');
-    window.submitTambahUser = submitTambahUser;
-
     async function submitSimpanUser(e) {
       e.preventDefault();
       const rumah = document.getElementById('uRumah').value;
       const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminToken').value.trim();
-      const btn = document.getElementById('btnSimpanUser');
+      const btn = document.getElementById('submitTambahUser');
       btn.disabled = true; btn.textContent = 'Menyimpan...';
 
       const userPayload = {
@@ -1112,19 +1166,34 @@
       }
     }
 
-    /* ── CRUD CONFIG PUSAT (UNITS, COMPONENTS, JOBS, FACTORS) ───────────────── */
+    /* ── CRUD CONFIG PUSAT (UNITS, COMPONENTS, JOBS, FACTORS) — PER SISTEM / RUMAH ── */
     let SUB_TAB_CFG = 'unit';
     let DATA_CFG_PUSAT = { units: [], components: [], jobs: [], factors: [] };
+
+    function sinkronTabRumahConfigUI() {
+      const r = document.getElementById('filterRumahConfig').value || 'sum';
+      document.querySelectorAll('#rumahTabsConfig [data-rumah-cfg]').forEach((btn) => {
+        const aktif = btn.getAttribute('data-rumah-cfg') === r;
+        btn.className = 'btn btn-sm ' + (aktif ? 'btn-primary' : 'btn-secondary');
+      });
+    }
+
+    function pilihRumahTabConfig(rumah) {
+      const sel = document.getElementById('filterRumahConfig');
+      if (sel) sel.value = rumah;
+      gantiRumahConfigPusat();
+    }
 
     function sinkronInputTokenAdminConfig() {
       const r = document.getElementById('filterRumahConfig').value;
       document.getElementById('inputAdminTokenConfig').value = TOKEN_ADMIN_PER_RUMAH[r] || document.getElementById('inputAdminToken').value || '';
+      sinkronTabRumahConfigUI();
     }
 
     function simpanTokenAdminConfigLokal() {
       const r = document.getElementById('filterRumahConfig').value;
       const val = document.getElementById('inputAdminTokenConfig').value.trim();
-      if (r) {
+      if (r && r !== 'semua') {
         TOKEN_ADMIN_PER_RUMAH[r] = val;
         sessionStorage.setItem('abadi_admin_tokens', JSON.stringify(TOKEN_ADMIN_PER_RUMAH));
       }
@@ -1143,6 +1212,14 @@
           b.className = 'btn btn-sm ' + (k === jenis ? 'btn-primary' : 'btn-secondary');
         }
       });
+      const labelTambah = {
+        unit: '+ Tambah Unit',
+        component: '+ Tambah Component',
+        job: '+ Tambah Catalog Job',
+        factor: '+ Tambah Factor / Tarif',
+      };
+      const btnT = document.getElementById('btnTambahConfigPusat');
+      if (btnT) btnT.textContent = labelTambah[jenis] || '+ Tambah Config';
       renderTabelConfigPusat();
     }
 
@@ -1155,10 +1232,11 @@
     }
 
     async function muatDataConfigPusat() {
-      const rumah = document.getElementById('filterRumahConfig').value || 'kmbprojek';
+      const rumah = document.getElementById('filterRumahConfig').value || 'sum';
       const adminToken = document.getElementById('inputAdminTokenConfig').value.trim() || TOKEN_ADMIN_PER_RUMAH[rumah] || '';
       const tbody = document.getElementById('tbodyConfigPusat');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Memuat master data config dari Supabase...</td></tr>';
+      sinkronTabRumahConfigUI();
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Memuat master data config dari Supabase...</td></tr>';
 
       try {
         const res = await fetch('/saklar/api/config/daftar', {
@@ -1168,21 +1246,29 @@
             'Content-Type': 'application/json',
             ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
           },
-          body: JSON.stringify({ rumah, admin_token: adminToken, jenis: 'all' })
+          body: JSON.stringify({
+            rumah,
+            admin_token: adminToken,
+            tokens: TOKEN_ADMIN_PER_RUMAH,
+            jenis: 'all'
+          })
         });
         const data = await res.json();
-        if (!data.success) {
+        if (!data.success && data.error) {
           tampilPesanConfig(data.error || 'Gagal memuat config', false);
+          DATA_CFG_PUSAT = { units: [], components: [], jobs: [], factors: [] };
+          renderTabelConfigPusat();
           return;
         }
-        const d = data.result || data.data || {};
+        const d = data.result || data.data || data || {};
+        const tagDefault = (arr) => (Array.isArray(arr) ? arr.map((x) => ({ ...x, rumah: x.rumah || (rumah === 'semua' ? 'kmbprojek' : rumah) })) : []);
         DATA_CFG_PUSAT = {
-          units: Array.isArray(d.units) ? d.units : [],
-          components: Array.isArray(d.components) ? d.components : [],
-          jobs: Array.isArray(d.jobs) ? d.jobs : [],
-          factors: Array.isArray(d.factors) ? d.factors : [],
+          units: tagDefault(d.units || data.units),
+          components: tagDefault(d.components || data.components),
+          jobs: tagDefault(d.jobs || data.jobs),
+          factors: tagDefault(d.factors || data.factors),
         };
-        tampilPesanConfig(`Berhasil memuat config ${rumah.toUpperCase()}: ${DATA_CFG_PUSAT.units.length} Unit, ${DATA_CFG_PUSAT.components.length} Komponen, ${DATA_CFG_PUSAT.jobs.length} Job, ${DATA_CFG_PUSAT.factors.length} Faktor.`, true);
+        tampilPesanConfig('', true);
         renderTabelConfigPusat();
       } catch (err) {
         tampilPesanConfig('Koneksi gagal: ' + err.message, false);
@@ -1191,116 +1277,194 @@
 
     function renderTabelConfigPusat() {
       const q = (document.getElementById('filterCariConfig').value || '').toLowerCase().trim();
+      const statusFilter = (document.getElementById('filterStatusConfig')?.value || 'ALL').toUpperCase();
       const th = document.getElementById('theadConfigPusat');
       const tb = document.getElementById('tbodyConfigPusat');
 
+      document.getElementById('kpiCfgUnit').textContent = DATA_CFG_PUSAT.units.length;
+      document.getElementById('kpiCfgComp').textContent = DATA_CFG_PUSAT.components.length;
+      document.getElementById('kpiCfgJob').textContent = DATA_CFG_PUSAT.jobs.length;
+      document.getElementById('kpiCfgFactor').textContent = DATA_CFG_PUSAT.factors.length;
+
+      const lolosStatus = (x) => {
+        if (statusFilter === 'ALL') return true;
+        const st = String(x.status || 'ACTIVE').toUpperCase();
+        return st === statusFilter;
+      };
+
       if (SUB_TAB_CFG === 'unit') {
-        th.innerHTML = '<tr><th>Kode Unit</th><th>Nama Unit</th><th>Model</th><th>Section</th><th>Faktor Unit</th><th>Status</th><th>Aksi CRUD</th></tr>';
-        const rows = DATA_CFG_PUSAT.units.filter((x) => !q || [x.unit_id, x.unit_name, x.unit_model, x.section].join(' ').toLowerCase().includes(q));
-        if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Belum ada data unit.</td></tr>'; return; }
-        tb.innerHTML = rows.map((x, i) => `<tr>
-          <td><strong>${escapeHtml(x.unit_id)}</strong></td>
-          <td>${escapeHtml(x.unit_name || x.unit_id)}</td>
-          <td>${escapeHtml(x.unit_model || '—')}</td>
-          <td>${escapeHtml(x.section || '—')}</td>
-          <td>${escapeHtml(x.unit_factor ?? 1)}</td>
-          <td><span class="badge ${(x.status || 'ACTIVE') === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
-          <td>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('unit', ${i})">✏️ Edit</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('unit', '${escapeAttr(x.unit_id)}')">🗑 Hapus</button>
-          </td>
-        </tr>`).join('');
+        th.innerHTML = '<tr><th>Rumah</th><th>Kode Unit</th><th>Nama Unit</th><th>Model</th><th>Section</th><th>Faktor Unit</th><th>Status</th><th>Aksi</th></tr>';
+        const rows = DATA_CFG_PUSAT.units.filter((x) => lolosStatus(x) && (!q || [x.rumah, x.unit_id, x.unit_name, x.unit_model, x.section].join(' ').toLowerCase().includes(q)));
+        document.getElementById('kpiCfgShown').textContent = rows.length;
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Tidak ada data unit yang cocok dengan saringan.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x) => {
+          const aktif = String(x.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+          const idxAsli = DATA_CFG_PUSAT.units.indexOf(x);
+          return `<tr class="${aktif ? '' : 'row-inactive'}">
+            <td><span class="badge badge-gas">${escapeHtml(x.rumah || '')}</span></td>
+            <td><strong>${escapeHtml(x.unit_id)}</strong></td>
+            <td>${escapeHtml(x.unit_name || x.unit_id)}</td>
+            <td>${escapeHtml(x.unit_model || '—')}</td>
+            <td>${escapeHtml(x.section || '—')}</td>
+            <td>${escapeHtml(x.unit_factor ?? 1)}</td>
+            <td><span class="badge ${aktif ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
+            <td>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('unit', ${idxAsli})">Ubah</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('${escapeAttr(x.rumah)}', 'unit', '${escapeAttr(x.unit_id)}')">🗑 Hapus</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
       } else if (SUB_TAB_CFG === 'component') {
-        th.innerHTML = '<tr><th>ID Komponen</th><th>Nama Komponen</th><th>Kategori / Section</th><th>Base Points</th><th>Target Jam</th><th>Status</th><th>Aksi CRUD</th></tr>';
-        const rows = DATA_CFG_PUSAT.components.filter((x) => !q || [x.component_id, x.component_name, x.category].join(' ').toLowerCase().includes(q));
-        if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Belum ada data komponen.</td></tr>'; return; }
-        tb.innerHTML = rows.map((x, i) => `<tr>
-          <td><strong>${escapeHtml(x.component_id)}</strong></td>
-          <td>${escapeHtml(x.component_name)}</td>
-          <td>${escapeHtml(x.category || x.section || '—')}</td>
-          <td>${escapeHtml(x.base_points ?? 1)}</td>
-          <td>${escapeHtml(x.target_hours ?? 2)} jam</td>
-          <td><span class="badge ${(x.status || 'ACTIVE') === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
-          <td>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('component', ${i})">✏️ Edit</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('component', '${escapeAttr(x.component_id)}')">🗑 Hapus</button>
-          </td>
-        </tr>`).join('');
+        th.innerHTML = '<tr><th>Rumah</th><th>ID Komponen</th><th>Nama Komponen</th><th>Kategori / Section</th><th>Base Points</th><th>Target Jam</th><th>Status</th><th>Aksi</th></tr>';
+        const rows = DATA_CFG_PUSAT.components.filter((x) => lolosStatus(x) && (!q || [x.rumah, x.component_id, x.component_name, x.category, x.section].join(' ').toLowerCase().includes(q)));
+        document.getElementById('kpiCfgShown').textContent = rows.length;
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Tidak ada data komponen yang cocok dengan saringan.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x) => {
+          const aktif = String(x.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+          const idxAsli = DATA_CFG_PUSAT.components.indexOf(x);
+          return `<tr class="${aktif ? '' : 'row-inactive'}">
+            <td><span class="badge badge-gas">${escapeHtml(x.rumah || '')}</span></td>
+            <td><strong>${escapeHtml(x.component_id)}</strong></td>
+            <td>${escapeHtml(x.component_name)}</td>
+            <td>${escapeHtml(x.category || x.section || '—')}</td>
+            <td>${escapeHtml(x.base_points ?? 1)}</td>
+            <td>${escapeHtml(x.target_hours ?? 2)} jam</td>
+            <td><span class="badge ${aktif ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
+            <td>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('component', ${idxAsli})">Ubah</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('${escapeAttr(x.rumah)}', 'component', '${escapeAttr(x.component_id)}')">🗑 Hapus</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
       } else if (SUB_TAB_CFG === 'job') {
-        th.innerHTML = '<tr><th>Job ID</th><th>Section</th><th>Komponen → Sub</th><th>Deskripsi Job</th><th>Plan Hours</th><th>Base Point</th><th>Status</th><th>Aksi CRUD</th></tr>';
-        const rows = DATA_CFG_PUSAT.jobs.filter((x) => !q || [x.job_id, x.section, x.component, x.sub_component, x.job_description].join(' ').toLowerCase().includes(q));
-        if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Belum ada data katalog job.</td></tr>'; return; }
-        tb.innerHTML = rows.map((x, i) => `<tr>
-          <td><strong>${escapeHtml(x.job_id)}</strong></td>
-          <td>${escapeHtml(x.section || '—')}</td>
-          <td>${escapeHtml(x.component || '—')} · <small>${escapeHtml(x.sub_component || '—')}</small></td>
-          <td>${escapeHtml(x.job_description)}</td>
-          <td>${escapeHtml(x.plan_hours ?? 2)} jam</td>
-          <td>${escapeHtml(x.base_point ?? 1)}</td>
-          <td><span class="badge ${(x.status || 'ACTIVE') === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
-          <td>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('job', ${i})">✏️ Edit</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('job', '${escapeAttr(x.job_id)}')">🗑 Hapus</button>
-          </td>
-        </tr>`).join('');
+        th.innerHTML = '<tr><th>Rumah</th><th>Job ID</th><th>Section</th><th>Komponen → Sub</th><th>Deskripsi Job</th><th>Plan Hours</th><th>Base Point</th><th>Status</th><th>Aksi</th></tr>';
+        const rows = DATA_CFG_PUSAT.jobs.filter((x) => lolosStatus(x) && (!q || [x.rumah, x.job_id, x.section, x.component, x.sub_component, x.job_description, x.unit_model].join(' ').toLowerCase().includes(q)));
+        document.getElementById('kpiCfgShown').textContent = rows.length;
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">Tidak ada data katalog job yang cocok dengan saringan.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x) => {
+          const aktif = String(x.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+          const idxAsli = DATA_CFG_PUSAT.jobs.indexOf(x);
+          return `<tr class="${aktif ? '' : 'row-inactive'}">
+            <td><span class="badge badge-gas">${escapeHtml(x.rumah || '')}</span></td>
+            <td><strong>${escapeHtml(x.job_id)}</strong></td>
+            <td>${escapeHtml(x.section || '—')}</td>
+            <td>${escapeHtml(x.component || '—')} · <small>${escapeHtml(x.sub_component || '—')}</small></td>
+            <td>${escapeHtml(x.job_description)}</td>
+            <td>${escapeHtml(x.plan_hours ?? 2)} jam</td>
+            <td>${escapeHtml(x.base_point ?? 1)}</td>
+            <td><span class="badge ${aktif ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
+            <td>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('job', ${idxAsli})">Ubah</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('${escapeAttr(x.rumah)}', 'job', '${escapeAttr(x.job_id)}')">🗑 Hapus</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
       } else if (SUB_TAB_CFG === 'factor') {
-        th.innerHTML = '<tr><th>Tipe Faktor</th><th>Key (Kunci)</th><th>Nilai Angka</th><th>Keterangan</th><th>Aksi CRUD</th></tr>';
-        const rows = DATA_CFG_PUSAT.factors.filter((x) => !q || [x.factor_type, x.key, x.description].join(' ').toLowerCase().includes(q));
-        if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Belum ada data faktor.</td></tr>'; return; }
-        tb.innerHTML = rows.map((x, i) => `<tr>
-          <td><strong>${escapeHtml(x.factor_type)}</strong></td>
-          <td><code class="token-box">${escapeHtml(x.key)}</code></td>
-          <td><strong>${escapeHtml(x.value ?? 1)}</strong></td>
-          <td>${escapeHtml(x.description || '—')}</td>
-          <td>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('factor', ${i})">✏️ Edit</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('factor', '${escapeAttr((x.factor_type || '') + ':' + (x.key || ''))}')">🗑 Hapus</button>
-          </td>
-        </tr>`).join('');
+        th.innerHTML = '<tr><th>Rumah</th><th>Tipe Faktor</th><th>Key (Kunci)</th><th>Nilai Angka</th><th>Keterangan</th><th>Aksi</th></tr>';
+        const rows = DATA_CFG_PUSAT.factors.filter((x) => !q || [x.rumah, x.factor_type, x.key, x.description].join(' ').toLowerCase().includes(q));
+        document.getElementById('kpiCfgShown').textContent = rows.length;
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Tidak ada data faktor yang cocok dengan saringan.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x) => {
+          const idxAsli = DATA_CFG_PUSAT.factors.indexOf(x);
+          return `<tr>
+            <td><span class="badge badge-gas">${escapeHtml(x.rumah || '')}</span></td>
+            <td><strong>${escapeHtml(x.factor_type)}</strong></td>
+            <td><code class="token-box">${escapeHtml(x.key)}</code></td>
+            <td><strong>${escapeHtml(x.value ?? 1)}</strong></td>
+            <td>${escapeHtml(x.description || '—')}</td>
+            <td>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('factor', ${idxAsli})">Ubah</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('${escapeAttr(x.rumah)}', 'factor', '${escapeAttr((x.factor_type || '') + ':' + (x.key || ''))}')">🗑 Hapus</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
       }
     }
 
     function bukaModalConfigPusat(item = null) {
       const box = document.getElementById('isiFormConfigPusat');
       const t = SUB_TAB_CFG;
-      document.getElementById('judulModalConfigPusat').textContent = (item ? 'Edit ' : 'Tambah ') + t.toUpperCase();
+      const rFilter = document.getElementById('filterRumahConfig').value;
+      const rTarget = (item && item.rumah) ? item.rumah : ((rFilter && rFilter !== 'semua') ? rFilter : 'sum');
+      document.getElementById('judulModalConfigPusat').textContent = (item ? 'Ubah ' : 'Tambah ') + t.toUpperCase();
+
+      const opsiRumahHtml = DAFTAR_RUMAH.map((r) => `<option value="${escapeHtml(r.kode)}" ${r.kode === rTarget ? 'selected' : ''}>${escapeHtml(r.nama)} (${escapeHtml(r.kode)})</option>`).join('');
+      const blokRumahTarget = `
+        <div class="form-group">
+          <label>Rumah / Sistem Target *</label>
+          <select class="form-control" id="p_cfg_rumah" ${item ? 'disabled' : ''}>${opsiRumahHtml}</select>
+        </div>
+      `;
+
       if (t === 'unit') {
-        box.innerHTML = `
-          <div class="form-group"><label>Kode Unit (unit_id, cth: DT-01, TB-ABADI-01)</label><input class="form-control" id="p_cfg_unit_id" value="${escapeHtml(item?.unit_id || '')}" ${item ? 'readonly' : ''}></div>
-          <div class="form-group"><label>Nama Unit</label><input class="form-control" id="p_cfg_unit_name" value="${escapeHtml(item?.unit_name || '')}"></div>
-          <div class="form-group"><label>Model Unit</label><input class="form-control" id="p_cfg_unit_model" value="${escapeHtml(item?.unit_model || '')}"></div>
-          <div class="form-group"><label>Section (maintenance / vessel / field / workshop)</label><input class="form-control" id="p_cfg_section" value="${escapeHtml(item?.section || 'maintenance')}"></div>
-          <div class="form-group"><label>Faktor Unit</label><input type="number" step="0.05" class="form-control" id="p_cfg_unit_factor" value="${escapeHtml(item?.unit_factor ?? 1.0)}"></div>
-          <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+        box.innerHTML = blokRumahTarget + `
+          <div class="form-row">
+            <div class="form-group"><label>Kode Unit (unit_id, cth: DT-01, TB-ABADI-01) *</label><input class="form-control" id="p_cfg_unit_id" value="${escapeHtml(item?.unit_id || '')}" ${item ? 'readonly' : ''}></div>
+            <div class="form-group"><label>Nama Unit *</label><input class="form-control" id="p_cfg_unit_name" value="${escapeHtml(item?.unit_name || '')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Model Unit</label><input class="form-control" id="p_cfg_unit_model" value="${escapeHtml(item?.unit_model || '')}"></div>
+            <div class="form-group"><label>Section (field / workshop / maintenance / vessel)</label><input class="form-control" id="p_cfg_section" value="${escapeHtml(item?.section || 'maintenance')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Faktor Unit</label><input type="number" step="0.05" class="form-control" id="p_cfg_unit_factor" value="${escapeHtml(item?.unit_factor ?? 1.0)}"></div>
+            <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+          </div>
         `;
       } else if (t === 'component') {
-        box.innerHTML = `
-          <div class="form-group"><label>ID Komponen (cth: COM-001)</label><input class="form-control" id="p_cfg_component_id" value="${escapeHtml(item?.component_id || '')}" ${item ? 'readonly' : ''}></div>
-          <div class="form-group"><label>Nama Komponen</label><input class="form-control" id="p_cfg_component_name" value="${escapeHtml(item?.component_name || '')}"></div>
-          <div class="form-group"><label>Kategori / Section</label><input class="form-control" id="p_cfg_category" value="${escapeHtml(item?.category || item?.section || 'General')}"></div>
-          <div class="form-group"><label>Base Points</label><input type="number" step="0.05" class="form-control" id="p_cfg_base_points" value="${escapeHtml(item?.base_points ?? 1.25)}"></div>
-          <div class="form-group"><label>Target Jam</label><input type="number" step="0.25" class="form-control" id="p_cfg_target_hours" value="${escapeHtml(item?.target_hours ?? 2.0)}"></div>
-          <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+        box.innerHTML = blokRumahTarget + `
+          <div class="form-row">
+            <div class="form-group"><label>ID Komponen (cth: COM-001) *</label><input class="form-control" id="p_cfg_component_id" value="${escapeHtml(item?.component_id || '')}" ${item ? 'readonly' : ''}></div>
+            <div class="form-group"><label>Nama Komponen *</label><input class="form-control" id="p_cfg_component_name" value="${escapeHtml(item?.component_name || '')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Kategori / Section</label><input class="form-control" id="p_cfg_category" value="${escapeHtml(item?.category || item?.section || 'General')}"></div>
+            <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Base Points</label><input type="number" step="0.05" class="form-control" id="p_cfg_base_points" value="${escapeHtml(item?.base_points ?? 1.25)}"></div>
+            <div class="form-group"><label>Target Jam</label><input type="number" step="0.25" class="form-control" id="p_cfg_target_hours" value="${escapeHtml(item?.target_hours ?? 2.0)}"></div>
+          </div>
         `;
       } else if (t === 'job') {
-        box.innerHTML = `
-          <div class="form-group"><label>Job ID (cth: JOB-001)</label><input class="form-control" id="p_cfg_job_id" value="${escapeHtml(item?.job_id || '')}" ${item ? 'readonly' : ''}></div>
-          <div class="form-group"><label>Section (maintenance / vessel / field / workshop)</label><input class="form-control" id="p_cfg_section" value="${escapeHtml(item?.section || 'maintenance')}"></div>
-          <div class="form-group"><label>Model Unit (opsional)</label><input class="form-control" id="p_cfg_unit_model" value="${escapeHtml(item?.unit_model || '')}"></div>
-          <div class="form-group"><label>Komponen Utama</label><input class="form-control" id="p_cfg_component" value="${escapeHtml(item?.component || 'General')}"></div>
-          <div class="form-group"><label>Sub-Komponen</label><input class="form-control" id="p_cfg_sub_component" value="${escapeHtml(item?.sub_component || 'Standard')}"></div>
-          <div class="form-group"><label>Deskripsi Pekerjaan</label><input class="form-control" id="p_cfg_job_description" value="${escapeHtml(item?.job_description || '')}"></div>
-          <div class="form-group"><label>Plan Hours (Target Jam)</label><input type="number" step="0.25" class="form-control" id="p_cfg_plan_hours" value="${escapeHtml(item?.plan_hours ?? 2.0)}"></div>
-          <div class="form-group"><label>Base Point</label><input type="number" step="0.05" class="form-control" id="p_cfg_base_point" value="${escapeHtml(item?.base_point ?? 1.25)}"></div>
-          <div class="form-group"><label>Job Type (Preventive / Corrective / Overhaul)</label><input class="form-control" id="p_cfg_job_type" value="${escapeHtml(item?.job_type || 'Preventive')}"></div>
+        box.innerHTML = blokRumahTarget + `
+          <div class="form-row">
+            <div class="form-group"><label>Job ID (cth: JOB-001) *</label><input class="form-control" id="p_cfg_job_id" value="${escapeHtml(item?.job_id || '')}" ${item ? 'readonly' : ''}></div>
+            <div class="form-group"><label>Section (field / workshop / maintenance / vessel) *</label><input class="form-control" id="p_cfg_section" value="${escapeHtml(item?.section || 'maintenance')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Komponen Utama *</label><input class="form-control" id="p_cfg_component" value="${escapeHtml(item?.component || 'General')}"></div>
+            <div class="form-group"><label>Sub-Komponen</label><input class="form-control" id="p_cfg_sub_component" value="${escapeHtml(item?.sub_component || 'Standard')}"></div>
+          </div>
+          <div class="form-group"><label>Deskripsi Pekerjaan *</label><input class="form-control" id="p_cfg_job_description" value="${escapeHtml(item?.job_description || '')}"></div>
+          <div class="form-row">
+            <div class="form-group"><label>Plan Hours (Target Jam)</label><input type="number" step="0.25" class="form-control" id="p_cfg_plan_hours" value="${escapeHtml(item?.plan_hours ?? 2.0)}"></div>
+            <div class="form-group"><label>Base Point</label><input type="number" step="0.05" class="form-control" id="p_cfg_base_point" value="${escapeHtml(item?.base_point ?? 1.25)}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Model Unit (opsional)</label><input class="form-control" id="p_cfg_unit_model" value="${escapeHtml(item?.unit_model || '')}"></div>
+            <div class="form-group"><label>Job Type (Preventive / Corrective / Overhaul)</label><input class="form-control" id="p_cfg_job_type" value="${escapeHtml(item?.job_type || 'Preventive')}"></div>
+          </div>
           <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
         `;
       } else if (t === 'factor') {
-        box.innerHTML = `
-          <div class="form-group"><label>Tipe Faktor (work_condition / timeliness / safety / mtbf / rate / golongan)</label><input class="form-control" id="p_cfg_factor_type" value="${escapeHtml(item?.factor_type || 'work_condition')}"></div>
-          <div class="form-group"><label>Key (cth: normal, difficult, extreme, on_time, late, junior)</label><input class="form-control" id="p_cfg_key" value="${escapeHtml(item?.key || '')}"></div>
-          <div class="form-group"><label>Nilai Angka (Value)</label><input type="number" step="0.01" class="form-control" id="p_cfg_value" value="${escapeHtml(item?.value ?? 1.0)}"></div>
-          <div class="form-group"><label>Keterangan</label><input class="form-control" id="p_cfg_description" value="${escapeHtml(item?.description || '')}"></div>
+        box.innerHTML = blokRumahTarget + `
+          <div class="form-row">
+            <div class="form-group"><label>Tipe Faktor (work_condition / timeliness / safety / mtbf / rate / golongan) *</label><input class="form-control" id="p_cfg_factor_type" value="${escapeHtml(item?.factor_type || 'work_condition')}"></div>
+            <div class="form-group"><label>Key (cth: normal, difficult, extreme, on_time, late, junior) *</label><input class="form-control" id="p_cfg_key" value="${escapeHtml(item?.key || '')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Nilai Angka (Value) *</label><input type="number" step="0.01" class="form-control" id="p_cfg_value" value="${escapeHtml(item?.value ?? 1.0)}"></div>
+            <div class="form-group"><label>Keterangan</label><input class="form-control" id="p_cfg_description" value="${escapeHtml(item?.description || '')}"></div>
+          </div>
         `;
       }
       document.getElementById('modalConfigPusat').classList.remove('hidden');
@@ -1317,8 +1481,10 @@
     }
 
     async function simpanConfigPusat() {
-      const rumah = document.getElementById('filterRumahConfig').value || 'kmbprojek';
-      const adminToken = document.getElementById('inputAdminTokenConfig').value.trim() || TOKEN_ADMIN_PER_RUMAH[rumah] || '';
+      const rumahEl = document.getElementById('p_cfg_rumah');
+      const rFilter = document.getElementById('filterRumahConfig').value;
+      const rumah = (rumahEl && rumahEl.value) ? rumahEl.value : ((rFilter && rFilter !== 'semua') ? rFilter : 'sum');
+      const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminTokenConfig').value.trim() || document.getElementById('inputAdminToken').value.trim() || '';
       const t = SUB_TAB_CFG;
       const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
       let payload = {};
@@ -1345,6 +1511,7 @@
         const data = await res.json();
         if (data.success) {
           tutupModalConfigPusat();
+          tampilPesanConfig(`Item config ${t.toUpperCase()} berhasil disimpan di kamar ${rumah}.`, true);
           await muatDataConfigPusat();
         } else {
           alert('Gagal menyimpan config: ' + (data.error || 'Galat server'));
@@ -1354,10 +1521,11 @@
       }
     }
 
-    async function hapusConfigPusat(jenis, kunci) {
-      const rumah = document.getElementById('filterRumahConfig').value || 'kmbprojek';
-      if (!confirm(`Hapus item config ${jenis} "${kunci}" dari rumah ${rumah}?`)) return;
-      const adminToken = document.getElementById('inputAdminTokenConfig').value.trim() || TOKEN_ADMIN_PER_RUMAH[rumah] || '';
+    async function hapusConfigPusat(rumahItem, jenis, kunci) {
+      const rFilter = document.getElementById('filterRumahConfig').value;
+      const rumah = (rumahItem && rumahItem !== 'semua') ? rumahItem : ((rFilter && rFilter !== 'semua') ? rFilter : 'sum');
+      if (!confirm(`Hapus item config ${jenis} "${kunci}" dari sistem/rumah ${rumah}?`)) return;
+      const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminTokenConfig').value.trim() || document.getElementById('inputAdminToken').value.trim() || '';
       try {
         const res = await fetch('/saklar/api/config/hapus', {
           method: 'POST',
@@ -1370,6 +1538,7 @@
         });
         const data = await res.json();
         if (data.success) {
+          tampilPesanConfig(`Item config ${jenis.toUpperCase()} (${kunci}) berhasil dihapus dari kamar ${rumah}.`, true);
           await muatDataConfigPusat();
         } else {
           alert('Gagal menghapus config: ' + (data.error || 'Galat server'));

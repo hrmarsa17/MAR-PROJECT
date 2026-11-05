@@ -12,6 +12,33 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $ ... END $;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+---
+
 ### 2026-11-05 · Raka (+ AI) · bersama (Pemusatan Config & User Management ke Panel Saklar Pusat & Proteksi 403 L1/L2 Web Desktop)
 - Berubah:
   - **Proteksi Akses 403 pada /web?page=users dan /web?page=config**:

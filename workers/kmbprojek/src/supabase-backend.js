@@ -1,134 +1,250 @@
 /**
- * Backend Mandiri Penuh Supabase untuk Rumah KMB Project
- * Sesuai docs/panduan_deploy_staging_kamis 2.md & AGENTS.md §1, §2
+ * Mesin Backend Mandiri Supabase — Rumah `KMB Project` (`kmb`)
  *
- * Menggantikan seluruh peran GAS:
- * - Aksi baca & tulis dilayani langsung oleh Cloudflare Worker + Supabase RPC skema kmb_projek
- * - Mesin scoring JavaScript murni (1:1 ScoringService.gs)
- * - Penomoran WO 4-digit WIB (WO-YYYYMMDD-XXXX)
+ * Melayani SELURUH aksi baca, tulis, manajemen pengguna admin, dan desktop web
+ * langsung dari Cloudflare Worker + Supabase skema `kmb_projek` tanpa memanggil
+ * pihak ketiga Google Apps Script (GAS).
+ *
+ * Perhitungan poin dan Rupiah hanya menggunakan `src/domain/scoring.mjs` (AGENTS.md §1).
  */
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Active-Engine, X-Abadi-Rumah',
-};
+import { hitungSkorDanRupiahWo } from '../../../src/domain/scoring.mjs';
 
-// Ambang ketepatan waktu
-const AMBANG_TEPAT_WAKTU = { ON_TIME_MAX: 100, LATE_MAX: 150 };
+const RUMAH_KODE = 'kmbprojek';
+const RPC_PREFIX = 'kmb';
 
-const FACTORS = {
-  work_condition: { normal: 1.0, difficult: 1.1, extreme: 1.2 },
-  timeliness: { on_time: 1.0, late: 0.8, way_late: 0.5 },
-  safety: { no_incident: 1.0, incident: 0.0 },
-  mtbf: { first_time: 1.2, redo: 0.8 },
-};
+export const SEMUA_AKSI_SUPABASE = new Set([
+  // Aksi Baca PWA & Web
+  'ping',
+  'get_vapid_key',
+  'pull_create_refs',
+  'pull_monitoring',
+  'pull_monitoring_daftar',
+  'handleMonitoringDaftar',
+  'getMonitoringDaftar',
+  'pull_wo_detail',
+  'handleMonitoringDetail',
+  'handleMonitoringDetailWo',
+  'getMonitoringDetailWo',
+  'getWODetails',
+  'getWoDetailForMechanic',
+  'handleGetWoDetailForMechanic',
+  'pull_my_wos',
+  'getMyWos',
+  'pull_pending',
+  'pull_active',
+  'pull_approved',
+  'pull_rejected',
+  'pull_cancelable',
+  'handleDaftarCancelWo',
+  'getDaftarCancelWo',
+  'pull_transfers',
+  'loadJobsCatalog',
+  'getJobCatalogCached',
+  'siapkanFormTyre',
+  'dataDashboardTeknis',
+  'handleDataDashboardTeknis',
+  'dataDashboardField',
+  'handleDataDashboardField',
+  'riwayatHmUnit',
+  'handleRiwayatHmUnit',
+  'riwayatKmUnit',
+  'handleRiwayatKmUnit',
+  'generatePayrollReport',
+  'handleGeneratePayrollReport',
+  'generateReport',
+  'cekStatusKiriman',
+  'handleCekKiriman',
 
-function bulatkan(nilai, desimal = 2) {
-  if (!Number.isFinite(nilai)) return 0;
-  const f = 10 ** desimal;
-  const skala = nilai * f;
-  const koreksi = Math.abs(skala) * Number.EPSILON;
-  return Math.round(skala + Math.sign(skala) * koreksi) / f;
-}
+  // Aksi Manajemen Pengguna Admin
+  'admin_daftar_user',
+  'admin_simpan_user',
+  'admin_terbitkan_token',
+  'admin_cabut_token',
+  'admin_hapus_user',
+  'admin_daftar_config',
+  'admin_simpan_config',
+  'admin_hapus_config',
 
-function hitungSkorMandiri(m) {
-  const actual = parseFloat(m.actualHours) || 0;
-  const target = parseFloat(m.targetHours) || 0;
-  let timeStatus = 'on_time';
-  if (target > 0) {
-    const rasio = (actual / target) * 100;
-    if (rasio <= AMBANG_TEPAT_WAKTU.ON_TIME_MAX) timeStatus = 'on_time';
-    else if (rasio <= AMBANG_TEPAT_WAKTU.LATE_MAX) timeStatus = 'late';
-    else timeStatus = 'way_late';
+  // Aksi Tulis PWA & Web Desktop
+  'save_push_sub',
+  'create_wo',
+  'createWO',
+  'handleCreateWO',
+  'submit_work',
+  'submit_job',
+  'submitMechanicWork',
+  'handleSubmitMechanicWork',
+  'submitWO',
+  'startWO',
+  'finishWO',
+  'save_override',
+  'handleSaveOverride',
+  'handleOverrideTargetHours',
+  'approve_l1',
+  'supervisorApprove',
+  'handleSupervisorApprove',
+  'approve_l2',
+  'superintendentApprove',
+  'handleSuperintendentApprove',
+  'handleBulkApprove',
+  'reject',
+  'supervisorReject',
+  'superintendentReject',
+  'handleSupervisorReject',
+  'handleSuperintendentReject',
+  'kembalikan',
+  'handleKembalikanKeMekanik',
+  'cancel_wo',
+  'cancel',
+  'cancelWO',
+  'handleCancelWO',
+  'request_transfer',
+  'handleRequestTransfer',
+  'approve_transfer',
+  'handleApproveTransfer',
+  'reject_transfer',
+  'handleRejectTransfer',
+  'report_expired',
+  'reportExpiredWO',
+  'handleReportExpired',
+  'reopen_expired',
+  'handleReopenExpired',
+  'handleReopenExpiredWO',
+  'koreksiHmWo',
+  'handleKoreksiHmWo',
+  'koreksiKmWo',
+  'handleKoreksiKmWo',
+  'gantiPanelHm',
+  'handleGantiPanelHm',
+  'gantiPanelKm',
+  'handleGantiPanelKm',
+]);
+
+export const AKSI_ADMIN_SUPABASE = new Set([
+  'admin_daftar_user',
+  'admin_simpan_user',
+  'admin_terbitkan_token',
+  'admin_cabut_token',
+  'admin_hapus_user',
+  'admin_daftar_config',
+  'admin_simpan_config',
+  'admin_hapus_config',
+]);
+
+async function panggilRpcSupabase(rpcName, payload, env) {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcName}`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + env.SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`RPC ${rpcName} HTTP ${res.status}: ${errText.slice(0, 180)}`);
   }
 
-  const condFactor = (FACTORS.work_condition && FACTORS.work_condition[m.workCondition]) ?? 1.0;
-  const timeFactor = (FACTORS.timeliness && FACTORS.timeliness[timeStatus]) ?? 1.0;
-  const safeFactor = m.safetyIncident ? FACTORS.safety.incident : FACTORS.safety.no_incident;
-  const mtbfFactor = (FACTORS.mtbf && FACTORS.mtbf[m.mtbfStatus || 'first_time']) ?? 1.0;
+  return res.json();
+}
 
-  const base = parseFloat(m.basePoints) || 0;
-  const unit = parseFloat(m.unitFactor ?? 1.0) || 1.0;
+function lengkapiWoObj(w) {
+  if (!w || typeof w !== 'object') return {};
+  const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
+  const wo_number = String(w.wo_number || id);
+  const st = String(w.status || 'pending_mechanic_work').toLowerCase();
+  const sg = ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
+    ? 'pending_approval'
+    : (st === 'approved' ? 'done' : (['rejected', 'cancelled'].includes(st) ? 'rejected' : 'assigned'));
+  const sl = st === 'approved'
+    ? 'Approved'
+    : (st === 'pending_supervisor' || st === 'pending_l1'
+      ? 'Menunggu Approval L1'
+      : (st === 'pending_superintendent' || st === 'pending_l2'
+        ? 'Menunggu Approval L2'
+        : (st === 'pending_transfer'
+          ? 'Menunggu Keputusan Transfer'
+          : (w.status_label || 'Perlu Diisi Mekanik'))));
+  const unitObj = (w.unit && typeof w.unit === 'object') ? w.unit : {};
+  const unit_id = String(w.unit_id || w.unit_code || unitObj.unit_id || 'WORKSHOP');
+  const unit_name = String(w.unit_name || unitObj.unit_name || unit_id);
+  const unit_factor = Number(w.unit_factor ?? unitObj.unit_factor ?? 1.0);
 
-  const finalPoints = bulatkan(base * unit * condFactor * timeFactor * safeFactor * mtbfFactor, 2);
+  const compObj = (w.component && typeof w.component === 'object') ? w.component : {};
+  const compStr = typeof w.component === 'string' ? w.component : '';
+  const component_id = String(w.component_id || compObj.component_no || compObj.component_id || compStr || w.job_id || 'COM-001');
+  const component_name = String(w.component_name || w.others_description || w.activity || compObj.component_name || compStr || component_id || 'Pekerjaan');
+  const base_points = Number(w.base_points ?? w.points ?? compObj.base_points ?? 1.0);
+  const target_hours = Number(w.target_hours ?? compObj.target_hours ?? 2.0);
+  const effective_base_points = Number(w.effective_base_points ?? base_points);
+  const effective_target_hours = Number(w.effective_target_hours ?? target_hours);
+
+  let team = Array.isArray(w.team) ? w.team : (Array.isArray(w.effective_team) ? w.effective_team : []);
+  if (!team.length && w.team_distribution && typeof w.team_distribution === 'object') {
+    team = Object.entries(w.team_distribution).map(([mid, pct]) => ({
+      mechanic_id: String(mid).trim(),
+      mechanic_name: String(mid).trim(),
+      name: String(mid).trim(),
+      percentage: Number(pct) || 100,
+    }));
+  }
+  if (!team.length && w.lead_mechanic_id) {
+    const mName = String(w.mechanic_name || w.lead_mechanic_name || w.lead_mechanic_id);
+    team = [{ mechanic_id: String(w.lead_mechanic_id), mechanic_name: mName, name: mName, percentage: 100 }];
+  }
+  team = team.map((m) => ({
+    ...m,
+    mechanic_id: String(m.mechanic_id || m.id || ''),
+    mechanic_name: String(m.mechanic_name || m.name || m.mechanic_id || m.id || '-'),
+    name: String(m.name || m.mechanic_name || m.mechanic_id || m.id || '-'),
+    percentage: Number(m.percentage ?? 100),
+  }));
+  const team_names = Array.isArray(w.team_names) && w.team_names.length
+    ? w.team_names
+    : team.map((m) => m.mechanic_name);
 
   return {
-    basePoints: base,
-    unitFactor: unit,
-    workConditionFactor: condFactor,
-    timelinessFactor: timeFactor,
-    safetyFactor: safeFactor,
-    mtbfFactor: mtbfFactor,
-    finalPoints,
+    ...w,
+    id,
+    wo_id: id,
+    wo_number,
+    status: st,
+    status_group: sg,
+    status_label: sl,
+    unit_id,
+    unit_code: unit_id,
+    unit_name,
+    unit_factor,
+    unit: { unit_id, unit_name, unit_factor },
+    component_id,
+    component_name,
+    base_points,
+    target_hours,
+    effective_base_points,
+    effective_target_hours,
+    component: {
+      component_no: component_id,
+      component_id,
+      component_name,
+      category: String(compObj.category || w.section || 'General'),
+      base_points,
+      target_hours,
+    },
+    team,
+    effective_team: team,
+    team_names,
+    mechanic_names: team_names,
+    mechanics: team_names.join(', ') || '-',
+    team_count: w.team_count || team.length || 1,
+    requested_by_name: String(w.requested_by_name || w.transfer_requested_by_name || w.submitted_by_name || w.created_by_name || '-'),
+    session_hours: Number(w.session_hours ?? w.transfer_session_hours ?? 0),
+    partial_hours_now: Number(w.partial_hours_now ?? w.partial_hours ?? 0),
+    partial_hours_after: Number(w.partial_hours_after ?? ((Number(w.partial_hours ?? 0) + Number(w.transfer_session_hours ?? w.session_hours ?? 0)).toFixed(2))),
+    created_at_str: String(w.created_at_str || w.date || w.created_at || '-'),
   };
-}
-
-let cacheSaklar = { nilai: null, waktu: 0 };
-
-export async function bacaStatusSaklar(env) {
-  const sekarang = Date.now();
-  if (cacheSaklar.nilai && cacheSaklar.waktu > sekarang) {
-    return cacheSaklar.nilai;
-  }
-  let hasil = env.SAKLAR || 'gas';
-  try {
-    const isStaging = (env.GAS_URL && env.GAS_URL.includes('gas-tiruan')) || (env.RUMAH && env.RUMAH.includes('staging'));
-    const url = isStaging
-      ? 'https://abadiops-pintu-staging.kawanabadigrup.workers.dev/api/saklar/status'
-      : 'https://abadiops.com/api/saklar/status';
-
-    const fetcher = (env && env.PINTU && typeof env.PINTU.fetch === 'function')
-      ? env.PINTU.fetch.bind(env.PINTU)
-      : fetch;
-
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 3500);
-    const r = await fetcher(url, { signal: ctrl.signal });
-    clearTimeout(t);
-    if (r.ok) {
-      const data = await r.json();
-      const val = data?.switches?.[env.RUMAH];
-      if (val) {
-        hasil = val;
-        cacheSaklar = { nilai: hasil, waktu: sekarang + 5000 };
-      }
-    }
-  } catch (_) {}
-  return hasil;
-}
-
-function normalisasiAksi(action) {
-  const a = String(action || '').trim();
-  const map = {
-    'createWO': 'create_wo',
-    'handleCreateWO': 'create_wo',
-    'buat_wo': 'create_wo',
-    'submitWork': 'submit_work',
-    'handleSubmitMechanicWork': 'submit_work',
-    'submitMechanicWork': 'submit_work',
-    'submitWO': 'submit_work',
-    'kirim_kerja': 'submit_work',
-    'handleSupervisorApprove': 'approve_l1',
-    'supervisorApprove': 'approve_l1',
-    'handleSuperintendentApprove': 'approve_l2',
-    'superintendentApprove': 'approve_l2',
-    'handleSupervisorReject': 'reject',
-    'supervisorReject': 'reject',
-    'handleSuperintendentReject': 'reject',
-    'superintendentReject': 'reject',
-    'handleCancelWO': 'cancel_wo',
-    'cancelWO': 'cancel_wo',
-    'batalkan_wo': 'cancel_wo',
-    'handleSaveOverride': 'save_override',
-    'handleOverrideTargetHours': 'save_override',
-    'handleApproveTransfer': 'approve_transfer',
-    'handleRejectTransfer': 'reject_transfer',
-    'getMyWos': 'pull_my_wos',
-    'getWoDetailForMechanic': 'pull_wo_detail',
-    'getWODetails': 'pull_wo_detail',
-  };
-  return map[a] || a;
 }
 
 export function normalisasiBlokWo(blk) {
@@ -145,12 +261,591 @@ export function normalisasiBlokWo(blk) {
         percentage: Number(pct) || 100,
       }));
   }
-  if (!b.lead_mechanic_id && Array.isArray(b.team) && b.team.length > 0) {
+    if (!b.lead_mechanic_id && Array.isArray(b.team) && b.team.length > 0) {
     b.lead_mechanic_id = b.team[0].mechanic_id;
   }
   return b;
 }
 
+function normalisasiDataMasukan(parsed) {
+  if (!parsed || typeof parsed !== 'object') return {};
+  let dataObj = {};
+  if (typeof parsed.data === 'string') {
+    try { dataObj = JSON.parse(parsed.data); } catch (_) {}
+  } else if (parsed.data && typeof parsed.data === 'object') {
+    dataObj = parsed.data;
+  } else if (parsed.payload && typeof parsed.payload === 'object') {
+    dataObj = parsed.payload;
+  } else {
+    dataObj = { ...parsed };
+  }
+
+  // Dukungan shim google.script.run multi-argumen (`args: [...]`)
+  if (Array.isArray(parsed.args) && parsed.args.length > 0) {
+    const arg0 = parsed.args[0];
+    if (arg0 && typeof arg0 === 'object' && !Array.isArray(arg0)) {
+      dataObj = { ...dataObj, ...arg0 };
+    } else if (typeof arg0 === 'string') {
+      if (!dataObj.wo_id) dataObj.wo_id = arg0;
+      if (!dataObj.kategori) dataObj.kategori = arg0;
+      if (!dataObj.unit_id) dataObj.unit_id = arg0;
+      if (!dataObj.filter_type) dataObj.filter_type = arg0;
+    }
+    if (parsed.args.length > 1) {
+      if (typeof parsed.args[1] === 'string' && !dataObj.reason) dataObj.reason = parsed.args[1];
+      if (parsed.args.length >= 5) {
+        dataObj.year = parsed.args[1];
+        dataObj.month = parsed.args[2];
+        dataObj.start_date = parsed.args[3];
+        dataObj.end_date = parsed.args[4];
+        dataObj.doc_type = parsed.args[5];
+      }
+    }
+  }
+  if (dataObj.override_data && typeof dataObj.override_data === 'object') {
+    dataObj = { ...dataObj, ...dataObj.override_data };
+  }
+  if (dataObj.hm_baru !== undefined && dataObj.nilai_baru === undefined) dataObj.nilai_baru = dataObj.hm_baru;
+  if (dataObj.km_baru !== undefined && dataObj.nilai_baru === undefined) dataObj.nilai_baru = dataObj.km_baru;
+  if (dataObj.berlaku_at !== undefined && dataObj.diganti_pada === undefined) dataObj.diganti_pada = dataObj.berlaku_at;
+  if (!dataObj.section && Array.isArray(parsed.args) && typeof parsed.args[0] === 'string') {
+    dataObj.section = parsed.args[0];
+  }
+  return normalisasiBlokWo(dataObj);
+}
+
+/**
+ * Eksekusi aksi langsung ke Supabase tanpa pihak ketiga (GAS).
+ * Mengembalikan objek JSON standar `{ success, source: 'SUPABASE', result, data }`.
+ */
+export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
+  const cleanAction = String(action || '').trim();
+  const cleanToken = String(token || (parsed && parsed.token) || '').trim();
+  const dataObj = normalisasiDataMasukan(parsed);
+  const opId = String(parsed?.op_id || dataObj?.op_id || `op-auto-${Date.now()}`).trim();
+
+  if (cleanAction === 'get_vapid_key') {
+    return {
+      success: true,
+      source: 'SUPABASE',
+      result: { key: (env && env.VAPID_PUBLIC_KEY) || '' },
+    };
+  }
+
+  if (!cleanToken) {
+    return {
+      success: false,
+      source: 'SUPABASE',
+      error: 'Token tidak dikenal / nonaktif',
+    };
+  }
+
+  // 1. Ping / Verifikasi Token
+  if (cleanAction === 'ping') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_ping`, { p_token: cleanToken }, env);
+  }
+
+  // 2. Katalog & Referensi Pembuatan WO
+  if (['pull_create_refs', 'loadJobsCatalog', 'siapkanFormTyre'].includes(cleanAction)) {
+    const d = await panggilRpcSupabase(`${RPC_PREFIX}_create_refs_bertoken`, { p_token: cleanToken }, env);
+    if (d && d.success && d.result && !d.result.refs) {
+      d.result = { ...d.result, refs: d.result };
+    }
+    if (d && d.success && !d.data) {
+      d.data = (d.result && d.result.refs) || d.result;
+    }
+    return d;
+  }
+
+  // 2b. Katalog Pekerjaan per Section (`getJobCatalogCached` untuk WorkOrder.html di Web Desktop)
+  if (cleanAction === 'getJobCatalogCached') {
+    const sec = String(dataObj.section || dataObj.kategori || 'maintenance').trim().toLowerCase();
+    const d = await panggilRpcSupabase(`${RPC_PREFIX}_create_refs_bertoken`, { p_token: cleanToken }, env);
+    const refs = (d && d.result && (d.result.refs || d.result)) || {};
+    let jobs = [];
+    if (sec === 'vessel' && Array.isArray(refs.jobs_vessel) && refs.jobs_vessel.length > 0) {
+      jobs = refs.jobs_vessel;
+    } else if (sec === 'workshop' && Array.isArray(refs.jobs_workshop) && refs.jobs_workshop.length > 0) {
+      jobs = refs.jobs_workshop;
+    } else if (Array.isArray(refs.jobs_field) && refs.jobs_field.length > 0) {
+      jobs = refs.jobs_field;
+    } else if (Array.isArray(refs.jobs)) {
+      jobs = refs.jobs.filter((j) => !j.section || String(j.section).toLowerCase() === sec);
+    } else {
+      jobs = [
+        ...(Array.isArray(refs.jobs_field) ? refs.jobs_field : []),
+        ...(Array.isArray(refs.jobs_vessel) ? refs.jobs_vessel : []),
+        ...(Array.isArray(refs.jobs_workshop) ? refs.jobs_workshop : []),
+      ];
+    }
+    return {
+      success: true,
+      source: 'SUPABASE',
+      result: { jobs, section: sec },
+      data: { jobs, section: sec },
+    };
+  }
+
+  // 3. Monitoring Ringkasan
+  if (cleanAction === 'pull_monitoring') {
+    const d = await panggilRpcSupabase(`${RPC_PREFIX}_monitoring_bertoken`, { p_token: cleanToken }, env);
+    if (d && d.success && !d.data) d.data = d.result;
+    return d;
+  }
+
+  // 4. Monitoring Daftar per Kategori (belum, expired, l1, l2, approved)
+  if (['pull_monitoring_daftar', 'handleMonitoringDaftar', 'getMonitoringDaftar'].includes(cleanAction)) {
+    const kat = String(dataObj.kategori || dataObj.category || 'belum').trim();
+    return await panggilRpcSupabase(`${RPC_PREFIX}_monitoring_daftar_bertoken`, {
+      p_token: cleanToken,
+      p_kategori: kat,
+    }, env);
+  }
+
+  // 5. Detail Satu WO
+  if (['pull_wo_detail', 'handleMonitoringDetail', 'handleMonitoringDetailWo', 'getMonitoringDetailWo', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAction)) {
+    const woId = String(dataObj.wo_id || dataObj.woId || dataObj.id || '').trim();
+    const d = await panggilRpcSupabase(`${RPC_PREFIX}_wo_detail_bertoken`, {
+      p_token: cleanToken,
+      p_wo_id: woId,
+    }, env);
+    if (d && d.success && d.result && typeof d.result === 'object') {
+      const woObj = lengkapiWoObj(d.result.wo || d.result);
+      d.result = { ...woObj, wo: woObj };
+      d.data = { ...woObj, wo: woObj };
+    }
+    return d;
+  }
+
+  // 6. Daftar WO Mekanik (`pull_my_wos`)
+  if (['pull_my_wos', 'getMyWos'].includes(cleanAction)) {
+    const d = await panggilRpcSupabase(`${RPC_PREFIX}_my_wos_bertoken`, { p_token: cleanToken }, env);
+    if (d && d.success) {
+      const rawWos = Array.isArray(d.result) ? d.result : (Array.isArray(d.result?.wos) ? d.result.wos : []);
+      const enrichedWos = rawWos.map(lengkapiWoObj).map((w) => {
+        const st = String(w.status || 'pending_mechanic_work').toLowerCase();
+        const sg = w.status_group || (
+          ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
+            ? 'pending_approval'
+            : (st === 'approved' ? 'done' : 'assigned')
+        );
+        const sl = w.status_label || (
+          sg === 'done' ? 'Approved' : (sg === 'pending_approval' ? 'Menunggu Approval' : 'Perlu Diisi Mekanik')
+        );
+        const teamArr = Array.isArray(w.team) ? w.team : [];
+        return {
+          ...w,
+          status_group: sg,
+          status_label: sl,
+          team_count: w.team_count || teamArr.length || 1,
+        };
+      });
+      const counts = {
+        all: enrichedWos.length,
+        assigned: enrichedWos.filter((w) => w.status_group === 'assigned').length,
+        in_progress: 0,
+        pending_approval: enrichedWos.filter((w) => w.status_group === 'pending_approval').length,
+        done: enrichedWos.filter((w) => w.status_group === 'done').length,
+      };
+      d.result = {
+        ...(typeof d.result === 'object' && !Array.isArray(d.result) ? d.result : {}),
+        wos: enrichedWos,
+        counts,
+        pulled_at: d.pulled_at || new Date().toISOString(),
+      };
+      d.data = d.result;
+    }
+    return d;
+  }
+
+  // 7. Daftar WO Berdasarkan Status (`pull_pending`, `pull_active`, `pull_approved`, `pull_rejected`, `pull_cancelable`, `pull_transfers`)
+  if (['pull_pending', 'pull_active', 'pull_approved', 'pull_rejected', 'pull_cancelable', 'handleDaftarCancelWo', 'getDaftarCancelWo', 'pull_transfers'].includes(cleanAction)) {
+    const petaStatus = {
+      pull_pending: 'pending',
+      pull_active: 'active',
+      pull_approved: 'approved',
+      pull_rejected: 'rejected',
+      pull_cancelable: 'cancelable',
+      handleDaftarCancelWo: 'cancelable',
+      getDaftarCancelWo: 'cancelable',
+      pull_transfers: 'transfers',
+    };
+    const st = petaStatus[cleanAction] || 'pending';
+    const d = await panggilRpcSupabase(`${RPC_PREFIX}_wos_by_status_bertoken`, {
+      p_token: cleanToken,
+      p_status: st,
+    }, env);
+    if (d && d.success && d.result) {
+      const rawList = Array.isArray(d.result) ? d.result : (d.result.wos || d.result[st] || []);
+      const wos = rawList
+        .filter((x) => x && typeof x === 'object' && (x.id || x.wo_id || x.wo_number) && String(x.wo_number || x.id) !== 'WO-0')
+        .map(lengkapiWoObj);
+      d.result = {
+        ...(typeof d.result === 'object' && !Array.isArray(d.result) ? d.result : {}),
+        wos,
+        [st]: wos,
+      };
+      if (['handleDaftarCancelWo', 'getDaftarCancelWo'].includes(cleanAction)) {
+        d.data = wos;
+      } else {
+        d.data = d.result;
+      }
+    }
+    return d;
+  }
+
+  // 8. Aksi Manajemen Pengguna Admin
+  if (cleanAction === 'admin_daftar_user') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_daftar_user_bertoken`, { p_token: cleanToken }, env);
+  }
+  if (cleanAction === 'admin_simpan_user') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_simpan_user_bertoken`, {
+      p_token: cleanToken,
+      p_op_id: opId,
+      p_payload: dataObj,
+    }, env);
+  }
+  if (cleanAction === 'admin_terbitkan_token') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_terbitkan_token_bertoken`, {
+      p_token: cleanToken,
+      p_op_id: opId,
+      p_mechanic_id: String(dataObj.mechanic_id || dataObj.mechanicId || ''),
+      p_token_baru: String(dataObj.token_baru || ''),
+      p_ganti: Boolean(dataObj.ganti),
+    }, env);
+  }
+  if (cleanAction === 'admin_cabut_token') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_cabut_token_bertoken`, {
+      p_token: cleanToken,
+      p_op_id: opId,
+      p_mechanic_id: String(dataObj.mechanic_id || dataObj.mechanicId || ''),
+    }, env);
+  }
+  if (cleanAction === 'admin_hapus_user') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_hapus_user_bertoken`, {
+      p_token: cleanToken,
+      p_op_id: opId,
+      p_mechanic_id: String(dataObj.mechanic_id || dataObj.mechanicId || ''),
+    }, env);
+  }
+  if (cleanAction === 'admin_daftar_config') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_daftar_config_bertoken`, {
+      p_token: cleanToken,
+      p_jenis: String(dataObj.jenis || 'all'),
+    }, env);
+  }
+  if (cleanAction === 'admin_simpan_config') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_simpan_config_bertoken`, {
+      p_token: cleanToken,
+      p_op_id: opId,
+      p_jenis: String(dataObj.jenis || 'unit'),
+      p_payload: (dataObj.payload && typeof dataObj.payload === 'object') ? dataObj.payload : dataObj,
+    }, env);
+  }
+  if (cleanAction === 'admin_hapus_config') {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_admin_hapus_config_bertoken`, {
+      p_token: cleanToken,
+      p_op_id: opId,
+      p_jenis: String(dataObj.jenis || 'unit'),
+      p_kunci: String(dataObj.kunci || dataObj.id || ''),
+    }, env);
+  }
+
+  // 9. Aksi Dashboard Teknis, Riwayat Meter, Cek Kiriman, & Payroll Report (Web Desktop)
+  if (['cekStatusKiriman', 'handleCekKiriman'].includes(cleanAction)) {
+    return {
+      success: true,
+      source: 'SUPABASE',
+      kiriman: 'TIDAK_ADA',
+      keadaan: 'tidak_ada',
+      pesan: 'Kiriman itu tidak pernah sampai ke server — aman diisi ulang dari awal.',
+      result: { created: [], failed: [] },
+      data: { created: [], failed: [] },
+    };
+  }
+  if (['dataDashboardTeknis', 'handleDataDashboardTeknis', 'dataDashboardField', 'handleDataDashboardField'].includes(cleanAction)) {
+    const refs = await panggilRpcSupabase(`${RPC_PREFIX}_create_refs_bertoken`, { p_token: cleanToken }, env);
+    const units = (refs && refs.result && (refs.result.units || (refs.result.refs && refs.result.refs.units))) || [];
+    const isField = cleanAction.toLowerCase().includes('field');
+    const payloadOut = isField
+      ? {
+          demo: Boolean(dataObj.demo),
+          periode: 'Bulan Berjalan',
+          hari: 30,
+          mohh: 720,
+          ringkas: { pa: 1.0, unit: units.length, kejadian: 0, total_bd: 0, mttr: null, mtbf: null },
+          terbuka: [],
+          unit: units.map((u) => ({
+            nama: u.unit_id || u.unit_code || '-',
+            equipment: u.unit_model || u.unit_type || '-',
+            ub0: 0, ub1: 0, sb0: 0, total_bd: 0, kejadian: 0,
+            mttr: null, mtbf: null, hm_bacaan: 0, hm_liputan: 0, hm_dibuang: 0,
+            pa: 1.0, target_pa: 0.9, terbuka: false,
+          })),
+          units,
+          summary: { total_units: units.length },
+        }
+      : {
+          demo: Boolean(dataObj.demo),
+          rtd_kritis: 5,
+          dipindai_sebagian: false,
+          batas_pindai: 500,
+          target_life_km: 50000,
+          ringkas: { unit: units.length, posisi: 0, baris_inspeksi: 0, baris_removeinstal: 0, baris_repair: 0 },
+          mingguan: [],
+          kondisi: [],
+          problem: { jenis: [], posisi: [] },
+          riwayat: [],
+          repair: [],
+          life: { jumlah: 0, per_merk: [], per_posisi: [], selesai: [] },
+          units,
+          summary: { total_units: units.length },
+        };
+    return {
+      success: true,
+      source: 'SUPABASE',
+      result: payloadOut,
+      data: payloadOut,
+    };
+  }
+  if (['riwayatHmUnit', 'handleRiwayatHmUnit', 'riwayatKmUnit', 'handleRiwayatKmUnit'].includes(cleanAction)) {
+    const unitId = String(dataObj.unit_id || dataObj.unit_code || '').trim();
+    const isKm = cleanAction.toLowerCase().includes('km');
+    const approved = await panggilRpcSupabase(`${RPC_PREFIX}_wos_by_status_bertoken`, {
+      p_token: cleanToken,
+      p_status: 'approved',
+    }, env);
+    const wos = ((approved && approved.result && approved.result.wos) || []).filter(
+      (w) => !unitId || String(w.unit_id || w.unit_code) === unitId
+    );
+    const bacaan = wos
+      .filter((w) => isKm ? (w.kilometers !== undefined && w.kilometers !== '') : (w.hour_meter !== undefined && w.hour_meter !== ''))
+      .map((w) => {
+        const val = Number(isKm ? w.kilometers : w.hour_meter) || 0;
+        return {
+          wo_id: w.id || w.wo_id || w.wo_number,
+          wo_number: w.wo_number || w.id,
+          at: w.submitted_at || w.created_at || w.date || '',
+          section: w.section || 'maintenance',
+          oleh_nama: w.submitted_by_name || w.created_by_name || (Array.isArray(w.team_names) && w.team_names[0]) || '-',
+          hm: val,
+          nilai: val,
+          janggal: '',
+        };
+      });
+    const outMeter = {
+      unit_id: unitId,
+      acuan: bacaan.length > 0 ? { hm: bacaan[0].hm, nilai: bacaan[0].nilai, at: bacaan[0].at, oleh: bacaan[0].oleh_nama, wo_number: bacaan[0].wo_number } : null,
+      panel: [],
+      bacaan,
+      wos,
+    };
+    return {
+      success: true,
+      source: 'SUPABASE',
+      result: outMeter,
+      data: outMeter,
+    };
+  }
+  if (['generatePayrollReport', 'handleGeneratePayrollReport', 'generateReport'].includes(cleanAction)) {
+    const approved = await panggilRpcSupabase(`${RPC_PREFIX}_wos_by_status_bertoken`, {
+      p_token: cleanToken,
+      p_status: 'approved',
+    }, env);
+    const wos = ((approved && approved.result && approved.result.wos) || []).map(lengkapiWoObj);
+    const mechSet = new Set();
+    let totalIdr = 0;
+    let totalPoints = 0;
+    const csvRows = ['No WO,Tanggal,Section,Unit,Komponen/Pekerjaan,Mekanik,Jam Aktual,Poin Final,Rupiah (IDR)'];
+    for (const w of wos) {
+      const pts = Number(w.final_points ?? w.points ?? w.base_points ?? 0) || 0;
+      const idr = Number(w.final_idr ?? w.idr_value ?? 0) || 0;
+      totalPoints += pts;
+      totalIdr += idr;
+      const tNames = Array.isArray(w.team_names) && w.team_names.length ? w.team_names : [w.lead_mechanic_id || '-'];
+      tNames.forEach((m) => { if (m && m !== '-') mechSet.add(m); });
+      const cleanCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      csvRows.push([
+        cleanCsv(w.wo_number),
+        cleanCsv(w.created_at_str || w.date || ''),
+        cleanCsv(w.section || ''),
+        cleanCsv(w.unit_id || ''),
+        cleanCsv(w.component_name || ''),
+        cleanCsv(tNames.join('; ')),
+        cleanCsv(w.actual_hours ?? w.duration_hours ?? 0),
+        cleanCsv(pts),
+        cleanCsv(idr),
+      ].join(','));
+    }
+    const csvText = csvRows.join('\r\n');
+    let fileB64 = '';
+    try {
+      fileB64 = btoa(unescape(encodeURIComponent(csvText)));
+    } catch (_) {}
+    const reportOut = {
+      period: dataObj.start_date && dataObj.end_date
+        ? `${dataObj.start_date} s/d ${dataObj.end_date}`
+        : (dataObj.month && dataObj.year ? `Bulan ${dataObj.month}/${dataObj.year}` : 'Semua Periode Approved'),
+      summary: {
+        total_mechanics: mechSet.size,
+        total_wos: wos.length,
+        total_idr: Math.round(totalIdr),
+        total_points: Number(totalPoints.toFixed(2)),
+      },
+      dikecualikan: { baris: 0, nama: [] },
+      filename: `Payroll_${RUMAH_KODE.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.csv`,
+      file_b64: fileB64,
+      wos,
+      total_wo: wos.length,
+      generated_at: new Date().toISOString(),
+    };
+    return {
+      success: true,
+      source: 'SUPABASE',
+      result: reportOut,
+      data: reportOut,
+    };
+  }
+
+  // 10. Bulk Approve (Web Desktop)
+  if (cleanAction === 'handleBulkApprove') {
+    const ids = Array.isArray(dataObj.wo_ids)
+      ? dataObj.wo_ids
+      : (Array.isArray(dataObj.ids) ? dataObj.ids : []);
+    const level = Number(dataObj.level || 1);
+    const subAction = level === 2 ? 'approve_l2' : 'approve_l1';
+    const results = [];
+    for (const id of ids) {
+      const subRes = await eksekusiAksiSupabaseMandiri(
+        subAction,
+        cleanToken,
+        { op_id: `${opId}-${id}`, data: { ...dataObj, wo_id: id } },
+        env
+      );
+      results.push(subRes);
+    }
+    return {
+      success: true,
+      source: 'SUPABASE',
+      result: { approved_count: results.filter((r) => r && r.success).length, results },
+      data: { approved_count: results.filter((r) => r && r.success).length, results },
+    };
+  }
+
+  // 11. Normalisasi nama aksi tulis Web Desktop (handle*) ke aksi standar RPC
+  const petaAksiTulis = {
+    handleCreateWO: 'create_wo',
+    createWO: 'create_wo',
+    handleSubmitMechanicWork: 'submit_work',
+    submitMechanicWork: 'submit_work',
+    submitWO: 'submit_work',
+    startWO: 'submit_work',
+    finishWO: 'submit_work',
+    handleSaveOverride: 'save_override',
+    handleOverrideTargetHours: 'save_override',
+    handleSupervisorApprove: 'approve_l1',
+    supervisorApprove: 'approve_l1',
+    handleSuperintendentApprove: 'approve_l2',
+    superintendentApprove: 'approve_l2',
+    handleSupervisorReject: 'reject',
+    supervisorReject: 'reject',
+    handleSuperintendentReject: 'reject',
+    superintendentReject: 'reject',
+    handleKembalikanKeMekanik: 'kembalikan',
+    handleCancelWO: 'cancel_wo',
+    cancelWO: 'cancel_wo',
+    handleRequestTransfer: 'request_transfer',
+    handleApproveTransfer: 'approve_transfer',
+    handleRejectTransfer: 'reject_transfer',
+    reportExpiredWO: 'report_expired',
+    handleReportExpired: 'report_expired',
+    handleReopenExpired: 'reopen_expired',
+    handleReopenExpiredWO: 'reopen_expired',
+    handleKoreksiHmWo: 'koreksiHmWo',
+    handleKoreksiKmWo: 'koreksiKmWo',
+    handleGantiPanelHm: 'gantiPanelHm',
+    handleGantiPanelKm: 'gantiPanelKm',
+  };
+  const aksiRpc = petaAksiTulis[cleanAction] || cleanAction;
+
+  // Dukungan pembuatan WO batch (`blocks: [...]`) dari halaman Web Desktop (`WorkOrder.html`)
+  if (aksiRpc === 'create_wo' && Array.isArray(dataObj.blocks) && dataObj.blocks.length > 0) {
+    const kirimanId = String(dataObj.kiriman_id || opId);
+    const sharedGroupMode = String(dataObj.blocks[0]?.wo_group_mode || dataObj.wo_group_mode || '').trim();
+    const sharedGroupId = (sharedGroupMode && dataObj.blocks.length >= 2)
+      ? String(dataObj.blocks[0]?.wo_group_id || `GRP-${kirimanId}`)
+      : '';
+    const created = [];
+    const failed = [];
+    for (let i = 0; i < dataObj.blocks.length; i++) {
+      const blk = normalisasiBlokWo(dataObj.blocks[i] || {});
+      if (sharedGroupId && !blk.wo_group_id) blk.wo_group_id = sharedGroupId;
+      if (sharedGroupMode && !blk.wo_group_mode) blk.wo_group_mode = sharedGroupMode;
+      if (sharedGroupId) blk.grup_total = dataObj.blocks.length;
+      const subRes = await panggilRpcSupabase(`${RPC_PREFIX}_eksekusi_aksi_bertoken`, {
+        p_token: cleanToken,
+        p_aksi: 'create_wo',
+        p_op_id: `${kirimanId}-${i + 1}`,
+        p_payload: blk,
+        p_skor_js: null,
+      }, env);
+      const compLbl = blk.component_name || blk.others_description || blk.job_id || blk.component_id || (subRes && subRes.result && subRes.result.component_name) || 'Pekerjaan';
+      const unitLbl = blk.unit_id || (subRes && subRes.result && subRes.result.unit_id) || 'WORKSHOP';
+      if (subRes && subRes.success && subRes.result) {
+        created.push({
+          ...subRes.result,
+          index: i,
+          component_id: blk.component_id || blk.job_id || '',
+          component_name: compLbl,
+          unit_id: unitLbl,
+          label: `${compLbl} · ${unitLbl}`,
+        });
+      } else {
+        failed.push({ index: i, component_id: blk.component_id || blk.job_id || '', unit_id: unitLbl, label: `${compLbl} · ${unitLbl}`, error: (subRes && subRes.error) || 'Gagal membuat baris WO' });
+      }
+    }
+    return {
+      success: failed.length === 0,
+      source: 'SUPABASE',
+      result: { created, failed, wo_id: created[0]?.wo_id, wo_number: created[0]?.wo_number },
+      data: { created, failed, wo_id: created[0]?.wo_id, wo_number: created[0]?.wo_number },
+    };
+  }
+
+  // 12. Khusus Approve L2: Hitung Poin & Rupiah di JS (`src/domain/scoring.mjs`) sebelum simpan ke Supabase
+  let skorJs = null;
+  if (aksiRpc === 'approve_l2') {
+    const woId = String(dataObj.wo_id || dataObj.id || '').trim();
+    if (woId) {
+      try {
+        const konteks = await panggilRpcSupabase(`${RPC_PREFIX}_konteks_skor_bertoken`, {
+          p_token: cleanToken,
+          p_wo_id: woId,
+        }, env);
+        if (konteks && konteks.success && konteks.result && konteks.result.wo) {
+          skorJs = hitungSkorDanRupiahWo({
+            rumah: RUMAH_KODE,
+            wo: konteks.result.wo,
+            factorsList: konteks.result.factors || [],
+            baseSettingsList: konteks.result.base_settings || [],
+            mechanicsList: konteks.result.mechanics || [],
+            safetyIncident: Boolean(dataObj.safety_incident),
+            mtbfRedoStatus: String(dataObj.mtbf_status || dataObj.mtbf_redo_status || 'first_time'),
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 13. Panggil RPC Eksekusi Aksi Tulis di Supabase
+  return await panggilRpcSupabase(`${RPC_PREFIX}_eksekusi_aksi_bertoken`, {
+    p_token: cleanToken,
+    p_aksi: aksiRpc,
+    p_op_id: opId,
+    p_payload: dataObj,
+    p_skor_js: skorJs,
+  }, env);
+}
 export function ekstrakWoId(body) {
   if (!body) return '';
   if (typeof body === 'string') return body.trim();
@@ -180,457 +875,4 @@ export function apakahWoLamaDariGas(woId) {
   return false;
 }
 
-/**
- * Eksekusi Backend Mandiri Supabase untuk Rumah KMB Project & Multi-Rumah
- */
-export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return null;
-  }
-
-  const cleanAksi = normalisasiAksi(action);
-  const cleanToken = String(token || '').trim();
-  if (!cleanToken) {
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Token tidak ditemukan',
-      source: 'SUPABASE'
-    }), {
-      status: 401,
-      headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
-    });
-  }
-
-  const supaHeaders = {
-    'apikey': env.SUPABASE_ANON_KEY,
-    'Authorization': 'Bearer ' + env.SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-  };
-
-  const rumah = (env.RUMAH || 'kmbprojek').toLowerCase();
-  const rpcPrefix = (rumah === 'sum') ? 'sum' : (rumah === 'kmbtra' || rumah === 'kmb') ? 'kmbtra' : 'kmb';
-  const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_eksekusi_aksi_bertoken`;
-
-  
-  // --- Aksi Admin User & Config ---
-  if (cleanAksi === 'admin_daftar_config') {
-    try {
-      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_daftar_config_bertoken`, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({
-          p_token: cleanToken,
-          p_jenis: String(payload.jenis || payload.tipe || 'all'),
-        }),
-      });
-      const d = await res.json();
-      return new Response(JSON.stringify(d), {
-        status: res.status,
-        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
-    }
-  }
-
-  if (cleanAksi === 'admin_simpan_config') {
-    try {
-      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_simpan_config_bertoken`, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({
-          p_token: cleanToken,
-          p_op_id: (body.op_id || 'save-cfg-' + Date.now()),
-          p_jenis: String(payload.jenis || payload.tipe || 'unit'),
-          p_payload: (payload.payload && typeof payload.payload === 'object') ? payload.payload : payload,
-        }),
-      });
-      const d = await res.json();
-      return new Response(JSON.stringify(d), {
-        status: res.status,
-        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
-    }
-  }
-
-  if (cleanAksi === 'admin_hapus_config') {
-    try {
-      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_hapus_config_bertoken`, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({
-          p_token: cleanToken,
-          p_op_id: (body.op_id || 'del-cfg-' + Date.now()),
-          p_jenis: String(payload.jenis || payload.tipe || 'unit'),
-          p_kunci: String(payload.kunci || payload.id || ''),
-        }),
-      });
-      const d = await res.json();
-      return new Response(JSON.stringify(d), {
-        status: res.status,
-        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
-    }
-  }
-
-  if (cleanAksi === 'admin_hapus_user') {
-    try {
-      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_hapus_user_bertoken`, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({
-          p_token: cleanToken,
-          p_op_id: (body.op_id || 'del-user-' + Date.now()),
-          p_mechanic_id: String(payload.mechanic_id || payload.mechanicId || ''),
-        }),
-      });
-      const d = await res.json();
-      return new Response(JSON.stringify(d), {
-        status: res.status,
-        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
-    }
-  }
-
-  if (cleanAksi === 'admin_daftar_user') {
-    try {
-      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_daftar_user_bertoken`, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({ p_token: cleanToken }),
-      });
-      const d = await res.json();
-      return new Response(JSON.stringify(d), {
-        status: res.status,
-        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
-    }
-  }
-
-  if (cleanAksi === 'admin_simpan_user') {
-    try {
-      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_simpan_user_bertoken`, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({
-          p_token: cleanToken,
-          p_op_id: (body.op_id || 'save-usr-' + Date.now()),
-          p_user: payload.user || payload,
-        }),
-      });
-      const d = await res.json();
-      return new Response(JSON.stringify(d), {
-        status: res.status,
-        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
-    }
-  }
-
-  // Khusus loadJobsCatalog / getJobCatalogCached
-  if (action === 'loadJobsCatalog' || action === 'getJobCatalogCached' || cleanAksi === 'getJobCatalogCached' || cleanAksi === 'loadJobsCatalog') {
-    const rawSec = typeof body.data === 'string' ? body.data : (body.data?.section || body.section || (body.args && body.args[0]) || 'vessel');
-    const sec = String(rawSec || 'vessel').toLowerCase().trim();
-
-    try {
-      const resRefs = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: supaHeaders,
-        body: JSON.stringify({
-          p_token: cleanToken,
-          p_aksi: 'pull_create_refs',
-          p_op_id: (body.op_id || 'cat-' + Date.now()),
-          p_payload: {},
-          p_extra: null,
-        }),
-      });
-
-      if (resRefs.ok) {
-        const refsData = await resRefs.json();
-        const rData = refsData && refsData.result ? refsData.result : (refsData && refsData.data ? refsData.data : {});
-        const refs = (rData && rData.refs) ? rData.refs : rData;
-
-        let jobs = [];
-        if (sec === 'vessel') {
-          jobs = refs.jobs_vessel || [];
-        } else if (sec === 'maintenance' || sec === 'field') {
-          jobs = refs.jobs_field || [];
-        } else if (sec === 'workshop') {
-          jobs = refs.jobs_workshop || [];
-        } else {
-          jobs = refs['jobs_' + sec] || refs.jobs_field || refs.jobs_vessel || [];
-        }
-
-        return new Response(JSON.stringify({
-          success: true,
-          data: { jobs, section: sec },
-          result: { jobs, section: sec },
-          jobs: jobs,
-          source: 'SUPABASE'
-        }), {
-          status: 200,
-          headers: {
-            ...CORS,
-            'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'no-store',
-            'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
-            'X-Abadi-Jalur': 'supabase',
-          },
-        });
-      }
-    } catch (err) {
-      console.warn('Gagal memuat katalog Supabase:', err);
-    }
-  }
-
-  // Khusus cekStatusKiriman
-  if (cleanAksi === 'cekStatusKiriman') {
-    return new Response(JSON.stringify({
-      success: true,
-      keadaan: 'selesai',
-      pesan: 'Kiriman selesai diproses di Supabase.',
-      struk: { created: [] },
-      source: 'SUPABASE'
-    }), {
-      status: 200,
-      headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
-    });
-  }
-
-  // Siapkan payload
-  let payload = body.data || body.payload || body;
-  if (typeof payload !== 'object' || payload === null) {
-    payload = {};
-  }
-
-  if (cleanAksi === 'create_wo') {
-    payload = normalisasiBlokWo(payload);
-    if (!payload.lead_mechanic_id && Array.isArray(payload.team) && payload.team.length > 0) {
-      payload.lead_mechanic_id = payload.team[0].mechanic_id;
-    }
-  }
-
-  // Jika submit work, hitung poin jika belum tersedia
-  if (cleanAksi === 'submit_work' && payload.actual_hours && payload.target_hours && !payload.final_points) {
-    const skor = hitungSkorMandiri({
-      basePoints: payload.base_points || payload.plan_points || 0,
-      unitFactor: payload.unit_factor || 1.0,
-      workCondition: payload.work_condition || 'normal',
-      actualHours: payload.actual_hours,
-      targetHours: payload.target_hours,
-      safetyIncident: payload.safety_incident,
-      mtbfStatus: payload.mtbf_status,
-    });
-    payload.final_points = skor.finalPoints;
-    payload.points = skor.finalPoints;
-  }
-
-  try {
-    // 1. Batch creation jika ada blocks (format form Web WorkOrder.html)
-    const blocks = payload.blocks || (payload.data && payload.data.blocks);
-    if (cleanAksi === 'create_wo' && Array.isArray(blocks) && blocks.length > 0) {
-      const created = [];
-      const failed = [];
-      for (let i = 0; i < blocks.length; i++) {
-        const b = normalisasiBlokWo(blocks[i]);
-        const blockPayload = {
-          unit_code: b.unit_id || b.unit_name || b.unit_code || 'UNKNOWN',
-          component: b.component || b.component_name || 'UNKNOWN',
-          activity: b.job_description || b.activity || 'UNKNOWN',
-          lead_mechanic_id: b.lead_mechanic_id || (b.team && b.team[0] && b.team[0].mechanic_id) || '',
-          shift: b.shift || payload.shift || '1',
-          work_condition: b.work_condition || 'normal',
-          duration_hours: b.duration_hours || b.actual_hours || 0,
-          target_hours: b.target_hours || b.others_target_hours || 0,
-          base_points: b.base_points || b.others_base_points || 0,
-          unit_factor: b.unit_factor || b.others_unit_factor || 1.0,
-          team: b.team || [],
-          data: b
-        };
-        const res = await fetch(rpcUrl, {
-          method: 'POST',
-          headers: supaHeaders,
-          body: JSON.stringify({
-            p_token: cleanToken,
-            p_aksi: 'create_wo',
-            p_op_id: (body.op_id || 'op-' + Date.now()) + '-' + (i + 1),
-            p_payload: blockPayload,
-            p_extra: body.extra || null,
-          }),
-        });
-        if (res.ok) {
-          const resData = await res.json();
-          if (resData && resData.success && resData.result) {
-            const woNum = resData.result.wo_number || resData.result.id;
-            created.push({
-              wo_number: woNum,
-              wo_id: woNum,
-              id: woNum,
-              unit_id: b.unit_id || b.unit_name || b.unit_code,
-              component: b.component || b.component_name,
-              activity: b.job_description || b.activity,
-              status: resData.result.status || 'PENDING_L1'
-            });
-          } else {
-            failed.push({ index: i, error: (resData && resData.error) || 'Gagal membuat WO' });
-          }
-        } else {
-          const errText = await res.text();
-          failed.push({ index: i, error: errText });
-        }
-      }
-
-      return new Response(JSON.stringify({
-        success: created.length > 0,
-        data: {
-          wo_id: created[0]?.wo_number || '',
-          id: created[0]?.wo_number || '',
-          created: created,
-          failed: failed,
-        },
-        result: {
-          wo_id: created[0]?.wo_number || '',
-          id: created[0]?.wo_number || '',
-          created: created,
-          status: 'PENDING_L1',
-        },
-        source: 'SUPABASE'
-      }), {
-        status: 200,
-        headers: {
-          ...CORS,
-          'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': 'no-store',
-          'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
-          'X-Abadi-Jalur': 'supabase',
-        },
-      });
-    }
-
-    // 2. Pemanggilan tunggal standar via RPC
-    const res = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: supaHeaders,
-      body: JSON.stringify({
-        p_token: cleanToken,
-        p_aksi: cleanAksi,
-        p_op_id: body.op_id || body.client_op_id || ('op-' + Date.now()),
-        p_payload: payload,
-        p_extra: body.extra || null,
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      // Format respon agar kompatibel penuh dengan Web Desktop & PWA
-      if (cleanAksi === 'create_wo' && data.success && data.result) {
-        const woNum = data.result.wo_number || data.result.id;
-        const singleCreated = [{
-          wo_number: woNum,
-          wo_id: woNum,
-          id: woNum,
-          unit_id: payload.unit_code || payload.unit_id || '',
-          component: payload.component || '',
-          activity: payload.activity || payload.job_description || '',
-          status: data.result.status || 'PENDING_L1'
-        }];
-        data.data = {
-          wo_id: woNum,
-          id: woNum,
-          created: singleCreated,
-          failed: []
-        };
-      } else if (cleanAksi === 'pull_my_wos' && data.result) {
-        const rawWos = Array.isArray(data.result) ? data.result : (Array.isArray(data.result?.wos) ? data.result.wos : []);
-        const enrichedWos = rawWos.map((w) => {
-          const st = String(w.status || 'pending_mechanic_work').toLowerCase();
-          const sg = w.status_group || (
-            ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
-              ? 'pending_approval'
-              : (st === 'approved' ? 'done' : 'assigned')
-          );
-          const sl = w.status_label || (
-            sg === 'done' ? 'Approved' : (sg === 'pending_approval' ? 'Menunggu Approval' : 'Perlu Diisi Mekanik')
-          );
-          const teamArr = Array.isArray(w.team) ? w.team : [];
-          return {
-            ...w,
-            status: st,
-            status_group: sg,
-            status_label: sl,
-            team_count: w.team_count || teamArr.length || 1,
-          };
-        });
-        const counts = {
-          all: enrichedWos.length,
-          assigned: enrichedWos.filter((w) => w.status_group === 'assigned').length,
-          in_progress: 0,
-          pending_approval: enrichedWos.filter((w) => w.status_group === 'pending_approval').length,
-          done: enrichedWos.filter((w) => w.status_group === 'done').length,
-        };
-        const resObj = {
-          ...(typeof data.result === 'object' && !Array.isArray(data.result) ? data.result : {}),
-          wos: enrichedWos,
-          counts,
-          pulled_at: data.pulled_at || new Date().toISOString(),
-        };
-        data.result = resObj;
-        data.data = resObj;
-      } else if (cleanAksi === 'pull_create_refs' && data.result) {
-        data.data = (data.result && data.result.refs) ? data.result.refs : data.result;
-      } else if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic'].includes(cleanAksi) && data.result) {
-        const woObj = data.result.wo || data.result;
-        const teamArr = woObj.team || data.result.team || [];
-        const fullDetail = { ...woObj, wo: woObj, team: teamArr };
-        data.result = fullDetail;
-        data.data = fullDetail;
-      } else if (!data.data && data.result) {
-        data.data = data.result;
-      }
-
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: {
-          ...CORS,
-          'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': 'no-store',
-          'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
-          'X-Abadi-Jalur': 'supabase',
-        },
-      });
-    }
-
-    const errText = await res.text();
-    return new Response(JSON.stringify({
-      success: false,
-      error: `Supabase RPC gagal: ${errText}`,
-      source: 'SUPABASE'
-    }), {
-      status: res.status >= 400 && res.status < 500 ? res.status : 500,
-      headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Kesalahan backend Supabase: ' + ((err && err.message) || err),
-      source: 'SUPABASE'
-    }), {
-      status: 500,
-      headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
-    });
-  }
-}
-
-export const eksekusiSupabaseBackendKmb = eksekusiSupabaseBackendKmbp;
-export const eksekusiSupabaseBackendSum = eksekusiSupabaseBackendKmbp;
-
-export const eksekusiAksiSupabaseMandiri = eksekusiSupabaseBackendKmbp;
+export { eksekusiAksiSupabaseMandiri as eksekusiSupabaseBackendKmbp };

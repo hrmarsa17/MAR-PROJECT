@@ -1,328 +1,701 @@
 /**
- * Modul Manajemen Pengguna & Token Terpusat (Admin Panel Pintu)
- * Sesuai docs/panduan_deploy_staging_kamis.md & AGENTS.md §2, §5
+ * Modul Manajemen Pengguna & Token Terpusat (workers/pintu/src/user-admin.js)
+ * Sesuai AGENTS.md §0a.5 ("Satu-satunya bagian lintas rumah adalah pintu"),
+ * §0a.9, §2, §4, §5, dan docs/GEDUNG-DAN-STAGING.md §1.
  *
- * Sifat:
- * - Stateless: tidak memperluas atau mengubah SaklarDO.
- * - Membaca & menulis data pengguna ke 3 kamar (kmb, sum, kmb_projek) lewat RPC masing-masing.
- * - Keamanan: Memerlukan sesi panel saklar yang sah atau token admin yang valid.
+ * Arsitektur & Protokol Keamanan:
+ * 1. Stateless di Cloudflare Worker (TIDAK menyentuh atau memperluas SaklarDO).
+ * 2. Data pengguna & token tersimpan di kamar Supabase masing-masing rumah:
+ *    - `sum`        -> RPC `sum_admin_*_bertoken` / `_sum_admin_*_internal`
+ *    - `kmbtra`     -> RPC `kmbtra_admin_*_bertoken` / `_kmbtra_admin_*_internal`
+ *    - `kmbprojek`  -> RPC `kmb_admin_*_bertoken` / `_kmb_admin_*_internal`
+ * 3. Autentikasi Ganda:
+ *    - Sesi Panel Saklar/Admin (`validasiSesi` via secret `PANEL_SAKLAR_SECRET`), ATAU
+ *    - Token Admin/Superintendent sah milik rumah terkait (`X-Admin-Token` / `admin_token`).
+ * 4. Anti-Tabrakan Token Lintas Rumah (docs/KEPUTUSAN.md 28 Okt):
+ *    - Setiap token baru memakai awalan rumah (`sum-`, `kmb-`, `kmbp-`) + 12 karakter hex acak.
+ *    - Sebelum disimpan, token dicek ke seluruh rumah (Supabase ping & GAS/GAS-Tiruan)
+ *      agar dijamin tidak pernah kembar di rumah mana pun.
+ * 5. Kerahasiaan Token:
+ *    - Log server hanya mencatat samaran 4 karakter (`xxxx…`).
  */
 
 import { validasiSesi } from './saklar-auth.js';
 
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
+const AWALAN_TOKEN_RUMAH = {
+  sum: 'sum-',
+  kmbtra: 'kmb-',
+  kmb: 'kmb-',
+  kmbprojek: 'kmbp-',
+  'kmb-projek': 'kmbp-',
+};
+
+function normalisasiKodeRumah(kode) {
+  const k = String(kode || '').trim().toLowerCase();
+  if (k === 'kmb' || k === 'kmbtra') return 'kmbtra';
+  if (k === 'kmb-projek' || k === 'kmb_projek' || k === 'kmbprojek') return 'kmbprojek';
+  if (k === 'sum') return 'sum';
+  return k;
 }
 
-function normalizeRumah(rumah) {
-  const r = String(rumah || '').toLowerCase();
-  if (r === 'kmb' || r === 'kmbtra') return 'kmbtra';
+function prefixRpcRumah(kodeRumah) {
+  const r = normalisasiKodeRumah(kodeRumah);
   if (r === 'sum') return 'sum';
-  return 'kmbprojek';
+  if (r === 'kmbtra') return 'kmbtra';
+  if (r === 'kmbprojek') return 'kmb';
+  return r;
 }
 
-function getRpcPrefix(rumah) {
-  const r = normalizeRumah(rumah);
-  if (r === 'sum') return 'sum_';
-  if (r === 'kmbtra') return 'kmbtra_';
-  return 'kmb_';
+export function daftarRumahDariEnv(env) {
+  try {
+    const r = typeof env.RUMAH === 'string' ? JSON.parse(env.RUMAH) : env.RUMAH;
+    if (Array.isArray(r) && r.length > 0) return r;
+  } catch (_) {}
+  return [];
 }
 
-async function panggilSupabaseRpc(rpcName, payload, env) {
-  const supaUrl = env.SUPABASE_URL || 'https://dnnqrslftndcbmnvuveb.supabase.co';
-  const supaKey = env.SUPABASE_ANON_KEY || 'sb_publishable_HgQd9sXhK3-CrFyUId-LEw_q_ah2S0O';
+export function samarkanToken(token) {
+  const t = String(token || '').trim();
+  if (!t) return '';
+  return t.length >= 4 ? t.slice(0, 4) + '…' : '****…';
+}
 
-  const res = await fetch(`${supaUrl}/rest/v1/rpc/${rpcName}`, {
-    method: 'POST',
-    headers: {
-      'apikey': supaKey,
-      'Authorization': `Bearer ${supaKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`RPC ${rpcName} HTTP ${res.status}: ${errText}`);
-  }
-  return await res.json();
+export function buatKandidatTokenRumah(kodeRumah) {
+  const r = normalisasiKodeRumah(kodeRumah);
+  const prefix = AWALAN_TOKEN_RUMAH[r] || `${r}-`;
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${prefix}${hex}`;
 }
 
 /**
- * GET /saklar/api/admin/users
- * Mengambil daftar seluruh pengguna dan token dari 3 rumah
+ * Periksa apakah kandidat token sudah terpakai di rumah mana pun (Supabase RPC ping).
  */
-export async function handleAdminDaftarUsers(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+async function tokenSudahDipakai(token, env) {
+  const rumahList = daftarRumahDariEnv(env);
+  const checks = rumahList.map(async (r) => {
+    const prefix = prefixRpcRumah(r.kode);
+    if (env.SUPABASE_URL && (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY)) {
+      try {
+        const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+        const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${prefix}_ping`, {
+          method: 'POST',
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_token: token }),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          if (d && d.success === true) return true;
+        }
+      } catch (_) {}
+    }
+    return false;
+  });
+
+  const results = await Promise.all(checks);
+  return results.some(Boolean);
+}
+
+/**
+ * Menghasilkan token unik lintas rumah (maksimal 5 percobaan).
+ */
+export async function buatTokenUnikLintasRumah(kodeRumah, env) {
+  for (let i = 0; i < 5; i++) {
+    const kandidat = buatKandidatTokenRumah(kodeRumah);
+    const terpakai = await tokenSudahDipakai(kandidat, env);
+    if (!terpakai) return kandidat;
+  }
+  throw new Error('Gagal membuat token unik lintas rumah, silakan coba lagi.');
+}
+
+/**
+ * Memanggil RPC Admin User di Supabase untuk rumah tertentu.
+ * - Jika `adminToken` diberikan, memanggil `<prefix>_admin_<aksi>_bertoken`.
+ * - Jika `adminToken` kosong namun sesi panel sah dan `SUPABASE_SERVICE_ROLE_KEY` tersedia,
+ *   memanggil `_<prefix>_admin_<aksi>_internal`.
+ * - Jika berada di lingkungan simulasi/staging dengan `GAS_TIRUAN` dan tanpa koneksi luar,
+ *   mendukung delegasi ke `GAS_TIRUAN`.
+ */
+export async function panggilRpcAdminRumah({
+  rumah,
+  aksi,
+  adminToken,
+  sesiPanelSah,
+  params = {},
+  env,
+}) {
+  const kode = normalisasiKodeRumah(rumah);
+  const prefix = prefixRpcRumah(kode);
+  const tokenBersih = String(adminToken || '').trim();
+
+  // 1. Jika di staging/uji lokal dengan binding GAS_TIRUAN dan tanpa SUPABASE_URL atau mode tiruan
+  if (env && env.GAS_TIRUAN && typeof env.GAS_TIRUAN.fetch === 'function' && (!env.SUPABASE_URL || env.USE_GAS_TIRUAN_ADMIN === 'true')) {
+    const resTiruan = await env.GAS_TIRUAN.fetch(`https://gas-tiruan.internal/${kode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Abadi-Rumah': kode },
+      body: JSON.stringify({
+        action: `admin_${aksi}`,
+        token: tokenBersih || (sesiPanelSah ? `uji-palsu-spt-${kode}` : ''),
+        rumah: kode,
+        data: params,
+      }),
+    });
+    return await resTiruan.json();
   }
 
-  const url = new URL(request.url);
-  const targetRumah = url.searchParams.get('rumah') || 'semua';
-  const adminToken = request.headers.get('x-admin-token') || url.searchParams.get('admin_token') || 'uji-spv-admin-master';
+  if (!env || !env.SUPABASE_URL || (!env.SUPABASE_ANON_KEY && !env.SUPABASE_SERVICE_ROLE_KEY)) {
+    return {
+      success: false,
+      error: 'Konfigurasi SUPABASE_URL / SUPABASE_ANON_KEY belum terpasang di Worker.',
+    };
+  }
 
-  const rumahList = targetRumah === 'semua'
-    ? ['kmbprojek', 'sum', 'kmbtra']
-    : [normalizeRumah(targetRumah)];
+  const pakaiInternal = !tokenBersih && sesiPanelSah && Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!tokenBersih && !pakaiInternal) {
+    return {
+      success: false,
+      error: 'Masukkan Token Admin/Superintendent rumah ini (atau pasang SUPABASE_SERVICE_ROLE_KEY di secret Pintu).',
+    };
+  }
 
-  const hasilUsers = [];
-  const galatRumah = [];
+  const rpcName = pakaiInternal
+    ? `_${prefix}_admin_${aksi}_internal`
+    : `${prefix}_admin_${aksi}_bertoken`;
 
-  for (const r of rumahList) {
-    const rpcName = `${getRpcPrefix(r)}admin_daftar_user_bertoken`;
+  const apiKey = pakaiInternal ? env.SUPABASE_SERVICE_ROLE_KEY : env.SUPABASE_ANON_KEY;
+  let rpcPayload = {};
+
+  if (aksi === 'daftar_user') {
+    rpcPayload = pakaiInternal ? {} : { p_token: tokenBersih };
+  } else if (aksi === 'simpan_user') {
+    rpcPayload = pakaiInternal
+      ? {
+          p_actor_id: params.actor_id || 'GABRIEL-PANEL',
+          p_op_id: params.op_id,
+          p_payload: params.payload || {},
+        }
+      : {
+          p_token: tokenBersih,
+          p_op_id: params.op_id,
+          p_payload: params.payload || {},
+        };
+  } else if (aksi === 'terbitkan_token') {
+    rpcPayload = pakaiInternal
+      ? {
+          p_actor_id: params.actor_id || 'GABRIEL-PANEL',
+          p_op_id: params.op_id,
+          p_mechanic_id: params.mechanic_id,
+          p_token_baru: params.token_baru,
+          p_ganti: Boolean(params.ganti),
+        }
+      : {
+          p_token: tokenBersih,
+          p_op_id: params.op_id,
+          p_mechanic_id: params.mechanic_id,
+          p_token_baru: params.token_baru,
+          p_ganti: Boolean(params.ganti),
+        };
+  } else if (aksi === 'cabut_token') {
+    rpcPayload = pakaiInternal
+      ? {
+          p_actor_id: params.actor_id || 'GABRIEL-PANEL',
+          p_op_id: params.op_id,
+          p_mechanic_id: params.mechanic_id,
+        }
+      : {
+          p_token: tokenBersih,
+          p_op_id: params.op_id,
+          p_mechanic_id: params.mechanic_id,
+        };
+  } else if (aksi === 'hapus_user') {
+    rpcPayload = pakaiInternal
+      ? {
+          p_actor_id: params.actor_id || 'GABRIEL-PANEL',
+          p_op_id: params.op_id,
+          p_mechanic_id: params.mechanic_id,
+        }
+      : {
+          p_token: tokenBersih,
+          p_op_id: params.op_id,
+          p_mechanic_id: params.mechanic_id,
+        };
+  } else if (aksi === 'daftar_config') {
+    rpcPayload = pakaiInternal
+      ? { p_jenis: params.jenis || 'all' }
+      : { p_token: tokenBersih, p_jenis: params.jenis || 'all' };
+  } else if (aksi === 'simpan_config') {
+    rpcPayload = pakaiInternal
+      ? {
+          p_actor_id: params.actor_id || 'GABRIEL-PANEL',
+          p_op_id: params.op_id,
+          p_jenis: params.jenis || 'unit',
+          p_payload: params.payload || {},
+        }
+      : {
+          p_token: tokenBersih,
+          p_op_id: params.op_id,
+          p_jenis: params.jenis || 'unit',
+          p_payload: params.payload || {},
+        };
+  } else if (aksi === 'hapus_config') {
+    rpcPayload = pakaiInternal
+      ? {
+          p_actor_id: params.actor_id || 'GABRIEL-PANEL',
+          p_op_id: params.op_id,
+          p_jenis: params.jenis || 'unit',
+          p_kunci: params.kunci || '',
+        }
+      : {
+          p_token: tokenBersih,
+          p_op_id: params.op_id,
+          p_jenis: params.jenis || 'unit',
+          p_kunci: params.kunci || '',
+        };
+  } else {
+    return { success: false, error: `Aksi admin tidak dikenal: ${aksi}` };
+  }
+
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcName}`, {
+      method: 'POST',
+      headers: {
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(rpcPayload),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return {
+        success: false,
+        error: `Supabase RPC ${rpcName} gagal (HTTP ${res.status}): ${errText.slice(0, 240)}`,
+      };
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return {
+      success: false,
+      error: `Gagal menghubungi Supabase: ${String((err && err.message) || err)}`,
+    };
+  }
+}
+
+/**
+ * Handler HTTP untuk seluruh rute `/saklar/api/users*` dan `/api/admin/users*` di Worker Pintu.
+ */
+export async function tanganiApiUserAdmin(request, env, url, jsonHelper) {
+  const sesiPanelSah = await validasiSesi(request, env);
+  const headerAdminToken = (request.headers.get('x-admin-token') || '').trim();
+
+  let body = {};
+  if (request.method === 'POST') {
     try {
-      const resp = await panggilSupabaseRpc(rpcName, { p_token: adminToken }, env);
-      if (resp && resp.success && Array.isArray(resp.result)) {
-        hasilUsers.push(...resp.result);
-      } else if (resp && resp.error) {
-        galatRumah.push({ rumah: r, error: resp.error });
-      }
-    } catch (err) {
-      galatRumah.push({ rumah: r, error: String((err && err.message) || err) });
+      body = await request.json();
+    } catch (_) {
+      return jsonHelper({ success: false, error: 'Format JSON tidak valid' }, 400);
     }
   }
 
-  return json({
-    success: true,
-    total: hasilUsers.length,
-    users: hasilUsers,
-    catatan: galatRumah.length ? galatRumah : undefined,
-  });
+  const adminToken = headerAdminToken || String(body.admin_token || url.searchParams.get('admin_token') || '').trim();
+
+  // Wajib terautentikasi lewat sesi panel saklar ATAU membawa token admin rumah
+  if (!sesiPanelSah && !adminToken) {
+    return jsonHelper(
+      { success: false, error: 'Sesi panel tidak sah atau token admin belum diberikan.' },
+      401,
+    );
+  }
+
+  const rumahList = daftarRumahDariEnv(env);
+  const validKode = rumahList.map((r) => normalisasiKodeRumah(r.kode));
+
+  // 1. GET / POST daftar pengguna
+  if (
+    (url.pathname.endsWith('/users') || url.pathname.endsWith('/users/daftar')) &&
+    (request.method === 'GET' || request.method === 'POST')
+  ) {
+    const targetRumah = normalisasiKodeRumah(
+      url.searchParams.get('rumah') || body.rumah || 'semua',
+    );
+    const tokensPerRumah = (body && typeof body.tokens === 'object' && body.tokens) || {};
+
+    const daftarTarget =
+      targetRumah === 'semua' || targetRumah === 'all'
+        ? rumahList.map((r) => normalisasiKodeRumah(r.kode))
+        : [targetRumah];
+
+    for (const k of daftarTarget) {
+      if (!validKode.includes(k)) {
+        return jsonHelper({ success: false, error: `Kode rumah tidak dikenal: ${k}` }, 400);
+      }
+    }
+
+    const hasilPerRumah = await Promise.all(
+      daftarTarget.map(async (kode) => {
+        const tokRumah = String(tokensPerRumah[kode] || adminToken || '').trim();
+        const res = await panggilRpcAdminRumah({
+          rumah: kode,
+          aksi: 'daftar_user',
+          adminToken: tokRumah,
+          sesiPanelSah,
+          env,
+        });
+        const infoRumah = rumahList.find((r) => normalisasiKodeRumah(r.kode) === kode) || {
+          kode,
+          nama: kode.toUpperCase(),
+        };
+        return {
+          rumah: kode,
+          nama_rumah: infoRumah.nama,
+          success: Boolean(res && res.success),
+          error: (res && res.error) || null,
+          users: (res && res.result && Array.isArray(res.result.users))
+            ? res.result.users.map((u) => ({ ...u, rumah: kode, nama_rumah: infoRumah.nama }))
+            : [],
+          meta: (res && res.result) || {},
+        };
+      }),
+    );
+
+    const semuaUsers = hasilPerRumah.flatMap((h) => h.users);
+    const semuaSukses = hasilPerRumah.some((h) => h.success);
+
+    return jsonHelper({
+      success: semuaSukses || daftarTarget.length > 1,
+      rumah_list: rumahList.map((r) => ({
+        kode: normalisasiKodeRumah(r.kode),
+        nama: r.nama,
+        alamat: r.alamat,
+      })),
+      houses: hasilPerRumah,
+      users: semuaUsers,
+      error: !semuaSukses && hasilPerRumah[0] ? hasilPerRumah[0].error : null,
+    });
+  }
+
+  // 2. POST simpan / ubah pengguna
+  if (url.pathname.endsWith('/users/simpan') && request.method === 'POST') {
+    const rumah = normalisasiKodeRumah(body.rumah);
+    if (!validKode.includes(rumah)) {
+      return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${rumah}` }, 400);
+    }
+
+    const opId = String(body.op_id || '').trim() || `op-usr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const payload = body.user || body.payload || body.data || {};
+
+    const res = await panggilRpcAdminRumah({
+      rumah,
+      aksi: 'simpan_user',
+      adminToken,
+      sesiPanelSah,
+      params: {
+        actor_id: body.actor_id || 'GABRIEL-ADMIN',
+        op_id: opId,
+        payload,
+      },
+      env,
+    });
+
+    console.log(
+      JSON.stringify({
+        layanan: 'pintu-user-admin',
+        aksi: 'simpan_user',
+        rumah,
+        mechanic_id: payload.mechanic_id || payload.kode || '',
+        success: Boolean(res && res.success),
+      }),
+    );
+
+    return jsonHelper(res, res && res.success ? 200 : 400);
+  }
+
+  // 3. POST terbitkan / ganti token (dengan anti-tabrakan lintas rumah)
+  if (url.pathname.endsWith('/users/token') && request.method === 'POST') {
+    const rumah = normalisasiKodeRumah(body.rumah);
+    if (!validKode.includes(rumah)) {
+      return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${rumah}` }, 400);
+    }
+
+    const mechanicId = String(body.mechanic_id || body.mechanicId || '').trim();
+    if (!mechanicId) {
+      return jsonHelper({ success: false, error: 'mechanic_id wajib diisi' }, 400);
+    }
+
+    const ganti = Boolean(body.ganti);
+    const opId = String(body.op_id || '').trim() || `op-tok-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    let tokenBaru = '';
+    try {
+      tokenBaru = await buatTokenUnikLintasRumah(rumah, env);
+    } catch (err) {
+      return jsonHelper({ success: false, error: String(err.message || err) }, 500);
+    }
+
+    const res = await panggilRpcAdminRumah({
+      rumah,
+      aksi: 'terbitkan_token',
+      adminToken,
+      sesiPanelSah,
+      params: {
+        actor_id: body.actor_id || 'GABRIEL-ADMIN',
+        op_id: opId,
+        mechanic_id: mechanicId,
+        token_baru: tokenBaru,
+        ganti,
+      },
+      env,
+    });
+
+    const tokenKeluar = (res && res.result && res.result.token) || '';
+    console.log(
+      JSON.stringify({
+        layanan: 'pintu-user-admin',
+        aksi: ganti ? 'ganti_token' : 'terbitkan_token',
+        rumah,
+        mechanic_id: mechanicId,
+        token_samaran: samarkanToken(tokenKeluar),
+        success: Boolean(res && res.success),
+      }),
+    );
+
+    return jsonHelper(res, res && res.success ? 200 : 400);
+  }
+
+  // 4. POST cabut token
+  if (url.pathname.endsWith('/users/cabut-token') && request.method === 'POST') {
+    const rumah = normalisasiKodeRumah(body.rumah);
+    if (!validKode.includes(rumah)) {
+      return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${rumah}` }, 400);
+    }
+
+    const mechanicId = String(body.mechanic_id || body.mechanicId || '').trim();
+    if (!mechanicId) {
+      return jsonHelper({ success: false, error: 'mechanic_id wajib diisi' }, 400);
+    }
+
+    const opId = String(body.op_id || '').trim() || `op-rev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const res = await panggilRpcAdminRumah({
+      rumah,
+      aksi: 'cabut_token',
+      adminToken,
+      sesiPanelSah,
+      params: {
+        actor_id: body.actor_id || 'GABRIEL-ADMIN',
+        op_id: opId,
+        mechanic_id: mechanicId,
+      },
+      env,
+    });
+
+    console.log(
+      JSON.stringify({
+        layanan: 'pintu-user-admin',
+        aksi: 'cabut_token',
+        rumah,
+        mechanic_id: mechanicId,
+        success: Boolean(res && res.success),
+      }),
+    );
+
+    return jsonHelper(res, res && res.success ? 200 : 400);
+  }
+
+
+  // 5. POST hapus pengguna (Delete CRUD)
+  if (url.pathname.endsWith('/users/hapus') && request.method === 'POST') {
+    const rumah = normalisasiKodeRumah(body.rumah);
+    if (!validKode.includes(rumah)) {
+      return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${rumah}` }, 400);
+    }
+    const mechanicId = String(body.mechanic_id || body.mechanicId || '').trim();
+    if (!mechanicId) {
+      return jsonHelper({ success: false, error: 'mechanic_id wajib diisi' }, 400);
+    }
+    const opId = String(body.op_id || '').trim() || `op-del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const res = await panggilRpcAdminRumah({
+      rumah,
+      aksi: 'hapus_user',
+      adminToken,
+      sesiPanelSah,
+      params: {
+        actor_id: body.actor_id || 'GABRIEL-ADMIN',
+        op_id: opId,
+        mechanic_id: mechanicId,
+      },
+      env,
+    });
+    return jsonHelper(res, res && res.success ? 200 : 400);
+  }
+
+  // 6. GET / POST daftar config per rumah atau gabungan semua rumah (Units, Components, Catalog Jobs, Factors)
+  if (
+    (url.pathname.endsWith('/config') || url.pathname.endsWith('/config/daftar') || url.pathname.endsWith('/users/config')) &&
+    (request.method === 'GET' || request.method === 'POST')
+  ) {
+    const targetRumah = normalisasiKodeRumah(url.searchParams.get('rumah') || body.rumah || 'semua');
+    const jenis = String(url.searchParams.get('jenis') || body.jenis || 'all');
+    const tokensPerRumah = (body && typeof body.tokens === 'object' && body.tokens) || {};
+
+    const daftarTarget =
+      targetRumah === 'semua' || targetRumah === 'all'
+        ? rumahList.map((r) => normalisasiKodeRumah(r.kode))
+        : [targetRumah];
+
+    for (const k of daftarTarget) {
+      if (!validKode.includes(k)) {
+        return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${k}` }, 400);
+      }
+    }
+
+    const hasilPerRumah = await Promise.all(
+      daftarTarget.map(async (kode) => {
+        const tokRumah = String(tokensPerRumah[kode] || adminToken || '').trim();
+        const res = await panggilRpcAdminRumah({
+          rumah: kode,
+          aksi: 'daftar_config',
+          adminToken: tokRumah,
+          sesiPanelSah,
+          params: { jenis },
+          env,
+        });
+        const infoRumah = rumahList.find((r) => normalisasiKodeRumah(r.kode) === kode) || {
+          kode,
+          nama: kode.toUpperCase(),
+        };
+        const d = (res && (res.result || res.data)) || {};
+        const tag = (arr) => (Array.isArray(arr) ? arr.map((x) => ({ ...x, rumah: kode, nama_rumah: infoRumah.nama })) : []);
+        return {
+          rumah: kode,
+          nama_rumah: infoRumah.nama,
+          success: Boolean(res && res.success),
+          error: (res && res.error) || null,
+          units: tag(d.units),
+          components: tag(d.components),
+          jobs: tag(d.jobs),
+          factors: tag(d.factors),
+        };
+      }),
+    );
+
+    const semuaUnits = hasilPerRumah.flatMap((h) => h.units);
+    const semuaComponents = hasilPerRumah.flatMap((h) => h.components);
+    const semuaJobs = hasilPerRumah.flatMap((h) => h.jobs);
+    const semuaFactors = hasilPerRumah.flatMap((h) => h.factors);
+    const adaSukses = hasilPerRumah.some((h) => h.success);
+
+    const gabungan = {
+      units: semuaUnits,
+      components: semuaComponents,
+      jobs: semuaJobs,
+      factors: semuaFactors,
+      houses: hasilPerRumah,
+    };
+
+    return jsonHelper(
+      {
+        success: adaSukses || daftarTarget.length > 1,
+        source: 'SUPABASE',
+        rumah: targetRumah,
+        rumah_list: rumahList.map((r) => ({
+          kode: normalisasiKodeRumah(r.kode),
+          nama: r.nama,
+          alamat: r.alamat,
+        })),
+        houses: hasilPerRumah,
+        units: semuaUnits,
+        components: semuaComponents,
+        jobs: semuaJobs,
+        factors: semuaFactors,
+        result: gabungan,
+        data: gabungan,
+        error: !adaSukses && hasilPerRumah[0] ? hasilPerRumah[0].error : null,
+      },
+      adaSukses || daftarTarget.length > 1 ? 200 : 400,
+    );
+  }
+
+  // 7. POST simpan / ubah config (Create / Update CRUD)
+  if (
+    (url.pathname.endsWith('/config/simpan') || url.pathname.endsWith('/users/config-simpan')) &&
+    request.method === 'POST'
+  ) {
+    const rumah = normalisasiKodeRumah(body.rumah || 'kmbprojek');
+    if (!validKode.includes(rumah)) {
+      return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${rumah}` }, 400);
+    }
+    const opId = String(body.op_id || '').trim() || `op-cfg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const jenis = String(body.jenis || 'unit');
+    const payload = body.payload || body.data || body;
+    const res = await panggilRpcAdminRumah({
+      rumah,
+      aksi: 'simpan_config',
+      adminToken,
+      sesiPanelSah,
+      params: {
+        actor_id: body.actor_id || 'GABRIEL-ADMIN',
+        op_id: opId,
+        jenis,
+        payload,
+      },
+      env,
+    });
+    return jsonHelper(res, res && res.success ? 200 : 400);
+  }
+
+  // 8. POST hapus config (Delete CRUD)
+  if (
+    (url.pathname.endsWith('/config/hapus') || url.pathname.endsWith('/users/config-hapus')) &&
+    request.method === 'POST'
+  ) {
+    const rumah = normalisasiKodeRumah(body.rumah || 'kmbprojek');
+    if (!validKode.includes(rumah)) {
+      return jsonHelper({ success: false, error: `Kode rumah tidak sah: ${rumah}` }, 400);
+    }
+    const opId = String(body.op_id || '').trim() || `op-cfgdel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const jenis = String(body.jenis || 'unit');
+    const kunci = String(body.kunci || body.id || '').trim();
+    if (!kunci) {
+      return jsonHelper({ success: false, error: 'Kunci item config wajib diisi' }, 400);
+    }
+    const res = await panggilRpcAdminRumah({
+      rumah,
+      aksi: 'hapus_config',
+      adminToken,
+      sesiPanelSah,
+      params: {
+        actor_id: body.actor_id || 'GABRIEL-ADMIN',
+        op_id: opId,
+        jenis,
+        kunci,
+      },
+      env,
+    });
+    return jsonHelper(res, res && res.success ? 200 : 400);
+  }
+
+    return jsonHelper({ success: false, error: 'Rute manajemen pengguna tidak dikenal' }, 404);
 }
-
-/**
- * POST /saklar/api/admin/users/simpan
- * Menambah atau memperbarui pengguna dan token di rumah tertentu
- */
-export async function handleAdminSimpanUser(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch (_) {
-    return json({ success: false, error: 'Format JSON salah' }, 400);
-  }
-
-  const rumah = normalizeRumah(body.rumah);
-  const user = body.user || {};
-  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
-
-  const rpcName = `${getRpcPrefix(rumah)}admin_simpan_user_bertoken`;
-  try {
-    const res = await panggilSupabaseRpc(rpcName, { p_token: adminToken, p_user: user }, env);
-    return json(res);
-  } catch (err) {
-    return json({ success: false, error: String((err && err.message) || err) }, 500);
-  }
-}
-
-/**
- * POST /saklar/api/admin/tokens/status
- * Mengubah status token (ACTIVE / INACTIVE / REVOKED)
- */
-export async function handleAdminSetTokenStatus(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch (_) {
-    return json({ success: false, error: 'Format JSON salah' }, 400);
-  }
-
-  const rumah = normalizeRumah(body.rumah);
-  const targetToken = String(body.target_token || body.token || '').trim();
-  const status = String(body.status || 'ACTIVE').trim().toUpperCase();
-  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
-
-  if (!targetToken) {
-    return json({ success: false, error: 'target_token wajib diisi' }, 400);
-  }
-
-  const rpcName = `${getRpcPrefix(rumah)}admin_set_token_status_bertoken`;
-  try {
-    const res = await panggilSupabaseRpc(rpcName, {
-      p_token: adminToken,
-      p_target_token: targetToken,
-      p_status: status,
-    }, env);
-    return json(res);
-  } catch (err) {
-    return json({ success: false, error: String((err && err.message) || err) }, 500);
-  }
-}
-
-/**
- * POST /saklar/api/users/hapus atau /saklar/api/admin/users/hapus
- * Menghapus pengguna dari Supabase
- */
-export async function handleAdminHapusUser(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch (_) {
-    return json({ success: false, error: 'Format JSON salah' }, 400);
-  }
-
-  const rumah = normalizeRumah(body.rumah);
-  const mechanicId = String(body.mechanic_id || body.mechanicId || '').trim();
-  const opId = String(body.op_id || 'op-del-' + Date.now()).trim();
-  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
-
-  if (!mechanicId) {
-    return json({ success: false, error: 'mechanic_id wajib diisi' }, 400);
-  }
-
-  const rpcName = `${getRpcPrefix(rumah)}admin_hapus_user_bertoken`;
-  try {
-    const res = await panggilSupabaseRpc(rpcName, {
-      p_token: adminToken,
-      p_op_id: opId,
-      p_mechanic_id: mechanicId,
-    }, env);
-    return json(res);
-  } catch (err) {
-    return json({ success: false, error: String((err && err.message) || err) }, 500);
-  }
-}
-
-/**
- * GET / POST /saklar/api/config/daftar atau /saklar/api/config
- * Mengambil daftar master data config
- */
-export async function handleAdminDaftarConfig(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
-  }
-
+export async function handleAdminDaftarUsers(request, env) {
   const url = new URL(request.url);
-  let body = {};
-  if (request.method === 'POST') {
-    try { body = await request.json(); } catch (_) {}
-  }
-
-  const rumah = normalizeRumah(url.searchParams.get('rumah') || body.rumah || 'kmbprojek');
-  const jenis = String(url.searchParams.get('jenis') || body.jenis || 'all');
-  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
-
-  const rpcName = `${getRpcPrefix(rumah)}admin_daftar_config_bertoken`;
-  try {
-    const res = await panggilSupabaseRpc(rpcName, {
-      p_token: adminToken,
-      p_jenis: jenis,
-    }, env);
-    return json(res);
-  } catch (err) {
-    return json({ success: false, error: String((err && err.message) || err) }, 500);
-  }
+  return tanganiApiUserAdmin(request, env, url, (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } }));
 }
-
-/**
- * POST /saklar/api/config/simpan
- * Menyimpan / mengubah master data config
- */
-export async function handleAdminSimpanConfig(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch (_) {
-    return json({ success: false, error: 'Format JSON salah' }, 400);
-  }
-
-  const rumah = normalizeRumah(body.rumah || 'kmbprojek');
-  const opId = String(body.op_id || 'op-cfg-' + Date.now()).trim();
-  const jenis = String(body.jenis || 'unit');
-  const payload = body.payload || body.data || body;
-  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
-
-  const rpcName = `${getRpcPrefix(rumah)}admin_simpan_config_bertoken`;
-  try {
-    const res = await panggilSupabaseRpc(rpcName, {
-      p_token: adminToken,
-      p_op_id: opId,
-      p_jenis: jenis,
-      p_payload: payload,
-    }, env);
-    return json(res);
-  } catch (err) {
-    return json({ success: false, error: String((err && err.message) || err) }, 500);
-  }
+export async function handleAdminSimpanUser(request, env) {
+  const url = new URL(request.url);
+  return tanganiApiUserAdmin(request, env, url, (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } }));
 }
-
-/**
- * POST /saklar/api/config/hapus
- * Menghapus master data config
- */
-export async function handleAdminHapusConfig(request, env) {
-  const isAuth = await validasiSesi(request, env);
-  if (!isAuth) {
-    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch (_) {
-    return json({ success: false, error: 'Format JSON salah' }, 400);
-  }
-
-  const rumah = normalizeRumah(body.rumah || 'kmbprojek');
-  const opId = String(body.op_id || 'op-cfgdel-' + Date.now()).trim();
-  const jenis = String(body.jenis || 'unit');
-  const kunci = String(body.kunci || body.id || '').trim();
-  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
-
-  if (!kunci) {
-    return json({ success: false, error: 'Kunci item config wajib diisi' }, 400);
-  }
-
-  const rpcName = `${getRpcPrefix(rumah)}admin_hapus_config_bertoken`;
-  try {
-    const res = await panggilSupabaseRpc(rpcName, {
-      p_token: adminToken,
-      p_op_id: opId,
-      p_jenis: jenis,
-      p_kunci: kunci,
-    }, env);
-    return json(res);
-  } catch (err) {
-    return json({ success: false, error: String((err && err.message) || err) }, 500);
-  }
-}
-
-export async function tanganiApiUserAdmin(request, env, url, jsonHelper) {
-  if (url.pathname.includes('/config/simpan')) return handleAdminSimpanConfig(request, env);
-  if (url.pathname.includes('/config/hapus')) return handleAdminHapusConfig(request, env);
-  if (url.pathname.includes('/config')) return handleAdminDaftarConfig(request, env);
-  if (url.pathname.includes('/users/hapus')) return handleAdminHapusUser(request, env);
-  if (url.pathname.includes('/users/simpan')) return handleAdminSimpanUser(request, env);
-  if (url.pathname.includes('/tokens/status')) return handleAdminSetTokenStatus(request, env);
-  return handleAdminDaftarUsers(request, env);
+export async function handleAdminSetTokenStatus(request, env) {
+  const url = new URL(request.url);
+  return tanganiApiUserAdmin(request, env, url, (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } }));
 }

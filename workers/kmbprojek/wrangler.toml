@@ -32,6 +32,11 @@ SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
 STORAGE_MODE = "GAS"
 
+# Service binding ke Pintu untuk membaca posisi saklar secara instan tanpa terkena blokir fetch zona yang sama (Bug #27).
+services = [
+  { binding = "PINTU", service = "abadiops-pintu" }
+]
+
 [observability]
 enabled = true
 
