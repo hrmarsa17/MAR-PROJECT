@@ -212,6 +212,130 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
   const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_eksekusi_aksi_bertoken`;
 
   
+  // --- Aksi Admin User & Config ---
+  if (cleanAksi === 'admin_daftar_config') {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_daftar_config_bertoken`, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_jenis: String(payload.jenis || payload.tipe || 'all'),
+        }),
+      });
+      const d = await res.json();
+      return new Response(JSON.stringify(d), {
+        status: res.status,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
+    }
+  }
+
+  if (cleanAksi === 'admin_simpan_config') {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_simpan_config_bertoken`, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_op_id: (body.op_id || 'save-cfg-' + Date.now()),
+          p_jenis: String(payload.jenis || payload.tipe || 'unit'),
+          p_payload: (payload.payload && typeof payload.payload === 'object') ? payload.payload : payload,
+        }),
+      });
+      const d = await res.json();
+      return new Response(JSON.stringify(d), {
+        status: res.status,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
+    }
+  }
+
+  if (cleanAksi === 'admin_hapus_config') {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_hapus_config_bertoken`, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_op_id: (body.op_id || 'del-cfg-' + Date.now()),
+          p_jenis: String(payload.jenis || payload.tipe || 'unit'),
+          p_kunci: String(payload.kunci || payload.id || ''),
+        }),
+      });
+      const d = await res.json();
+      return new Response(JSON.stringify(d), {
+        status: res.status,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
+    }
+  }
+
+  if (cleanAksi === 'admin_hapus_user') {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_hapus_user_bertoken`, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_op_id: (body.op_id || 'del-user-' + Date.now()),
+          p_mechanic_id: String(payload.mechanic_id || payload.mechanicId || ''),
+        }),
+      });
+      const d = await res.json();
+      return new Response(JSON.stringify(d), {
+        status: res.status,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
+    }
+  }
+
+  if (cleanAksi === 'admin_daftar_user') {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_daftar_user_bertoken`, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({ p_token: cleanToken }),
+      });
+      const d = await res.json();
+      return new Response(JSON.stringify(d), {
+        status: res.status,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
+    }
+  }
+
+  if (cleanAksi === 'admin_simpan_user') {
+    try {
+      const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_admin_simpan_user_bertoken`, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_op_id: (body.op_id || 'save-usr-' + Date.now()),
+          p_user: payload.user || payload,
+        }),
+      });
+      const d = await res.json();
+      return new Response(JSON.stringify(d), {
+        status: res.status,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: String(e.message || e) }), { status: 500, headers: CORS });
+    }
+  }
+
   // Khusus loadJobsCatalog / getJobCatalogCached
   if (action === 'loadJobsCatalog' || action === 'getJobCatalogCached' || cleanAksi === 'getJobCatalogCached' || cleanAksi === 'loadJobsCatalog') {
     const rawSec = typeof body.data === 'string' ? body.data : (body.data?.section || body.section || (body.args && body.args[0]) || 'vessel');
@@ -425,6 +549,42 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           created: singleCreated,
           failed: []
         };
+      } else if (cleanAksi === 'pull_my_wos' && data.result) {
+        const rawWos = Array.isArray(data.result) ? data.result : (Array.isArray(data.result?.wos) ? data.result.wos : []);
+        const enrichedWos = rawWos.map((w) => {
+          const st = String(w.status || 'pending_mechanic_work').toLowerCase();
+          const sg = w.status_group || (
+            ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
+              ? 'pending_approval'
+              : (st === 'approved' ? 'done' : 'assigned')
+          );
+          const sl = w.status_label || (
+            sg === 'done' ? 'Approved' : (sg === 'pending_approval' ? 'Menunggu Approval' : 'Perlu Diisi Mekanik')
+          );
+          const teamArr = Array.isArray(w.team) ? w.team : [];
+          return {
+            ...w,
+            status: st,
+            status_group: sg,
+            status_label: sl,
+            team_count: w.team_count || teamArr.length || 1,
+          };
+        });
+        const counts = {
+          all: enrichedWos.length,
+          assigned: enrichedWos.filter((w) => w.status_group === 'assigned').length,
+          in_progress: 0,
+          pending_approval: enrichedWos.filter((w) => w.status_group === 'pending_approval').length,
+          done: enrichedWos.filter((w) => w.status_group === 'done').length,
+        };
+        const resObj = {
+          ...(typeof data.result === 'object' && !Array.isArray(data.result) ? data.result : {}),
+          wos: enrichedWos,
+          counts,
+          pulled_at: data.pulled_at || new Date().toISOString(),
+        };
+        data.result = resObj;
+        data.data = resObj;
       } else if (cleanAksi === 'pull_create_refs' && data.result) {
         data.data = (data.result && data.result.refs) ? data.result.refs : data.result;
       } else if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic'].includes(cleanAksi) && data.result) {
@@ -472,3 +632,5 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
 
 export const eksekusiSupabaseBackendKmb = eksekusiSupabaseBackendKmbp;
 export const eksekusiSupabaseBackendSum = eksekusiSupabaseBackendKmbp;
+
+export const eksekusiAksiSupabaseMandiri = eksekusiSupabaseBackendKmbp;

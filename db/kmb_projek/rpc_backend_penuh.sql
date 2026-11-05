@@ -370,3 +370,79 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.kmb_eksekusi_aksi_bertoken(text, text, text, jsonb, jsonb) TO anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION kmb_projek._wo_milik_mekanik(p_wo jsonb, p_mid text, p_mname text DEFAULT '')
+RETURNS boolean
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v_id   text := upper(btrim(coalesce(p_mid, '')));
+  v_name text := upper(btrim(coalesce(p_mname, '')));
+BEGIN
+  IF v_id = '' AND v_name = '' THEN
+    RETURN false;
+  END IF;
+
+  IF v_id <> '' AND (
+       upper(btrim(coalesce(p_wo->>'lead_mechanic_id', ''))) = v_id
+    OR upper(btrim(coalesce(p_wo->>'mechanic_id', ''))) = v_id
+  ) THEN
+    RETURN true;
+  END IF;
+
+  IF v_name <> '' AND (
+       upper(btrim(coalesce(p_wo->>'lead_mechanic_id', ''))) = v_name
+    OR upper(btrim(coalesce(p_wo->>'mechanic_name', ''))) = v_name
+  ) THEN
+    RETURN true;
+  END IF;
+
+  IF jsonb_typeof(p_wo->'team') = 'array' THEN
+    IF EXISTS (
+      SELECT 1 FROM jsonb_array_elements(p_wo->'team') el
+       WHERE (v_id <> '' AND upper(btrim(coalesce(el->>'mechanic_id', el->>'id', el #>> '{}', ''))) = v_id)
+          OR (v_name <> '' AND upper(btrim(coalesce(el->>'mechanic_name', el->>'name', el->>'mechanic_id', ''))) = v_name)
+    ) THEN
+      RETURN true;
+    END IF;
+  END IF;
+
+  IF jsonb_typeof(p_wo->'effective_team') = 'array' THEN
+    IF EXISTS (
+      SELECT 1 FROM jsonb_array_elements(p_wo->'effective_team') el
+       WHERE (v_id <> '' AND upper(btrim(coalesce(el->>'mechanic_id', el->>'id', el #>> '{}', ''))) = v_id)
+          OR (v_name <> '' AND upper(btrim(coalesce(el->>'mechanic_name', el->>'name', el->>'mechanic_id', ''))) = v_name)
+    ) THEN
+      RETURN true;
+    END IF;
+  END IF;
+
+  IF jsonb_typeof(p_wo->'team_distribution') = 'object' THEN
+    IF EXISTS (
+      SELECT 1 FROM jsonb_each_text(p_wo->'team_distribution') td
+       WHERE (v_id <> '' AND upper(btrim(td.key)) = v_id)
+          OR (v_name <> '' AND upper(btrim(td.key)) = v_name)
+    ) THEN
+      RETURN true;
+    END IF;
+  END IF;
+
+  IF v_id <> '' AND coalesce(p_wo->>'mechanic_ids', '') <> '' THEN
+    IF EXISTS (
+      SELECT 1 FROM regexp_split_to_table(p_wo->>'mechanic_ids', '[,;]') s
+       WHERE upper(btrim(s)) = v_id
+    ) THEN
+      RETURN true;
+    END IF;
+  END IF;
+
+  RETURN false;
+END;
+$$;
+
+-- ==============================================================================
+-- 1. RPC BACA LENGKAP KMB PROJECT (`ping`, `create_refs`, `monitoring`, `my_wos`, `wos_by_status`, `monitoring_daftar`, `wo_detail`, `konteks_skor`)
+-- ==============================================================================
+
+-- 1a. Ping Token

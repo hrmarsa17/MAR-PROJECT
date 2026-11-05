@@ -167,3 +167,162 @@ export async function handleAdminSetTokenStatus(request, env) {
     return json({ success: false, error: String((err && err.message) || err) }, 500);
   }
 }
+
+/**
+ * POST /saklar/api/users/hapus atau /saklar/api/admin/users/hapus
+ * Menghapus pengguna dari Supabase
+ */
+export async function handleAdminHapusUser(request, env) {
+  const isAuth = await validasiSesi(request, env);
+  if (!isAuth) {
+    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ success: false, error: 'Format JSON salah' }, 400);
+  }
+
+  const rumah = normalizeRumah(body.rumah);
+  const mechanicId = String(body.mechanic_id || body.mechanicId || '').trim();
+  const opId = String(body.op_id || 'op-del-' + Date.now()).trim();
+  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
+
+  if (!mechanicId) {
+    return json({ success: false, error: 'mechanic_id wajib diisi' }, 400);
+  }
+
+  const rpcName = `${getRpcPrefix(rumah)}admin_hapus_user_bertoken`;
+  try {
+    const res = await panggilSupabaseRpc(rpcName, {
+      p_token: adminToken,
+      p_op_id: opId,
+      p_mechanic_id: mechanicId,
+    }, env);
+    return json(res);
+  } catch (err) {
+    return json({ success: false, error: String((err && err.message) || err) }, 500);
+  }
+}
+
+/**
+ * GET / POST /saklar/api/config/daftar atau /saklar/api/config
+ * Mengambil daftar master data config
+ */
+export async function handleAdminDaftarConfig(request, env) {
+  const isAuth = await validasiSesi(request, env);
+  if (!isAuth) {
+    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+  }
+
+  const url = new URL(request.url);
+  let body = {};
+  if (request.method === 'POST') {
+    try { body = await request.json(); } catch (_) {}
+  }
+
+  const rumah = normalizeRumah(url.searchParams.get('rumah') || body.rumah || 'kmbprojek');
+  const jenis = String(url.searchParams.get('jenis') || body.jenis || 'all');
+  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
+
+  const rpcName = `${getRpcPrefix(rumah)}admin_daftar_config_bertoken`;
+  try {
+    const res = await panggilSupabaseRpc(rpcName, {
+      p_token: adminToken,
+      p_jenis: jenis,
+    }, env);
+    return json(res);
+  } catch (err) {
+    return json({ success: false, error: String((err && err.message) || err) }, 500);
+  }
+}
+
+/**
+ * POST /saklar/api/config/simpan
+ * Menyimpan / mengubah master data config
+ */
+export async function handleAdminSimpanConfig(request, env) {
+  const isAuth = await validasiSesi(request, env);
+  if (!isAuth) {
+    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ success: false, error: 'Format JSON salah' }, 400);
+  }
+
+  const rumah = normalizeRumah(body.rumah || 'kmbprojek');
+  const opId = String(body.op_id || 'op-cfg-' + Date.now()).trim();
+  const jenis = String(body.jenis || 'unit');
+  const payload = body.payload || body.data || body;
+  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
+
+  const rpcName = `${getRpcPrefix(rumah)}admin_simpan_config_bertoken`;
+  try {
+    const res = await panggilSupabaseRpc(rpcName, {
+      p_token: adminToken,
+      p_op_id: opId,
+      p_jenis: jenis,
+      p_payload: payload,
+    }, env);
+    return json(res);
+  } catch (err) {
+    return json({ success: false, error: String((err && err.message) || err) }, 500);
+  }
+}
+
+/**
+ * POST /saklar/api/config/hapus
+ * Menghapus master data config
+ */
+export async function handleAdminHapusConfig(request, env) {
+  const isAuth = await validasiSesi(request, env);
+  if (!isAuth) {
+    return json({ success: false, error: 'Sesi tidak sah atau telah kadaluwarsa' }, 401);
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ success: false, error: 'Format JSON salah' }, 400);
+  }
+
+  const rumah = normalizeRumah(body.rumah || 'kmbprojek');
+  const opId = String(body.op_id || 'op-cfgdel-' + Date.now()).trim();
+  const jenis = String(body.jenis || 'unit');
+  const kunci = String(body.kunci || body.id || '').trim();
+  const adminToken = body.admin_token || request.headers.get('x-admin-token') || 'uji-spv-admin-master';
+
+  if (!kunci) {
+    return json({ success: false, error: 'Kunci item config wajib diisi' }, 400);
+  }
+
+  const rpcName = `${getRpcPrefix(rumah)}admin_hapus_config_bertoken`;
+  try {
+    const res = await panggilSupabaseRpc(rpcName, {
+      p_token: adminToken,
+      p_op_id: opId,
+      p_jenis: jenis,
+      p_kunci: kunci,
+    }, env);
+    return json(res);
+  } catch (err) {
+    return json({ success: false, error: String((err && err.message) || err) }, 500);
+  }
+}
+
+export async function tanganiApiUserAdmin(request, env, url, jsonHelper) {
+  if (url.pathname.includes('/config/simpan')) return handleAdminSimpanConfig(request, env);
+  if (url.pathname.includes('/config/hapus')) return handleAdminHapusConfig(request, env);
+  if (url.pathname.includes('/config')) return handleAdminDaftarConfig(request, env);
+  if (url.pathname.includes('/users/hapus')) return handleAdminHapusUser(request, env);
+  if (url.pathname.includes('/users/simpan')) return handleAdminSimpanUser(request, env);
+  if (url.pathname.includes('/tokens/status')) return handleAdminSetTokenStatus(request, env);
+  return handleAdminDaftarUsers(request, env);
+}

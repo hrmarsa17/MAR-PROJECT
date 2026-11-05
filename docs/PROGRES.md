@@ -12,6 +12,41 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (CRUD Config Units · Components · Jobs · Factors di Web Desktop & Panel Saklar Pusat)
+- Berubah:
+  - **Full CRUD Master Data Config & User/Token di Web Desktop**:
+    - Memasang antarmuka 5 sub-tab di `/web?page=users` dan `/web?page=config` (`workers/kmbprojek/src/web-handler.js`):
+      - `👷 Users & Token`: Tambah, ubah, terbitkan/ganti token, dan hapus user.
+      - `🚜 Config Units`: Tambah, ubah, dan hapus unit (`config_units`).
+      - `🔩 Config Components`: Tambah, ubah, dan hapus komponen (`config_components`).
+      - `📋 Catalog Jobs`: Tambah, ubah, dan hapus katalog job (`catalog_jobs`).
+      - `⚖️ Config Factors & Tarif`: Tambah, ubah, dan hapus faktor pengali & tarif (`config_factors`).
+    - Memperbaiki `baseUrl` pada handler halaman users/config agar tidak memicu `Error 1101 (Worker threw exception)`.
+  - **Tab 3 `⚙️ CRUD Config` di Panel Pengelola Pusat (`/saklar`)**:
+    - Menambahkan Tab ke-3 `⚙️ CRUD Config (Units · Components · Jobs · Factors)` di `workers/pintu/public/saklar.html` berdampingan dengan `🎛️ Saklar Dua Cabang` dan `👷 Manajemen Pengguna & Token`.
+    - Menambahkan rute dan penangan `/saklar/api/config/daftar`, `/saklar/api/config/simpan`, `/saklar/api/config/hapus`, dan `/saklar/api/users/hapus` di `workers/pintu/src/index.js` dan `workers/pintu/src/user-admin.js`.
+  - **Backend Supabase & Rumus Scoring**:
+    - Menambahkan penangan `admin_daftar_config`, `admin_simpan_config`, `admin_hapus_config`, dan `admin_hapus_user` di `workers/kmbprojek/src/supabase-backend.js`.
+    - Memperkaya `pull_my_wos` dengan perhitungan `counts: { all, assigned, in_progress, pending_approval, done }` per WO untuk mencegah tab mekanik selalu bernilai 0.
+    - Menambahkan fungsi `hitungSkorDanRupiahWo` di `src/domain/scoring.mjs`.
+  - **Database Migration & SQL RPC**:
+    - Menyiapkan script utuh `db/kmb_projek/migrasi_kamis_full_penuh.sql` yang siap dijalankan langsung di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`).
+    - Memperbarui `db/kmb_projek/rpc_admin_user.sql` dengan RPC admin config & delete user.
+    - Menambahkan fungsi helper `_wo_milik_mekanik` (case-insensitive `ra` / `RA`) di `db/kmb_projek/rpc_backend_penuh.sql`.
+  - **Uji Otomatis & Deploy Staging**:
+    - `node scripts/uji-backend-mandiri.mjs`: **40/40 LULUS**.
+    - `node scripts/uji-user-admin-pusat.mjs`: **27/27 LULUS**.
+    - `node scripts/uji-serahan-token.mjs`: **24/24 LULUS**.
+    - Sukses deploy ke Cloudflare Workers Staging:
+      - `abadiops-pintu-staging` -> `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+      - `abadiops-kmbprojek-staging` -> `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Menjalankan seluruh isi file `db/kmb_projek/migrasi_kamis_full_penuh.sql` di **Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`)** agar seluruh RPC config dan helper `_wo_milik_mekanik` terpasang di Postgres.
+  - Tetap di branch `staging` (tidak push ke `main` sesuai AGENTS.md §16).
+
+---
+
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Menu Mekanik, Tombol Kembali Anti-Loop, & Mode Saklar Supabase Staging)
 - Berubah:
   - **Penyembunyian Tab "Performa" & "Reports" untuk Mekanik**:

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Saklar Dua Cabang — Abadi Operation</title>
+  <title>Panel Pengelola & Manajemen Pengguna — Abadi Operation</title>
   <style>
     :root {
       --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0;
@@ -18,21 +18,28 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 1.5rem; }
-    .container { max-width: 1100px; margin: 0 auto; }
-    
-    /* Header */
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
     .logo { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
     .logo span { color: var(--primary); }
     .header-actions { display: flex; gap: 0.75rem; align-items: center; }
 
+    /* Nav Tabs */
+    .nav-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; flex-wrap: wrap; }
+    .nav-tab { padding: 0.6rem 1.15rem; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.15s; }
+    .nav-tab:hover { background: #F1F5F9; color: var(--text); }
+    .nav-tab.active { background: var(--primary); color: white; }
+
     /* Login Box */
-    #viewLogin { max-width: 400px; margin: 5rem auto; background: var(--card); padding: 2.5rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .form-group { margin-bottom: 1.25rem; text-align: left; }
-    .form-group label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem; color: var(--text-muted); }
-    .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; }
-    .form-control:focus { outline: none; border-color: var(--primary); ring: 2px rgba(79,99,63,0.2); }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    #viewLogin { max-width: 420px; margin: 4rem auto; background: var(--card); padding: 2.25rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .form-group { margin-bottom: 1.1rem; text-align: left; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted); }
+    .form-control { width: 100%; padding: 0.65rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: white; color: var(--text); }
+    .form-control:focus { outline: none; border-color: var(--primary); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.1rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; border-radius: 6px; }
     .btn-block { width: 100%; }
     .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-hover); }
@@ -42,49 +49,61 @@
     .btn-secondary:hover { background: #CBD5E1; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Banner Darurat */
-    .emergency-banner { background: #FEE2E2; border: 1px solid #FCA5A5; color: #991B1B; padding: 1rem 1.25rem; border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .emergency-banner { background: #FEE2E2; border: 1px solid #FCA5A5; color: #991B1B; padding: 1rem 1.25rem; border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
     .emergency-text { font-size: 0.95rem; font-weight: 600; }
 
-    /* Grid Kartu Saklar */
-    .switch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
-    .switch-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
-    .switch-card.active-cabang { border-color: var(--info); ring: 2px rgba(2,132,199,0.15); }
+    .switch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+    .switch-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.35rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
+    .switch-card.active-cabang { border-color: var(--info); }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .house-title { font-size: 1.15rem; font-weight: 700; }
+    .house-title { font-size: 1.1rem; font-weight: 700; }
     .house-sub { font-size: 0.8rem; color: var(--text-muted); }
-    
-    /* Badges */
-    .badge { padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; }
+
+    .badge { padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: inline-block; }
     .badge-gas { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
     .badge-dua_cabang { background: var(--info-bg); color: var(--info); border: 1px solid #BAE6FD; }
     .badge-supabase { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
+    .badge-active { background: var(--success-bg); color: var(--success); border: 1px solid #86EFAC; }
+    .badge-inactive { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
+    .badge-admin { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
 
-    .switch-meta { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.25rem; background: #F8FAFC; padding: 0.75rem; border-radius: 8px; }
+    .switch-meta { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.1rem; background: #F8FAFC; padding: 0.75rem; border-radius: 8px; }
     .meta-row { display: flex; justify-content: space-between; }
     .meta-val { font-weight: 600; color: var(--text); }
-
     .switch-actions { display: flex; flex-direction: column; gap: 0.5rem; }
 
-    /* History Table */
-    .history-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
-    .history-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    th { text-align: left; padding: 0.75rem; background: #F8FAFC; border-bottom: 1px solid var(--border); color: var(--text-muted); }
-    td { padding: 0.75rem; border-bottom: 1px solid #F1F5F9; }
+    .panel-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.35rem; margin-bottom: 1.5rem; }
+    .panel-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem; }
+    .kpi-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
+    .kpi-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+    .kpi-val { font-size: 1.35rem; font-weight: 800; color: var(--text); margin-top: 0.2rem; }
+
+    .toolbar { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1rem; background: #F8FAFC; padding: 0.9rem; border-radius: 10px; border: 1px solid var(--border); }
+    .toolbar-item { flex: 1; min-width: 170px; }
+    .toolbar-item label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; padding: 0.7rem; background: #F8FAFC; border-bottom: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+    td { padding: 0.7rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
     tr:hover td { background: #F8FAFC; }
+    tr.row-inactive td { opacity: 0.62; }
+    code.token-box { background: #F1F5F9; padding: 0.2rem 0.45rem; border-radius: 5px; font-family: ui-monospace, monospace; font-size: 0.8rem; }
 
-    /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); }
-    .modal-box { background: white; border-radius: var(--radius); max-width: 580px; width: 90%; max-height: 90vh; overflow-y: auto; padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-    .modal-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: #991B1B; }
-    .modal-caution { background: #FEF2F2; border: 1px solid #FCA5A5; color: #991B1B; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.25rem; }
-    .checklist-container { margin-bottom: 1.5rem; }
-    .checklist-item { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; line-height: 1.4; color: #334155; }
+    .modal-box { background: white; border-radius: var(--radius); max-width: 600px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); }
+    .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+    .modal-caution { background: #FEF2F2; border: 1px solid #FCA5A5; color: #991B1B; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.1rem; }
+    .info-banner { background: var(--info-bg); border: 1px solid #BAE6FD; color: #0369A1; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem; }
+    .checklist-container { margin-bottom: 1.25rem; }
+    .checklist-item { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.84rem; margin-bottom: 0.45rem; line-height: 1.4; color: #334155; }
     .checklist-item input { margin-top: 0.2rem; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.65rem; margin-top: 1.25rem; }
+    .chk-row { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.35rem; }
+    .chk-label { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; cursor: pointer; }
 
-    .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; margin-bottom: 1rem; }
+    .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.86rem; margin-bottom: 1rem; }
     .alert-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
     .alert-success { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
     .hidden { display: none !important; }
@@ -94,115 +113,213 @@
   <div class="container">
     <header>
       <div class="logo">
-        <span>⚙️</span> Abadi Operation — Panel Saklar Dua Cabang
+        <span>⚙️</span> Abadi Operation — Panel Pengelola & Admin Pusat
       </div>
       <div class="header-actions" id="headerNav" style="display:none;">
         <span class="badge badge-gas" id="envBadge">PRODUKSI</span>
-        <button class="btn btn-secondary" onclick="logout()" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Keluar</button>
+        <button class="btn btn-secondary btn-sm" onclick="logout()">Keluar</button>
       </div>
     </header>
 
-    <!-- Tampilan 1: Form Login Sandi -->
+    <!-- Tampilan 1: Form Login Sandi Panel -->
     <div id="viewLogin">
-      <h2 style="font-size:1.35rem; font-weight:700; margin-bottom:0.5rem; text-align:center;">Masuk ke Panel Saklar</h2>
-      <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.5rem; text-align:center;">Hanya untuk pengelola berwenang (Gabriel / Admin).</p>
+      <h2 style="font-size:1.3rem; font-weight:700; margin-bottom:0.4rem; text-align:center;">Masuk ke Panel Pengelola</h2>
+      <p style="color:var(--text-muted); font-size:0.86rem; margin-bottom:1.4rem; text-align:center;">Panel Saklar Dua Cabang & Manajemen Pengguna Terpusat (Gabriel).</p>
       <div id="loginAlert" class="alert alert-danger hidden"></div>
       <form onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label for="inputPassword">Kata Sandi Pengelola</label>
+          <label for="inputPassword">Kata Sandi Pengelola (PANEL_SAKLAR_SECRET)</label>
           <input type="password" id="inputPassword" class="form-control" placeholder="••••••••••••" required autofocus autocomplete="current-password">
         </div>
         <button type="submit" id="btnLogin" class="btn btn-primary btn-block">Masuk ke Panel</button>
       </form>
     </div>
 
-    <!-- Navigasi Tab Panel -->
-    <div id="panelTabs" class="hidden" style="display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
-      <button class="btn btn-primary" id="tabBtnSaklar" onclick="pindahTab('saklar')">🎛️ Status Saklar Dua Cabang</button>
-      <button class="btn btn-secondary" id="tabBtnUser" onclick="pindahTab('users')">👷 Manajemen Pengguna & Token (Pusat 3 Rumah)</button>
-    </div>
-
-    <!-- Tampilan 2: Dashboard Saklar -->
+    <!-- Tampilan 2: Dashboard Utama (2 Tab: Saklar & User Management) -->
     <div id="viewDashboard" class="hidden">
-      <!-- Banner Darurat Global -->
-      <div class="emergency-banner">
-        <div>
-          <div class="emergency-text">🚨 Tombol Penyelamat Darurat Global</div>
-          <div style="font-size:0.8rem; opacity:0.9;">Jika terjadi gangguan sistemik pada Supabase, kembalikan seluruh rumah ke GAS dalam 1 klik.</div>
-        </div>
-        <button class="btn btn-danger" onclick="daruratMundurSemua()">Balikkan Semua ke GAS</button>
+      <div class="nav-tabs">
+        <button type="button" class="nav-tab active" id="tabBtnSaklar" onclick="pilihTab('saklar')">🎛️ Saklar Dua Cabang</button>
+        <button type="button" class="nav-tab" id="tabBtnUsers" onclick="pilihTab('users')">👷 Manajemen Pengguna & Token (Pusat 3 Rumah)</button>
+        <button type="button" class="nav-tab" id="tabBtnConfig" onclick="pilihTab('config')">⚙️ CRUD Config (Units · Components · Jobs · Factors)</button>
       </div>
 
-      <!-- Kartu 3 Rumah -->
-      <div class="switch-grid" id="switchCards">
-        <!-- Render dinamis via JS -->
-      </div>
-
-      <!-- Riwayat Audit Log -->
-      <div class="history-card">
-        <div class="history-title">Riwayat Pembalikan Saklar (Audit Log)</div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Waktu (WIB)</th>
-                <th>Rumah</th>
-                <th>Peralihan</th>
-                <th>Alasan</th>
-                <th>Oleh</th>
-              </tr>
-            </thead>
-            <tbody id="historyTableBody">
-              <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Memuat riwayat...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tampilan 3: Manajemen Pengguna & Token Terpusat (docs/panduan_deploy_staging_kamis.md) -->
-    <div id="viewUserAdmin" class="hidden">
-      <div style="background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+      <!-- TAB A: SAKLAR DUA CABANG -->
+      <div id="sectionSaklar">
+        <div class="emergency-banner">
           <div>
-            <h2 style="font-size:1.25rem; font-weight:700;">Daftar Pengguna & Token Terpusat</h2>
-            <p style="font-size:0.85rem; color:var(--text-muted);">Kelola akses mekanik & supervisor untuk 3 rumah di Supabase</p>
+            <div class="emergency-text">🚨 Tombol Penyelamat Darurat Global</div>
+            <div style="font-size:0.8rem; opacity:0.9;">Jika terjadi gangguan sistemik pada Supabase, kembalikan seluruh rumah ke GAS dalam 1 klik.</div>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-            <select id="filterRumahUser" class="form-control" style="width:auto; padding:0.5rem 0.75rem; font-size:0.875rem;" onchange="filterUsers()">
-              <option value="semua">Semua Rumah</option>
-              <option value="kmbprojek">KMB Projek</option>
-              <option value="sum">SUM V2</option>
-              <option value="kmbtra">KMB TRA</option>
-            </select>
-            <input type="text" id="cariUser" class="form-control" placeholder="Cari nama / token..." style="width:180px; padding:0.5rem 0.75rem; font-size:0.875rem;" oninput="filterUsers()">
-            <button class="btn btn-primary" onclick="bukaModalTambahUser()" style="padding:0.5rem 1rem; font-size:0.875rem;">+ Tambah Pengguna</button>
+          <button class="btn btn-danger" onclick="daruratMundurSemua()">Balikkan Semua ke GAS</button>
+        </div>
+
+        <div class="switch-grid" id="switchCards"></div>
+
+        <div class="panel-card">
+          <div class="panel-title">Riwayat Pembalikan Saklar (Audit Log)</div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Waktu (WIB)</th>
+                  <th>Rumah</th>
+                  <th>Peralihan</th>
+                  <th>Alasan</th>
+                  <th>Oleh</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Memuat riwayat...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:45px; text-align:center;">No</th>
-                <th>Rumah</th>
-                <th>Nama</th>
-                <th>User ID</th>
-                <th>Peran</th>
-                <th>Token</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="userTableBody">
-              <tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna...</td></tr>
-            </tbody>
-          </table>
+      </div>
+
+      <!-- TAB B: MANAJEMEN PENGGUNA & TOKEN LINTAS RUMAH -->
+      <div id="sectionUsers" class="hidden"><div id="viewUserAdmin" class="viewUserAdmin">
+        <div class="info-banner">
+          <strong>Manajemen Pengguna Terpusat (Supabase Per Kamar):</strong>
+          Setiap rumah menyimpan datanya di kamarnya sendiri (<code>sum</code>, <code>kmb</code>, <code>kmb_projek</code>). Orang tidak pernah dihapus (hanya dinonaktifkan) agar riwayat WO dan payroll tetap utuh. Token baru otomatis memakai awalan rumah (<code>sum-</code>, <code>kmb-</code>, <code>kmbp-</code>) dan diperiksa lintas rumah agar tidak pernah kembar.
+        </div>
+
+        <div id="userAlert" class="alert hidden"></div>
+
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>👷 Daftar Pengguna & Token Akses</span>
+            <div style="display:flex; gap:0.5rem;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="muatDaftarUser()">🔄 Muat Ulang</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="bukaModalUserBaru()">+ Tambah Pengguna</button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-item">
+              <label for="filterRumah">Pilih Rumah (Kamar Supabase)</label>
+              <select id="filterRumah" class="form-control" onchange="gantiPilihanRumah()">
+                <option value="sum">SUM V2 (skema sum)</option>
+                <option value="kmbtra">KMB TRA / V2 (skema kmb)</option>
+                <option value="kmbprojek">KMB Projek (skema kmb_projek)</option>
+                <option value="semua">Semua Rumah (Gabungan)</option>
+              </select>
+            </div>
+            <div class="toolbar-item" style="min-width:220px;">
+              <label for="inputAdminToken">Token Admin / L2 Rumah (untuk RPC *_bertoken)</label>
+              <input type="password" id="inputAdminToken" class="form-control" placeholder="Token L2/Admin rumah terpilih" oninput="simpanTokenAdminLokal()">
+            </div>
+            <div class="toolbar-item">
+              <label for="filterPeran">Filter Peran</label>
+              <select id="filterPeran" class="form-control" onchange="renderTabelUser()">
+                <option value="">Semua Peran</option>
+                <option value="mechanic">Mekanik</option>
+                <option value="supervisor">Supervisor (L1)</option>
+                <option value="superintendent">Superintendent (L2)</option>
+                <option value="foreman">Foreman (SUM)</option>
+                <option value="foreman_approver">Foreman Approver (SUM)</option>
+              </select>
+            </div>
+            <div class="toolbar-item">
+              <label for="filterStatus">Status</label>
+              <select id="filterStatus" class="form-control" onchange="renderTabelUser()">
+                <option value="ALL">Semua</option>
+                <option value="ACTIVE">Aktif Saja</option>
+                <option value="INACTIVE">Nonaktif Saja</option>
+              </select>
+            </div>
+            <div class="toolbar-item" style="min-width:200px;">
+              <label for="filterCari">Cari Nama / Kode / Email</label>
+              <input type="text" id="filterCari" class="form-control" placeholder="Ketik nama atau kode..." oninput="renderTabelUser()">
+            </div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi-box"><div class="kpi-label">Total Terdaftar</div><div class="kpi-val" id="kpiTotal">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Pengguna Aktif</div><div class="kpi-val" id="kpiAktif">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Nonaktif</div><div class="kpi-val" id="kpiNonaktif">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Punya Token Aktif</div><div class="kpi-val" id="kpiToken">0</div></div>
+            <div class="kpi-box"><div class="kpi-label">Hak Admin / L2</div><div class="kpi-val" id="kpiAdmin">0</div></div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rumah</th>
+                  <th>Kode ID</th>
+                  <th>Nama & Email</th>
+                  <th>Peran</th>
+                  <th>Section / Jabatan</th>
+                  <th>Status</th>
+                  <th>Token Akses</th>
+                  <th>Jejak WO</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody">
+                <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Pilih rumah dan klik Muat Ulang untuk menampilkan daftar pengguna dari Supabase.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB C: CRUD CONFIG LINTAS RUMAH (UNITS, COMPONENTS, CATALOG JOBS, FACTORS) -->
+      <div id="sectionConfig" class="hidden">
+        <div class="info-banner">
+          <strong>Manajemen Master Data Config (CRUD per Kamar Supabase):</strong>
+          Tambah (Create), Lihat (Read), Ubah (Update), dan Hapus (Delete) master data <code>config_units</code>, <code>config_components</code>, <code>catalog_jobs</code>, dan <code>config_factors</code> langsung di skema kamar masing-masing rumah (<code>sum</code>, <code>kmb</code>, <code>kmb_projek</code>).
+        </div>
+
+        <div id="configAlert" class="alert hidden"></div>
+
+        <div class="panel-card">
+          <div class="panel-title">
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary btn-sm" id="subTabCfg_unit" onclick="pilihSubTabConfig('unit')">🚜 Config Units</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_component" onclick="pilihSubTabConfig('component')">🔩 Config Components</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_job" onclick="pilihSubTabConfig('job')">📋 Catalog Jobs</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="subTabCfg_factor" onclick="pilihSubTabConfig('factor')">⚖️ Config Factors & Tarif</button>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="muatDataConfigPusat()">🔄 Muat Ulang Config</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="bukaModalConfigPusat()">+ Tambah Item Config</button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-item">
+              <label for="filterRumahConfig">Pilih Rumah Target</label>
+              <select id="filterRumahConfig" class="form-control" onchange="gantiRumahConfigPusat()">
+                <option value="kmbprojek">KMB Projek (skema kmb_projek)</option>
+                <option value="sum">SUM V2 (skema sum)</option>
+                <option value="kmbtra">KMB TRA / V2 (skema kmb)</option>
+              </select>
+            </div>
+            <div class="toolbar-item" style="min-width:220px;">
+              <label for="inputAdminTokenConfig">Token Admin / L2 Rumah</label>
+              <input type="password" id="inputAdminTokenConfig" class="form-control" placeholder="Token L2/Admin rumah terpilih" oninput="simpanTokenAdminConfigLokal()">
+            </div>
+            <div class="toolbar-item" style="min-width:220px;">
+              <label for="filterCariConfig">Cari Kode / Nama / Deskripsi</label>
+              <input type="text" id="filterCariConfig" class="form-control" placeholder="Ketik kata kunci..." oninput="renderTabelConfigPusat()">
+            </div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead id="theadConfigPusat"></thead>
+              <tbody id="tbodyConfigPusat">
+                <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Pilih rumah dan klik Muat Ulang Config.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Konfirmasi Maju (Safety Gates) -->
+  <!-- Modal Konfirmasi Maju Saklar -->
   <div id="modalMaju" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-title">⚠️ Peringatan Pembalikan ke Dua Cabang</div>
@@ -211,7 +328,7 @@
       </div>
 
       <div class="checklist-container">
-        <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.75rem;">Checklist Syarat Wajib (docs/SAKLAR.md §3):</div>
+        <div style="font-weight:700; font-size:0.86rem; margin-bottom:0.65rem;">Checklist Syarat Wajib (docs/SAKLAR.md §3):</div>
         <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 1. Cermin rumah tidak punya selisih selama 7 hari berturut-turut.</label>
         <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 2. Semua aksi tulis & web lulus uji rekam-putar di staging.</label>
         <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 3. Buku tamu kiriman sudah aktif di Cloudflare.</label>
@@ -240,52 +357,96 @@
     </div>
   </div>
 
-  <!-- Modal Tambah Pengguna Baru -->
-  <div id="modalTambahUser" class="modal-overlay hidden">
-    <div class="modal-box" style="max-width:500px;">
-      <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:1rem;">Tambah Pengguna & Terbitkan Token</h3>
-      <form onsubmit="submitTambahUser(event)">
-        <div class="form-group">
-          <label>Target Rumah</label>
-          <select id="inputUserRumah" class="form-control" required>
-            <option value="kmbprojek">KMB Projek</option>
-            <option value="sum">SUM V2</option>
-            <option value="kmbtra">KMB TRA</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>ID Pengguna (Mechanic ID / SPV ID)</label>
-          <input type="text" id="inputUserId" class="form-control" placeholder="Contoh: MECH-101 / SPV-001" required>
-        </div>
-        <div class="form-group">
-          <label>Nama Lengkap</label>
-          <input type="text" id="inputUserName" class="form-control" placeholder="Nama pengguna" required>
-        </div>
-        <div class="form-group">
-          <label>Peran (Role)</label>
-          <select id="inputUserRole" class="form-control" required>
-            <option value="mechanic">Mechanic</option>
-            <option value="supervisor">Supervisor / Foreman</option>
-            <option value="superintendent">Superintendent / Manager</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Email (Opsional)</label>
-          <input type="email" id="inputUserEmail" class="form-control" placeholder="email@abadiops.com">
-        </div>
-        <div class="form-group">
-          <label>Token Akses</label>
-          <div style="display:flex; gap:0.5rem;">
-            <input type="text" id="inputUserToken" class="form-control" placeholder="Token akses unik" required>
-            <button type="button" class="btn btn-secondary" onclick="generateRandomToken()" style="white-space:nowrap; padding:0.5rem 0.75rem;">Acak</button>
+  <!-- Modal Tambah / Ubah Pengguna -->
+  <div id="modalUser" class="modal-overlay hidden modalTambahUser" data-modal="modalTambahUser">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="judulModalUser">Tambah Pengguna</span>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="tutupModalUser()">✕</button>
+      </div>
+
+      <form onsubmit="submitSimpanUser(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="uRumah">Rumah Target *</label>
+            <select id="uRumah" class="form-control" required onchange="sesuaikanFormRumah()">
+              <option value="sum">SUM V2 (skema sum)</option>
+              <option value="kmbtra">KMB TRA / V2 (skema kmb)</option>
+              <option value="kmbprojek">KMB Projek (skema kmb_projek)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="uKode">Kode ID Mekanik/User *</label>
+            <input type="text" id="uKode" class="form-control" placeholder="cth: MECH-025 / SPV-002" required>
           </div>
         </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="uNama">Nama Lengkap *</label>
+            <input type="text" id="uNama" class="form-control" placeholder="Nama lengkap" required>
+          </div>
+          <div class="form-group">
+            <label for="uEmail">Email</label>
+            <input type="email" id="uEmail" class="form-control" placeholder="opsional@abadiops.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="uPeran">Peran *</label>
+            <select id="uPeran" class="form-control" required></select>
+          </div>
+          <div class="form-group" id="grupSection">
+            <label for="uSection">Section</label>
+            <input type="text" id="uSection" class="form-control" placeholder="field / workshop / tyreman / vessel">
+          </div>
+        </div>
+
+        <div class="form-row" id="grupSumFields">
+          <div class="form-group">
+            <label for="uJabatan">Jabatan / Posisi</label>
+            <input type="text" id="uJabatan" class="form-control" placeholder="cth: Mekanik Senior / junior">
+          </div>
+          <div class="form-group">
+            <label for="uGolongan">Golongan (Khusus SUM)</label>
+            <input type="text" id="uGolongan" class="form-control" placeholder="cth: 1a, 2a, 3b">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Status & Hak Akses</label>
+          <div class="chk-row">
+            <label class="chk-label"><input type="checkbox" id="uAktif" checked> Aktif</label>
+            <label class="chk-label"><input type="checkbox" id="uAkunUji"> Akun Uji</label>
+            <label class="chk-label"><input type="checkbox" id="uBolehAdmin"> Boleh Buka Admin</label>
+            <label class="chk-label" id="lblPerf"><input type="checkbox" id="uBolehPerf"> Boleh Performa</label>
+            <label class="chk-label" id="lblTek"><input type="checkbox" id="uBolehTek"> Boleh Teknis</label>
+            <label class="chk-label" id="lblRep"><input type="checkbox" id="uBolehRep"> Boleh Reports</label>
+          </div>
+        </div>
+
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="tutupModalTambahUser()">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan & Terbitkan</button>
+          <button type="button" class="btn btn-secondary" onclick="tutupModalUser()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSimpanUser">Simpan ke Supabase</button>
         </div>
       </form>
+    </div>
+  </div>
+
+
+  <!-- Modal Tambah / Ubah Config Pusat -->
+  <div id="modalConfigPusat" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="judulModalConfigPusat">Tambah / Ubah Config</span>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="tutupModalConfigPusat()">✕</button>
+      </div>
+      <div id="isiFormConfigPusat"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="tutupModalConfigPusat()">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="simpanConfigPusat()">💾 Simpan ke Supabase</button>
+      </div>
     </div>
   </div>
 
@@ -293,33 +454,24 @@
     let TOKEN_SESI = localStorage.getItem('abadi_saklar_token') || '';
     let TARGET_RUMAH_MODAL = '';
     let TARGET_POSISI_MODAL = '';
-
-    const RUMAH_INFO = {
-      kmbprojek: { nama: 'KMB Projek', sub: 'Manpower Panggilan Proyek' },
-      sum: { nama: 'SUM V2', sub: 'PT SUM Site SUM' },
-      kmbtra: { nama: 'KMB TRA', sub: 'PT KMB Site TRA' },
-      kmbbupr: { nama: 'KMB BUPR', sub: 'PT KMB Site BUPR' }
-    };
-
-    // Ambil daftar rumah dari API, fallback ke statis jika gagal
-    async function ambilDaftarRumah() {
-      try {
-        const res = await fetch('/api/pintu?cek=1');
-        const data = await res.json();
-        if (data && data.rumah && Array.isArray(data.rumah)) {
-          return data.rumah.map(r => ({ kode: r.kode, nama: r.nama, sub: r.nama }));
-        }
-      } catch (_) {}
-      return null;
-    }
-
-    let DAFTAR_RUMAH = null;
+    let DAFTAR_RUMAH = [
+      { kode: 'kmbprojek', nama: 'KMB Projek' },
+      { kode: 'sum', nama: 'SUM V2' },
+      { kode: 'kmbtra', nama: 'KMB TRA' }
+    ];
+    let DATA_USERS = [];
+    let TOKEN_TERBUKA = {};
+    let TOKEN_ADMIN_PER_RUMAH = JSON.parse(sessionStorage.getItem('abadi_admin_tokens') || '{}');
 
     window.addEventListener('DOMContentLoaded', () => {
       if (location.host.includes('staging')) {
         document.getElementById('envBadge').textContent = 'STAGING';
         document.getElementById('envBadge').className = 'badge badge-dua_cabang';
       }
+      if (location.pathname.startsWith('/admin') || location.hash === '#users') {
+        pilihTab('users', false);
+      }
+      sinkronInputTokenAdmin();
       if (TOKEN_SESI) {
         muatStatus();
       } else {
@@ -327,24 +479,32 @@
       }
     });
 
+    function pilihTab(tab, muat = true) {
+      document.getElementById('tabBtnSaklar').classList.toggle('active', tab === 'saklar');
+      document.getElementById('tabBtnUsers').classList.toggle('active', tab === 'users');
+      const btnCfg = document.getElementById('tabBtnConfig');
+      if (btnCfg) btnCfg.classList.toggle('active', tab === 'config');
+      document.getElementById('sectionSaklar').classList.toggle('hidden', tab !== 'saklar');
+      document.getElementById('sectionUsers').classList.toggle('hidden', tab !== 'users');
+      const secCfg = document.getElementById('sectionConfig');
+      if (secCfg) secCfg.classList.toggle('hidden', tab !== 'config');
+      if (tab === 'users' && muat && TOKEN_SESI) {
+        muatDaftarUser();
+      } else if (tab === 'config' && muat && TOKEN_SESI) {
+        sinkronInputTokenAdminConfig();
+        muatDataConfigPusat();
+      }
+    }
+
     function tampilkanLogin() {
       document.getElementById('viewLogin').classList.remove('hidden');
       document.getElementById('viewDashboard').classList.add('hidden');
-      document.getElementById('viewUserAdmin').classList.add('hidden');
-      document.getElementById('panelTabs').classList.add('hidden');
       document.getElementById('headerNav').style.display = 'none';
     }
 
     function tampilkanDashboard() {
       document.getElementById('viewLogin').classList.add('hidden');
-      document.getElementById('panelTabs').classList.remove('hidden');
-      if (TAB_AKTIF === 'saklar') {
-        document.getElementById('viewDashboard').classList.remove('hidden');
-        document.getElementById('viewUserAdmin').classList.add('hidden');
-      } else {
-        document.getElementById('viewDashboard').classList.add('hidden');
-        document.getElementById('viewUserAdmin').classList.remove('hidden');
-      }
+      document.getElementById('viewDashboard').classList.remove('hidden');
       document.getElementById('headerNav').style.display = 'flex';
     }
 
@@ -367,7 +527,10 @@
           TOKEN_SESI = data.token;
           localStorage.setItem('abadi_saklar_token', TOKEN_SESI);
           document.getElementById('inputPassword').value = '';
-          muatStatus();
+          await muatStatus();
+          if (!document.getElementById('sectionUsers').classList.contains('hidden')) {
+            muatDaftarUser();
+          }
         } else {
           alertBox.textContent = data.error || 'Kata sandi salah';
           alertBox.classList.remove('hidden');
@@ -383,6 +546,7 @@
     function logout() {
       TOKEN_SESI = '';
       localStorage.removeItem('abadi_saklar_token');
+      sessionStorage.removeItem('abadi_admin_tokens');
       tampilkanLogin();
     }
 
@@ -397,6 +561,10 @@
         }
         const data = await res.json();
         if (data.success) {
+          if (Array.isArray(data.rumah_list) && data.rumah_list.length > 0) {
+            DAFTAR_RUMAH = data.rumah_list;
+            perbaruiDropdownRumah();
+          }
           tampilkanDashboard();
           renderCards(data.switches);
           renderHistory(data.history);
@@ -406,19 +574,26 @@
       }
     }
 
-    async function renderCards(switches) {
+    function perbaruiDropdownRumah() {
+      const selFilter = document.getElementById('filterRumah');
+      const nilaiLama = selFilter.value || 'sum';
+      selFilter.innerHTML = DAFTAR_RUMAH.map(r => `<option value="${escapeHtml(r.kode)}">${escapeHtml(r.nama)} (${escapeHtml(r.kode)})</option>`).join('')
+        + '<option value="semua">Semua Rumah (Gabungan)</option>';
+      if ([...selFilter.options].some(o => o.value === nilaiLama)) selFilter.value = nilaiLama;
+
+      const selModal = document.getElementById('uRumah');
+      const modalLama = selModal.value || 'sum';
+      selModal.innerHTML = DAFTAR_RUMAH.map(r => `<option value="${escapeHtml(r.kode)}">${escapeHtml(r.nama)} (${escapeHtml(r.kode)})</option>`).join('');
+      if ([...selModal.options].some(o => o.value === modalLama)) selModal.value = modalLama;
+    }
+
+    function renderCards(switches) {
       const grid = document.getElementById('switchCards');
       grid.innerHTML = '';
-      
-      // Ambil daftar rumah dinamis atau fallback ke statis
-      if (!DAFTAR_RUMAH) {
-        DAFTAR_RUMAH = await ambilDaftarRumah();
-      }
-      const order = DAFTAR_RUMAH ? DAFTAR_RUMAH.map(r => r.kode) : ['kmbprojek', 'sum', 'kmbtra'];
 
-      for (const kode of order) {
-        const s = switches[kode] || { posisi: 'gas', diubah_at: '—', oleh: 'Sistem', alasan: 'Bawaan' };
-        const info = DAFTAR_RUMAH ? DAFTAR_RUMAH.find(r => r.kode === kode) : (RUMAH_INFO[kode] || { nama: kode, sub: '' });
+      for (const info of DAFTAR_RUMAH) {
+        const kode = info.kode;
+        const s = (switches && switches[kode]) || { posisi: 'gas', diubah_at: '—', oleh: 'Sistem', alasan: 'Bawaan' };
         const isCabang = s.posisi === 'dua_cabang';
         const isSupa = s.posisi === 'supabase';
 
@@ -429,26 +604,14 @@
 
         let actionBtns = '';
         if (s.posisi === 'gas') {
-          actionBtns = `
-            <button class="btn btn-primary btn-block" onclick="bukaModalMaju('${kode}', 'dua_cabang')">
-              Nyalakan Dua Cabang
-            </button>
-          `;
+          actionBtns = `<button class="btn btn-primary btn-block" onclick="bukaModalMaju('${kode}', 'dua_cabang')">Nyalakan Dua Cabang</button>`;
         } else if (s.posisi === 'dua_cabang') {
           actionBtns = `
-            <button class="btn btn-primary btn-block" style="background:var(--purple);" onclick="bukaModalMaju('${kode}', 'supabase')">
-              Tuntaskan ke Supabase 100%
-            </button>
-            <button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">
-              🚨 Balik ke GAS Segera
-            </button>
+            <button class="btn btn-primary btn-block" style="background:var(--purple);" onclick="bukaModalMaju('${kode}', 'supabase')">Tuntaskan ke Supabase 100%</button>
+            <button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">🚨 Balik ke GAS Segera</button>
           `;
         } else {
-          actionBtns = `
-            <button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">
-              🚨 Balik ke GAS Segera
-            </button>
-          `;
+          actionBtns = `<button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">🚨 Balik ke GAS Segera</button>`;
         }
 
         grid.innerHTML += `
@@ -456,21 +619,19 @@
             <div>
               <div class="card-header">
                 <div>
-                  <div class="house-title">${info.nama}</div>
-                  <div class="house-sub">${info.sub}</div>
+                  <div class="house-title">${escapeHtml(info.nama)}</div>
+                  <div class="house-sub">${escapeHtml(kode)}</div>
                 </div>
-                <span class="badge ${badgeClass}">${s.posisi.toUpperCase()}</span>
+                <span class="badge ${badgeClass}">${escapeHtml(s.posisi.toUpperCase())}</span>
               </div>
               <div class="switch-meta">
                 <div class="meta-row"><span>Arsitektur:</span><span class="meta-val">${statusTeks}</span></div>
-                <div class="meta-row"><span>Perubahan:</span><span class="meta-val">${s.diubah_at || 'Bawaan'}</span></div>
-                <div class="meta-row"><span>Oleh:</span><span class="meta-val">${s.oleh || 'Sistem'}</span></div>
-                <div style="margin-top:0.4rem; font-style:italic;">"${s.alasan || '—'}"</div>
+                <div class="meta-row"><span>Perubahan:</span><span class="meta-val">${escapeHtml(s.diubah_at || 'Bawaan')}</span></div>
+                <div class="meta-row"><span>Oleh:</span><span class="meta-val">${escapeHtml(s.oleh || 'Sistem')}</span></div>
+                <div style="margin-top:0.4rem; font-style:italic;">"${escapeHtml(s.alasan || '—')}"</div>
               </div>
             </div>
-            <div class="switch-actions">
-              ${actionBtns}
-            </div>
+            <div class="switch-actions">${actionBtns}</div>
           </div>
         `;
       }
@@ -484,16 +645,15 @@
       }
       tbody.innerHTML = history.map(h => `
         <tr>
-          <td>${h.waktu_wib || '—'}</td>
-          <td><strong>${h.rumah}</strong></td>
-          <td><span class="badge badge-${h.dari}">${h.dari}</span> ➔ <span class="badge badge-${h.ke}">${h.ke}</span></td>
+          <td>${escapeHtml(h.waktu_wib || '—')}</td>
+          <td><strong>${escapeHtml(h.rumah)}</strong></td>
+          <td><span class="badge badge-${escapeHtml(h.dari)}">${escapeHtml(h.dari)}</span> ➔ <span class="badge badge-${escapeHtml(h.ke)}">${escapeHtml(h.ke)}</span></td>
           <td>${escapeHtml(h.alasan || '—')}</td>
           <td>${escapeHtml(h.oleh || '—')}</td>
         </tr>
       `).join('');
     }
 
-    /* Alur Modal Maju */
     function bukaModalMaju(rumah, posisi) {
       TARGET_RUMAH_MODAL = rumah;
       TARGET_POSISI_MODAL = posisi;
@@ -522,23 +682,17 @@
       await kirimPerubahanSaklar(TARGET_RUMAH_MODAL, TARGET_POSISI_MODAL, alasan);
     }
 
-    /* Alur Mundur Cepat (Penyelamat) */
     async function daruratMundur(rumah) {
-      if (!confirm(`🚨 TINDAKAN PENYELAMATAN DARURAT\n\nApakah Anda yakin ingin SEGERA mengembalikan ${rumah} ke posisi GAS?\n\nWO baru akan langsung lahir di Spreadsheet kembali.`)) {
-        return;
-      }
+      if (!confirm(`🚨 TINDAKAN PENYELAMATAN DARURAT\n\nApakah Anda yakin ingin SEGERA mengembalikan ${rumah} ke posisi GAS?`)) return;
       const alasan = prompt('Alasan penyelamatan / pengembalian ke GAS:', 'Penyelamatan darurat via panel saklar') || 'Penyelamatan darurat';
       await kirimPerubahanSaklar(rumah, 'gas', alasan);
     }
 
     async function daruratMundurSemua() {
-      if (!confirm('🚨 TINDAKAN PENYELAMATAN GLOBAL\n\nApakah Anda yakin ingin membalikkan SELURUH rumah ke posisi GAS?\n\nSemua WO baru di semua site akan diarahkan kembali ke Spreadsheet.')) {
-        return;
-      }
+      if (!confirm('🚨 TINDAKAN PENYELAMATAN GLOBAL\n\nApakah Anda yakin ingin membalikkan SELURUH rumah ke posisi GAS?')) return;
       const alasan = prompt('Alasan penyelamatan global:', 'Penyelamatan global darurat via panel') || 'Penyelamatan global';
-      const daftar = DAFTAR_RUMAH ? DAFTAR_RUMAH.map(function (r) { return r.kode; }) : ['kmbprojek', 'sum', 'kmbtra'];
-      for (const r of daftar) {
-        await kirimPerubahanSaklar(r, 'gas', alasan, false);
+      for (const r of DAFTAR_RUMAH) {
+        await kirimPerubahanSaklar(r.kode, 'gas', alasan, false);
       }
       muatStatus();
     }
@@ -564,186 +718,674 @@
       }
     }
 
-    /* --- Alur Manajemen Pengguna & Token Terpusat (docs/panduan_deploy_staging_kamis.md) --- */
-    let TAB_AKTIF = 'saklar';
-    let SEMUA_USERS = [];
+    /* ── MANAJEMEN PENGGUNA & TOKEN LINTAS RUMAH ───────────────────────────── */
 
-    function pindahTab(tab) {
-      TAB_AKTIF = tab;
-      if (tab === 'saklar') {
-        document.getElementById('viewDashboard').classList.remove('hidden');
-        document.getElementById('viewUserAdmin').classList.add('hidden');
-        document.getElementById('tabBtnSaklar').className = 'btn btn-primary';
-        document.getElementById('tabBtnUser').className = 'btn btn-secondary';
-        muatStatus();
-      } else {
-        document.getElementById('viewDashboard').classList.add('hidden');
-        document.getElementById('viewUserAdmin').classList.remove('hidden');
-        document.getElementById('tabBtnSaklar').className = 'btn btn-secondary';
-        document.getElementById('tabBtnUser').className = 'btn btn-primary';
-        muatDaftarUsers();
+    function gantiPilihanRumah() {
+      sinkronInputTokenAdmin();
+      muatDaftarUser();
+    }
+
+    function sinkronInputTokenAdmin() {
+      const r = document.getElementById('filterRumah').value;
+      const inp = document.getElementById('inputAdminToken');
+      inp.value = TOKEN_ADMIN_PER_RUMAH[r] || '';
+    }
+
+    function simpanTokenAdminLokal() {
+      const r = document.getElementById('filterRumah').value;
+      const val = document.getElementById('inputAdminToken').value.trim();
+      if (r && r !== 'semua') {
+        TOKEN_ADMIN_PER_RUMAH[r] = val;
+        sessionStorage.setItem('abadi_admin_tokens', JSON.stringify(TOKEN_ADMIN_PER_RUMAH));
       }
     }
 
-    async function muatDaftarUsers() {
-      const tbody = document.getElementById('userTableBody');
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Memuat data pengguna dari 3 rumah...</td></tr>';
-      try {
-        const res = await fetch('/saklar/api/admin/users', {
-          headers: { 'Authorization': 'Bearer ' + TOKEN_SESI }
-        });
-        const data = await res.json();
-        if (data.success && Array.isArray(data.users)) {
-          SEMUA_USERS = data.users;
-          renderUsers(SEMUA_USERS);
-        } else {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--danger);">${data.error || 'Gagal memuat pengguna'}</td></tr>`;
-        }
-      } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--danger);">Koneksi terputus: ${err.message}</td></tr>`;
-      }
-    }
-
-    function formatNamaRumah(kode) {
-      const k = String(kode || '').toLowerCase();
-      if (k === 'kmbprojek') return 'KMB Projek';
-      if (k === 'sum') return 'SUM V2';
-      if (k === 'kmbtra' || k === 'kmb') return 'KMB TRA';
-      return kode || '—';
-    }
-
-    function renderUsers(users) {
-      const tbody = document.getElementById('userTableBody');
-      if (!users || !users.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Tidak ada pengguna ditemukan.</td></tr>';
+    function tampilPesanUser(teks, baik = true) {
+      const box = document.getElementById('userAlert');
+      if (!teks) {
+        box.classList.add('hidden');
         return;
       }
-      tbody.innerHTML = users.map((u, idx) => {
-        const isAktif = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
-        const rKode = (u.rumah || '').toLowerCase();
-        const badgeRumah = rKode === 'sum' ? 'badge-supabase' : ((rKode === 'kmbtra' || rKode === 'kmb') ? 'badge-dua_cabang' : 'badge-gas');
-        const badgeStatus = isAktif ? 'badge-supabase' : 'badge-gas';
-        const labelRumah = formatNamaRumah(u.rumah);
+      box.textContent = teks;
+      box.className = 'alert ' + (baik ? 'alert-success' : 'alert-danger');
+      box.classList.remove('hidden');
+    }
+
+    async function muatDaftarUser() {
+      const rumah = document.getElementById('filterRumah').value || 'sum';
+      const tok = document.getElementById('inputAdminToken').value.trim();
+      const tbody = document.getElementById('userTableBody');
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Memuat pengguna dari Supabase...</td></tr>';
+
+      try {
+        const res = await fetch('/saklar/api/users/daftar', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(tok ? { 'X-Admin-Token': tok } : {})
+          },
+          body: JSON.stringify({
+            rumah,
+            admin_token: tok,
+            tokens: TOKEN_ADMIN_PER_RUMAH
+          })
+        });
+        const data = await res.json();
+        if (!data.success && data.error) {
+          tampilPesanUser(data.error, false);
+          DATA_USERS = [];
+          renderTabelUser();
+          return;
+        }
+        tampilPesanUser('', true);
+        DATA_USERS = Array.isArray(data.users) ? data.users : [];
+        renderTabelUser();
+      } catch (err) {
+        tampilPesanUser('Gagal memuat daftar pengguna: ' + err.message, false);
+      }
+    }
+
+    function renderTabelUser() {
+      const peranFilter = document.getElementById('filterPeran').value.toLowerCase();
+      const statusFilter = document.getElementById('filterStatus').value;
+      const cari = document.getElementById('filterCari').value.trim().toLowerCase();
+
+      const tersaring = DATA_USERS.filter(u => {
+        const statusU = (u.status || (u.aktif ? 'ACTIVE' : 'INACTIVE')).toUpperCase();
+        if (statusFilter !== 'ALL' && statusU !== statusFilter) return false;
+        if (peranFilter && String(u.role || '').toLowerCase() !== peranFilter) return false;
+        if (cari) {
+          const hay = `${u.mechanic_id || ''} ${u.name || ''} ${u.email || ''} ${u.section || ''} ${u.jabatan_aktual || ''} ${u.golongan || ''}`.toLowerCase();
+          if (!hay.includes(cari)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('kpiTotal').textContent = DATA_USERS.length;
+      document.getElementById('kpiAktif').textContent = DATA_USERS.filter(u => (u.status || 'ACTIVE') === 'ACTIVE').length;
+      document.getElementById('kpiNonaktif').textContent = DATA_USERS.filter(u => (u.status || 'ACTIVE') === 'INACTIVE').length;
+      document.getElementById('kpiToken').textContent = DATA_USERS.filter(u => u.has_token || u.token).length;
+      document.getElementById('kpiAdmin').textContent = DATA_USERS.filter(u => u.boleh_admin || u.role === 'superintendent').length;
+
+      const tbody = document.getElementById('userTableBody');
+      if (!tersaring.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Tidak ada pengguna yang cocok dengan saringan.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = tersaring.map(u => {
+        const aktif = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+        const keyUnik = `${u.rumah}:${u.mechanic_id}`;
+        const terbuka = Boolean(TOKEN_TERBUKA[keyUnik]);
+        const tampilToken = u.token
+          ? (terbuka ? u.token : (u.token_masked || (u.token.slice(0, 4) + '…')))
+          : null;
+        const infoBagian = u.rumah === 'sum'
+          ? [u.jabatan_aktual, u.golongan ? `Gol. ${u.golongan}` : ''].filter(Boolean).join(' · ') || '—'
+          : [u.section, u.position || u.grade].filter(Boolean).join(' · ') || 'semua';
+
         return `
-          <tr>
-            <td style="text-align:center; color:var(--text-muted); font-weight:600; font-size:0.875rem;">${idx + 1}</td>
-            <td><span class="badge ${badgeRumah}" style="text-transform:none; letter-spacing:normal;">${escapeHtml(labelRumah)}</span></td>
-            <td><strong>${escapeHtml(u.name || '—')}</strong></td>
-            <td><code>${escapeHtml(u.user_id || '—')}</code></td>
-            <td>${escapeHtml(u.role || 'mechanic')}</td>
-            <td><code>${escapeHtml((u.token || '').slice(0, 4) + '…' + (u.token || '').slice(-4))}</code></td>
-            <td><span class="badge ${badgeStatus}">${escapeHtml(u.status || 'ACTIVE')}</span></td>
+          <tr class="${aktif ? '' : 'row-inactive'}">
+            <td><span class="badge badge-gas">${escapeHtml(u.rumah || '')}</span></td>
+            <td><strong>${escapeHtml(u.mechanic_id)}</strong></td>
             <td>
-              <button class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="toggleTokenStatus('${u.rumah}', '${escapeHtml(u.token)}', '${isAktif ? 'ACTIVE' : 'INACTIVE'}')">
-                ${isAktif ? 'Nonaktifkan' : 'Aktifkan'}
-              </button>
+              <div><strong>${escapeHtml(u.name)}</strong></div>
+              <div style="font-size:0.76rem; color:var(--text-muted);">${escapeHtml(u.email || '—')}</div>
+            </td>
+            <td>
+              <span>${escapeHtml(u.role)}</span>
+              ${u.boleh_admin ? '<span class="badge badge-admin" style="margin-left:4px;">admin</span>' : ''}
+            </td>
+            <td>${escapeHtml(infoBagian)}</td>
+            <td>
+              <span class="badge ${aktif ? 'badge-active' : 'badge-inactive'}">${aktif ? 'ACTIVE' : 'INACTIVE'}</span>
+            </td>
+            <td>
+              ${tampilToken ? `
+                <div style="display:flex; align-items:center; gap:0.35rem;">
+                  <code class="token-box">${escapeHtml(tampilToken)}</code>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="toggleLihatToken('${escapeAttr(keyUnik)}')">${terbuka ? '🙈' : '👁️'}</button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="salinTokenUser('${escapeAttr(u.token)}')">📋</button>
+                </div>
+              ` : '<span style="color:var(--text-muted); font-style:italic;">belum ada</span>'}
+            </td>
+            <td>${Number(u.jejak || 0)} WO</td>
+            <td>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick='bukaModalUbahUser(${JSON.stringify(u).replace(/'/g, "&#39;")})'>Ubah</button>
+                <button type="button" class="btn btn-primary btn-sm" ${!aktif ? 'disabled' : ''} onclick="aksiTerbitkanToken('${escapeAttr(u.rumah)}', '${escapeAttr(u.mechanic_id)}', '${escapeAttr(u.name)}', ${Boolean(u.token)})">
+                  ${u.token ? 'Ganti Token' : 'Terbitkan Token'}
+                </button>
+                ${u.token ? `<button type="button" class="btn btn-danger btn-sm" onclick="aksiCabutToken('${escapeAttr(u.rumah)}', '${escapeAttr(u.mechanic_id)}', '${escapeAttr(u.name)}')">Cabut</button>` : ''}
+                <button type="button" class="btn btn-danger btn-sm" onclick="aksiHapusUser('${escapeAttr(u.rumah)}', '${escapeAttr(u.mechanic_id)}', '${escapeAttr(u.name)}')">🗑 Hapus</button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    function filterUsers() {
-      const rumah = document.getElementById('filterRumahUser').value;
-      const q = document.getElementById('cariUser').value.toLowerCase().trim();
-      let filtered = SEMUA_USERS;
-      if (rumah !== 'semua') {
-        filtered = filtered.filter(u => {
-          const r = (u.rumah || '').toLowerCase();
-          if (rumah === 'kmbtra') return r === 'kmbtra' || r === 'kmb';
-          return r === rumah;
-        });
-      }
-      if (q) {
-        filtered = filtered.filter(u => 
-          (u.name || '').toLowerCase().includes(q) ||
-          (u.user_id || '').toLowerCase().includes(q) ||
-          (u.token || '').toLowerCase().includes(q) ||
-          formatNamaRumah(u.rumah).toLowerCase().includes(q)
-        );
-      }
-      renderUsers(filtered);
+    function toggleLihatToken(k) {
+      TOKEN_TERBUKA[k] = !TOKEN_TERBUKA[k];
+      renderTabelUser();
     }
 
-    async function toggleTokenStatus(rumah, token, statusSekarang) {
-      const statusBaru = statusSekarang === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-      if (!confirm(`Ubah status token ${token.slice(0, 4)}… di ${rumah} menjadi ${statusBaru}?`)) return;
+    async function salinTokenUser(tok) {
       try {
-        const res = await fetch('/saklar/api/admin/tokens/status', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + TOKEN_SESI,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ rumah, target_token: token, status: statusBaru })
-        });
-        const data = await res.json();
-        if (data.success) {
-          muatDaftarUsers();
-        } else {
-          alert('Gagal mengubah status token: ' + (data.error || 'Galat server'));
-        }
-      } catch (err) {
-        alert('Koneksi terputus: ' + err.message);
+        await navigator.clipboard.writeText(tok);
+        tampilPesanUser('Token berhasil disalin ke clipboard.', true);
+      } catch (_) {
+        prompt('Salin token akses berikut:', tok);
       }
     }
 
-    function bukaModalTambahUser() {
-      document.getElementById('inputUserId').value = '';
-      document.getElementById('inputUserName').value = '';
-      document.getElementById('inputUserEmail').value = '';
-      generateRandomToken();
-      document.getElementById('modalTambahUser').classList.remove('hidden');
+    function sesuaikanFormRumah() {
+      const r = document.getElementById('uRumah').value;
+      const selPeran = document.getElementById('uPeran');
+      const peranSekarang = selPeran.value || 'mechanic';
+
+      const opsiPeran = r === 'sum'
+        ? [
+            ['mechanic', 'Mekanik'],
+            ['supervisor', 'Supervisor (L1)'],
+            ['superintendent', 'Superintendent (L2)'],
+            ['foreman', 'Foreman (SUM)'],
+            ['foreman_approver', 'Foreman Approver (SUM)']
+          ]
+        : [
+            ['mechanic', 'Mekanik'],
+            ['supervisor', 'Supervisor / Planner (L1)'],
+            ['superintendent', 'Superintendent / Manager (L2)']
+          ];
+
+      selPeran.innerHTML = opsiPeran.map(([k, lbl]) => `<option value="${k}">${lbl}</option>`).join('');
+      if (opsiPeran.some(([k]) => k === peranSekarang)) selPeran.value = peranSekarang;
+
+      document.getElementById('grupSection').style.display = r === 'sum' ? 'none' : 'block';
     }
 
-    function tutupModalTambahUser() {
-      document.getElementById('modalTambahUser').classList.add('hidden');
+    function bukaModalUserBaru() {
+      const rFilter = document.getElementById('filterRumah').value;
+      const rDefault = (rFilter && rFilter !== 'semua') ? rFilter : 'sum';
+      document.getElementById('judulModalUser').textContent = 'Tambah Pengguna Baru';
+      document.getElementById('uRumah').value = rDefault;
+      document.getElementById('uRumah').disabled = false;
+      sesuaikanFormRumah();
+      document.getElementById('uKode').value = '';
+      document.getElementById('uKode').readOnly = false;
+      document.getElementById('uNama').value = '';
+      document.getElementById('uEmail').value = '';
+      document.getElementById('uPeran').value = 'mechanic';
+      document.getElementById('uSection').value = rDefault === 'kmbprojek' ? 'maintenance' : 'field';
+      document.getElementById('uJabatan').value = 'junior';
+      document.getElementById('uGolongan').value = '';
+      document.getElementById('uAktif').checked = true;
+      document.getElementById('uAkunUji').checked = false;
+      document.getElementById('uBolehAdmin').checked = false;
+      document.getElementById('uBolehPerf').checked = false;
+      document.getElementById('uBolehTek').checked = false;
+      document.getElementById('uBolehRep').checked = false;
+      document.getElementById('modalUser').classList.remove('hidden');
     }
 
-    function generateRandomToken() {
-      const rumah = document.getElementById('inputUserRumah').value;
-      const prefix = rumah === 'sum' ? 'sum' : (rumah === 'kmbtra' ? 'kmb' : 'kmbp');
-      const rand = Math.random().toString(36).substring(2, 10);
-      document.getElementById('inputUserToken').value = `${prefix}-${rand}`;
+    function bukaModalUbahUser(u) {
+      document.getElementById('judulModalUser').textContent = `Ubah Pengguna: ${u.name}`;
+      document.getElementById('uRumah').value = u.rumah || 'sum';
+      document.getElementById('uRumah').disabled = true;
+      sesuaikanFormRumah();
+      document.getElementById('uKode').value = u.mechanic_id || '';
+      document.getElementById('uKode').readOnly = true;
+      document.getElementById('uNama').value = u.name || '';
+      document.getElementById('uEmail').value = u.email || '';
+      document.getElementById('uPeran').value = u.role || 'mechanic';
+      document.getElementById('uSection').value = u.section || '';
+      document.getElementById('uJabatan').value = u.jabatan_aktual || u.position || u.grade || '';
+      document.getElementById('uGolongan').value = u.golongan || '';
+      document.getElementById('uAktif').checked = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+      document.getElementById('uAkunUji').checked = Boolean(u.akun_uji);
+      document.getElementById('uBolehAdmin').checked = Boolean(u.boleh_admin);
+      document.getElementById('uBolehPerf').checked = Boolean(u.boleh_performa);
+      document.getElementById('uBolehTek').checked = Boolean(u.boleh_teknis);
+      document.getElementById('uBolehRep').checked = Boolean(u.boleh_report);
+      document.getElementById('modalUser').classList.remove('hidden');
     }
 
-    async function submitTambahUser(e) {
+    function tutupModalUser() {
+      document.getElementById('modalUser').classList.add('hidden');
+    }
+
+    function submitTambahUser(e) { return submitSimpanUser(e); }
+    window.modalTambahUser = document.getElementById('modalUser');
+    window.viewUserAdmin = document.getElementById('viewUserAdmin');
+    window.submitTambahUser = submitTambahUser;
+
+    async function submitSimpanUser(e) {
       e.preventDefault();
-      const rumah = document.getElementById('inputUserRumah').value;
-      const user = {
-        user_id: document.getElementById('inputUserId').value.trim(),
-        name: document.getElementById('inputUserName').value.trim(),
-        role: document.getElementById('inputUserRole').value,
-        email: document.getElementById('inputUserEmail').value.trim(),
-        token: document.getElementById('inputUserToken').value.trim(),
-        status: 'ACTIVE'
+      const rumah = document.getElementById('uRumah').value;
+      const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminToken').value.trim();
+      const btn = document.getElementById('btnSimpanUser');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      const userPayload = {
+        mechanic_id: document.getElementById('uKode').value.trim(),
+        name: document.getElementById('uNama').value.trim(),
+        email: document.getElementById('uEmail').value.trim(),
+        role: document.getElementById('uPeran').value,
+        section: document.getElementById('uSection').value.trim(),
+        position: document.getElementById('uJabatan').value.trim(),
+        jabatan_aktual: document.getElementById('uJabatan').value.trim(),
+        golongan: document.getElementById('uGolongan').value.trim(),
+        aktif: document.getElementById('uAktif').checked,
+        status: document.getElementById('uAktif').checked ? 'ACTIVE' : 'INACTIVE',
+        akunUji: document.getElementById('uAkunUji').checked,
+        bolehAdmin: document.getElementById('uBolehAdmin').checked,
+        bolehPerforma: document.getElementById('uBolehPerf').checked,
+        bolehTeknis: document.getElementById('uBolehTek').checked,
+        bolehReport: document.getElementById('uBolehRep').checked,
       };
-      tutupModalTambahUser();
+
       try {
-        const res = await fetch('/saklar/api/admin/users/simpan', {
+        const res = await fetch('/saklar/api/users/simpan', {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + TOKEN_SESI,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
           },
-          body: JSON.stringify({ rumah, user })
+          body: JSON.stringify({
+            rumah,
+            admin_token: adminToken,
+            op_id: 'op-usr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+            user: userPayload
+          })
         });
         const data = await res.json();
         if (data.success) {
-          alert('Pengguna & token berhasil disimpan!');
-          muatDaftarUsers();
+          tutupModalUser();
+          tampilPesanUser(`Pengguna ${userPayload.name} (${userPayload.mechanic_id}) berhasil disimpan di kamar ${rumah}.`, true);
+          await muatDaftarUser();
         } else {
           alert('Gagal menyimpan pengguna: ' + (data.error || 'Galat server'));
         }
       } catch (err) {
         alert('Koneksi terputus: ' + err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Simpan ke Supabase';
+      }
+    }
+
+    async function aksiTerbitkanToken(rumah, mechanicId, nama, sudahPunya) {
+      if (sudahPunya && !confirm(`Ganti token akses untuk ${nama} (${mechanicId}) di rumah ${rumah}?\n\nToken lama akan dicabut (disimpan di riwayat) dan diganti token baru yang dijamin unik lintas rumah.`)) {
+        return;
+      }
+      const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminToken').value.trim();
+      try {
+        const res = await fetch('/saklar/api/users/token', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
+          },
+          body: JSON.stringify({
+            rumah,
+            admin_token: adminToken,
+            mechanic_id: mechanicId,
+            ganti: Boolean(sudahPunya),
+            op_id: 'op-tok-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.result) {
+          TOKEN_TERBUKA[`${rumah}:${mechanicId}`] = true;
+          tampilPesanUser(`Token untuk ${nama} (${mechanicId}) berhasil diterbitkan: ${data.result.token_masked || ''}`, true);
+          await muatDaftarUser();
+        } else {
+          tampilPesanUser(data.error || 'Gagal menerbitkan token', false);
+        }
+      } catch (err) {
+        tampilPesanUser('Koneksi gagal: ' + err.message, false);
+      }
+    }
+
+    async function aksiCabutToken(rumah, mechanicId, nama) {
+      if (!confirm(`Cabut token aktif milik ${nama} (${mechanicId}) di rumah ${rumah}?\n\nPengguna ini tidak akan bisa masuk sampai diberi token baru.`)) {
+        return;
+      }
+      const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminToken').value.trim();
+      try {
+        const res = await fetch('/saklar/api/users/cabut-token', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
+          },
+          body: JSON.stringify({
+            rumah,
+            admin_token: adminToken,
+            mechanic_id: mechanicId,
+            op_id: 'op-rev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          tampilPesanUser(`Token milik ${nama} (${mechanicId}) telah dicabut.`, true);
+          await muatDaftarUser();
+        } else {
+          tampilPesanUser(data.error || 'Gagal mencabut token', false);
+        }
+      } catch (err) {
+        tampilPesanUser('Koneksi gagal: ' + err.message, false);
+      }
+    }
+
+
+    async function aksiHapusUser(rumah, mechanicId, nama) {
+      if (!confirm(`Hapus permanen pengguna ${nama} (${mechanicId}) beserta tokennya dari rumah ${rumah}?`)) return;
+      const adminToken = TOKEN_ADMIN_PER_RUMAH[rumah] || document.getElementById('inputAdminToken').value.trim();
+      try {
+        const res = await fetch('/saklar/api/users/hapus', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
+          },
+          body: JSON.stringify({
+            rumah,
+            admin_token: adminToken,
+            mechanic_id: mechanicId,
+            op_id: 'op-del-' + Date.now()
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          tampilPesanUser(`Pengguna ${nama} (${mechanicId}) berhasil dihapus.`, true);
+          await muatDaftarUser();
+        } else {
+          tampilPesanUser(data.error || 'Gagal menghapus pengguna', false);
+        }
+      } catch (err) {
+        tampilPesanUser('Koneksi gagal: ' + err.message, false);
+      }
+    }
+
+    /* ── CRUD CONFIG PUSAT (UNITS, COMPONENTS, JOBS, FACTORS) ───────────────── */
+    let SUB_TAB_CFG = 'unit';
+    let DATA_CFG_PUSAT = { units: [], components: [], jobs: [], factors: [] };
+
+    function sinkronInputTokenAdminConfig() {
+      const r = document.getElementById('filterRumahConfig').value;
+      document.getElementById('inputAdminTokenConfig').value = TOKEN_ADMIN_PER_RUMAH[r] || document.getElementById('inputAdminToken').value || '';
+    }
+
+    function simpanTokenAdminConfigLokal() {
+      const r = document.getElementById('filterRumahConfig').value;
+      const val = document.getElementById('inputAdminTokenConfig').value.trim();
+      if (r) {
+        TOKEN_ADMIN_PER_RUMAH[r] = val;
+        sessionStorage.setItem('abadi_admin_tokens', JSON.stringify(TOKEN_ADMIN_PER_RUMAH));
+      }
+    }
+
+    function gantiRumahConfigPusat() {
+      sinkronInputTokenAdminConfig();
+      muatDataConfigPusat();
+    }
+
+    function pilihSubTabConfig(jenis) {
+      SUB_TAB_CFG = jenis;
+      ['unit', 'component', 'job', 'factor'].forEach((k) => {
+        const b = document.getElementById('subTabCfg_' + k);
+        if (b) {
+          b.className = 'btn btn-sm ' + (k === jenis ? 'btn-primary' : 'btn-secondary');
+        }
+      });
+      renderTabelConfigPusat();
+    }
+
+    function tampilPesanConfig(teks, baik = true) {
+      const box = document.getElementById('configAlert');
+      if (!teks) { box.classList.add('hidden'); return; }
+      box.textContent = teks;
+      box.className = 'alert ' + (baik ? 'alert-success' : 'alert-danger');
+      box.classList.remove('hidden');
+    }
+
+    async function muatDataConfigPusat() {
+      const rumah = document.getElementById('filterRumahConfig').value || 'kmbprojek';
+      const adminToken = document.getElementById('inputAdminTokenConfig').value.trim() || TOKEN_ADMIN_PER_RUMAH[rumah] || '';
+      const tbody = document.getElementById('tbodyConfigPusat');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Memuat master data config dari Supabase...</td></tr>';
+
+      try {
+        const res = await fetch('/saklar/api/config/daftar', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
+          },
+          body: JSON.stringify({ rumah, admin_token: adminToken, jenis: 'all' })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          tampilPesanConfig(data.error || 'Gagal memuat config', false);
+          return;
+        }
+        const d = data.result || data.data || {};
+        DATA_CFG_PUSAT = {
+          units: Array.isArray(d.units) ? d.units : [],
+          components: Array.isArray(d.components) ? d.components : [],
+          jobs: Array.isArray(d.jobs) ? d.jobs : [],
+          factors: Array.isArray(d.factors) ? d.factors : [],
+        };
+        tampilPesanConfig(`Berhasil memuat config ${rumah.toUpperCase()}: ${DATA_CFG_PUSAT.units.length} Unit, ${DATA_CFG_PUSAT.components.length} Komponen, ${DATA_CFG_PUSAT.jobs.length} Job, ${DATA_CFG_PUSAT.factors.length} Faktor.`, true);
+        renderTabelConfigPusat();
+      } catch (err) {
+        tampilPesanConfig('Koneksi gagal: ' + err.message, false);
+      }
+    }
+
+    function renderTabelConfigPusat() {
+      const q = (document.getElementById('filterCariConfig').value || '').toLowerCase().trim();
+      const th = document.getElementById('theadConfigPusat');
+      const tb = document.getElementById('tbodyConfigPusat');
+
+      if (SUB_TAB_CFG === 'unit') {
+        th.innerHTML = '<tr><th>Kode Unit</th><th>Nama Unit</th><th>Model</th><th>Section</th><th>Faktor Unit</th><th>Status</th><th>Aksi CRUD</th></tr>';
+        const rows = DATA_CFG_PUSAT.units.filter((x) => !q || [x.unit_id, x.unit_name, x.unit_model, x.section].join(' ').toLowerCase().includes(q));
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Belum ada data unit.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x, i) => `<tr>
+          <td><strong>${escapeHtml(x.unit_id)}</strong></td>
+          <td>${escapeHtml(x.unit_name || x.unit_id)}</td>
+          <td>${escapeHtml(x.unit_model || '—')}</td>
+          <td>${escapeHtml(x.section || '—')}</td>
+          <td>${escapeHtml(x.unit_factor ?? 1)}</td>
+          <td><span class="badge ${(x.status || 'ACTIVE') === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
+          <td>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('unit', ${i})">✏️ Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('unit', '${escapeAttr(x.unit_id)}')">🗑 Hapus</button>
+          </td>
+        </tr>`).join('');
+      } else if (SUB_TAB_CFG === 'component') {
+        th.innerHTML = '<tr><th>ID Komponen</th><th>Nama Komponen</th><th>Kategori / Section</th><th>Base Points</th><th>Target Jam</th><th>Status</th><th>Aksi CRUD</th></tr>';
+        const rows = DATA_CFG_PUSAT.components.filter((x) => !q || [x.component_id, x.component_name, x.category].join(' ').toLowerCase().includes(q));
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Belum ada data komponen.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x, i) => `<tr>
+          <td><strong>${escapeHtml(x.component_id)}</strong></td>
+          <td>${escapeHtml(x.component_name)}</td>
+          <td>${escapeHtml(x.category || x.section || '—')}</td>
+          <td>${escapeHtml(x.base_points ?? 1)}</td>
+          <td>${escapeHtml(x.target_hours ?? 2)} jam</td>
+          <td><span class="badge ${(x.status || 'ACTIVE') === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
+          <td>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('component', ${i})">✏️ Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('component', '${escapeAttr(x.component_id)}')">🗑 Hapus</button>
+          </td>
+        </tr>`).join('');
+      } else if (SUB_TAB_CFG === 'job') {
+        th.innerHTML = '<tr><th>Job ID</th><th>Section</th><th>Komponen → Sub</th><th>Deskripsi Job</th><th>Plan Hours</th><th>Base Point</th><th>Status</th><th>Aksi CRUD</th></tr>';
+        const rows = DATA_CFG_PUSAT.jobs.filter((x) => !q || [x.job_id, x.section, x.component, x.sub_component, x.job_description].join(' ').toLowerCase().includes(q));
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Belum ada data katalog job.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x, i) => `<tr>
+          <td><strong>${escapeHtml(x.job_id)}</strong></td>
+          <td>${escapeHtml(x.section || '—')}</td>
+          <td>${escapeHtml(x.component || '—')} · <small>${escapeHtml(x.sub_component || '—')}</small></td>
+          <td>${escapeHtml(x.job_description)}</td>
+          <td>${escapeHtml(x.plan_hours ?? 2)} jam</td>
+          <td>${escapeHtml(x.base_point ?? 1)}</td>
+          <td><span class="badge ${(x.status || 'ACTIVE') === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(x.status || 'ACTIVE')}</span></td>
+          <td>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('job', ${i})">✏️ Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('job', '${escapeAttr(x.job_id)}')">🗑 Hapus</button>
+          </td>
+        </tr>`).join('');
+      } else if (SUB_TAB_CFG === 'factor') {
+        th.innerHTML = '<tr><th>Tipe Faktor</th><th>Key (Kunci)</th><th>Nilai Angka</th><th>Keterangan</th><th>Aksi CRUD</th></tr>';
+        const rows = DATA_CFG_PUSAT.factors.filter((x) => !q || [x.factor_type, x.key, x.description].join(' ').toLowerCase().includes(q));
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Belum ada data faktor.</td></tr>'; return; }
+        tb.innerHTML = rows.map((x, i) => `<tr>
+          <td><strong>${escapeHtml(x.factor_type)}</strong></td>
+          <td><code class="token-box">${escapeHtml(x.key)}</code></td>
+          <td><strong>${escapeHtml(x.value ?? 1)}</strong></td>
+          <td>${escapeHtml(x.description || '—')}</td>
+          <td>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="editConfigPusat('factor', ${i})">✏️ Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="hapusConfigPusat('factor', '${escapeAttr((x.factor_type || '') + ':' + (x.key || ''))}')">🗑 Hapus</button>
+          </td>
+        </tr>`).join('');
+      }
+    }
+
+    function bukaModalConfigPusat(item = null) {
+      const box = document.getElementById('isiFormConfigPusat');
+      const t = SUB_TAB_CFG;
+      document.getElementById('judulModalConfigPusat').textContent = (item ? 'Edit ' : 'Tambah ') + t.toUpperCase();
+      if (t === 'unit') {
+        box.innerHTML = `
+          <div class="form-group"><label>Kode Unit (unit_id, cth: DT-01, TB-ABADI-01)</label><input class="form-control" id="p_cfg_unit_id" value="${escapeHtml(item?.unit_id || '')}" ${item ? 'readonly' : ''}></div>
+          <div class="form-group"><label>Nama Unit</label><input class="form-control" id="p_cfg_unit_name" value="${escapeHtml(item?.unit_name || '')}"></div>
+          <div class="form-group"><label>Model Unit</label><input class="form-control" id="p_cfg_unit_model" value="${escapeHtml(item?.unit_model || '')}"></div>
+          <div class="form-group"><label>Section (maintenance / vessel / field / workshop)</label><input class="form-control" id="p_cfg_section" value="${escapeHtml(item?.section || 'maintenance')}"></div>
+          <div class="form-group"><label>Faktor Unit</label><input type="number" step="0.05" class="form-control" id="p_cfg_unit_factor" value="${escapeHtml(item?.unit_factor ?? 1.0)}"></div>
+          <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+        `;
+      } else if (t === 'component') {
+        box.innerHTML = `
+          <div class="form-group"><label>ID Komponen (cth: COM-001)</label><input class="form-control" id="p_cfg_component_id" value="${escapeHtml(item?.component_id || '')}" ${item ? 'readonly' : ''}></div>
+          <div class="form-group"><label>Nama Komponen</label><input class="form-control" id="p_cfg_component_name" value="${escapeHtml(item?.component_name || '')}"></div>
+          <div class="form-group"><label>Kategori / Section</label><input class="form-control" id="p_cfg_category" value="${escapeHtml(item?.category || item?.section || 'General')}"></div>
+          <div class="form-group"><label>Base Points</label><input type="number" step="0.05" class="form-control" id="p_cfg_base_points" value="${escapeHtml(item?.base_points ?? 1.25)}"></div>
+          <div class="form-group"><label>Target Jam</label><input type="number" step="0.25" class="form-control" id="p_cfg_target_hours" value="${escapeHtml(item?.target_hours ?? 2.0)}"></div>
+          <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+        `;
+      } else if (t === 'job') {
+        box.innerHTML = `
+          <div class="form-group"><label>Job ID (cth: JOB-001)</label><input class="form-control" id="p_cfg_job_id" value="${escapeHtml(item?.job_id || '')}" ${item ? 'readonly' : ''}></div>
+          <div class="form-group"><label>Section (maintenance / vessel / field / workshop)</label><input class="form-control" id="p_cfg_section" value="${escapeHtml(item?.section || 'maintenance')}"></div>
+          <div class="form-group"><label>Model Unit (opsional)</label><input class="form-control" id="p_cfg_unit_model" value="${escapeHtml(item?.unit_model || '')}"></div>
+          <div class="form-group"><label>Komponen Utama</label><input class="form-control" id="p_cfg_component" value="${escapeHtml(item?.component || 'General')}"></div>
+          <div class="form-group"><label>Sub-Komponen</label><input class="form-control" id="p_cfg_sub_component" value="${escapeHtml(item?.sub_component || 'Standard')}"></div>
+          <div class="form-group"><label>Deskripsi Pekerjaan</label><input class="form-control" id="p_cfg_job_description" value="${escapeHtml(item?.job_description || '')}"></div>
+          <div class="form-group"><label>Plan Hours (Target Jam)</label><input type="number" step="0.25" class="form-control" id="p_cfg_plan_hours" value="${escapeHtml(item?.plan_hours ?? 2.0)}"></div>
+          <div class="form-group"><label>Base Point</label><input type="number" step="0.05" class="form-control" id="p_cfg_base_point" value="${escapeHtml(item?.base_point ?? 1.25)}"></div>
+          <div class="form-group"><label>Job Type (Preventive / Corrective / Overhaul)</label><input class="form-control" id="p_cfg_job_type" value="${escapeHtml(item?.job_type || 'Preventive')}"></div>
+          <div class="form-group"><label>Status</label><select class="form-control" id="p_cfg_status"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE" ${item?.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option></select></div>
+        `;
+      } else if (t === 'factor') {
+        box.innerHTML = `
+          <div class="form-group"><label>Tipe Faktor (work_condition / timeliness / safety / mtbf / rate / golongan)</label><input class="form-control" id="p_cfg_factor_type" value="${escapeHtml(item?.factor_type || 'work_condition')}"></div>
+          <div class="form-group"><label>Key (cth: normal, difficult, extreme, on_time, late, junior)</label><input class="form-control" id="p_cfg_key" value="${escapeHtml(item?.key || '')}"></div>
+          <div class="form-group"><label>Nilai Angka (Value)</label><input type="number" step="0.01" class="form-control" id="p_cfg_value" value="${escapeHtml(item?.value ?? 1.0)}"></div>
+          <div class="form-group"><label>Keterangan</label><input class="form-control" id="p_cfg_description" value="${escapeHtml(item?.description || '')}"></div>
+        `;
+      }
+      document.getElementById('modalConfigPusat').classList.remove('hidden');
+    }
+
+    function tutupModalConfigPusat() {
+      document.getElementById('modalConfigPusat').classList.add('hidden');
+    }
+
+    function editConfigPusat(jenis, idx) {
+      const map = { unit: DATA_CFG_PUSAT.units, component: DATA_CFG_PUSAT.components, job: DATA_CFG_PUSAT.jobs, factor: DATA_CFG_PUSAT.factors };
+      const item = (map[jenis] || [])[idx];
+      if (item) bukaModalConfigPusat(item);
+    }
+
+    async function simpanConfigPusat() {
+      const rumah = document.getElementById('filterRumahConfig').value || 'kmbprojek';
+      const adminToken = document.getElementById('inputAdminTokenConfig').value.trim() || TOKEN_ADMIN_PER_RUMAH[rumah] || '';
+      const t = SUB_TAB_CFG;
+      const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      let payload = {};
+      if (t === 'unit') {
+        payload = { unit_id: v('p_cfg_unit_id'), unit_name: v('p_cfg_unit_name'), unit_model: v('p_cfg_unit_model'), section: v('p_cfg_section'), unit_factor: v('p_cfg_unit_factor'), status: v('p_cfg_status') };
+      } else if (t === 'component') {
+        payload = { component_id: v('p_cfg_component_id'), component_name: v('p_cfg_component_name'), category: v('p_cfg_category'), base_points: v('p_cfg_base_points'), target_hours: v('p_cfg_target_hours'), status: v('p_cfg_status') };
+      } else if (t === 'job') {
+        payload = { job_id: v('p_cfg_job_id'), section: v('p_cfg_section'), unit_model: v('p_cfg_unit_model'), component: v('p_cfg_component'), sub_component: v('p_cfg_sub_component'), job_description: v('p_cfg_job_description'), plan_hours: v('p_cfg_plan_hours'), base_point: v('p_cfg_base_point'), job_type: v('p_cfg_job_type'), status: v('p_cfg_status') };
+      } else if (t === 'factor') {
+        payload = { factor_type: v('p_cfg_factor_type'), key: v('p_cfg_key'), value: v('p_cfg_value'), description: v('p_cfg_description') };
+      }
+
+      try {
+        const res = await fetch('/saklar/api/config/simpan', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
+          },
+          body: JSON.stringify({ rumah, admin_token: adminToken, jenis: t, payload })
+        });
+        const data = await res.json();
+        if (data.success) {
+          tutupModalConfigPusat();
+          await muatDataConfigPusat();
+        } else {
+          alert('Gagal menyimpan config: ' + (data.error || 'Galat server'));
+        }
+      } catch (err) {
+        alert('Koneksi gagal: ' + err.message);
+      }
+    }
+
+    async function hapusConfigPusat(jenis, kunci) {
+      const rumah = document.getElementById('filterRumahConfig').value || 'kmbprojek';
+      if (!confirm(`Hapus item config ${jenis} "${kunci}" dari rumah ${rumah}?`)) return;
+      const adminToken = document.getElementById('inputAdminTokenConfig').value.trim() || TOKEN_ADMIN_PER_RUMAH[rumah] || '';
+      try {
+        const res = await fetch('/saklar/api/config/hapus', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN_SESI,
+            'Content-Type': 'application/json',
+            ...(adminToken ? { 'X-Admin-Token': adminToken } : {})
+          },
+          body: JSON.stringify({ rumah, admin_token: adminToken, jenis, kunci })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await muatDataConfigPusat();
+        } else {
+          alert('Gagal menghapus config: ' + (data.error || 'Galat server'));
+        }
+      } catch (err) {
+        alert('Koneksi gagal: ' + err.message);
       }
     }
 
     function escapeHtml(s) {
-      return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(s) {
+      return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
   </script>
 </body>
 </html>
-

@@ -16,7 +16,7 @@
 
 import { SaklarDO } from './saklar-do.js';
 import { verifikasiKataSandi, validasiSesi } from './saklar-auth.js';
-import { handleAdminDaftarUsers, handleAdminSimpanUser, handleAdminSetTokenStatus } from './user-admin.js';
+import { handleAdminDaftarUsers, handleAdminSimpanUser, handleAdminSetTokenStatus, handleAdminHapusUser, handleAdminDaftarConfig, handleAdminSimpanConfig, handleAdminHapusConfig, tanganiApiUserAdmin } from './user-admin.js';
 
 export { SaklarDO };
 
@@ -165,6 +165,26 @@ export default {
     }
     if (url.pathname === '/saklar/api/admin/tokens/status' && request.method === 'POST') {
       return handleAdminSetTokenStatus(request, env);
+    }
+
+    if ((url.pathname === '/saklar/api/users/hapus' || url.pathname === '/saklar/api/admin/users/hapus') && request.method === 'POST') {
+      return handleAdminHapusUser(request, env);
+    }
+
+    if (url.pathname.startsWith('/saklar/api/config/daftar') || (url.pathname === '/saklar/api/config' && request.method === 'GET')) {
+      return handleAdminDaftarConfig(request, env);
+    }
+
+    if (url.pathname.startsWith('/saklar/api/config/simpan') && request.method === 'POST') {
+      return handleAdminSimpanConfig(request, env);
+    }
+
+    if (url.pathname.startsWith('/saklar/api/config/hapus') && request.method === 'POST') {
+      return handleAdminHapusConfig(request, env);
+    }
+
+    if (url.pathname.startsWith('/saklar/api/config') || url.pathname.startsWith('/saklar/api/users')) {
+      return tanganiApiUserAdmin(request, env, url, json);
     }
 
     // API Ubah Saklar (Khusus Panel Saklar - butuh autentikasi)
