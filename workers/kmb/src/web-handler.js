@@ -162,6 +162,14 @@ export async function handleWebRequest(request, env, url) {
 
   // 2. Tentukan halaman
   let page = (url.searchParams.get('page') || '').toLowerCase().trim().split('&')[0];
+
+  if (page === 'users' || page === 'config') {
+    return new Response(renderPesanAksesAdminDitolak(user.role), {
+      status: 403,
+      headers: { ...CORS, 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
+
   if (!page) {
     const roleLower = String(role).toLowerCase();
     page = (roleLower === 'mechanic') ? 'mechanic'
@@ -432,6 +440,65 @@ function renderPesanWeb(judul, pesan, urlTombol, teksTombol) {
     <h1>${judul}</h1>
     <p>${pesan}</p>
     <a href="${urlTombol}">${teksTombol}</a>
+  </div>
+</body>
+</html>`;
+}
+
+function renderPesanAksesAdminDitolak(userRole) {
+  const roleLabel = String(userRole || 'Pengguna').toUpperCase();
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akses Ditolak (403) - Abadi Operation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0F172A; color: #F8FAFC;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .card {
+      background: #1E293B; border: 1px solid #334155; border-radius: 16px;
+      padding: 36px 28px; max-width: 540px; text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .icon { font-size: 52px; margin-bottom: 16px; }
+    h1 { font-size: 21px; font-weight: 700; color: #F87171; margin-bottom: 12px; }
+    .badge {
+      display: inline-block; background: #334155; color: #F1F5F9;
+      padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 700;
+      margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    p { font-size: 14.5px; color: #94A3B8; line-height: 1.6; margin-bottom: 24px; }
+    .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; text-decoration: none; padding: 10px 20px;
+      border-radius: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s;
+    }
+    .btn-primary { background: #3B82F6; color: white; }
+    .btn-primary:hover { background: #2563EB; }
+    .btn-secondary { background: #334155; color: #E2E8F0; }
+    .btn-secondary:hover { background: #475569; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🔒</div>
+    <h1>Akses Terbatas Khusus Administrator</h1>
+    <div class="badge">Peran Akun: ${roleLabel}</div>
+    <p>
+      Menu <strong>Manajemen Pengguna &amp; Token</strong> serta <strong>Master Data Config</strong> (Units, Components, Catalog Jobs, Factors) tidak diperuntukkan bagi peran operasional L1 / L2 di Web Desktop.
+      <br><br>
+      Konfigurasi sistem disatukan di <strong>Panel Saklar &amp; Pengelola Pusat</strong> yang hanya dapat diakses oleh Administrator dengan autentikasi kata sandi.
+    </p>
+    <div class="btn-group">
+      <a href="/web" class="btn btn-secondary">← Kembali ke Halaman Utama</a>
+      <a href="/saklar" class="btn btn-primary">Buka Panel Saklar Pusat →</a>
+    </div>
   </div>
 </body>
 </html>`;

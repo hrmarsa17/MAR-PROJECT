@@ -12,6 +12,29 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Pemusatan Config & User Management ke Panel Saklar Pusat & Proteksi 403 L1/L2 Web Desktop)
+- Berubah:
+  - **Proteksi Akses 403 pada /web?page=users dan /web?page=config**:
+    - Peran operasional L1 (Supervisor), L2 (Superintendent), dan Mekanik diblokir dengan HTTP 403 Forbidden bila membuka /web?page=users atau /web?page=config.
+    - Menampilkan layar penolakan rapi (renderPesanAksesAdminDitolak) yang menjelaskan bahwa Manajemen Pengguna, Token, dan Master Data Config dipusatkan secara eksklusif bagi Administrator di Panel Saklar (abadiops.com/saklar).
+    - Diterapkan seragam di workers/kmbprojek/src/web-handler.js, workers/kmb/src/web-handler.js, dan workers/sum/src/web-handler.js.
+  - **Pembersihan Navigasi Admin Web**:
+    - Menghapus tautan menu operasional (Dashboard, Create WO, Monitoring, Approvals) dari navbar renderHalamanCrudUserWeb.
+    - Menggantinya dengan tautan kembali langsung ke Panel Saklar Pusat: <a href="/saklar">← Panel Saklar Pusat</a>.
+  - **Penyatuan di Panel Saklar Pusat (abadiops-pintu)**:
+    - Administrator mengakses Manajemen Pengguna (Tab 2) dan CRUD Config (Tab 3) dalam satu panel terpadu di /saklar dengan autentikasi PANEL_SAKLAR_SECRET.
+  - **Verifikasi Live Staging**:
+    - Uji live HTTP 403 pada akun L1 Supervisor (52fdb552231348ffb143) dan Mekanik (kmbp-fkh2jc65): LULUS.
+    - Uji otomatis backend mandiri (scripts/uji-backend-mandiri.mjs): 40/40 LULUS.
+    - Uji otomatis user admin (scripts/uji-user-admin-pusat.mjs): 27/27 LULUS.
+    - Uji otomatis serahan token (scripts/uji-serahan-token.mjs): 24/24 LULUS.
+    - Deploy ulang ke staging: abadiops-pintu-staging dan abadiops-kmbprojek-staging.
+- Belum selesai / berikutnya:
+  - Menjalankan file db/kmb_projek/migrasi_kamis_full_penuh.sql di Supabase SQL Editor Staging (dnnqrslftndcbmnvuveb) bila belum dieksekusi.
+  - Sesuai AGENTS.md §16, tetap bekerja di branch staging dan tidak men-deploy produksi atau push ke main.
+
+---
+
 ### 2026-11-05 · Raka (+ AI) · bersama (CRUD Config Units · Components · Jobs · Factors di Web Desktop & Panel Saklar Pusat)
 - Berubah:
   - **Full CRUD Master Data Config & User/Token di Web Desktop**:
