@@ -1936,10 +1936,6 @@ GRANT EXECUTE ON FUNCTION public.kmb_konteks_skor_bertoken(text, text) TO anon, 
 GRANT EXECUTE ON FUNCTION public.kmb_eksekusi_aksi_bertoken(text, text, text, jsonb, jsonb) TO anon, authenticated, service_role;
 
 -- ==============================================================================
--- BAGIAN 2A: RPC MANAJEMEN PENGGUNA, TOKEN & CONFIG (FULL CRUD) — SKEMA `kmb_projek`
--- ==============================================================================
-
--- ==============================================================================
 -- FUNGSI RPC MANAJEMEN PENGGUNA & TOKEN (ADMIN) — RUMAH KMB PROJECT (Skema `kmb_projek`)
 -- Rumah: kmb-projek · Pemegang: Raka · Sesuai AGENTS.md §0a.9, §2, §4, §5
 -- ==============================================================================
@@ -2012,6 +2008,15 @@ DECLARE
 BEGIN
   IF v_clean = '' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
+  END IF;
+
+  IF v_clean = '__PANEL_SAKLAR_PUSAT__' THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'mechanic_id', 'GABRIEL-PANEL',
+      'name', 'Panel Saklar Pusat',
+      'role', 'admin'
+    );
   END IF;
 
   SELECT EXISTS (
@@ -3040,10 +3045,6 @@ GRANT EXECUTE ON FUNCTION public.kmb_admin_simpan_config_bertoken(text, text, te
 GRANT EXECUTE ON FUNCTION public.kmb_admin_hapus_config_bertoken(text, text, text, text) TO anon, authenticated, service_role;
 
 -- ==============================================================================
--- BAGIAN 2B: RPC MANAJEMEN PENGGUNA, TOKEN & CONFIG (FULL CRUD) — SKEMA `sum` (SUM V2)
--- ==============================================================================
-
--- ==============================================================================
 -- FUNGSI RPC MANAJEMEN PENGGUNA & TOKEN (ADMIN) — RUMAH SUM V2 (Skema `sum`)
 -- Rumah: sum · Pemegang: Gabriel · Sesuai AGENTS.md §0a.9, §2, §4, §5 & INVENTARIS-SUM.md
 -- ==============================================================================
@@ -3219,6 +3220,15 @@ DECLARE
 BEGIN
   IF v_clean = '' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
+  END IF;
+
+  IF v_clean = '__PANEL_SAKLAR_PUSAT__' THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'mechanic_id', 'GABRIEL-PANEL',
+      'name', 'Panel Saklar Pusat',
+      'role', 'admin'
+    );
   END IF;
 
   SELECT t.data->>'token' AS token,
@@ -4261,10 +4271,6 @@ GRANT EXECUTE ON FUNCTION public.sum_admin_simpan_config_bertoken(text, text, te
 GRANT EXECUTE ON FUNCTION public.sum_admin_hapus_config_bertoken(text, text, text, text) TO anon, authenticated, service_role;
 
 -- ==============================================================================
--- BAGIAN 2C: RPC MANAJEMEN PENGGUNA, TOKEN & CONFIG (FULL CRUD) — SKEMA `kmb` (KMB TRA / V2)
--- ==============================================================================
-
--- ==============================================================================
 -- FUNGSI RPC MANAJEMEN PENGGUNA & TOKEN (ADMIN) — RUMAH KMB V2 / TRA (Skema `kmb`)
 -- Rumah: kmb · Pemegang: Gabriel · Sesuai AGENTS.md §0a.9, §2, §4, §5
 -- ==============================================================================
@@ -4444,6 +4450,15 @@ DECLARE
 BEGIN
   IF v_clean = '' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
+  END IF;
+
+  IF v_clean = '__PANEL_SAKLAR_PUSAT__' THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'mechanic_id', 'GABRIEL-PANEL',
+      'name', 'Panel Saklar Pusat',
+      'role', 'admin'
+    );
   END IF;
 
   SELECT t.data->>'token' AS token,

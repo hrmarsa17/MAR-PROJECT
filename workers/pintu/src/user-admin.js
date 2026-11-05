@@ -158,10 +158,11 @@ export async function panggilRpcAdminRumah({
   }
 
   const pakaiInternal = !tokenBersih && sesiPanelSah && Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!tokenBersih && !pakaiInternal) {
+  const tokenEfektif = tokenBersih || (sesiPanelSah ? '__PANEL_SAKLAR_PUSAT__' : '');
+  if (!tokenEfektif && !pakaiInternal) {
     return {
       success: false,
-      error: 'Masukkan Token Admin/Superintendent rumah ini (atau pasang SUPABASE_SERVICE_ROLE_KEY di secret Pintu).',
+      error: 'Masukkan Token Admin/Superintendent rumah ini (atau login dengan sandi Panel Saklar).',
     };
   }
 
@@ -173,7 +174,7 @@ export async function panggilRpcAdminRumah({
   let rpcPayload = {};
 
   if (aksi === 'daftar_user') {
-    rpcPayload = pakaiInternal ? {} : { p_token: tokenBersih };
+    rpcPayload = pakaiInternal ? {} : { p_token: tokenEfektif };
   } else if (aksi === 'simpan_user') {
     rpcPayload = pakaiInternal
       ? {
@@ -182,7 +183,7 @@ export async function panggilRpcAdminRumah({
           p_payload: params.payload || {},
         }
       : {
-          p_token: tokenBersih,
+          p_token: tokenEfektif,
           p_op_id: params.op_id,
           p_payload: params.payload || {},
         };
@@ -196,7 +197,7 @@ export async function panggilRpcAdminRumah({
           p_ganti: Boolean(params.ganti),
         }
       : {
-          p_token: tokenBersih,
+          p_token: tokenEfektif,
           p_op_id: params.op_id,
           p_mechanic_id: params.mechanic_id,
           p_token_baru: params.token_baru,
@@ -210,7 +211,7 @@ export async function panggilRpcAdminRumah({
           p_mechanic_id: params.mechanic_id,
         }
       : {
-          p_token: tokenBersih,
+          p_token: tokenEfektif,
           p_op_id: params.op_id,
           p_mechanic_id: params.mechanic_id,
         };
@@ -222,14 +223,14 @@ export async function panggilRpcAdminRumah({
           p_mechanic_id: params.mechanic_id,
         }
       : {
-          p_token: tokenBersih,
+          p_token: tokenEfektif,
           p_op_id: params.op_id,
           p_mechanic_id: params.mechanic_id,
         };
   } else if (aksi === 'daftar_config') {
     rpcPayload = pakaiInternal
       ? { p_jenis: params.jenis || 'all' }
-      : { p_token: tokenBersih, p_jenis: params.jenis || 'all' };
+      : { p_token: tokenEfektif, p_jenis: params.jenis || 'all' };
   } else if (aksi === 'simpan_config') {
     rpcPayload = pakaiInternal
       ? {
@@ -239,7 +240,7 @@ export async function panggilRpcAdminRumah({
           p_payload: params.payload || {},
         }
       : {
-          p_token: tokenBersih,
+          p_token: tokenEfektif,
           p_op_id: params.op_id,
           p_jenis: params.jenis || 'unit',
           p_payload: params.payload || {},
@@ -253,7 +254,7 @@ export async function panggilRpcAdminRumah({
           p_kunci: params.kunci || '',
         }
       : {
-          p_token: tokenBersih,
+          p_token: tokenEfektif,
           p_op_id: params.op_id,
           p_jenis: params.jenis || 'unit',
           p_kunci: params.kunci || '',

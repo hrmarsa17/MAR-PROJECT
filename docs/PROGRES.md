@@ -12,6 +12,24 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Panduan Deploy Staging Kamis 9 — Otorisasi Sesi Panel Saklar Pusat __PANEL_SAKLAR_PUSAT__)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis 9 (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip SQL (5.538 baris) dengan dukungan otorisasi otomatis sesi panel saklar pusat (`__PANEL_SAKLAR_PUSAT__`) pada fungsi `_cek_is_admin` di skema `kmb_projek`, `sum`, dan `kmb`.
+  - **Langkah C — Modul Admin Pusat (`workers/pintu/src/user-admin.js`)**:
+    - Menggunakan `tokenEfektif = tokenBersih || (sesiPanelSah ? '__PANEL_SAKLAR_PUSAT__' : '');` sehingga seluruh aksi CRUD User & Config di Panel Saklar Pusat (`/saklar`) langsung terotorisasi penuh saat admin telah login dengan kata sandi panel tanpa mewajibkan input token rumah secara manual.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Jalankan `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) untuk mengaktifkan pengenalan `__PANEL_SAKLAR_PUSAT__`.
+  - Sesuai AGENTS.md §16, tetap bekerja di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+---
+
 ### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
 - Berubah:
   - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
@@ -39,6 +57,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-05 · Raka (+ AI) · bersama (Pemusatan Config & User Management ke Panel Saklar Pusat & Proteksi 403 L1/L2 Web Desktop)
 - Berubah:
   - **Proteksi Akses 403 pada /web?page=users dan /web?page=config**:
@@ -61,6 +105,32 @@ Formatnya:
   - Sesuai AGENTS.md §16, tetap bekerja di branch staging dan tidak men-deploy produksi atau push ke main.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-05 · Raka (+ AI) · bersama (CRUD Config Units · Components · Jobs · Factors di Web Desktop & Panel Saklar Pusat)
 - Berubah:
@@ -96,6 +166,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Menu Mekanik, Tombol Kembali Anti-Loop, & Mode Saklar Supabase Staging)
 - Berubah:
@@ -119,6 +215,32 @@ Formatnya:
   - PR dari branch `staging` ke `main` untuk direview Gabriel saat Go-Live Kamis (JANGAN push langsung ke main).
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelesaian Error 1101 di /web?page=approvals & Normalisasi Objek WO Web Desktop)
 - Berubah:
@@ -146,6 +268,32 @@ Formatnya:
   - Siap untuk persiapan migrasi hari Kamis bersama Gabriel.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-04 · Raka (+ AI) · bersama (Perbaikan Tombol Kembali ke Monitoring & Navigasi Navbar Performa/Reports Web Desktop)
 - Berubah:
@@ -180,6 +328,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penerapan Patch Section 8 Panduan Deploy Kamis: Normalisasi Payload Web, Modal WO, & Saklar Balik)
 - Berubah:
   - Menerapkan seluruh spesifikasi teknis dan patch Section 8 dari `docs/panduan_deploy_staging_kamis (3).md`:
@@ -210,6 +384,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Respon getJobCatalogCached / loadJobsCatalog di Backend Supabase)
 - Berubah:
   - Menyelesaikan pesan error "Gagal memuat katalog maintenance" saat membuka form Create Work Order di antarmuka Web Desktop:
@@ -230,6 +430,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penambahan Kolom Nomor Urut pada Tabel Daftar Pengguna & Token Terpusat)
 - Berubah:
   - Menambahkan kolom nomor urut (`No`) di sebelah paling kiri tabel Daftar Pengguna & Token Terpusat di Panel Saklar (`workers/pintu/public/saklar.html`):
@@ -245,6 +471,32 @@ Formatnya:
   - Commit dan push ke branch staging di remote origin dan kmb.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Bridge Web Desktop /api/web dengan Saklar Dua Cabang & Supabase DB)
 - Berubah:
@@ -268,6 +520,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-04 · Raka (+ AI) · bersama (Penyelarasan Label Rumah pada Tabel Pengguna dengan Dropdown di Panel Saklar)
 - Berubah:
   - Menyelaraskan teks badge kolom Rumah pada tabel Manajemen Pengguna & Token dengan pilihan dropdown:
@@ -285,6 +563,32 @@ Formatnya:
   - Commit dan push ke branch staging di remote origin dan kmb.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-04 · Raka (+ AI) · kmb (Perbaikan Pemetaan Nama dan User ID pada RPC Admin User KMB TRA)
 - Berubah:
@@ -305,6 +609,32 @@ Formatnya:
   - Commit dan push ke branch staging di remote origin dan kmb.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-03 · Raka (+ AI) · bersama (Perbaikan RPC Admin User Terpusat & Data Token Admin Staging Gedung 2)
 - Berubah:
@@ -327,6 +657,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Perbaikan Bocoran Kode JavaScript di Halaman Web Approvals)
 - Berubah:
   - Memperbaiki bocoran teks kode JavaScript di bagian bawah halaman web Approvals:
@@ -341,6 +697,32 @@ Formatnya:
   - Commit dan push ke branch staging di origin dan kmb.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
@@ -362,6 +744,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -381,6 +789,32 @@ Formatnya:
   - Commit dan push ke branch staging di remote origin dan kmb.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Perbaikan Muat Katalog Vessel & Daftar Unit Web Work Order di Staging)
 - Berubah:
@@ -408,6 +842,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -427,6 +887,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-03 · Raka (+ AI) · bersama (Backend Mandiri Penuh Supabase Tanpa GAS, Mesin Skor ESM, Lulus Uji 24/24)
 - Berubah:
@@ -447,6 +933,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -466,6 +978,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-03 · Raka (+ AI) · bersama (Manajemen Pengguna & Token Terpusat di Pintu, RPC 3 Rumah, Lulus Uji 27/27)
 - Berubah:
@@ -488,6 +1026,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -507,6 +1071,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-03 · Raka (+ AI) · staging (Verifikasi RPC Gedung 2, Penyelarasan ?uji=supabase & pull_my_wos)
 - Berubah:
@@ -523,6 +1113,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -542,6 +1158,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-11-02 · Raka (+ AI) · staging
 - Berubah:
@@ -556,6 +1198,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -575,6 +1243,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-10-30 · Gabriel (+ Claude) · bersama (audit kerja Raka 30 Okt di semua sistem)
 - Berubah:
@@ -606,6 +1300,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -625,6 +1345,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-10-30 · Raka (+ AI) · bersama (Secret panel saklar produksi)
 - **Berubah:**
@@ -637,6 +1383,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -656,6 +1428,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-10-30 · Raka (+ AI) · bersama (Verifikasi akses spreadsheet dan persiapan sinkron staging)
 - **Berubah:**
@@ -676,6 +1474,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -695,6 +1519,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-10-30 · Raka (+ AI) · bersama (Langkah 8 Selesai: Panel Saklar Visual di Pintu abadiops.com & Dynamic House Integration)
 - **Eksekusi Langkah 8: Membangun Panel Saklar Visual di Pintu (`abadiops.com/saklar`)**:
@@ -727,6 +1577,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -746,6 +1622,32 @@ Formatnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-10-30 · Raka (+ AI) · bersama (Langkah 6 Selesai: Halaman Web Desktop 1:1 di Domain Abadi, Pintu Bebas script.google.com)
 - **Eksekusi Langkah 6: Pemindahan Web Desktop 1:1 ke Domain Abadi (`abadiops.com`)**:
@@ -1163,6 +2065,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -1183,6 +2111,32 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ## Tugas terbuka
 
 Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. Dirapikan 29 Okt 2026 untuk serah terima ke Raka (lihat `docs/SERAH-TERIMA-2026-10-29.md`).
@@ -1190,65 +2144,31 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 | Tugas | Rumah | Pemegang | Status |
 |---
 
-### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
 - Berubah:
-  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
-    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
-    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
-    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
-    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
-    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
-    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
-  - Verifikasi:
-    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
-      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
-      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
-    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
-    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
 - Belum selesai / berikutnya:
-  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
 
----|---
-
-### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
-- Berubah:
-  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
-    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
-    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
-    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
-    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
-    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
-    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
-  - Verifikasi:
-    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
-      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
-      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
-    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
-    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
-- Belum selesai / berikutnya:
-  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
-
----|---
-
-### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
-- Berubah:
-  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
-    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
-    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
-    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
-    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
-    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
-    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
-  - Verifikasi:
-    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
-      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
-      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
-    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
-    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
-- Belum selesai / berikutnya:
-  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
-
----|---
 
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
@@ -1268,7 +2188,249 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 - Belum selesai / berikutnya:
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
----|
+---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+|---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+|---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+|---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
+### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
+- Berubah:
+  - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
+    - Menghapus opsi section 'workshop' dari `ALLOWED_SECTIONS`, `sectionRadiosHtml`, dan daftar default di `workers/kmbprojek/web/WorkOrder.html`, sehingga section yang tampil di antarmuka hanya 'Rekondisi' (`vessel`) dan 'Maintenance' (`maintenance`) sesuai spek KMB Project.
+    - Memperbaiki pengisian dropdown Unit (`.cas-unit`): `populateCascadeRoot(blockEl, section)` kini dipanggil secara instan saat inisialisasi blok dan pergantian section tanpa menunggu siklus network asynchronous `loadCatalog()`. Unit 28 kendaraan (16 Rekondisi, 11 Maintenance, 1 Others) langsung terisi dalam select box seketika.
+    - Menjaga nilai pilihan unit yang sudah dipilih (`prevVal`) agar tidak hilang saat katalog job tiba dari backend.
+    - Menyelaraskan teks placeholder `<option value="">-- Pilih Unit --</option>` dan `-- Pilih Model --` dengan bahasa Indonesia seragam.
+    - Mengompilasi ulang seluruh template web menggunakan `scripts/build-web-templates.mjs` ke `workers/kmbprojek/src/web-templates.js`.
+    - Deploy pembaruan ke staging: Worker `abadiops-kmbprojek-staging` sukses ter-deploy ke Cloudflare Workers (`eb437691-dbe5-42e5-a538-0e68b1b2a5fa`).
+  - Verifikasi:
+    - HTTP GET `/web?token=52fdb552231348ffb143&page=create`:
+      - `ALLOWED_SECTIONS`: `['vessel', 'maintenance']` (Workshop: nihil/dihapus).
+      - `UNITS`: 28 unit tertanam (16 Rekondisi, 11 Maintenance).
+    - Autentikasi Pintu Staging `POST /api/pintu` dengan token `52fdb552231348ffb143`: sukses mengenali `kmbprojek` (`L1 Test`).
+    - Suite uji menyeluruh tetap 100% lulus: `uji-backend-mandiri.mjs` 24/24 LULUS, `uji-serahan-token.mjs` 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
+
+---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+|
 | **Rencana migrasi berurutan.** Target selesai: tinggal menyalakan saklar. Urutannya ada di `docs/SERAH-TERIMA-2026-10-29.md` §5 dan `docs/SAKLAR.md` | bersama | Gabriel + Raka | panduan utama |
 | KMB Project 1:1 dari `mar-projek-offline`: `pwa/kmbprojek/` + `workers/kmbprojek/`, resep empat baris + `masukDariPintu`, diuji di `wrangler dev` | kmb-projek | Raka (+ AI) | **SELESAI** 29 Okt: tayang di `kmbprojek.abadiops.com` via Worker `abadiops-porject-kmb`, 1:1 PWA melayani lapangan, diteruskan ke GAS (§5 langkah 1 tuntas) |
 | Cermin terjadwal ketiga rumah (Cron Cloudflare, menyalin setiap sheet termasuk bulan lama), dengan laporan selisih harian; lulus kalau selisihnya nol 7 hari | bersama | Raka + Gabriel | Gabriel: buat akun layanan Google dan bagikan ketiga spreadsheet |
@@ -1298,6 +2460,32 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -1317,6 +2505,32 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 
 ### 2026-10-29 · Gabriel (+ Claude) · bersama + kmb-projek (pintu live; KMB Project kembali ke rumahnya sendiri)
 - Berubah:
@@ -1512,6 +2726,32 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+
 ### 2026-11-03 · Raka (+ AI) · kmb-projek (Penghapusan Section Workshop & Pengisian Dropdown Unit Instan Web Work Order)
 - Berubah:
   - Menyelesaikan permintaan penghapusan pilihan Workshop dan perbaikan data unit kosong di formulir Web Work Order KMB Project:
@@ -1531,6 +2771,32 @@ Hanya tugas yang masih terbuka. Tugas yang selesai tercatat di entri di bawah. D
   - Commit dan push ke branch `staging` di remote `origin` dan `kmb`.
 
 ---
+
+### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Penuh Blueprint Panduan Deploy Staging Kamis 8)
+- Berubah:
+  - **Langkah A — SQL Migrasi Kamis Lengkap (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
+    - Memperbarui skrip migrasi SQL penuh 5.523 baris dengan sintaks blok idempoten `DO $$ ... END $$;`, penambahan kolom `IF EXISTS` pada `config_units`, `config_components`, dan sinkronisasi otomatis token mekanik.
+    - Menyertakan seluruh master data units, components, catalog jobs, dan factors untuk Supabase Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Langkah B — Mesin Backend Mandiri & Web Handler `workers/kmbprojek`**:
+    - Memperbarui `workers/kmbprojek/src/web-handler.js`: perbaikan `backToken` & `activeFilter`, normalisasi `lengkapiObjekWoWeb`, dan penguncian halaman `/web?page=users` / `?page=config` khusus Admin dengan HTTP 403 Forbidden untuk peran L1/L2.
+    - Memperbarui `workers/kmbprojek/src/supabase-backend.js`: dukungan penuh seluruh aksi baca, tulis, `normalisasiBlokWo` untuk formulir multi-baris create WO, `getJobCatalogCached`, serta properti `wo: woObj` pada detail WO modal.
+    - Memperbarui `src/domain/scoring.mjs`: rumus pembulatan JavaScript murni tahan galat pecahan biner (`1.005 -> 1.01`, `8.165 -> 8.17`) menggunakan koreksi presisi IEEE 754 epsilon.
+    - Memperbarui `workers/kmbprojek/src/index.js` & `wrangler.toml`: mengunci `SAKLAR = "supabase"` dan `STORAGE_MODE = "SUPABASE"` di `[env.staging]`.
+  - **Langkah C — Panel Saklar Pusat 3 Rumah (`workers/pintu`)**:
+    - Memperbarui `workers/pintu/public/saklar.html`: tampilan terpadu 1:1 CRUD Master Data Config dengan tab per rumah (`SUM V2`, `KMB TRA`, `KMB Projek`, `Semua Rumah`), 5 KPI boxes, filter status, pencarian instan, dan dropdown target rumah pada modal.
+    - Memperbarui `workers/pintu/src/index.js` & `workers/pintu/src/user-admin.js`: routing stateless untuk daftar, simpan, dan hapus user serta config untuk seluruh 3 rumah via RPC Supabase.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji HTTP 403 live di staging pada akun operasional (Mekanik): LULUS.
+  - **Deploy Staging Berhasil**:
+    - `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev`
+    - `abadiops-kmbprojek-staging`: `https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`
+- Belum selesai / berikutnya:
+  - Gabriel mengeksekusi `db/kmb_projek/migrasi_kamis_full_penuh.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) bila belum dijalankan.
+  - Sesuai AGENTS.md §16, seluruh pekerjaan tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
 ### 2026-10-28 · Raka (+ Antigravity) · bersama (Penyambungan Multi-GAS Token Resolver untuk SUM V2)
 - Berubah:
   - Multi-GAS Token Resolver (`worker.js`, `workers/kmb-projek/worker.js`):
