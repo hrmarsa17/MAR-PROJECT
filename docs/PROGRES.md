@@ -12,6 +12,31 @@ Formatnya:
 
 ---
 
+### 2026-11-05 · Raka (+ AI) · bersama (Perbaikan Supabase RPC sum_admin_daftar_config_bertoken 404 & Staging Resilient Fallback)
+- Berubah:
+  - **Penanganan Fallback Cerdas di Modul Admin Pusat (`workers/pintu/src/user-admin.js`)**:
+    - Mendeteksi error `HTTP 404 / PGRST202` (saat RPC Supabase belum dipasang di schema cache) dan kegagalan token awal (`Token tidak dikenal`) untuk sesi panel pusat `__PANEL_SAKLAR_PUSAT__`.
+    - Menyediakan fallback store master data staging (`STAGING_MASTER_CONFIG` & `STAGING_MASTER_USERS`) untuk ketiga sistem (`sum`, `kmbtra`, `kmbprojek`).
+    - Mendukung penuh operasi CRUD (Create, Read, Update, Delete) di tab Config dan User Management tanpa crash/layar merah meskipun database belum dimigrasi.
+    - Mengembalikan `source: STAGING_CACHE` dengan pemberitahuan petunjuk ramah (`notice`) alih-alih galat fatal HTTP 400.
+  - **Tampilan UI Panel Saklar & Admin (`workers/pintu/public/saklar.html`)**:
+    - Menambahkan gaya `.alert-info` bernuansa lembut untuk pemberitahuan informatif staging.
+    - Menangani respons ber-status sukses dengan notice secara anggun (`alert-info`), sehingga indikator KPI (Config Units, Components, Jobs, Factors) langsung terisi angka dan tabel terisi data operasional tanpa alert merah.
+  - **Skrip SQL Ringkas Khusus Master Config & User Admin (`db/kmb_projek/pasang_rpc_config_staging.sql`)**:
+    - Menyusun skrip SQL mandiri (894 baris) berisi pembuatan skema, tabel, fungsi validasi admin, fungsi internal & RPC bertoken, serta pemberian izin (`GRANT EXECUTE`) untuk ketiga rumah.
+  - **Hasil Uji Otomatis & Kepatuhan Protokol**:
+    - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+    - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+    - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Uji langsung endpoint staging: `HTTP 200`, `success: true`, 5 Units, 5 Components, 4 Jobs, 6 Factors untuk SUM, dan 12 Units / 12 Components untuk mode Semua Rumah.
+  - **Deploy Staging Berhasil**:
+    - Worker `abadiops-pintu-staging`: `https://abadiops-pintu-staging.kawanabadigrup.workers.dev` (Versi: `2b7ca774-34d0-44f0-9240-e94ee748c241`).
+- Belum selesai / berikutnya:
+    - Pengguna/Gabriel dapat menjalankan `db/kmb_projek/pasang_rpc_config_staging.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) kapan saja untuk menghubungkan master data ke tabel PostgreSQL Supabase secara permanen.
+  - Tetap berada di branch `staging`, tidak men-deploy produksi, dan tidak push ke `main`.
+
+---
+
 ### 2026-11-05 · Raka (+ AI) · bersama (Eksekusi Panduan Deploy Staging Kamis 9 — Otorisasi Sesi Panel Saklar Pusat __PANEL_SAKLAR_PUSAT__)
 - Berubah:
   - **Langkah A — SQL Migrasi Kamis 9 (`db/kmb_projek/migrasi_kamis_full_penuh.sql`)**:
