@@ -12,6 +12,17 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb-projek (Perbaikan blocker migrasi RPC)
+- Temuan:
+  - Supabase menolak `CREATE OR REPLACE FUNCTION public.kmb_eksekusi_aksi_bertoken(...)` karena fungsi lama dengan signature lima argumen sudah ada dan return type-nya `jsonb`, sedangkan migrasi Kamis mendefinisikan `json`.
+- Berubah:
+  - Menambahkan `DROP FUNCTION IF EXISTS` dengan signature tepat sebelum definisi RPC baru di `db/kmb_projek/migrasi_kamis_full_penuh.sql`.
+- Belum selesai / berikutnya:
+  - Jalankan ulang file migrasi di Supabase Gedung 2 (`dnnqrslftndcbmnvuveb`) dan pastikan editor berada di project staging, bukan Gedung 1.
+  - Verifikasi fungsi `kmb_my_wos_bertoken` dan alur Monitoring setelah migrasi selesai.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · kmb-projek (Diagnosis Monitoring masih kosong)
 - Temuan:
   - Sumber masalah tetap migrasi SQL staging yang belum aktif, bukan deploy Worker.

@@ -1031,6 +1031,10 @@ $$;
 -- ==============================================================================
 -- 2. EKSEKUSI AKSI TULIS & DESKTOP MANDIRI (`kmb_eksekusi_aksi_bertoken`)
 -- ==============================================================================
+-- Signature ini sebelumnya mengembalikan jsonb. Return type tidak dapat
+-- diubah dengan CREATE OR REPLACE, sehingga overload lama harus dihapus dulu.
+DROP FUNCTION IF EXISTS public.kmb_eksekusi_aksi_bertoken(text, text, text, jsonb, jsonb);
+
 CREATE OR REPLACE FUNCTION public.kmb_eksekusi_aksi_bertoken(
   p_token   text,
   p_aksi    text,
