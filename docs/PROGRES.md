@@ -12,6 +12,17 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Menyamakan katalog SUM dan KMB TRA dengan KMB Project)
+- Berubah:
+  - Menyamakan output `pull_create_refs` SUM dan KMB TRA: `component_no`, `base_points`, `unit_name`, `unit_type`, dan `mechanic_name`.
+  - Menambahkan fallback untuk variasi header cermin lama (`component_id`, `base_point`, `unit_model`, `unit_code`, dan nama komponen/unit).
+  - Menyamakan filter status, role mekanik, dan work condition agar tidak gagal karena kapitalisasi atau spasi.
+- Belum selesai / berikutnya:
+  - Jalankan ulang `db/sum/rpc_baca.sql` dan `db/kmb/rpc_baca.sql` di Supabase Gedung 2.
+  - Uji form Create WO SUM dan KMB TRA, lalu uji create → Monitoring → submit → approval.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · sum (Perbaikan katalog form Create WO kosong)
 - Berubah:
   - Menyamakan nama field hasil RPC `sum_create_refs_bertoken` dengan kontrak halaman Create WO SUM.

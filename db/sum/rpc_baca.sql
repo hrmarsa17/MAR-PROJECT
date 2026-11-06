@@ -75,10 +75,10 @@ DECLARE
 BEGIN
     -- Units
     SELECT coalesce(json_agg(json_build_object(
-        'unit_id', data->>'unit_id',
+        'unit_id', coalesce(data->>'unit_id', data->>'unit_code'),
         'unit_name', coalesce(nullif(data->>'unit_name', ''), nullif(data->>'unit_model', ''), nullif(data->>'model', ''), data->>'unit_id', ''),
         'unit_type', coalesce(data->>'unit_type', data->>'type', ''),
-        'unit_factor', coalesce((data->>'unit_factor')::numeric, 1.0),
+        'unit_factor', coalesce(nullif(data->>'unit_factor', '')::numeric, 1.0),
         'status', coalesce(data->>'status', 'ACTIVE')
     ) ORDER BY data->>'unit_id'), '[]'::json)
     INTO v_units
@@ -89,11 +89,11 @@ BEGIN
     SELECT coalesce(json_agg(json_build_object(
         'component_no', coalesce(data->>'component_no', data->>'component_id'),
         'component_id', coalesce(data->>'component_id', data->>'component_no'),
-        'component_name', data->>'component_name',
+        'component_name', coalesce(data->>'component_name', data->>'component', data->>'activity', ''),
         'category', coalesce(data->>'category', ''),
         'base_points', coalesce(nullif(data->>'base_points', '')::numeric, nullif(data->>'base_point', '')::numeric, 0),
         'base_point', coalesce(nullif(data->>'base_point', '')::numeric, nullif(data->>'base_points', '')::numeric, 0),
-        'target_hours', coalesce((data->>'target_hours')::numeric, 0),
+        'target_hours', coalesce(nullif(data->>'target_hours', '')::numeric, 0),
         'status', coalesce(data->>'status', 'ACTIVE')
     ) ORDER BY data->>'component_name'), '[]'::json)
     INTO v_comps
@@ -126,20 +126,20 @@ BEGIN
     -- Work Conditions dinamis dari cermin config_factors (Bug #22, 1:1 GAS SUM getWorkConditionOptionsForView)
     SELECT coalesce((data->>'value')::numeric, 1.0) INTO v_f_normal
       FROM sum.config_factors
-     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
-       AND (data->>'key' = 'normal' OR data->>'factor_key' = 'normal')
+     WHERE (lower(btrim(data->>'factor_type')) = 'work_condition' OR lower(btrim(data->>'type')) = 'work_condition')
+       AND (lower(btrim(data->>'key')) = 'normal' OR lower(btrim(data->>'factor_key')) = 'normal')
      LIMIT 1;
 
     SELECT coalesce((data->>'value')::numeric, 1.1) INTO v_f_difficult
       FROM sum.config_factors
-     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
-       AND (data->>'key' = 'difficult' OR data->>'factor_key' = 'difficult')
+     WHERE (lower(btrim(data->>'factor_type')) = 'work_condition' OR lower(btrim(data->>'type')) = 'work_condition')
+       AND (lower(btrim(data->>'key')) = 'difficult' OR lower(btrim(data->>'factor_key')) = 'difficult')
      LIMIT 1;
 
     SELECT coalesce((data->>'value')::numeric, 1.2) INTO v_f_extreme
       FROM sum.config_factors
-     WHERE (data->>'factor_type' = 'work_condition' OR data->>'type' = 'work_condition')
-       AND (data->>'key' = 'extreme' OR data->>'factor_key' = 'extreme')
+     WHERE (lower(btrim(data->>'factor_type')) = 'work_condition' OR lower(btrim(data->>'type')) = 'work_condition')
+       AND (lower(btrim(data->>'key')) = 'extreme' OR lower(btrim(data->>'factor_key')) = 'extreme')
      LIMIT 1;
 
     RETURN json_build_object(
@@ -233,8 +233,8 @@ BEGIN
     -- Hitung total mekanik aktif
     SELECT count(*)::int INTO v_total_mechs
       FROM sum.config_mechanics
-     WHERE (data->>'status' IS NULL OR data->>'status' = 'ACTIVE')
-       AND coalesce(data->>'role', 'mechanic') = 'mechanic';
+     WHERE (data->>'status' IS NULL OR lower(btrim(data->>'status')) = 'active')
+       AND lower(btrim(coalesce(data->>'role', 'mechanic'))) = 'mechanic';
 
     -- Agregat status WO dari tabel cermin sum.work_orders
     SELECT
@@ -264,8 +264,8 @@ BEGIN
                   FROM jsonb_array_elements(CASE WHEN jsonb_typeof(w.data->'team') = 'array' THEN w.data->'team' ELSE '[]'::jsonb END) member
                  WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(m.data->>'mechanic_id'))
             )
-         WHERE (m.data->>'status' IS NULL OR m.data->>'status' = 'ACTIVE')
-           AND coalesce(m.data->>'role', 'mechanic') = 'mechanic'
+         WHERE (m.data->>'status' IS NULL OR lower(btrim(m.data->>'status')) = 'active')
+           AND lower(btrim(coalesce(m.data->>'role', 'mechanic'))) = 'mechanic'
          GROUP BY m.data->>'mechanic_id', m.data->>'name', m.data->>'jabatan_aktual'
     )
     SELECT coalesce(json_agg(json_build_object(
