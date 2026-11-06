@@ -12,6 +12,15 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · sum (Perbaikan katalog form Create WO kosong)
+- Berubah:
+  - Menyamakan nama field hasil RPC `sum_create_refs_bertoken` dengan kontrak halaman Create WO SUM.
+  - RPC kini mengembalikan `component_no`, `base_points`, `unit_name`, `unit_type`, dan `mechanic_name`, dengan fallback ke nama header cermin lama.
+- Belum selesai / berikutnya:
+  - Jalankan ulang bagian `public._sum_create_refs_internal()` dari `db/sum/rpc_baca.sql` di Supabase Gedung 2, lalu refresh halaman Create WO.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Deploy penyelarasan WO SUM dan KMB TRA)
 - Berubah:
   - Deploy SUM staging berhasil sebagai `abadiops-sum-staging`, versi `1046bd2b-84c1-4cd5-886a-66b0b0fdfc0c`.

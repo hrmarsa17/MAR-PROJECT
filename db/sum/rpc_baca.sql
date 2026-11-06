@@ -76,7 +76,8 @@ BEGIN
     -- Units
     SELECT coalesce(json_agg(json_build_object(
         'unit_id', data->>'unit_id',
-        'unit_model', coalesce(data->>'unit_model', data->>'model', ''),
+        'unit_name', coalesce(nullif(data->>'unit_name', ''), nullif(data->>'unit_model', ''), nullif(data->>'model', ''), data->>'unit_id', ''),
+        'unit_type', coalesce(data->>'unit_type', data->>'type', ''),
         'unit_factor', coalesce((data->>'unit_factor')::numeric, 1.0),
         'status', coalesce(data->>'status', 'ACTIVE')
     ) ORDER BY data->>'unit_id'), '[]'::json)
@@ -86,10 +87,12 @@ BEGIN
 
     -- Components
     SELECT coalesce(json_agg(json_build_object(
-        'component_id', data->>'component_id',
+        'component_no', coalesce(data->>'component_no', data->>'component_id'),
+        'component_id', coalesce(data->>'component_id', data->>'component_no'),
         'component_name', data->>'component_name',
         'category', coalesce(data->>'category', ''),
-        'base_point', coalesce((data->>'base_point')::numeric, 0),
+        'base_points', coalesce(nullif(data->>'base_points', '')::numeric, nullif(data->>'base_point', '')::numeric, 0),
+        'base_point', coalesce(nullif(data->>'base_point', '')::numeric, nullif(data->>'base_points', '')::numeric, 0),
         'target_hours', coalesce((data->>'target_hours')::numeric, 0),
         'status', coalesce(data->>'status', 'ACTIVE')
     ) ORDER BY data->>'component_name'), '[]'::json)
@@ -100,6 +103,7 @@ BEGIN
     -- Mechanics (role = mechanic)
     SELECT coalesce(json_agg(json_build_object(
         'mechanic_id', data->>'mechanic_id',
+        'mechanic_name', coalesce(data->>'mechanic_name', data->>'name', data->>'mechanic_id'),
         'name', data->>'name',
         'email', coalesce(data->>'email', ''),
         'jabatan_aktual', coalesce(data->>'jabatan_aktual', ''),
