@@ -251,12 +251,16 @@ BEGIN
         SELECT m.data->>'mechanic_id' as mechanic_id,
                m.data->>'name' as name,
                coalesce(m.data->>'jabatan_aktual', '') as jabatan,
+               coalesce(nullif(max(t.data->>'token'), ''), '') as token,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('open', 'active', 'assigned', 'in_progress', 'pending_mechanic_work')), 0)::int as pending_work,
                coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'EXPIRED'), 0)::int as expired,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('pending_l1', 'pending_supervisor')), 0)::int as pending_l1,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('pending_l2', 'pending_superintendent')), 0)::int as pending_l2,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) = 'approved'), 0)::int as approved
           FROM sum.config_mechanics m
+          LEFT JOIN sum.api_tokens t
+            ON lower(trim(t.data->>'mechanic_id')) = lower(trim(m.data->>'mechanic_id'))
+           AND (t.data->>'is_active' IS NULL OR lower(trim(t.data->>'is_active')) <> 'false')
           LEFT JOIN sum.work_orders w
             ON lower(trim(w.data->>'lead_mechanic_id')) = lower(trim(m.data->>'mechanic_id'))
             OR EXISTS (
@@ -272,6 +276,8 @@ BEGIN
         'mechanic_id', mechanic_id,
         'name', name,
         'jabatan', jabatan,
+        'token', token,
+        'has_token', token <> '',
         'pending_work', pending_work,
         'expired', expired,
         'pending_l1', pending_l1,

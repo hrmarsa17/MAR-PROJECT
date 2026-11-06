@@ -17,6 +17,7 @@ Formatnya:
   - Menyamakan output `pull_create_refs` SUM dan KMB TRA: `component_no`, `base_points`, `unit_name`, `unit_type`, dan `mechanic_name`.
   - Menambahkan fallback untuk variasi header cermin lama (`component_id`, `base_point`, `unit_model`, `unit_code`, dan nama komponen/unit).
   - Menyamakan filter status, role mekanik, dan work condition agar tidak gagal karena kapitalisasi atau spasi.
+  - Memperbaiki kartu Monitoring SUM: RPC sekarang menghubungkan mekanik ke token aktif berdasarkan `mechanic_id`, sehingga link ke tampilan mekanik tidak lagi selalu dianggap tanpa token.
 - Belum selesai / berikutnya:
   - Jalankan ulang `db/sum/rpc_baca.sql` dan `db/kmb/rpc_baca.sql` di Supabase Gedung 2.
   - Uji form Create WO SUM dan KMB TRA, lalu uji create → Monitoring → submit → approval.
