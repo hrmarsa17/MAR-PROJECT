@@ -18,6 +18,7 @@ Formatnya:
   - Menambahkan fallback untuk variasi header cermin lama (`component_id`, `base_point`, `unit_model`, `unit_code`, dan nama komponen/unit).
   - Menyamakan filter status, role mekanik, dan work condition agar tidak gagal karena kapitalisasi atau spasi.
   - Memperbaiki kartu Monitoring SUM: RPC sekarang menghubungkan mekanik ke token aktif berdasarkan `mechanic_id`, sehingga link ke tampilan mekanik tidak lagi selalu dianggap tanpa token.
+  - Memperbaiki nama kartu Monitoring SUM agar membaca `mechanic_name`, lalu fallback ke `name` dan `mechanic_id`.
 - Belum selesai / berikutnya:
   - Jalankan ulang `db/sum/rpc_baca.sql` dan `db/kmb/rpc_baca.sql` di Supabase Gedung 2.
   - Uji form Create WO SUM dan KMB TRA, lalu uji create → Monitoring → submit → approval.

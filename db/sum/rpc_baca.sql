@@ -249,7 +249,7 @@ BEGIN
     -- Ringkasan per mekanik
     WITH per_mech AS (
         SELECT m.data->>'mechanic_id' as mechanic_id,
-               m.data->>'name' as name,
+               coalesce(nullif(m.data->>'mechanic_name', ''), nullif(m.data->>'name', ''), m.data->>'mechanic_id') as name,
                coalesce(m.data->>'jabatan_aktual', '') as jabatan,
                coalesce(nullif(max(t.data->>'token'), ''), '') as token,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('open', 'active', 'assigned', 'in_progress', 'pending_mechanic_work')), 0)::int as pending_work,
@@ -270,7 +270,9 @@ BEGIN
             )
          WHERE (m.data->>'status' IS NULL OR lower(btrim(m.data->>'status')) = 'active')
            AND lower(btrim(coalesce(m.data->>'role', 'mechanic'))) = 'mechanic'
-         GROUP BY m.data->>'mechanic_id', m.data->>'name', m.data->>'jabatan_aktual'
+         GROUP BY m.data->>'mechanic_id',
+                  coalesce(nullif(m.data->>'mechanic_name', ''), nullif(m.data->>'name', ''), m.data->>'mechanic_id'),
+                  m.data->>'jabatan_aktual'
     )
     SELECT coalesce(json_agg(json_build_object(
         'mechanic_id', mechanic_id,
