@@ -12,6 +12,17 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Deploy penyelarasan WO SUM dan KMB TRA)
+- Berubah:
+  - Deploy SUM staging berhasil sebagai `abadiops-sum-staging`, versi `1046bd2b-84c1-4cd5-886a-66b0b0fdfc0c`.
+  - Deploy KMB TRA staging berhasil sebagai `abadiops-kmb-staging`, versi `d68b8f93-03d0-4976-8e55-475fae186e87`.
+  - Endpoint `/api/sehat` kedua Worker merespons HTTP 200; SUM masih membaca saklar `gas`, KMB membaca `supabase`.
+- Belum selesai / berikutnya:
+  - SQL `db/sum/rpc_backend_penuh.sql`, `db/sum/rpc_baca.sql`, `db/kmb/rpc_backend_penuh.sql`, dan `db/kmb/rpc_baca.sql` belum dijalankan di Gedung 2; perilaku database belum boleh dianggap aktif sebelum diverifikasi.
+  - Uji operasional memakai token uji: create WO dengan tim → Monitoring mekanik → submit → approval.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan proses WO SUM dan KMB TRA)
 - Berubah:
   - Menyamakan jalur create WO SUM dan KMB TRA dengan model KMB Project: `team_distribution` dinormalisasi menjadi `team`, `lead_mechanic_id` diisi dari anggota pertama, dan WO bertim diberi `status: assigned` serta `status_group: assigned`.
