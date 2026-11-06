@@ -71,6 +71,18 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb-projek (Patch Panduan Deploy Staging Kamis 13)
+- Berubah:
+  - Menyelaraskan `normalisasiBlokWo()` dengan patch Kamis 13: menangani `team_distribution` saat `team` kosong, menolak ID `undefined`/`null`, mendukung array `mechanics`, dan mengisi `lead_mechanic_id` dari tim pertama.
+- Validasi:
+  - `node --check workers/kmbprojek/src/supabase-backend.js`: lulus.
+  - `node scripts/uji-backend-mandiri.mjs`: **40/40 lulus**.
+  - Wrangler staging dry-run KMB Project: lulus.
+- Belum selesai / berikutnya:
+  - Migrasi SQL Kamis 13 tetap harus dijalankan di Supabase Gedung 2; repo tidak memiliki akses SQL Editor.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan Web Handler KMB/SUM, Validasi Penuh Panduan Deploy 10 & Deploy Staging)
 - Berubah:
   - **Penyelarasan Penuh Web Desktop KMB TRA & SUM V2 (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:
