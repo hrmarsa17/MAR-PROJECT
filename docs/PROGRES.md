@@ -31,8 +31,11 @@ Formatnya:
   - Memperbaiki tampilan error agar menerima string maupun object, dan menormalkan error exception Supabase menjadi `{ message }`.
   - Regenerasi `workers/kmbprojek/src/web-templates.js` dari sumber HTML.
   - Ping staging dengan token uji berhasil melalui `/api/web`; token dan jalur Worker aktif. Error backend asli belum bisa dipastikan tanpa mengulang submit WO atau melihat log Supabase.
+- Verifikasi tambahan:
+  - Perubahan ter-deploy ke `abadiops-kmbprojek-staging` versi `5de3a301-1ad7-42c9-a30e-23bf725c4856`.
+  - Ping setelah deploy tetap **lulus**.
 - Belum selesai / berikutnya:
-  - Deploy perubahan ini ke Worker KMB Project staging, lalu ulangi Create WO untuk menangkap pesan error backend yang sebenarnya.
+  - Ulangi Create WO di staging untuk menangkap pesan error backend yang sebenarnya.
   - Verifikasi fungsi `kmb_eksekusi_aksi_bertoken` dan dependensinya sudah dijalankan di Supabase Gedung 2.
 
 ---
