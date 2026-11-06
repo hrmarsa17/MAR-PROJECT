@@ -49,8 +49,12 @@ Formatnya:
   - `node --check workers/kmbprojek/src/supabase-backend.js`: lulus.
   - `node scripts/uji-backend-mandiri.mjs`: **40/40 lulus**.
   - Wrangler staging dry-run: lulus.
+- Deploy & smoke test:
+  - Worker `abadiops-kmbprojek-staging` ter-deploy versi `ad4183f8-8483-43be-ac28-4e44e365a63a`.
+  - Ping token staging lulus.
+  - Probe RPC tanpa mutasi dengan aksi tidak dikenal mengembalikan error bisnis `Aksi __probe_rpc__ tidak dikenal di backend Supabase`, membuktikan RPC dapat dipanggil dan bukan lagi gagal karena signature/404.
 - Belum selesai / berikutnya:
-  - Deploy staging dan ulangi Create WO untuk membuktikan nomor WO berhasil dibuat.
+  - Ulangi Create WO di staging untuk membuktikan nomor WO berhasil dibuat.
 
 ---
 
