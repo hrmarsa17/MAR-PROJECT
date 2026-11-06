@@ -1296,6 +1296,32 @@
       return out;
     }
 
+    function katalogFallbackDariComponents() {
+      var out = [];
+      for (var i = 0; i < components.length; i++) {
+        var c = components[i] || {};
+        var component = c.component_name || c.name || c.component || c.component_no || c.component_id;
+        if (!component || c.component_no === 'COM-OTHERS') continue;
+        out.push({
+          job_id: c.component_no || c.component_id || component,
+          unit_model: '',
+          component: component,
+          sub_component: 'Standard',
+          job_description: component,
+          plan_hours: Number(c.target_hours) || 2,
+          target_hours: Number(c.target_hours) || 2,
+          base_point: Number(c.base_points || c.base_point) || 1,
+          base_points: Number(c.base_points || c.base_point) || 1
+        });
+      }
+      return out;
+    }
+
+    function jobsUntukSection(section) {
+      var jobs = CATALOG[section];
+      return (jobs && jobs.length) ? jobs : katalogFallbackDariComponents();
+    }
+
     /**
      * Ubah `disabled` TANPA membuka kunci grup.
      * Cascade sering dibangun ulang dan tiap kali menetapkan disabled sendiri —
@@ -1319,7 +1345,7 @@
     }
 
     function populateCascadeRoot(blockEl, section) {
-      var jobs = CATALOG[section] || [];
+      var jobs = jobsUntukSection(section);
       var validModels = {};
       for (var j = 0; j < jobs.length; j++) {
         var jm = String(jobs[j].unit_model || '').toLowerCase().trim();
@@ -1367,7 +1393,7 @@
       if (cekUnitOthers(blockEl, blockEl.querySelector('.cas-unit'))) return;
       var section = getBlockSection(blockEl);
       var model = getBlockModel(blockEl);
-      var jobs = CATALOG[section] || [];
+      var jobs = jobsUntukSection(section);
       var comps = distinct(jobs, 'component', function(j) {
         return !model || String(j.unit_model || '').toLowerCase().trim() === model;
       });
@@ -1380,7 +1406,7 @@
       var section = getBlockSection(blockEl);
       var model = getBlockModel(blockEl);
       var compVal = blockEl.querySelector('.cas-component').value;
-      var jobs = CATALOG[section] || [];
+      var jobs = jobsUntukSection(section);
       var subs = distinct(jobs, 'sub_component', function(j) {
         var matchModel = !model || String(j.unit_model || '').toLowerCase().trim() === model;
         return matchModel && j.component === compVal;
@@ -1399,7 +1425,7 @@
       var model = getBlockModel(blockEl);
       var compVal = blockEl.querySelector('.cas-component').value;
       var subVal = blockEl.querySelector('.cas-sub').value;
-      var jobs = CATALOG[section] || [];
+      var jobs = jobsUntukSection(section);
       var sel = blockEl.querySelector('.cas-job');
       var html = '<option value="">-- Job --</option>';
       var count = 0;

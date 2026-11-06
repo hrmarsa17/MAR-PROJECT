@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb (Dropdown cascade tetap aktif tanpa katalog job RPC)
+- Berubah:
+  - Form KMB sekarang membentuk fallback katalog dari `components` yang sudah diterima saat halaman dibuka jika `jobs_field/jobs_workshop/jobs_vessel` belum tersedia dari RPC.
+  - Fallback dipakai pada setiap tahap cascade sehingga setelah memilih Unit, Component dan tahap berikutnya tidak lagi disabled; katalog RPC tetap dipakai bila tersedia.
+  - `web-templates.js` dikompilasi ulang dari `WorkOrder.html`.
+- Belum selesai / berikutnya:
+  - Uji ulang di staging dengan hard refresh. SQL RPC KMB tetap perlu dijalankan ulang di Gedung 2 agar katalog job khusus digunakan.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · kmb (Perbaikan cascade job dan visibilitas WO mekanik)
 - Berubah:
   - RPC katalog KMB TRA sekarang mengirim `jobs_field`, `jobs_workshop`, dan `jobs_vessel`, dengan fallback satu job per komponen jika katalog job khusus belum tersedia.
