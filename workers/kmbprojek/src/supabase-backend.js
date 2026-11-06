@@ -151,6 +151,20 @@ async function panggilRpcSupabase(rpcName, payload, env) {
   return res.json();
 }
 
+async function panggilRpcEksekusiAksi(payload, env) {
+  try {
+    return await panggilRpcSupabase(`${RPC_PREFIX}_eksekusi_aksi_bertoken`, payload, env);
+  } catch (err) {
+    if (!String(err?.message || err).includes('HTTP 404')) throw err;
+    const legacyPayload = { ...payload };
+    if (Object.prototype.hasOwnProperty.call(legacyPayload, 'p_skor_js')) {
+      legacyPayload.p_extra = legacyPayload.p_skor_js;
+      delete legacyPayload.p_skor_js;
+    }
+    return panggilRpcSupabase(`${RPC_PREFIX}_eksekusi_aksi_bertoken`, legacyPayload, env);
+  }
+}
+
 function lengkapiWoObj(w) {
   if (!w || typeof w !== 'object') return {};
   const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
@@ -782,7 +796,7 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
       if (sharedGroupId && !blk.wo_group_id) blk.wo_group_id = sharedGroupId;
       if (sharedGroupMode && !blk.wo_group_mode) blk.wo_group_mode = sharedGroupMode;
       if (sharedGroupId) blk.grup_total = dataObj.blocks.length;
-      const subRes = await panggilRpcSupabase(`${RPC_PREFIX}_eksekusi_aksi_bertoken`, {
+      const subRes = await panggilRpcEksekusiAksi({
         p_token: cleanToken,
         p_aksi: 'create_wo',
         p_op_id: `${kirimanId}-${i + 1}`,
@@ -838,7 +852,7 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
   }
 
   // 13. Panggil RPC Eksekusi Aksi Tulis di Supabase
-  return await panggilRpcSupabase(`${RPC_PREFIX}_eksekusi_aksi_bertoken`, {
+  return await panggilRpcEksekusiAksi({
     p_token: cleanToken,
     p_aksi: aksiRpc,
     p_op_id: opId,

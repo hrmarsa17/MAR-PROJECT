@@ -47,7 +47,7 @@ CREATE OR REPLACE FUNCTION public.kmb_eksekusi_aksi_bertoken(
     p_aksi text,
     p_op_id text DEFAULT NULL,
     p_payload jsonb DEFAULT '{}'::jsonb,
-    p_extra jsonb DEFAULT NULL
+    p_skor_js jsonb DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql

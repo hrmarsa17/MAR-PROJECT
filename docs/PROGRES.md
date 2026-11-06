@@ -40,6 +40,20 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb-projek (Perbaikan kompatibilitas parameter RPC Create WO)
+- Berubah:
+  - Menemukan ketidaksesuaian nama parameter PostgREST: Worker mengirim `p_skor_js`, sedangkan SQL RPC lama mendefinisikan `p_extra`.
+  - Worker kini mencoba `p_skor_js` dan hanya melakukan fallback ke `p_extra` bila RPC lama menjawab HTTP 404, sehingga staging tetap kompatibel selama migrasi SQL belum dijalankan.
+  - Menyelaraskan sumber `db/kmb_projek/rpc_backend_penuh.sql` ke parameter `p_skor_js` seperti migrasi Kamis 12.
+- Validasi:
+  - `node --check workers/kmbprojek/src/supabase-backend.js`: lulus.
+  - `node scripts/uji-backend-mandiri.mjs`: **40/40 lulus**.
+  - Wrangler staging dry-run: lulus.
+- Belum selesai / berikutnya:
+  - Deploy staging dan ulangi Create WO untuk membuktikan nomor WO berhasil dibuat.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan Web Handler KMB/SUM, Validasi Penuh Panduan Deploy 10 & Deploy Staging)
 - Berubah:
   - **Penyelarasan Penuh Web Desktop KMB TRA & SUM V2 (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:
