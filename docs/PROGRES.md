@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb (Perbaikan cascade job dan visibilitas WO mekanik)
+- Berubah:
+  - RPC katalog KMB TRA sekarang mengirim `jobs_field`, `jobs_workshop`, dan `jobs_vessel`, dengan fallback satu job per komponen jika katalog job khusus belum tersedia.
+  - Identitas mekanik KMB diperluas ke `mechanic_id`, `user_id`, dan `config_mechanics.mechanic_id`; anggota tim juga dicocokkan melalui beberapa bentuk ID.
+- Belum selesai / berikutnya:
+  - Jalankan ulang `db/kmb/rpc_baca.sql` dan `db/kmb/rpc_backend_penuh.sql` di Supabase Gedung 2.
+  - Uji KMB: pilih unit → component → sub component → job → buat WO → pastikan muncul di My Work mekanik.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Menyamakan katalog SUM dan KMB TRA dengan KMB Project)
 - Berubah:
   - Menyamakan output `pull_create_refs` SUM dan KMB TRA: `component_no`, `base_points`, `unit_name`, `unit_type`, dan `mechanic_name`.

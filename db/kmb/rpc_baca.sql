@@ -17,8 +17,8 @@ DECLARE
 BEGIN
     SELECT t.data->>'token' as token,
            coalesce(m.data->>'role', 'mechanic') as role,
-           coalesce(m.data->>'name', t.data->>'mechanic_id', '') as name,
-           t.data->>'mechanic_id' as mechanic_id,
+           coalesce(m.data->>'mechanic_name', m.data->>'name', t.data->>'mechanic_id', '') as name,
+           coalesce(t.data->>'mechanic_id', t.data->>'user_id', m.data->>'mechanic_id') as mechanic_id,
            coalesce(m.data->>'email', t.data->>'email', '') as email,
            coalesce(m.data->>'section', '') as section
       INTO v_user
@@ -65,6 +65,7 @@ AS $$
 DECLARE
     v_units json;
     v_comps json;
+    v_jobs json;
     v_mechs json;
     v_factors json;
     v_f_normal numeric := 1.0;
@@ -95,6 +96,23 @@ BEGIN
         'status', coalesce(data->>'status', 'ACTIVE')
     ) ORDER BY data->>'component_name'), '[]'::json)
     INTO v_comps
+    FROM kmb.config_components
+    WHERE data->>'status' IS NULL OR lower(btrim(data->>'status')) = 'active';
+
+    -- Katalog cascade KMB. Jika sheet job khusus belum dicermin, bentuk
+    -- satu job generik per komponen agar form tetap dapat dipakai.
+    SELECT coalesce(json_agg(json_build_object(
+        'job_id', coalesce(data->>'component_id', data->>'component_no'),
+        'unit_model', '',
+        'component', coalesce(data->>'component_name', data->>'component', data->>'activity', data->>'component_id'),
+        'sub_component', 'Standard',
+        'job_description', coalesce(data->>'component_name', data->>'component', data->>'activity', data->>'component_id'),
+        'plan_hours', coalesce(nullif(data->>'target_hours', '')::numeric, 2.0),
+        'target_hours', coalesce(nullif(data->>'target_hours', '')::numeric, 2.0),
+        'base_point', coalesce(nullif(data->>'base_points', '')::numeric, nullif(data->>'base_point', '')::numeric, 1.0),
+        'base_points', coalesce(nullif(data->>'base_points', '')::numeric, nullif(data->>'base_point', '')::numeric, 1.0)
+    ) ORDER BY data->>'component_name'), '[]'::json)
+    INTO v_jobs
     FROM kmb.config_components
     WHERE data->>'status' IS NULL OR lower(btrim(data->>'status')) = 'active';
 
@@ -145,6 +163,9 @@ BEGIN
         'result', json_build_object(
             'units', v_units,
             'components', v_comps,
+            'jobs_field', v_jobs,
+            'jobs_workshop', v_jobs,
+            'jobs_vessel', v_jobs,
             'mechanics', v_mechs,
             'factors', v_factors,
             'work_conditions', json_build_array(

@@ -25,8 +25,8 @@ BEGIN
     END IF;
 
     RETURN QUERY
-    SELECT coalesce(t.data->>'mechanic_id', t.data->>'user_id', '') as mechanic_id,
-           coalesce(m.data->>'name', t.data->>'name', t.data->>'mechanic_id', '') as name,
+    SELECT coalesce(t.data->>'mechanic_id', t.data->>'user_id', m.data->>'mechanic_id', '') as mechanic_id,
+           coalesce(m.data->>'mechanic_name', m.data->>'name', t.data->>'name', t.data->>'mechanic_id', '') as name,
            lower(coalesce(m.data->>'role', t.data->>'role', 'mechanic')) as role,
            coalesce(m.data->>'email', t.data->>'email', '') as email,
            coalesce(m.data->>'section', t.data->>'section', '') as section
@@ -148,7 +148,7 @@ BEGIN
            OR EXISTS (
                SELECT 1
                  FROM jsonb_array_elements(CASE WHEN jsonb_typeof(data->'team') = 'array' THEN data->'team' ELSE '[]'::jsonb END) member
-                WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(v_user.mechanic_id))
+                WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', member->>'user_id', ''))) = lower(trim(v_user.mechanic_id))
            );
         RETURN v_result;
 
