@@ -12,6 +12,19 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Deploy staging SUM dan KMB)
+- Berubah:
+  - Menjalankan `npx wrangler deploy --env staging --dry-run` untuk Worker SUM dan KMB: **keduanya lulus**.
+  - Deploy Worker SUM staging berhasil sebagai `abadiops-sum-staging`, versi `b3383729-0c72-4bfb-9743-490233b4564f`.
+  - Deploy Worker KMB staging berhasil sebagai `abadiops-kmb-staging`, versi `6acbe659-72dd-4cb0-818e-fcc09ec23fa1`.
+  - Kedua Worker memakai Supabase Gedung 2, GAS tiruan staging, dan saklar `supabase`.
+- Belum selesai / berikutnya:
+  - Migrasi SQL Kamis 12/13 belum dijalankan dan diverifikasi di Supabase Gedung 2.
+  - Uji end-to-end Create WO sampai submit dan approval belum dilakukan.
+  - Deploy KMB Project staging tetap menunggu verifikasi migrasi SQL dan uji operasional.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Validasi Panduan Deploy Staging Kamis 11)
 - Berubah:
   - Menjalankan `node scripts/uji-backend-mandiri.mjs`: **40/40 lulus**.
