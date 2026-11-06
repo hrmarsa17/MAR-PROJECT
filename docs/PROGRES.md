@@ -12,6 +12,22 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan proses WO SUM dan KMB TRA)
+- Berubah:
+  - Menyamakan jalur create WO SUM dan KMB TRA dengan model KMB Project: `team_distribution` dinormalisasi menjadi `team`, `lead_mechanic_id` diisi dari anggota pertama, dan WO bertim diberi `status: assigned` serta `status_group: assigned`.
+  - `pull_my_wos` kini mencocokkan `lead_mechanic_id` dan anggota `team` secara case-insensitive, bukan hanya relasi tabel team terpisah.
+  - Filter pending/active/approved/rejected dibuat case-insensitive dan menerima nama status lama maupun baru.
+  - KPI monitoring SUM dan KMB TRA kini membaca tim langsung dari payload WO, sehingga tidak bergantung pada `work_order_team` yang tidak diisi oleh create WO Supabase.
+- Validasi:
+  - `node --check` untuk entry point dan backend Worker SUM serta KMB: **lulus**.
+  - `npx wrangler deploy --env staging --dry-run` untuk SUM dan KMB: **lulus**.
+  - `node scripts/uji-backend-mandiri.mjs`: **40/40 lulus**.
+- Belum selesai / berikutnya:
+  - Jalankan SQL yang diperbarui pada skema `sum` dan `kmb` di Supabase Gedung 2.
+  - Deploy Worker SUM dan KMB dengan `--env staging`, lalu uji create WO → Monitoring → submit → approval memakai token uji.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · kmb-projek (Perbaikan blocker migrasi RPC)
 - Temuan:
   - Supabase menolak `CREATE OR REPLACE FUNCTION public.kmb_eksekusi_aksi_bertoken(...)` karena fungsi lama dengan signature lima argumen sudah ada dan return type-nya `jsonb`, sedangkan migrasi Kamis mendefinisikan `json`.

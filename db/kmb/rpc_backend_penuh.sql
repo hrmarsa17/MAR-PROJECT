@@ -64,6 +64,7 @@ DECLARE
     v_wo_number text;
     v_next_baris integer;
     v_new_data jsonb;
+    v_team jsonb := '[]'::jsonb;
     v_wo_id text;
     v_result jsonb;
 BEGIN
@@ -143,7 +144,12 @@ BEGIN
         FROM kmb.work_orders
         WHERE data->>'created_by' = v_user.name
            OR data->>'mechanic_id' = v_user.mechanic_id
-           OR data->'team' @> jsonb_build_array(jsonb_build_object('mechanic_id', v_user.mechanic_id));
+           OR lower(trim(data->>'lead_mechanic_id')) = lower(trim(v_user.mechanic_id))
+           OR EXISTS (
+               SELECT 1
+                 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(data->'team') = 'array' THEN data->'team' ELSE '[]'::jsonb END) member
+                WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(v_user.mechanic_id))
+           );
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_wo_detail' THEN
@@ -167,15 +173,15 @@ BEGIN
         SELECT jsonb_build_object(
             'success', true,
             'result', jsonb_build_object(
-                'pending_l1', coalesce(jsonb_agg(data) FILTER (WHERE data->>'status' = 'PENDING_L1'), '[]'::jsonb),
-                'pending_l2', coalesce(jsonb_agg(data) FILTER (WHERE data->>'status' = 'PENDING_L2'), '[]'::jsonb),
-                'pending', coalesce(jsonb_agg(data) FILTER (WHERE data->>'status' LIKE 'PENDING%'), '[]'::jsonb)
+                'pending_l1', coalesce(jsonb_agg(data) FILTER (WHERE lower(data->>'status') IN ('pending_l1', 'pending_supervisor')), '[]'::jsonb),
+                'pending_l2', coalesce(jsonb_agg(data) FILTER (WHERE lower(data->>'status') IN ('pending_l2', 'pending_superintendent')), '[]'::jsonb),
+                'pending', coalesce(jsonb_agg(data) FILTER (WHERE lower(data->>'status') LIKE 'pending%'), '[]'::jsonb)
             ),
             'source', 'SUPABASE'
         )
         INTO v_result
         FROM kmb.work_orders
-        WHERE data->>'status' LIKE 'PENDING%';
+        WHERE lower(data->>'status') LIKE 'pending%';
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_active' THEN
@@ -186,7 +192,7 @@ BEGIN
         )
         INTO v_result
         FROM kmb.work_orders
-        WHERE data->>'status' IN ('ACTIVE', 'IN_PROGRESS', 'OPEN');
+        WHERE lower(data->>'status') IN ('active', 'in_progress', 'open', 'assigned', 'pending_mechanic_work');
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_approved' THEN
@@ -197,7 +203,7 @@ BEGIN
         )
         INTO v_result
         FROM kmb.work_orders
-        WHERE data->>'status' = 'APPROVED';
+        WHERE lower(data->>'status') = 'approved';
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_rejected' THEN
@@ -208,7 +214,7 @@ BEGIN
         )
         INTO v_result
         FROM kmb.work_orders
-        WHERE data->>'status' = 'REJECTED';
+        WHERE lower(data->>'status') IN ('rejected', 'cancelled', 'canceled');
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_cancelable' THEN
@@ -248,11 +254,31 @@ BEGIN
 
         SELECT coalesce(max(baris), 1) + 1 INTO v_next_baris FROM kmb.work_orders;
 
+        IF jsonb_typeof(p_payload->'team') = 'array' THEN
+            v_team := p_payload->'team';
+        ELSIF jsonb_typeof(p_payload->'team_distribution') = 'object' THEN
+            SELECT coalesce(jsonb_agg(jsonb_build_object(
+                'mechanic_id', btrim(td.key),
+                'percentage', coalesce(nullif(td.value, '')::numeric, 100)
+            )), '[]'::jsonb)
+              INTO v_team
+              FROM jsonb_each_text(p_payload->'team_distribution') td
+             WHERE lower(btrim(td.key)) NOT IN ('', 'undefined', 'null');
+        END IF;
+
         v_new_data := p_payload || jsonb_build_object(
             'id', v_wo_number,
             'wo_number', v_wo_number,
-            'lead_mechanic_id', coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_user.mechanic_id),
-            'status', coalesce(p_payload->>'status', 'PENDING_L1'),
+            'team', v_team,
+            'lead_mechanic_id', coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_team->0->>'mechanic_id', v_user.mechanic_id),
+            'status', coalesce(
+                nullif(p_payload->>'status', ''),
+                CASE WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL OR jsonb_array_length(v_team) > 0
+                     THEN 'assigned' ELSE 'PENDING_L1' END
+            ),
+            'status_group', CASE
+                WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL OR jsonb_array_length(v_team) > 0
+                THEN 'assigned' ELSE 'pending_approval' END,
             'created_by', coalesce(p_payload->>'created_by', v_user.name),
             'created_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
             'source', 'SUPABASE'

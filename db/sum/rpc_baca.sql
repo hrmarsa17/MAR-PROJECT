@@ -234,11 +234,11 @@ BEGIN
 
     -- Agregat status WO dari tabel cermin sum.work_orders
     SELECT
-        coalesce(count(*) filter (WHERE upper(coalesce(data->>'status', '')) IN ('OPEN', 'ACTIVE', 'ASSIGNED')), 0)::int,
+        coalesce(count(*) filter (WHERE lower(coalesce(data->>'status', '')) IN ('open', 'active', 'assigned', 'in_progress', 'pending_mechanic_work')), 0)::int,
         coalesce(count(*) filter (WHERE upper(coalesce(data->>'status', '')) = 'EXPIRED'), 0)::int,
-        coalesce(count(*) filter (WHERE upper(coalesce(data->>'status', '')) = 'PENDING_L1'), 0)::int,
-        coalesce(count(*) filter (WHERE upper(coalesce(data->>'status', '')) = 'PENDING_L2'), 0)::int,
-        coalesce(count(*) filter (WHERE upper(coalesce(data->>'status', '')) = 'APPROVED'), 0)::int
+        coalesce(count(*) filter (WHERE lower(coalesce(data->>'status', '')) IN ('pending_l1', 'pending_supervisor')), 0)::int,
+        coalesce(count(*) filter (WHERE lower(coalesce(data->>'status', '')) IN ('pending_l2', 'pending_superintendent')), 0)::int,
+        coalesce(count(*) filter (WHERE lower(coalesce(data->>'status', '')) = 'approved'), 0)::int
       INTO v_pending_work, v_expired, v_pending_l1, v_pending_l2, v_approved
       FROM sum.work_orders;
 
@@ -247,14 +247,19 @@ BEGIN
         SELECT m.data->>'mechanic_id' as mechanic_id,
                m.data->>'name' as name,
                coalesce(m.data->>'jabatan_aktual', '') as jabatan,
-               coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) IN ('OPEN', 'ACTIVE', 'ASSIGNED')), 0)::int as pending_work,
+               coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('open', 'active', 'assigned', 'in_progress', 'pending_mechanic_work')), 0)::int as pending_work,
                coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'EXPIRED'), 0)::int as expired,
-               coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'PENDING_L1'), 0)::int as pending_l1,
-               coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'PENDING_L2'), 0)::int as pending_l2,
-               coalesce(count(w.baris) filter (WHERE upper(coalesce(w.data->>'status', '')) = 'APPROVED'), 0)::int as approved
+               coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('pending_l1', 'pending_supervisor')), 0)::int as pending_l1,
+               coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('pending_l2', 'pending_superintendent')), 0)::int as pending_l2,
+               coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) = 'approved'), 0)::int as approved
           FROM sum.config_mechanics m
-          LEFT JOIN sum.work_order_team t ON trim(t.data->>'mechanic_id') = trim(m.data->>'mechanic_id')
-          LEFT JOIN sum.work_orders w ON trim(w.data->>'id') = trim(t.data->>'wo_id')
+          LEFT JOIN sum.work_orders w
+            ON lower(trim(w.data->>'lead_mechanic_id')) = lower(trim(m.data->>'mechanic_id'))
+            OR EXISTS (
+                SELECT 1
+                  FROM jsonb_array_elements(CASE WHEN jsonb_typeof(w.data->'team') = 'array' THEN w.data->'team' ELSE '[]'::jsonb END) member
+                 WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(m.data->>'mechanic_id'))
+            )
          WHERE (m.data->>'status' IS NULL OR m.data->>'status' = 'ACTIVE')
            AND coalesce(m.data->>'role', 'mechanic') = 'mechanic'
          GROUP BY m.data->>'mechanic_id', m.data->>'name', m.data->>'jabatan_aktual'
@@ -321,8 +326,12 @@ BEGIN
     SELECT coalesce(json_agg(w.data ORDER BY w.data->>'created_at' DESC), '[]'::json)
       INTO v_wos
       FROM sum.work_orders w
-      JOIN sum.work_order_team t ON trim(t.data->>'wo_id') = trim(w.data->>'id')
-     WHERE trim(t.data->>'mechanic_id') = trim(v_user.mechanic_id);
+     WHERE lower(trim(w.data->>'lead_mechanic_id')) = lower(trim(v_user.mechanic_id))
+        OR EXISTS (
+            SELECT 1
+              FROM jsonb_array_elements(CASE WHEN jsonb_typeof(w.data->'team') = 'array' THEN w.data->'team' ELSE '[]'::jsonb END) member
+             WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(v_user.mechanic_id))
+        );
 
     RETURN json_build_object(
         'success', true,

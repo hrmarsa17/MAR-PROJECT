@@ -137,13 +137,23 @@ export function normalisasiBlokWo(blk) {
   if (b.manual_base_points !== undefined && b.others_base_points === undefined) b.others_base_points = b.manual_base_points;
   if (b.manual_target_hours !== undefined && b.others_target_hours === undefined) b.others_target_hours = b.manual_target_hours;
   if (b.manual_unit_factor !== undefined && b.others_unit_factor === undefined) b.others_unit_factor = b.manual_unit_factor;
-  if (!Array.isArray(b.team) && b.team_distribution && typeof b.team_distribution === 'object') {
+  if ((!Array.isArray(b.team) || b.team.length === 0) && b.team_distribution && typeof b.team_distribution === 'object') {
     b.team = Object.entries(b.team_distribution)
-      .filter(([mid]) => String(mid || '').trim() !== '')
+      .filter(([mid]) => {
+        const s = String(mid || '').trim().toLowerCase();
+        return s !== '' && s !== 'undefined' && s !== 'null';
+      })
       .map(([mid, pct]) => ({
         mechanic_id: String(mid).trim(),
         percentage: Number(pct) || 100,
       }));
+  }
+  if ((!Array.isArray(b.team) || b.team.length === 0) && Array.isArray(b.mechanics) && b.mechanics.length > 0) {
+    b.team = b.mechanics
+      .map((m) => (typeof m === 'object' && m !== null
+        ? { mechanic_id: String(m.mechanic_id || m.id || m.name || '').trim(), percentage: 100 }
+        : { mechanic_id: String(m).trim(), percentage: 100 }))
+      .filter((m) => m.mechanic_id && !['undefined', 'null'].includes(m.mechanic_id.toLowerCase()));
   }
   if (!b.lead_mechanic_id && Array.isArray(b.team) && b.team.length > 0) {
     b.lead_mechanic_id = b.team[0].mechanic_id;
@@ -377,7 +387,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           wo_id: created[0]?.wo_number || '',
           id: created[0]?.wo_number || '',
           created: created,
-          status: 'PENDING_L1',
+          status: created[0]?.status || 'PENDING_L1',
         },
         source: 'SUPABASE'
       }), {
