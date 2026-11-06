@@ -12,6 +12,19 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb-projek (Diagnosis Monitoring masih kosong)
+- Temuan:
+  - Sumber masalah tetap migrasi SQL staging yang belum aktif, bukan deploy Worker.
+  - RPC lama membuat WO tanpa `team`/`lead_mechanic_id` sebagai `PENDING_L1` dan menyimpan `team` kosong.
+  - `web-handler.js` menghitung status itu sebagai `pending_approval`, sedangkan halaman Monitoring dibuka pada tab `Assigned`; akibatnya WO tidak terlihat di tab awal.
+  - RPC baru di `db/kmb_projek/migrasi_kamis_full_penuh.sql` sudah mengatur normalisasi tim dan status `assigned`, tetapi belum terbukti dijalankan di Supabase Gedung 2.
+- Belum selesai / berikutnya:
+  - Jalankan migrasi SQL Kamis 12/13 di Gedung 2, lalu buat ulang atau perbaiki WO uji tanpa menebak anggota tim.
+  - Verifikasi `pull_my_wos` mengembalikan `team`, `lead_mechanic_id`, dan `status_group: assigned`, kemudian uji kartu Monitoring.
+  - Token uji supervisor tidak tersedia di environment sesi ini, jadi tidak mencetak klaim probe live baru.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Deploy staging SUM dan KMB)
 - Berubah:
   - Menjalankan `npx wrangler deploy --env staging --dry-run` untuk Worker SUM dan KMB: **keduanya lulus**.
