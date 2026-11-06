@@ -12,6 +12,18 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Ringkasan pekerjaan hari ini)
+- Berubah:
+  - SUM: menyamakan katalog Create WO dengan kontrak form, membuat filter status/role/work condition tidak sensitif kapitalisasi, memperbaiki token dan nama Monitoring, serta memperluas pencocokan WO ke identitas dan anggota tim mekanik.
+  - KMB TRA: menyamakan katalog dan field referensi, menambahkan katalog cascade `jobs_field/jobs_workshop/jobs_vessel`, memperluas resolusi identitas anggota tim, dan menambahkan fallback katalog dari `components` agar dropdown tetap dapat diisi.
+  - Template web KMB dikompilasi ulang setelah perubahan form; pengujian backend mandiri terakhir lulus 40/40.
+- Belum selesai / berikutnya:
+  - KMB: cascade Unit → Component → Sub Component → Job masih bermasalah di staging dan perlu diuji serta diperbaiki sampai benar-benar bisa dipilih.
+  - SUM: masih ada sebagian data WO yang belum tampil di daftar mekanik; perlu ditelusuri dari identitas token, anggota team, dan data cermin.
+  - Perubahan SQL RPC SUM/KMB masih perlu dijalankan ulang dan diverifikasi di Supabase Gedung 2.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · kmb (Dropdown cascade tetap aktif tanpa katalog job RPC)
 - Berubah:
   - Form KMB sekarang membentuk fallback katalog dari `components` yang sudah diterima saat halaman dibuka jika `jobs_field/jobs_workshop/jobs_vessel` belum tersedia dari RPC.
