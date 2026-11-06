@@ -12,6 +12,29 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan Web Handler KMB/SUM, Validasi Penuh Panduan Deploy 10 & Deploy Staging)
+- Berubah:
+  - **Penyelarasan Penuh Web Desktop KMB TRA & SUM V2 (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:
+    - Menambahkan penanganan parameter query `activeFilter` (`assigned`, `pending_approval`, `done`) dan pemisahan kartu WO (`wos: filteredWos`, `allWos: enrichedWos`), identik 1:1 dengan KMB Project.
+    - Menjaga konteks `backToken` pada navigasi antar halaman untuk mencegah self-redirect loop ke mekanik sendiri.
+  - **Perbaikan Struktur Konfigurasi Wrangler (`workers/kmbprojek/wrangler.toml`)**:
+    - Memindahkan blok tabel `services` ke atas sebelum `[assets]` untuk menghilangkan peringatan `Unexpected fields found in assets field: "services"`.
+  - **Verifikasi Kepatuhan & Deploy Staging Pintu, KMB, SUM, KMB Project**:
+    - Seluruh pengujian otomatis lulus 100%:
+      - `node scripts/uji-backend-mandiri.mjs`: 40/40 LULUS (100%).
+      - `node scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS (100%).
+      - `node scripts/uji-serahan-token.mjs`: 24/24 LULUS (100%).
+    - Sukses deploy seluruh Worker ke Cloudflare Staging:
+      - `abadiops-kmbprojek-staging` (Versi: `3a0d7a07-6a6a-498b-95a4-2b09902315f2`)
+      - `abadiops-kmb-staging` (Versi: `fcefd857-2a32-4e17-88e4-ee5c272d4085`)
+      - `abadiops-sum-staging` (Versi: `8278c944-8aec-4cbb-a1d3-6c2fdf16238d`)
+      - `abadiops-pintu-staging` (Versi: `aee2feae-cd08-4f49-9be5-e525d7b68524`)
+- Belum selesai / berikutnya:
+  - Jalankan `db/kmb_projek/pasang_rpc_config_staging.sql` di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`) oleh Gabriel agar RPC `sum_admin_daftar_config_bertoken` dkk aktif permanen di database PostgreSQL.
+  - Uji alur WO end-to-end di PWA/Web Staging (WO harian 4 digit WIB, submit, approval L1 & L2).
+
+---
+
 ### 2026-11-05 · Raka (+ AI) · bersama (Perbaikan Supabase RPC sum_admin_daftar_config_bertoken 404 & Staging Resilient Fallback)
 - Berubah:
   - **Penanganan Fallback Cerdas di Modul Admin Pusat (`workers/pintu/src/user-admin.js`)**:

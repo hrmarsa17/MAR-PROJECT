@@ -891,3 +891,4 @@ GRANT EXECUTE ON FUNCTION public.kmb_admin_hapus_config_bertoken(text, text, tex
 GRANT EXECUTE ON FUNCTION public.sum_admin_daftar_users_bertoken(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.kmbtra_admin_daftar_users_bertoken(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.kmb_admin_daftar_users_bertoken(text) TO anon, authenticated, service_role;
+

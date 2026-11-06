@@ -179,12 +179,14 @@ export async function handleWebRequest(request, env, url) {
 
   const rawBack = (url.searchParams.get('back') || '').trim();
   const backToken = rawBack && rawBack !== token ? rawBack : '';
+  const activeFilter = (url.searchParams.get('filter') || 'assigned').toLowerCase().trim();
 
   // 3. Ambil data inisial halaman jika diperlukan
   const context = {
     baseUrl: '/web',
     token: token,
     backToken: backToken,
+    activeFilter: activeFilter,
     user: user,
     currentView: url.searchParams.get('view') || 'pending',
     viewAsMechanicId: url.searchParams.get('as') || '',
@@ -232,9 +234,14 @@ export async function handleWebRequest(request, env, url) {
         pending_approval: enrichedWos.filter((w) => w.status_group === 'pending_approval').length,
         done: enrichedWos.filter((w) => w.status_group === 'done').length,
       };
+      const filteredWos = ['assigned', 'pending_approval', 'done'].includes(activeFilter)
+        ? enrichedWos.filter((w) => w.status_group === activeFilter)
+        : enrichedWos;
       context.initialData = {
-        wos: enrichedWos,
+        wos: filteredWos,
+        allWos: enrichedWos,
         counts: computedCounts,
+        activeFilter,
         viewing_as: context.viewAsMechanicId || null,
         mechanic: user,
       };

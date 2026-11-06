@@ -15,6 +15,11 @@ workers_dev = true
 # Akun Cloudflare kawanabadigrup. Dikunci supaya deploy tidak pernah nyasar ke akun lain.
 account_id = "9273ece6d47a3bb103159295c10ce9e6"
 
+# Service binding ke Pintu untuk membaca posisi saklar secara instan tanpa terkena blokir fetch zona yang sama (Bug #27).
+services = [
+  { binding = "PINTU", service = "abadiops-pintu" }
+]
+
 # File PWA KMB Project (salinan 1:1 dari mar-projek-offline, hanya alamat API yang diganti).
 # html_handling "none": /index.html disajikan langsung (200, tanpa redirect).
 [assets]
@@ -31,11 +36,6 @@ GAS_URL = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1L
 SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
 STORAGE_MODE = "GAS"
-
-# Service binding ke Pintu untuk membaca posisi saklar secara instan tanpa terkena blokir fetch zona yang sama (Bug #27).
-services = [
-  { binding = "PINTU", service = "abadiops-pintu" }
-]
 
 [observability]
 enabled = true
