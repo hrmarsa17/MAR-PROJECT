@@ -25,6 +25,18 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb-projek (Diagnosis error Create Work Order staging)
+- Berubah:
+  - Menemukan penyebab pesan `Gagal membuat Work Order: undefined`: halaman `WorkOrder.html` mengasumsikan `response.error` selalu object `{ message }`, sedangkan jalur exception/fallback Worker mengirim string.
+  - Memperbaiki tampilan error agar menerima string maupun object, dan menormalkan error exception Supabase menjadi `{ message }`.
+  - Regenerasi `workers/kmbprojek/src/web-templates.js` dari sumber HTML.
+  - Ping staging dengan token uji berhasil melalui `/api/web`; token dan jalur Worker aktif. Error backend asli belum bisa dipastikan tanpa mengulang submit WO atau melihat log Supabase.
+- Belum selesai / berikutnya:
+  - Deploy perubahan ini ke Worker KMB Project staging, lalu ulangi Create WO untuk menangkap pesan error backend yang sebenarnya.
+  - Verifikasi fungsi `kmb_eksekusi_aksi_bertoken` dan dependensinya sudah dijalankan di Supabase Gedung 2.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan Web Handler KMB/SUM, Validasi Penuh Panduan Deploy 10 & Deploy Staging)
 - Berubah:
   - **Penyelarasan Penuh Web Desktop KMB TRA & SUM V2 (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:

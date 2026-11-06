@@ -475,7 +475,9 @@ export async function handleWebBridgeApi(request, env, url) {
         return new Response(JSON.stringify({
           success: false,
           source: 'SUPABASE',
-          error: 'Gagal mengeksekusi aksi di Supabase: ' + String(err?.message || err),
+          error: {
+            message: 'Gagal mengeksekusi aksi di Supabase: ' + String(err?.message || err),
+          },
         }), {
           status: 200,
           headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' },

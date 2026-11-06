@@ -1841,7 +1841,10 @@
           // ini langsung dianggap gagal total, jadi WO yang SUDAH terbit tidak
           // pernah ditampilkan dan orang membuatnya lagi (jadi dobel).
           if (!dibuat.length && !gagal.length) {
-            var errMsg = (response && response.error) ? response.error.message : 'Unknown error';
+            var rawError = response && response.error;
+            var errMsg = rawError
+              ? (typeof rawError === 'string' ? rawError : (rawError.message || JSON.stringify(rawError)))
+              : 'Unknown error';
             showNotification('Gagal membuat Work Order: ' + errMsg, 'error');
             return;
           }
