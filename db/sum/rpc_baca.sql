@@ -324,11 +324,18 @@ DECLARE
     v_user record;
     v_wos json;
 BEGIN
-    SELECT t.data->>'mechanic_id' as mechanic_id
+    SELECT coalesce(
+               nullif(t.data->>'mechanic_id', ''),
+               nullif(t.data->>'user_id', ''),
+               nullif(m.data->>'mechanic_id', '')
+           ) as mechanic_id
       INTO v_user
       FROM sum.api_tokens t
+      LEFT JOIN sum.config_mechanics m
+        ON lower(btrim(coalesce(t.data->>'email', ''))) = lower(btrim(coalesce(m.data->>'email', '')))
+        OR btrim(coalesce(t.data->>'mechanic_id', '')) = btrim(coalesce(m.data->>'mechanic_id', ''))
      WHERE trim(t.data->>'token') = trim(p_token)
-       AND (t.data->>'is_active' IS NULL OR t.data->>'is_active' <> 'false')
+       AND (t.data->>'is_active' IS NULL OR lower(btrim(t.data->>'is_active')) <> 'false')
      LIMIT 1;
 
     IF v_user.mechanic_id IS NULL THEN
@@ -342,7 +349,7 @@ BEGIN
         OR EXISTS (
             SELECT 1
               FROM jsonb_array_elements(CASE WHEN jsonb_typeof(w.data->'team') = 'array' THEN w.data->'team' ELSE '[]'::jsonb END) member
-             WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(v_user.mechanic_id))
+              WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', member->>'user_id', ''))) = lower(trim(v_user.mechanic_id))
         );
 
     RETURN json_build_object(
