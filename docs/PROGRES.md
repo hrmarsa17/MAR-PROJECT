@@ -12,6 +12,19 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · bersama (Validasi Panduan Deploy Staging Kamis 11)
+- Berubah:
+  - Menjalankan `node scripts/uji-backend-mandiri.mjs`: **40/40 lulus**.
+  - Menjalankan `node scripts/uji-user-admin-pusat.mjs`: **27/27 lulus**.
+  - Menjalankan `node scripts/uji-serahan-token.mjs`: **24/24 lulus**.
+  - Menjalankan `node --check` pada entry point dan backend Worker KMB, SUM, KMB Project, serta Pintu: **semua lulus**.
+  - Menjalankan `npx wrangler deploy --env staging --dry-run` dari folder masing-masing Worker KMB, SUM, KMB Project, dan Pintu: **semua lulus**; binding mengarah ke Supabase Gedung 2 dan GAS tiruan staging.
+- Belum selesai / berikutnya:
+  - SQL `db/kmb_projek/pasang_rpc_config_staging.sql` masih perlu dijalankan oleh Gabriel di Supabase SQL Editor Staging (`dnnqrslftndcbmnvuveb`).
+  - Uji operasional end-to-end PWA/Web staging dan pemasangan custom domain staging masih memerlukan akses/dashboard eksternal.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan Web Handler KMB/SUM, Validasi Penuh Panduan Deploy 10 & Deploy Staging)
 - Berubah:
   - **Penyelarasan Penuh Web Desktop KMB TRA & SUM V2 (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:
