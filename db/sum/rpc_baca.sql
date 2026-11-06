@@ -83,7 +83,7 @@ BEGIN
     ) ORDER BY data->>'unit_id'), '[]'::json)
     INTO v_units
     FROM sum.config_units
-    WHERE data->>'status' IS NULL OR data->>'status' = 'ACTIVE';
+    WHERE data->>'status' IS NULL OR lower(btrim(data->>'status')) = 'active';
 
     -- Components
     SELECT coalesce(json_agg(json_build_object(
@@ -98,7 +98,7 @@ BEGIN
     ) ORDER BY data->>'component_name'), '[]'::json)
     INTO v_comps
     FROM sum.config_components
-    WHERE data->>'status' IS NULL OR data->>'status' = 'ACTIVE';
+    WHERE data->>'status' IS NULL OR lower(btrim(data->>'status')) = 'active';
 
     -- Mechanics (role = mechanic)
     SELECT coalesce(json_agg(json_build_object(
@@ -111,8 +111,8 @@ BEGIN
     ) ORDER BY data->>'name'), '[]'::json)
     INTO v_mechs
     FROM sum.config_mechanics
-    WHERE (data->>'status' IS NULL OR data->>'status' = 'ACTIVE')
-      AND coalesce(data->>'role', 'mechanic') = 'mechanic';
+    WHERE (data->>'status' IS NULL OR lower(btrim(data->>'status')) = 'active')
+      AND lower(btrim(coalesce(data->>'role', 'mechanic'))) = 'mechanic';
 
     -- Factors
     SELECT coalesce(json_agg(json_build_object(

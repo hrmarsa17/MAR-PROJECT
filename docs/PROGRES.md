@@ -16,6 +16,7 @@ Formatnya:
 - Berubah:
   - Menyamakan nama field hasil RPC `sum_create_refs_bertoken` dengan kontrak halaman Create WO SUM.
   - RPC kini mengembalikan `component_no`, `base_points`, `unit_name`, `unit_type`, dan `mechanic_name`, dengan fallback ke nama header cermin lama.
+  - Memperbaiki filter status/role katalog agar tidak membuang data dengan nilai `Active`, `active`, atau `Mechanic` karena perbedaan kapitalisasi.
 - Belum selesai / berikutnya:
   - Jalankan ulang bagian `public._sum_create_refs_internal()` dari `db/sum/rpc_baca.sql` di Supabase Gedung 2, lalu refresh halaman Create WO.
 
