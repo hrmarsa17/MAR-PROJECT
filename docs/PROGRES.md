@@ -58,6 +58,19 @@ Formatnya:
 
 ---
 
+### 2026-11-06 · Raka (+ AI) · kmb-projek (Diagnosis WO tersimpan tetapi tidak muncul di Monitoring)
+- Temuan terverifikasi di staging:
+  - RPC `pull_my_wos` mengembalikan `WO-20261106-0001`, tetapi dengan `status: pending_l1`, `status_group: pending_approval`, dan `team: []`; karena itu tab Assigned mekanik menampilkan 0.
+  - RPC `pull_pending` tidak mengembalikan WO tersebut karena status di database memakai huruf kecil, sedangkan dispatcher lama hanya memfilter `PENDING%`.
+  - Aksi detail juga mengembalikan HTTP 404 karena fungsi `kmb_wo_detail_bertoken` belum ada di database staging.
+- Berubah:
+  - Memperbaiki sumber `db/kmb_projek/rpc_backend_penuh.sql`: create WO dengan `lead_mechanic_id` atau `team` kini disimpan sebagai `assigned` dan payload menyimpan identitas tim.
+- Belum selesai / berikutnya:
+  - SQL RPC Kamis 12 (`db/kmb_projek/migrasi_kamis_full_penuh.sql` atau blok Langkah A panduan) harus dijalankan di Supabase Gedung 2 agar fungsi baru, normalisasi status, dan perbaikan team aktif di staging.
+  - WO `WO-20261106-0001` yang sudah terlanjur tersimpan perlu diperbaiki/diulang setelah migrasi; jangan mengarang anggota tim dari kode.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Penyelarasan Web Handler KMB/SUM, Validasi Penuh Panduan Deploy 10 & Deploy Staging)
 - Berubah:
   - **Penyelarasan Penuh Web Desktop KMB TRA & SUM V2 (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:

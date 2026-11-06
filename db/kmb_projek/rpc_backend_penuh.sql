@@ -240,16 +240,59 @@ BEGIN
             coalesce(p_payload->>'job_type', 'maintenance'),
             coalesce(p_payload->>'section', v_user.section, 'maintenance'),
             coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_user.mechanic_id),
-            coalesce(p_payload->>'status', 'PENDING_L1'),
+            coalesce(
+                nullif(p_payload->>'status', ''),
+                CASE
+                    WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL
+                      OR jsonb_typeof(p_payload->'team') = 'array'
+                    THEN 'assigned'
+                    ELSE 'PENDING_L1'
+                END
+            ),
             v_user.name,
             now(),
             'SUPABASE',
-            p_payload || jsonb_build_object('id', v_wo_number, 'wo_number', v_wo_number, 'created_by', v_user.name, 'source', 'SUPABASE')
+            p_payload || jsonb_build_object(
+                'id', v_wo_number,
+                'wo_id', v_wo_number,
+                'wo_number', v_wo_number,
+                'lead_mechanic_id', coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_user.mechanic_id),
+                'status', coalesce(
+                    nullif(p_payload->>'status', ''),
+                    CASE
+                        WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL
+                          OR jsonb_typeof(p_payload->'team') = 'array'
+                        THEN 'assigned'
+                        ELSE 'PENDING_L1'
+                    END
+                ),
+                'status_group', CASE
+                    WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL
+                      OR jsonb_typeof(p_payload->'team') = 'array'
+                    THEN 'assigned'
+                    ELSE 'pending_approval'
+                END,
+                'created_by', v_user.name,
+                'source', 'SUPABASE'
+            )
         );
 
         RETURN jsonb_build_object(
             'success', true,
-            'result', jsonb_build_object('id', v_wo_number, 'wo_number', v_wo_number, 'status', 'PENDING_L1'),
+            'result', jsonb_build_object(
+                'id', v_wo_number,
+                'wo_id', v_wo_number,
+                'wo_number', v_wo_number,
+                'status', coalesce(
+                    nullif(p_payload->>'status', ''),
+                    CASE
+                        WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL
+                          OR jsonb_typeof(p_payload->'team') = 'array'
+                        THEN 'assigned'
+                        ELSE 'PENDING_L1'
+                    END
+                )
+            ),
             'wo_number', v_wo_number,
             'source', 'SUPABASE'
         );
