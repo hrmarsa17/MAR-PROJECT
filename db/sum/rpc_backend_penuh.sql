@@ -544,4 +544,312 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.sum_eksekusi_aksi_bertoken(text, text, text, jsonb, jsonb) TO anon, authenticated, service_role;
+-- 3. Helper gabungan seluruh WO SUM (untuk detail, monitoring, dll)
+CREATE OR REPLACE FUNCTION sum._semua_wo_json_sum()
+RETURNS SETOF jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = sum, pg_temp
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT s.data || jsonb_build_object(
+             'id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+             'wo_id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+             'wo_number', coalesce(nullif(btrim(s.wo_number), ''), btrim(s.id)),
+             'status', sum._normalisasi_status_wo_sum(coalesce(s.data->>'status', s.status))
+           )
+      FROM sum.wo_supabase s
+     WHERE nullif(btrim(coalesce(s.wo_number, s.id, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(s.wo_number, s.id, ''))) <> 'WO-0'
+    UNION ALL
+    SELECT w.data || jsonb_build_object(
+             'id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+             'wo_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+             'wo_number', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), ''), btrim(w.nilai->>0)),
+             'status', sum._normalisasi_status_wo_sum(public._ambil_teks_jsonb(w.data, 'status')),
+             'unit_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'unit_id', 'unit_code'), ''), 'WORKSHOP'),
+             'component_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'component_id', 'component_no'), ''), 'COM-001'),
+             'component_name', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'component_name', 'others_description', 'activity', 'component_id'), ''), 'Pekerjaan'),
+             'team', CASE
+               WHEN jsonb_typeof(w.data->'team') = 'array' AND jsonb_array_length(w.data->'team') > 0 THEN w.data->'team'
+               WHEN jsonb_typeof(w.data->'effective_team') = 'array' AND jsonb_array_length(w.data->'effective_team') > 0 THEN w.data->'effective_team'
+               ELSE '[]'::jsonb
+             END,
+             'effective_team', CASE
+               WHEN jsonb_typeof(w.data->'effective_team') = 'array' AND jsonb_array_length(w.data->'effective_team') > 0 THEN w.data->'effective_team'
+               WHEN jsonb_typeof(w.data->'team') = 'array' AND jsonb_array_length(w.data->'team') > 0 THEN w.data->'team'
+               ELSE '[]'::jsonb
+             END
+           )
+      FROM sum.work_orders w
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, ''))) <> 'WO-0'
+       AND NOT EXISTS (
+         SELECT 1 FROM sum.wo_supabase s2
+          WHERE s2.id = coalesce(public._ambil_teks_jsonb(w.data, 'wo_id', 'id'), '')
+             OR s2.wo_number = coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id'), '')
+       );
+END;
+$$;
+
+-- 4. Detail satu WO
+CREATE OR REPLACE FUNCTION public.sum_wo_detail_bertoken(p_token text, p_wo_id text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = sum, pg_temp
+AS $$
+DECLARE
+    v_target text := upper(btrim(coalesce(p_wo_id, '')));
+    v_wo jsonb;
+    v_payload jsonb;
+    v_user record;
+BEGIN
+    IF btrim(coalesce(p_token, '')) = '' THEN
+        RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+    END IF;
+
+    SELECT mechanic_id, name, role INTO v_user FROM sum._autentikasi_token(p_token);
+    IF v_user.mechanic_id IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+    END IF;
+
+    SELECT wo INTO v_wo
+      FROM sum._semua_wo_json_sum() AS wo
+     WHERE upper(btrim(coalesce(wo->>'id', ''))) = v_target
+        OR upper(btrim(coalesce(wo->>'wo_id', ''))) = v_target
+        OR upper(btrim(coalesce(wo->>'wo_number', ''))) = v_target
+     LIMIT 1;
+
+    IF v_wo IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Work Order tidak ditemukan: ' || coalesce(p_wo_id, ''), 'source', 'SUPABASE');
+    END IF;
+
+    v_payload := v_wo || jsonb_build_object(
+        'wo', v_wo,
+        'work_conditions', jsonb_build_array(
+            jsonb_build_object('key', 'normal', 'label', 'Normal', 'factor', 1.0),
+            jsonb_build_object('key', 'difficult', 'label', 'Sulit', 'factor', 1.1),
+            jsonb_build_object('key', 'extreme', 'label', 'Ekstrim', 'factor', 1.2)
+        )
+    );
+
+    RETURN jsonb_build_object('success', true, 'source', 'SUPABASE', 'result', v_payload, 'data', v_payload)::json;
+END;
+$$;
+
+-- 5. Daftar WO milik mekanik
+CREATE OR REPLACE FUNCTION public.sum_my_wos_bertoken(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = sum, pg_temp
+AS $$
+DECLARE
+    v_clean text := btrim(coalesce(p_token, ''));
+    v_mid   text := '';
+    v_mid_canon text := '';
+    v_mname text := '';
+    v_memail text := '';
+    v_wos jsonb := '[]'::jsonb;
+    v_pulled text := to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF');
+BEGIN
+    IF v_clean = '' THEN
+        RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+    END IF;
+
+    SELECT coalesce(nullif(public._ambil_teks_jsonb(data, 'mechanic_id', 'id'), ''), nullif(btrim(nilai->>0), ''), v_mid),
+           coalesce(nullif(public._ambil_teks_jsonb(data, 'name', 'mechanic_name'), ''), nullif(btrim(nilai->>1), ''), ''),
+           coalesce(nullif(public._ambil_teks_jsonb(data, 'email'), ''), nullif(btrim(nilai->>2), ''), '')
+      INTO v_mid_canon, v_mname, v_memail
+      FROM sum.config_mechanics
+     WHERE public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(data, 'mechanic_id', 'id'), nilai->>0, '')) = public._kode_mekanik_kanonik(v_mid)
+        OR upper(btrim(coalesce(public._ambil_teks_jsonb(data, 'name', 'mechanic_name'), nilai->>1, ''))) = upper(v_mid)
+        OR (v_mid LIKE '%@%' AND lower(btrim(coalesce(public._ambil_teks_jsonb(data, 'email'), nilai->>2, ''))) = lower(v_mid))
+     LIMIT 1;
+
+    v_mid_canon := coalesce(nullif(v_mid_canon, ''), v_mid);
+
+    WITH master_mekanik AS (
+        SELECT DISTINCT ON (public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0)))
+               public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0)) AS k_id,
+               coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''), btrim(m.nilai->>0)) AS mechanic_id,
+               coalesce(nullif(public._ambil_teks_jsonb(m.data, 'name', 'mechanic_name'), ''), nullif(btrim(m.nilai->>1), ''), btrim(m.nilai->>0)) AS name
+          FROM sum.config_mechanics m
+         WHERE coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0, '') <> ''
+    ),
+    tim_cermin AS (
+        SELECT upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number', 'work_order_id', 'id'), ''), nullif(t.nilai->>0, ''), ''))) AS wo_key,
+               jsonb_agg(jsonb_build_object(
+                 'mechanic_id', coalesce(mm.mechanic_id, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'id', 'user_id'), ''), nullif(btrim(t.nilai->>1), ''), ''),
+                 'mechanic_name', coalesce(mm.name, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), nullif(btrim(t.nilai->>2), ''), nullif(btrim(t.nilai->>1), ''), ''),
+                 'name', coalesce(mm.name, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), nullif(btrim(t.nilai->>2), ''), nullif(btrim(t.nilai->>1), ''), ''),
+                 'role_in_wo', coalesce(nullif(public._ambil_teks_jsonb(t.data, 'role_in_wo', 'role'), ''), 'lead'),
+                 'percentage', 100
+               )) AS team_arr,
+               jsonb_agg(coalesce(mm.name, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id'), ''), nullif(btrim(t.nilai->>1), ''), '')) AS team_names_arr
+          FROM sum.work_order_team t
+          LEFT JOIN master_mekanik mm
+            ON mm.k_id = public._kode_mekanik_kanonik(coalesce(nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'id', 'user_id'), ''), t.nilai->>1, ''))
+         WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number', 'work_order_id'), t.nilai->>0, '')), '') IS NOT NULL
+         GROUP BY 1
+    ),
+    gabungan_wo AS (
+        SELECT s.data || jsonb_build_object(
+                 'id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+                 'wo_id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+                 'wo_number', coalesce(nullif(btrim(s.wo_number), ''), btrim(s.id)),
+                 'status', sum._normalisasi_status_wo_sum(coalesce(s.data->>'status', s.status))
+               ) AS wo
+          FROM sum.wo_supabase s
+         WHERE to_regclass('sum.wo_supabase') IS NOT NULL
+           AND nullif(btrim(coalesce(s.wo_number, s.id, '')), '') IS NOT NULL
+           AND upper(btrim(coalesce(s.wo_number, s.id, ''))) <> 'WO-0'
+        UNION ALL
+        SELECT w.data || jsonb_build_object(
+                 'id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+                 'wo_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+                 'wo_number', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), ''), btrim(w.nilai->>0)),
+                 'status', sum._normalisasi_status_wo_sum(public._ambil_teks_jsonb(w.data, 'status')),
+                 'unit_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'unit_id', 'unit_code'), ''), 'WORKSHOP'),
+                 'component_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'component_id', 'component_no'), ''), 'COM-001'),
+                 'component_name', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'component_name', 'others_description', 'activity', 'component_id'), ''), 'Pekerjaan'),
+                 'team', CASE
+                   WHEN tc.team_arr IS NOT NULL THEN tc.team_arr
+                   WHEN jsonb_typeof(w.data->'team') = 'array' AND jsonb_array_length(w.data->'team') > 0 THEN w.data->'team'
+                   ELSE '[]'::jsonb
+                 END,
+                 'effective_team', CASE
+                   WHEN tc.team_arr IS NOT NULL THEN tc.team_arr
+                   WHEN jsonb_typeof(w.data->'effective_team') = 'array' AND jsonb_array_length(w.data->'effective_team') > 0 THEN w.data->'effective_team'
+                   WHEN jsonb_typeof(w.data->'team') = 'array' AND jsonb_array_length(w.data->'team') > 0 THEN w.data->'team'
+                   ELSE '[]'::jsonb
+                 END,
+                 'team_names', COALESCE(tc.team_names_arr, CASE WHEN jsonb_typeof(w.data->'team_names') = 'array' THEN w.data->'team_names' ELSE '[]'::jsonb END)
+               ) AS wo
+          FROM sum.work_orders w
+          LEFT JOIN tim_cermin tc
+            ON tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), w.nilai->>0, '')))
+            OR tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number'), ''), w.nilai->>0, '')))
+         WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, '')), '') IS NOT NULL
+           AND upper(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, ''))) <> 'WO-0'
+           AND NOT EXISTS (
+             SELECT 1 FROM sum.wo_supabase s2
+              WHERE s2.id = coalesce(public._ambil_teks_jsonb(w.data, 'wo_id', 'id'), '')
+                 OR s2.wo_number = coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id'), '')
+           )
+    ),
+    milik_mekanik AS (
+        SELECT wo FROM gabungan_wo
+         WHERE sum._wo_milik_mekanik_sum(wo, v_mid_canon, v_mname, v_memail, v_mid)
+    )
+    SELECT coalesce(jsonb_agg(wo ORDER BY coalesce(wo->>'created_at', '') DESC), '[]'::jsonb)
+      INTO v_wos
+      FROM milik_mekanik;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'source', 'SUPABASE',
+        'result', jsonb_build_object('wos', v_wos, 'pulled_at', v_pulled),
+        'data', jsonb_build_object('wos', v_wos)
+    )::json;
+END;
+$$;
+
+-- 6. WO berdasarkan status (untuk approvals, active, etc)
+CREATE OR REPLACE FUNCTION public.sum_wos_by_status_bertoken(p_token text, p_status text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = sum, pg_temp
+AS $$
+DECLARE
+    v_req text := lower(btrim(coalesce(p_status, 'pending')));
+    v_wos jsonb := '[]'::jsonb;
+    v_transfers jsonb := '[]'::jsonb;
+    v_pulled text := to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF');
+BEGIN
+    IF btrim(coalesce(p_token, '')) = '' THEN
+        RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+    END IF;
+
+    WITH semua AS (
+        SELECT wo FROM sum._semua_wo_json_sum() AS wo
+    )
+    SELECT coalesce(jsonb_agg(wo ORDER BY coalesce(wo->>'created_at', '') DESC) FILTER (
+             WHERE (v_req = 'pending' AND (wo->>'status') IN ('pending_supervisor', 'pending_superintendent', 'pending_transfer'))
+                OR (v_req = 'active' AND (wo->>'status') IN ('pending_mechanic_work', 'expired'))
+                OR (v_req = 'approved' AND (wo->>'status') = 'approved')
+                OR (v_req = 'rejected' AND (wo->>'status') IN ('rejected', 'cancelled'))
+                OR (v_req NOT IN ('pending', 'active', 'approved', 'rejected') AND (wo->>'status') = v_req)
+           ), '[]'::jsonb),
+           coalesce(jsonb_agg(wo ORDER BY coalesce(wo->>'created_at', '') DESC) FILTER (
+             WHERE (wo->>'status') = 'pending_transfer'
+           ), '[]'::jsonb)
+      INTO v_wos, v_transfers
+      FROM semua;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'source', 'SUPABASE',
+        'result', jsonb_build_object(
+            'wos', v_wos,
+            'pending', CASE WHEN v_req = 'pending' THEN v_wos ELSE '[]'::jsonb END,
+            'transfers', v_transfers,
+            'active', CASE WHEN v_req = 'active' THEN v_wos ELSE '[]'::jsonb END,
+            'approved', CASE WHEN v_req = 'approved' THEN v_wos ELSE '[]'::jsonb END,
+            'rejected', CASE WHEN v_req = 'rejected' THEN v_wos ELSE '[]'::jsonb END,
+            'pulled_at', v_pulled
+        )
+    )::json;
+END;
+$$;
+
+-- 7. Konteks skor untuk approve L2
+CREATE OR REPLACE FUNCTION public.sum_konteks_skor_bertoken(p_token text, p_wo_id text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = sum, pg_temp
+AS $$
+DECLARE
+    v_target text := upper(btrim(coalesce(p_wo_id, '')));
+    v_wo jsonb;
+    v_factors jsonb := '[]'::jsonb;
+    v_mechs jsonb := '[]'::jsonb;
+BEGIN
+    SELECT wo INTO v_wo FROM sum._semua_wo_json_sum() AS wo
+     WHERE upper(btrim(coalesce(wo->>'id', ''))) = v_target
+        OR upper(btrim(coalesce(wo->>'wo_number', ''))) = v_target
+     LIMIT 1;
+    IF v_wo IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Work order tidak ditemukan', 'source', 'SUPABASE');
+    END IF;
+
+    SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'factor_type', coalesce(public._ambil_teks_jsonb(data, 'factor_type', 'type'), nilai->>0, 'work_condition'),
+      'type', coalesce(public._ambil_teks_jsonb(data, 'factor_type', 'type'), nilai->>0, 'work_condition'),
+      'key', coalesce(public._ambil_teks_jsonb(data, 'key', 'factor_key'), nilai->>1, ''),
+      'value', coalesce(nullif(regexp_replace(coalesce(public._ambil_teks_jsonb(data, 'value'), nilai->>2, '1.0'), '[^0-9.]', '', 'g'), '')::numeric, 1.0)
+    )), '[]'::jsonb) INTO v_factors FROM sum.config_factors;
+
+    SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'mechanic_id', coalesce(nullif(public._ambil_teks_jsonb(data, 'mechanic_id', 'id'), ''), btrim(nilai->>0)),
+      'name', coalesce(nullif(public._ambil_teks_jsonb(data, 'name', 'mechanic_name'), ''), btrim(nilai->>1)),
+      'golongan', coalesce(nullif(public._ambil_teks_jsonb(data, 'golongan'), ''), btrim(nilai->>5), ''),
+      'jabatan_aktual', coalesce(nullif(public._ambil_teks_jsonb(data, 'jabatan_aktual'), ''), btrim(nilai->>4), '')
+    )), '[]'::jsonb) INTO v_mechs FROM sum.config_mechanics;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'source', 'SUPABASE',
+        'result', jsonb_build_object('wo', v_wo, 'factors', v_factors, 'base_settings', '[]'::jsonb, 'mechanics', v_mechs)
+    )::json;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sum_wo_detail_bertoken(text, text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sum_my_wos_bertoken(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sum_wos_by_status_bertoken(text, text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sum_konteks_skor_bertoken(text, text) TO anon, authenticated, service_role;

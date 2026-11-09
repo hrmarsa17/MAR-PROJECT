@@ -729,7 +729,26 @@ function renderHalamanCrudUserWeb(rumah, token, user, tabAwal = 'users') {
       <div class="form-group"><label>Nama Lengkap</label><input type="text" id="fNama" placeholder="Nama lengkap"></div>
       <div class="form-group"><label>Email (opsional)</label><input type="email" id="fEmail" placeholder="nama@abadiops.com"></div>
       <div class="form-group"><label>Role</label><select id="fRole"><option value="mechanic">mechanic (Mekanik)</option><option value="supervisor">supervisor (L1 Approver / Planner)</option><option value="superintendent">superintendent (L2 Approver / Admin)</option></select></div>
-      <div class="form-group"><label>Section (maintenance / vessel / workshop / field)</label><input type="text" id="fSection" placeholder="maintenance"></div>
+      <div class="form-group" id="fGrupSection">
+        <label for="btnToggleFSection">Section <small style="color:#64748B;font-weight:normal;">(bisa pilih lebih dari 1)</small></label>
+        <div style="position:relative;width:100%;" id="wrapDropdownFSection">
+          <button type="button" id="btnToggleFSection" onclick="toggleDropdownFSection(event)" style="width:100%;padding:9px 12px;border:1px solid #CBD5E1;border-radius:8px;font-size:14px;background:#fff;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+            <span id="lblTampilFSection">Pilih Section...</span>
+            <span style="font-size:11px;color:#64748B;">▼</span>
+          </button>
+          <div class="hidden" id="menuDropdownFSection" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #CBD5E1;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);z-index:99;padding:6px;max-height:160px;overflow-y:auto;">
+            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13.5px;" onclick="event.stopPropagation()">
+              <input type="checkbox" value="maintenance" id="cbFSec_maintenance" onchange="sinkronFSection()">
+              <span>Maintenance</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13.5px;" onclick="event.stopPropagation()">
+              <input type="checkbox" value="vessel" id="cbFSec_vessel" onchange="sinkronFSection()">
+              <span>Vessel</span>
+            </label>
+          </div>
+        </div>
+        <input type="hidden" id="fSection" value="maintenance">
+      </div>
       <div class="form-group"><label>Position / Golongan</label><input type="text" id="fGolongan" placeholder="junior / senior / 2a / 3a"></div>
       <div class="form-group"><label>Status</label><select id="fStatus"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
@@ -840,6 +859,46 @@ function renderHalamanCrudUserWeb(rumah, token, user, tabAwal = 'users') {
       }).join('');
     }
 
+    function toggleDropdownFSection(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('menuDropdownFSection');
+      if (menu) menu.classList.toggle('hidden');
+    }
+
+    function sinkronFSection() {
+      const cbM = document.getElementById('cbFSec_maintenance');
+      const cbV = document.getElementById('cbFSec_vessel');
+      const hidden = document.getElementById('fSection');
+      const lbl = document.getElementById('lblTampilFSection');
+      const vals = [];
+      const labels = [];
+      if (cbM && cbM.checked) { vals.push('maintenance'); labels.push('Maintenance'); }
+      if (cbV && cbV.checked) { vals.push('vessel'); labels.push('Vessel'); }
+      if (hidden) hidden.value = vals.join(', ');
+      if (lbl) {
+        lbl.textContent = labels.length ? labels.join(', ') : 'Pilih Section...';
+        lbl.style.color = labels.length ? '#0F172A' : '#64748B';
+      }
+    }
+
+    function aturFSection(val) {
+      const parts = String(val || '').split(',').map((s) => s.trim().toLowerCase());
+      const cbM = document.getElementById('cbFSec_maintenance');
+      const cbV = document.getElementById('cbFSec_vessel');
+      if (cbM) cbM.checked = parts.includes('maintenance') || parts.includes('field') || parts.includes('workshop');
+      if (cbV) cbV.checked = parts.includes('vessel');
+      if (!parts.filter(Boolean).length && cbM) cbM.checked = true;
+      sinkronFSection();
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('wrapDropdownFSection');
+      if (wrap && !wrap.contains(e.target)) {
+        const m = document.getElementById('menuDropdownFSection');
+        if (m) m.classList.add('hidden');
+      }
+    });
+
     function bukaModal(u) {
       document.getElementById('judulModal').textContent = u ? ('Edit User: ' + u.mechanic_id) : 'Tambah User Baru';
       document.getElementById('fId').value = u ? u.mechanic_id : '';
@@ -847,13 +906,17 @@ function renderHalamanCrudUserWeb(rumah, token, user, tabAwal = 'users') {
       document.getElementById('fNama').value = u ? (u.name || '') : '';
       document.getElementById('fEmail').value = u ? (u.email || '') : '';
       document.getElementById('fRole').value = u ? (u.role || 'mechanic') : 'mechanic';
-      document.getElementById('fSection').value = u ? (u.section || '') : 'maintenance';
+      aturFSection(u ? u.section : 'maintenance');
       document.getElementById('fGolongan').value = u ? (u.position || u.golongan || '') : '';
       document.getElementById('fStatus').value = u ? (u.status || 'ACTIVE') : 'ACTIVE';
       document.getElementById('modalUser').classList.add('show');
     }
 
-    function tutupModal() { document.getElementById('modalUser').classList.remove('show'); }
+    function tutupModal() {
+      const m = document.getElementById('menuDropdownFSection');
+      if (m) m.classList.add('hidden');
+      document.getElementById('modalUser').classList.remove('show');
+    }
     function editUser(id) { const u = DAFTAR.find((x) => x.mechanic_id === id); if (u) bukaModal(u); }
 
     async function simpanUser() {

@@ -115,6 +115,9 @@ async function cobaSupabaseSum(action, token, parsed, env) {
     if (action === 'ping' && token) {
       rpcName = 'sum_ping';
       payload = { p_token: token };
+    } else if (action === 'handleGetWoDetailForMechanic' && token) {
+      rpcName = 'sum_wo_detail_bertoken';
+      payload = { p_token: token, p_wo_id: (parsed.wo_id || parsed.id || '').toString() };
     } else if (action === 'pull_create_refs' && token) {
       rpcName = 'sum_create_refs_bertoken';
       payload = { p_token: token };

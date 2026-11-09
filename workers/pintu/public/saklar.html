@@ -103,6 +103,75 @@
     .chk-row { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.35rem; }
     .chk-label { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; cursor: pointer; }
 
+    /* Multi-select Dropdown Checkbox */
+    .multi-select-wrap { position: relative; width: 100%; }
+    .multi-select-btn {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: white;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+      user-select: none;
+    }
+    .multi-select-btn:focus, .multi-select-btn.open {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .multi-select-btn .btn-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100% - 24px);
+    }
+    .multi-select-btn .arrow {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+    .multi-select-btn.open .arrow {
+      transform: rotate(180deg);
+    }
+    .multi-select-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      z-index: 50;
+      padding: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .multi-select-opt {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background 0.15s;
+    }
+    .multi-select-opt:hover {
+      background: #F1F5F9;
+    }
+    .multi-select-opt input[type="checkbox"] {
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+    }
+
     .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.86rem; margin-bottom: 1rem; }
     .alert-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
     .alert-success { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
@@ -435,8 +504,15 @@
             <select id="uPeran" class="form-control" required></select>
           </div>
           <div class="form-group" id="grupSection">
-            <label for="uSection">Section</label>
-            <input type="text" id="uSection" class="form-control" placeholder="field / workshop / tyreman / vessel">
+            <label for="btnToggleSection">Section <small style="color:var(--text-muted); font-weight:normal;">(bisa pilih lebih dari 1)</small></label>
+            <div class="multi-select-wrap" id="wrapDropdownSection">
+              <button type="button" class="multi-select-btn" id="btnToggleSection" onclick="toggleDropdownSection(event)">
+                <span class="btn-text" id="lblTampilSection">Pilih Section...</span>
+                <span class="arrow">▼</span>
+              </button>
+              <div class="multi-select-menu hidden" id="menuDropdownSection"></div>
+            </div>
+            <input type="hidden" id="uSection" value="">
           </div>
         </div>
 
@@ -509,6 +585,15 @@
         pilihTab('users', false);
       }
       sinkronInputTokenAdmin();
+      document.addEventListener('click', (e) => {
+        const wrapSec = document.getElementById('wrapDropdownSection');
+        if (wrapSec && !wrapSec.contains(e.target)) {
+          const menu = document.getElementById('menuDropdownSection');
+          const btn = document.getElementById('btnToggleSection');
+          if (menu) menu.classList.add('hidden');
+          if (btn) btn.classList.remove('open');
+        }
+      });
       if (TOKEN_SESI) {
         muatStatus();
       } else {
@@ -944,6 +1029,104 @@
       }
     }
 
+    const DAFTAR_SECTION_RUMAH = {
+      kmbprojek: [
+        { id: 'maintenance', label: 'Maintenance' },
+        { id: 'vessel', label: 'Vessel' }
+      ],
+      kmbtra: [
+        { id: 'field', label: 'Field' },
+        { id: 'workshop', label: 'Workshop' },
+        { id: 'tyreman', label: 'Tyreman' }
+      ],
+      sum: []
+    };
+
+    function parseSectionList(val) {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.map(s => String(s || '').trim().toLowerCase()).filter(Boolean);
+      return String(val)
+        .split(',')
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    function toggleDropdownSection(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('menuDropdownSection');
+      const btn = document.getElementById('btnToggleSection');
+      if (!menu || !btn) return;
+      const isClosed = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !isClosed);
+      btn.classList.toggle('open', isClosed);
+    }
+
+    function aturPilihanSection(rumah, nilaiAwal = null) {
+      const container = document.getElementById('menuDropdownSection');
+      const inputHidden = document.getElementById('uSection');
+      const labelTampil = document.getElementById('lblTampilSection');
+      const grupSec = document.getElementById('grupSection');
+
+      if (rumah === 'sum') {
+        if (grupSec) grupSec.style.display = 'none';
+        if (inputHidden) inputHidden.value = '';
+        if (labelTampil) labelTampil.textContent = 'Pilih Section...';
+        return;
+      }
+      if (grupSec) grupSec.style.display = 'block';
+
+      const opsiTersedia = DAFTAR_SECTION_RUMAH[rumah] || [];
+
+      let terpilih = [];
+      if (nilaiAwal !== null && nilaiAwal !== undefined) {
+        terpilih = parseSectionList(nilaiAwal);
+      } else if (inputHidden && inputHidden.value) {
+        terpilih = parseSectionList(inputHidden.value);
+      }
+
+      // Default jika kosong saat ganti rumah
+      if (!terpilih.length && opsiTersedia.length > 0) {
+        terpilih = [opsiTersedia[0].id];
+      }
+
+      container.innerHTML = opsiTersedia.map(opt => {
+        const isChecked = terpilih.includes(opt.id.toLowerCase());
+        return `
+          <label class="multi-select-opt" onclick="event.stopPropagation()">
+            <input type="checkbox" value="${escapeAttr(opt.id)}" ${isChecked ? 'checked' : ''} onchange="sinkronisasiPilihanSection('${escapeAttr(rumah)}')">
+            <span>${escapeHtml(opt.label)}</span>
+          </label>
+        `;
+      }).join('');
+
+      sinkronisasiPilihanSection(rumah);
+    }
+
+    function sinkronisasiPilihanSection(rumah) {
+      const container = document.getElementById('menuDropdownSection');
+      const inputHidden = document.getElementById('uSection');
+      const labelTampil = document.getElementById('lblTampilSection');
+      if (!container || !inputHidden || !labelTampil) return;
+
+      const checkedBoxes = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
+      const vals = checkedBoxes.map(cb => cb.value);
+      const opsi = DAFTAR_SECTION_RUMAH[rumah] || [];
+      const labels = checkedBoxes.map(cb => {
+        const f = opsi.find(o => o.id === cb.value);
+        return f ? f.label : cb.value;
+      });
+
+      inputHidden.value = vals.join(', ');
+
+      if (labels.length === 0) {
+        labelTampil.textContent = 'Pilih Section...';
+        labelTampil.style.color = 'var(--text-muted)';
+      } else {
+        labelTampil.textContent = labels.join(', ');
+        labelTampil.style.color = 'var(--text)';
+      }
+    }
+
     function sesuaikanFormRumah() {
       const r = document.getElementById('uRumah').value;
       const selPeran = document.getElementById('uPeran');
@@ -966,7 +1149,7 @@
       selPeran.innerHTML = opsiPeran.map(([k, lbl]) => `<option value="${k}">${lbl}</option>`).join('');
       if (opsiPeran.some(([k]) => k === peranSekarang)) selPeran.value = peranSekarang;
 
-      document.getElementById('grupSection').style.display = r === 'sum' ? 'none' : 'block';
+      aturPilihanSection(r, null);
     }
 
     function bukaModalUserBaru() {
@@ -981,7 +1164,7 @@
       document.getElementById('uNama').value = '';
       document.getElementById('uEmail').value = '';
       document.getElementById('uPeran').value = 'mechanic';
-      document.getElementById('uSection').value = rDefault === 'kmbprojek' ? 'maintenance' : 'field';
+      aturPilihanSection(rDefault, rDefault === 'kmbprojek' ? ['maintenance'] : ['field']);
       document.getElementById('uJabatan').value = 'junior';
       document.getElementById('uGolongan').value = '';
       document.getElementById('uAktif').checked = true;
@@ -1003,7 +1186,7 @@
       document.getElementById('uNama').value = u.name || '';
       document.getElementById('uEmail').value = u.email || '';
       document.getElementById('uPeran').value = u.role || 'mechanic';
-      document.getElementById('uSection').value = u.section || '';
+      aturPilihanSection(u.rumah || 'sum', u.section || '');
       document.getElementById('uJabatan').value = u.jabatan_aktual || u.position || u.grade || '';
       document.getElementById('uGolongan').value = u.golongan || '';
       document.getElementById('uAktif').checked = (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
@@ -1016,6 +1199,10 @@
     }
 
     function tutupModalUser() {
+      const menu = document.getElementById('menuDropdownSection');
+      const btn = document.getElementById('btnToggleSection');
+      if (menu) menu.classList.add('hidden');
+      if (btn) btn.classList.remove('open');
       document.getElementById('modalUser').classList.add('hidden');
     }
 

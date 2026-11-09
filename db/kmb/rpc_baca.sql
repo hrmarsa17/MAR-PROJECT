@@ -285,19 +285,19 @@ BEGIN
            AND lower(btrim(coalesce(m.data->>'role', 'mechanic'))) = 'mechanic'
          GROUP BY m.baris, m.data->>'mechanic_id', m.data->>'name', m.data->>'section', m.data->>'jabatan', m.data->>'position'
     )
-    SELECT coalesce(json_agg(json_build_object(
-        'id', pm.id,
-        'mechanic_id', pm.mechanic_id,
-        'name', pm.name,
-        'section', pm.section,
-        'jabatan', pm.jabatan,
-        'pending_mechanic_work', pm.pending_work,
-        'pending_l1', pm.pending_l1,
-        'pending_l2', pm.pending_l2,
-        'approved', pm.approved,
-        'has_token', (t.token IS NOT NULL),
-        'token', t.token
-    ) ORDER BY pm.name), '[]'::json)
+     SELECT coalesce(json_agg(json_build_object(
+         'id', pm.id,
+         'mechanic_id', pm.mechanic_id,
+         'name', coalesce(pm.name, pm.mechanic_id),
+         'section', pm.section,
+         'jabatan', pm.jabatan,
+         'pending_mechanic_work', pm.pending_work,
+         'pending_l1', pm.pending_l1,
+         'pending_l2', pm.pending_l2,
+         'approved', pm.approved,
+         'has_token', (t.token IS NOT NULL),
+         'token', t.token
+     ) ORDER BY coalesce(pm.name, pm.mechanic_id)), '[]'::json)
     INTO v_mechs
     FROM per_mech pm
     LEFT JOIN LATERAL (

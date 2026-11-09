@@ -12,6 +12,34 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · bersama (Multi-Select Dropdown Checkbox Section Dinamis Per Sistem di Panel Pengelola & Users)
+- Berubah:
+  - **Akar Masalah Form Section**:
+    - Di modal "Tambah Pengguna Baru" dan modal ubah user di panel admin pusat 3 rumah (`workers/pintu/public/saklar.html`), input Section sebelumnya berupa text biasa satu baris (`<input type="text" id="uSection">`). Hal ini menyulitkan peran L1 (Supervisor) dan L2 (Superintendent) yang mengelola lebih dari 1 section, serta berisiko salah ketik nama section yang tidak didukung sistem.
+    - Placeholder menampilkan semua section (`field / workshop / tyreman / vessel`), padahal sistem KMB Project hanya memiliki 2 section: `vessel` dan `maintenance`.
+  - **Dropdown Checkbox Section Multi-Select Dinamis di `saklar.html`**:
+    - Mengganti input teks dengan komponen custom Dropdown Checkbox Multi-Select interaktif (`#wrapDropdownSection`, `#btnToggleSection`, `#menuDropdownSection`, dan hidden input `#uSection`).
+    - Membuat daftar section dinamis per rumah (`DAFTAR_SECTION_RUMAH`):
+      - `kmbprojek`: HANYA menampilkan `maintenance` dan `vessel` (2 opsi saja sesuai sistem KMB Project).
+      - `kmbtra`: Menampilkan `field`, `workshop`, `tyreman`.
+      - `sum`: Menyembunyikan form group Section secara otomatis (`display: none`).
+    - Mendukung multi-selection (bisa mencentang 2 atau lebih section untuk L1/L2 maupun mekanik). Nilai tersimpan sebagai string terpisah koma (cth: `"maintenance, vessel"` atau `"vessel, maintenance"`).
+    - Memperbarui fungsi `sesuaikanFormRumah()`, `bukaModalUserBaru()`, dan `bukaModalUbahUser(u)`:
+      - Pada ubah pengguna: membaca string `u.section` (misal `"maintenance, vessel"`), memecah koma, dan otomatis mencentang checkbox yang sesuai.
+      - Pada tambah pengguna: opsi section langsung disesuaikan dengan `uRumah` yang dipilih.
+    - Menambahkan listener penutup otomatis saat klik di luar popover dropdown.
+  - **Penyelarasan Modal CRUD Pengguna KMB Project di `web-handler.js`**:
+    - Di `workers/kmbprojek/src/web-handler.js` (`/web?page=users`), memperbarui `#fSection` menjadi dropdown checkbox dengan opsi spesifik KMB Project: `maintenance` dan `vessel`, lengkap dengan fungsi helper `aturFSection()`, `sinkronFSection()`, dan `toggleDropdownFSection()`.
+  - **Pengujian & Verifikasi**:
+    - Syntax check: `node --check` pada `web-handler.js` dan ekstraksi skrip `saklar.html` lulus tanpa error.
+    - Unit test simulasi DOM 7 skenario (pilihan rumah, multi-select 2 opsi, single select, hide di SUM, render modal ubah, dan toggle popover) lulus 100%.
+    - Deploy Cloudflare Workers staging:
+      - `abadiops-pintu-staging` (`9a1f29dc-1ce5-44cb-a47c-ea2f99e9075f`)
+      - `abadiops-kmbprojek-staging` (`79ade35d-dd16-4f25-b00a-086e1573ed04`)
+    - Verifikasi live: aset `/saklar.html` di `https://abadiops-pintu-staging.kawanabadigrup.workers.dev/saklar.html` telah menyajikan komponen multi-select baru.
+- Belum selesai / berikutnya:
+  - User menguji langsung di panel pengelola staging (`/saklar.html`) atau manajemen user web KMB Project (`/web?page=users`).
+
 ### 2026-11-09 · Raka (+ AI) · kmb-projek (Pembatasan Role Approval L1 Supervisor: Hanya Bisa Lihat & Approve L1)
 - Berubah:
   - **Akar Masalah Akses L2 oleh L1 Teridentifikasi**:
@@ -79,6 +107,16 @@ Formatnya:
   - Pesan error "Jalankan generateMissingTokens di editor GAS" di halaman Monitoring sudah diperbarui menjadi "Hubungi admin untuk membuat token".
   - Memperbaiki data monitoring kosong: Menambahkan fallback `coalesce(name, mechanic_id)` pada RPC `kmbtra_monitoring_bertoken` karena field `name` di tabel `config_mechanics` bernilai null.
 - Belum selesai: Deploy SQL perbaikan ke Supabase.
+
+### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Routing detail WO & RPC Backend SUM Staging)
+- Berubah:
+  - **Routing handleGetWoDetailForMechanic**: Tambah mapping di `workers/sum/src/index.js:119-121` agar `handleGetWoDetailForMechanic` dipetakan ke RPC `sum_wo_detail_bertoken`.
+  - **Fungsi RPC baru `sum_wo_detail_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:527-563` untuk detail satu WO beserta tim dan kondisi kerja.
+  - **Fungsi RPC baru `sum_my_wos_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:565-656` untuk daftar WO milik mekanik dengan pencocokan nama/email/array tim.
+  - **Fungsi RPC baru `sum_wos_by_status_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:658-707` untuk daftar WO berdasarkan status (pending, active, approved, rejected).
+  - **Fungsi RPC baru `sum_konteks_skor_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:709-745` untuk konteks skor saat approve L2 (WO, factors, mechanics).
+  - **Helper `sum._semua_wo_json_sum()`**: Tambah di `db/sum/rpc_backend_penuh.sql:527-563` untuk gabungan seluruh WO dari `wo_supabase` dan `work_orders`.
+- Belum selesai: User jalankan SQL di Supabase SQL Editor Gedung 2 (`dnnqrslftndcbmnvuveb`).
 
 ### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Error 1101 Worker Threw Exception di Web Desktop SUM Staging)
 - Berubah:
