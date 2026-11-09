@@ -66,6 +66,7 @@ DECLARE
     v_new_data jsonb;
     v_team jsonb := '[]'::jsonb;
     v_wo_id text;
+    v_act_hours numeric := 0.25;
     v_result jsonb;
 BEGIN
     -- Autentikasi token
@@ -340,9 +341,18 @@ BEGIN
 
     ELSIF v_aksi IN ('submit_work', 'kirim_kerja') THEN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
+        BEGIN
+            v_act_hours := round((EXTRACT(EPOCH FROM ((p_payload->>'end_time')::timestamptz - (p_payload->>'start_time')::timestamptz)) / 3600.0)::numeric, 2);
+            IF v_act_hours <= 0 THEN v_act_hours := 0.25; END IF;
+        EXCEPTION WHEN OTHERS THEN
+            v_act_hours := coalesce((p_payload->>'duration_hours')::numeric, (p_payload->>'actual_hours')::numeric, 0.25);
+        END;
+
         UPDATE kmb.work_orders
            SET data = data || p_payload || jsonb_build_object(
                'status', 'PENDING_L1',
+               'actual_hours', v_act_hours,
+               'duration_hours', v_act_hours,
                'submitted_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
                'submitted_by', v_user.name
            ),
@@ -350,7 +360,14 @@ BEGIN
            sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'source', 'SUPABASE');
+        RETURN jsonb_build_object(
+            'success', true,
+            'source', 'SUPABASE',
+            'wo_id', v_wo_id,
+            'status', 'PENDING_L1',
+            'data', jsonb_build_object('wo_id', v_wo_id, 'status', 'PENDING_L1', 'actual_hours', v_act_hours, 'duration_hours', v_act_hours),
+            'result', jsonb_build_object('wo_id', v_wo_id, 'status', 'PENDING_L1', 'actual_hours', v_act_hours, 'duration_hours', v_act_hours)
+        );
 
     ELSIF v_aksi IN ('save_override', 'override') THEN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');

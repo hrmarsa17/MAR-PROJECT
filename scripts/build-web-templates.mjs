@@ -99,9 +99,21 @@ const CLIENT_SHIM = `<script id="abadi-gas-shim">
                 return;
               }
               if (json) {
-                if (successHandler) successHandler(json, userObj);
+                if (successHandler) {
+                  try {
+                    successHandler(json, userObj);
+                  } catch (clientErr) {
+                    console.error('Error saat mengeksekusi successHandler client:', clientErr);
+                  }
+                }
               } else {
-                if (successHandler) successHandler(text, userObj);
+                if (successHandler) {
+                  try {
+                    successHandler(text, userObj);
+                  } catch (clientErr) {
+                    console.error('Error saat mengeksekusi successHandler client:', clientErr);
+                  }
+                }
               }
             });
           })

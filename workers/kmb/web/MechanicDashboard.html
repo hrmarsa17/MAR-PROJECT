@@ -818,8 +818,13 @@
               timerClear(woId);   // timer baru dibersihkan setelah kerja benar-benar terkirim
               var url = appState.baseUrl + '?page=mechanic';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
+              var actHours = (r && r.data && r.data.actual_hours !== undefined)
+                ? r.data.actual_hours
+                : ((r && r.result && r.result.actual_hours !== undefined)
+                  ? r.result.actual_hours
+                  : ((r && r.actual_hours !== undefined) ? r.actual_hours : 0));
               showSuccessAndRedirect('Laporan terkirim!\nWO: ' + (wo.wo_number || woId) +
-                '\nDurasi: ' + formatJamMenit(r.data.actual_hours), urlWithBack(urlWithToken(url)));
+                '\nDurasi: ' + formatJamMenit(actHours), urlWithBack(urlWithToken(url)));
             } else {
               alert('❌ Gagal: ' + ((r && r.error && r.error.message) || 'Tidak diketahui'));
             }
@@ -1072,7 +1077,12 @@
               var url = appState.baseUrl + '?page=mechanic';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
               // AUDIT T2: bawa &back → tombol "Kembali ke Monitoring" tetap ada setelah submit
-              showSuccessAndRedirect('Work submitted!\nWO: ' + wo.id + '\nDurasi: ' + formatJamMenit(r.data.actual_hours), urlWithBack(urlWithToken(url)));
+              var actHours = (r && r.data && r.data.actual_hours !== undefined)
+                ? r.data.actual_hours
+                : ((r && r.result && r.result.actual_hours !== undefined)
+                  ? r.result.actual_hours
+                  : ((r && r.actual_hours !== undefined) ? r.actual_hours : 0));
+              showSuccessAndRedirect('Work submitted!\nWO: ' + wo.id + '\nDurasi: ' + formatJamMenit(actHours), urlWithBack(urlWithToken(url)));
             } else {
               alert('❌ Error: ' + (r.error.message || 'Failed')); btn.disabled = false; btn.textContent = '📮 Kirim';
             }

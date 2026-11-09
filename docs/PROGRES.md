@@ -12,7 +12,48 @@ Formatnya:
 
 ---
 
-### 2026-11-09 · Raka (+ AI) · bersama (Multi-Select Dropdown Checkbox Section Dinamis Per Sistem di Panel Pengelola & Users)
+### 2026-11-09 · Raka (+ AI) · kmb (Perbaikan Error 'Cannot read properties of undefined (reading actual_hours)' saat Submit Laporan Kerja Mekanik)
+- Berubah:
+  - **Akar Masalah Teridentifikasi**:
+    - Saat mekanik mengirim laporan kerja (baik via tombol "Selesai" timer maupun modal manual input jam di `/web?page=mechanic`), fungsi `handleSubmitMechanicWork` di `MechanicDashboard.html` memanggil callback `showSuccessAndRedirect` yang mencoba membaca durasi via `r.data.actual_hours`.
+    - Di backend Supabase KMB V2 (`workers/kmb/src/supabase-backend.js` & `db/kmb/rpc_backend_penuh.sql`), respon `submit_work` sebelumnya mengembalikan `{ success: true, wo_id: '...', status: 'PENDING_L1' }` tanpa properti `data` atau `actual_hours`.
+    - Hal ini memicu `TypeError: Cannot read properties of undefined (reading 'actual_hours')` di sisi client browser. Karena error terjadi di dalam callback `.then(...)` shim client `google.script.run`, exception tertangkap oleh handler transpor `.catch(...)`, sehingga memicu alert keliru: *"⚠️ Sambungan terputus sebelum jawaban server sampai. Tindakan Anda MUNGKIN sudah tersimpan..."*.
+  - **Perbaikan Backend & Supabase RPC (`workers/kmb/src/supabase-backend.js` & `db/kmb/rpc_backend_penuh.sql`)**:
+    - Di `workers/kmb/src/supabase-backend.js`: Menghitung durasi jam kerja aktual dari `start_time` dan `end_time` (atau `duration_hours`), serta membungkus respon `submit_work` secara konsisten ke dalam objek `data` dan `result` yang memuat field `actual_hours` dan `duration_hours`.
+    - Di `db/kmb/rpc_backend_penuh.sql`: Memperbarui fungsi `kmbtra_eksekusi_aksi_bertoken` untuk aksi `submit_work` / `kirim_kerja` agar menghitung `v_act_hours`, menyimpannya ke record WO, dan mengembalikan `data` serta `result` JSON yang lengkap.
+  - **Perbaikan UI Client & Shim Google Apps Script**:
+    - Di `workers/kmb/web/MechanicDashboard.html` (dan juga di `workers/kmbprojek` & `workers/sum`): Menambahkan pengecekan null-safe saat membaca `actual_hours` (`(r.data && r.data.actual_hours) || (r.result && r.result.actual_hours) || r.actual_hours || 0`).
+    - Di `scripts/build-web-templates.mjs`: Membungkus eksekusi `successHandler` client ke dalam blok `try...catch` agar error JavaScript lokal pada UI callback tidak salah dilaporkan sebagai kegagalan sambungan jaringan server.
+    - Mengompilasi ulang seluruh template web via `node scripts/build-web-templates.mjs`.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-kmb-staging` (`00bb822a-303b-47ae-9e09-9f05e2b9b6db`)
+    - `abadiops-kmbprojek-staging` (`685a9731-cf26-47f6-8e7f-c9c232084429`)
+    - `abadiops-sum-staging` (`0e9787ea-d4f6-4838-ae51-e0d218be01b8`)
+- Belum selesai / berikutnya:
+  - User me-refresh halaman `/web?page=mechanic` di KMB V2 staging dan mencoba submit pekerjaan kembali.
+
+### 2026-11-09 · Raka (+ AI) · kmb (Perbaiki Pesan Error & Data Kosong Monitoring)
+- Berubah:
+  - **Fallback `name`**: Diperbarui `db/kmb/rpc_baca.sql:290-305` dengan `coalesce(name, mechanic_id)`, sehingga kartu monitoring KMB TRA tidak tampil `?` saat field `name` kosong di cermin.
+  - **Pesan error token**: Sudah diperbarui sebelumnya dari "Jalankan generateMissingTokens di editor GAS" menjadi "Hubungi admin untuk membuat token".
+- Belum selesai: Deploy SQL `kmb/rpc_baca.sql` di Supabase.
+
+### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Routing detail WO & RPC Backend SUM Staging)
+- Berubah:
+  - **Routing handleGetWoDetailForMechanic**: Tambah mapping di `workers/sum/src/index.js:119-121` agar `handleGetWoDetailForMechanic` dipetakan ke RPC `sum_wo_detail_bertoken`.
+  - **Fungsi RPC baru `sum_wo_detail_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:527-563` untuk detail satu WO beserta tim dan kondisi kerja.
+  - **Fungsi RPC baru `sum_my_wos_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:565-656` untuk daftar WO milik mekanik dengan pencocokan nama/email/array tim.
+  - **Fungsi RPC baru `sum_wos_by_status_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:658-707` untuk daftar WO berdasarkan status (pending, active, approved, rejected).
+  - **Fungsi RPC baru `sum_konteks_skor_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:709-745` untuk konteks skor saat approve L2 (WO, factors, mechanics).
+  - **Helper `sum._semua_wo_json_sum()`**: Tambah di `db/sum/rpc_backend_penuh.sql:527-563` untuk gabungan seluruh WO dari `wo_supabase` dan `work_orders`.
+- Belum selesai: User jalankan SQL di Supabase SQL Editor Gedung 2 (`dnnqrslftndcbmnvuveb`).
+
+### 2026-11-09 · Raka (+ AI) · bersama (Uji Otomatis: Backend Mandiri 40/40, Serah-Terima Token 24/24)
+- Berubah:
+  - **Uji backend mandiri**: `node scripts/uji-backend-mandiri.mjs` → **40/40 LULUS**
+  - **Uji serah-terima token**: `node scripts/uji-serahan-token.mjs` → **24/24 LULUS**
+  - **Syntax check**: `node --check` lulus pada `workers/sum/src/index.js`, `workers/sum/src/supabase-backend.js`, `workers/kmb/src/supabase-backend.js`
+- Belum selesai: Deploy ulang worker staging (`npx wrangler deploy --env staging`) untuk reflection ke live.
 - Berubah:
   - **Akar Masalah Form Section**:
     - Di modal "Tambah Pengguna Baru" dan modal ubah user di panel admin pusat 3 rumah (`workers/pintu/public/saklar.html`), input Section sebelumnya berupa text biasa satu baris (`<input type="text" id="uSection">`). Hal ini menyulitkan peran L1 (Supervisor) dan L2 (Superintendent) yang mengelola lebih dari 1 section, serta berisiko salah ketik nama section yang tidak didukung sistem.

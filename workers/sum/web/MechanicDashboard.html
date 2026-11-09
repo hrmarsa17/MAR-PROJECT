@@ -1523,7 +1523,12 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
               closeModal();
               var url = appState.baseUrl + '?page=mechanic';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
-              showSuccessAndRedirect('Work submitted!\nWO: ' + wo.id + '\nDurasi: ' + formatJamMenit(r.data.actual_hours), url);
+              var actHours = (r && r.data && r.data.actual_hours !== undefined)
+                ? r.data.actual_hours
+                : ((r && r.result && r.result.actual_hours !== undefined)
+                  ? r.result.actual_hours
+                  : ((r && r.actual_hours !== undefined) ? r.actual_hours : 0));
+              showSuccessAndRedirect('Work submitted!\nWO: ' + wo.id + '\nDurasi: ' + formatJamMenit(actHours), url);
             } else {
               alert('❌ Error: ' + (r.error.message || 'Failed')); btn.disabled = false; btn.textContent = 'Submit Work';
             }

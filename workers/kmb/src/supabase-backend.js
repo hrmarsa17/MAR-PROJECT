@@ -532,8 +532,32 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
         const fullDetail = { ...woObj, wo: woObj, team: teamArr };
         data.result = fullDetail;
         data.data = fullDetail;
+      } else if (cleanAksi === 'submit_work' && data.success) {
+        let actHours = 0;
+        if (payload.start_time && payload.end_time) {
+          const s = new Date(payload.start_time).getTime();
+          const e = new Date(payload.end_time).getTime();
+          if (!isNaN(s) && !isNaN(e) && e > s) {
+            actHours = Math.round(((e - s) / 3600000) * 100) / 100;
+          }
+        }
+        if (!actHours) {
+          actHours = Number(payload.duration_hours || payload.actual_hours || 0.25);
+        }
+        const submitData = {
+          wo_id: payload.wo_id || data.wo_id || '',
+          wo_number: payload.wo_id || data.wo_id || '',
+          status: data.status || 'PENDING_L1',
+          actual_hours: actHours,
+          duration_hours: actHours,
+          ...(data.data || data.result || {})
+        };
+        data.data = submitData;
+        data.result = submitData;
       } else if (!data.data && data.result) {
         data.data = data.result;
+      } else if (!data.data) {
+        data.data = { ...data };
       }
 
       return new Response(JSON.stringify(data), {
