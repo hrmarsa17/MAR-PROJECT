@@ -245,6 +245,61 @@ function compileGasTemplateToFunction(rawHtml, dir) {
     function safeParse(d, fb) { try { return typeof d === 'string' ? JSON.parse(d) : (d || fb); } catch(_) { return fb; } }
     function include(name) { return ${JSON.stringify(includes)}[name] || ''; }
 
+    var Session = {
+      getScriptTimeZone: function() { return 'Asia/Jakarta'; }
+    };
+
+    var Utilities = {
+      formatDate: function(date, timeZone, format) {
+        if (!date) return '';
+        var d = (date instanceof Date) ? date : new Date(date);
+        if (isNaN(d.getTime())) return '-';
+        var tz = timeZone || 'Asia/Jakarta';
+        var fmt = format || 'dd MMM yyyy HH:mm';
+        var parts = {};
+        try {
+          var dtf = new Intl.DateTimeFormat('en-GB', {
+            timeZone: tz,
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          });
+          dtf.formatToParts(d).forEach(function(p) { parts[p.type] = p.value; });
+          var dtfNum = new Intl.DateTimeFormat('en-GB', {
+            timeZone: tz,
+            month: '2-digit'
+          });
+          dtfNum.formatToParts(d).forEach(function(p) { if (p.type === 'month') parts.numMonth = p.value; });
+        } catch (_) {
+          var utc = d.getTime() + (7 * 3600000);
+          var dw = new Date(utc);
+          var mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          parts = {
+            day: String(dw.getUTCDate()).padStart(2, '0'),
+            month: mNames[dw.getUTCMonth()],
+            numMonth: String(dw.getUTCMonth() + 1).padStart(2, '0'),
+            year: String(dw.getUTCFullYear()),
+            hour: String(dw.getUTCHours()).padStart(2, '0'),
+            minute: String(dw.getUTCMinutes()).padStart(2, '0'),
+            second: String(dw.getUTCSeconds()).padStart(2, '0')
+          };
+        }
+        return fmt
+          .replace(/yyyy/g, parts.year || '')
+          .replace(/yy/g, (parts.year || '').slice(-2))
+          .replace(/MMM/g, parts.month || '')
+          .replace(/MM/g, parts.numMonth || '')
+          .replace(/dd/g, parts.day || '')
+          .replace(/HH/g, parts.hour || '')
+          .replace(/mm/g, parts.minute || '')
+          .replace(/ss/g, parts.second || '');
+      }
+    };
+
     function canAccessDashboard(r) { r = String(r || '').toLowerCase(); return r === 'supervisor' || r === 'superintendent' || r === 'admin'; }
     function canAccessCreateWO(r) { r = String(r || '').toLowerCase(); return r !== 'mechanic'; }
     function canAccessApprovals(r) { r = String(r || '').toLowerCase(); return r === 'supervisor' || r === 'superintendent' || r === 'foreman_approver' || r === 'admin'; }

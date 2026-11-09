@@ -264,9 +264,11 @@ BEGIN
 
     -- Ringkasan per mekanik
     WITH per_mech AS (
-        SELECT m.data->>'mechanic_id' as mechanic_id,
+        SELECT m.baris as id,
+               m.data->>'mechanic_id' as mechanic_id,
                m.data->>'name' as name,
                coalesce(m.data->>'section', '') as section,
+               coalesce(m.data->>'jabatan', m.data->>'position', '') as jabatan,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('open', 'active', 'assigned', 'in_progress', 'pending_mechanic_work')), 0)::int as pending_work,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('pending_l1', 'pending_supervisor')), 0)::int as pending_l1,
                coalesce(count(w.baris) filter (WHERE lower(coalesce(w.data->>'status', '')) IN ('pending_l2', 'pending_superintendent')), 0)::int as pending_l2,
@@ -281,19 +283,31 @@ BEGIN
             )
          WHERE (m.data->>'status' IS NULL OR lower(btrim(m.data->>'status')) = 'active')
            AND lower(btrim(coalesce(m.data->>'role', 'mechanic'))) = 'mechanic'
-         GROUP BY m.data->>'mechanic_id', m.data->>'name', m.data->>'section'
+         GROUP BY m.baris, m.data->>'mechanic_id', m.data->>'name', m.data->>'section', m.data->>'jabatan', m.data->>'position'
     )
     SELECT coalesce(json_agg(json_build_object(
-        'mechanic_id', mechanic_id,
-        'name', name,
-        'section', section,
-        'pending_work', pending_work,
-        'pending_l1', pending_l1,
-        'pending_l2', pending_l2,
-        'approved', approved
-    ) ORDER BY name), '[]'::json)
+        'id', pm.id,
+        'mechanic_id', pm.mechanic_id,
+        'name', pm.name,
+        'section', pm.section,
+        'jabatan', pm.jabatan,
+        'pending_mechanic_work', pm.pending_work,
+        'pending_l1', pm.pending_l1,
+        'pending_l2', pm.pending_l2,
+        'approved', pm.approved,
+        'has_token', (t.token IS NOT NULL),
+        'token', t.token
+    ) ORDER BY pm.name), '[]'::json)
     INTO v_mechs
-    FROM per_mech;
+    FROM per_mech pm
+    LEFT JOIN LATERAL (
+        SELECT at.data->>'token' as token
+          FROM kmb.api_tokens at
+         WHERE trim(at.data->>'mechanic_id') = trim(pm.mechanic_id)
+           AND (at.data->>'is_active' IS NULL OR at.data->>'is_active' <> 'false')
+         ORDER BY at.baris DESC
+         LIMIT 1
+    ) t ON true;
 
     -- Jika yang memanggil hanya mekanik biasa, sembunyikan daftar mekanik lain (privasi)
     IF lower(coalesce(v_user.role, 'mechanic')) = 'mechanic' THEN

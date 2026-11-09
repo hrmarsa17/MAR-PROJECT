@@ -29,17 +29,25 @@ const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
 
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    if (url.pathname.endsWith('/api/sehat')) return sehat(env);
-    if (url.pathname === '/api/web' || url.pathname === '/api/web/') return handleWebBridgeApi(request, env, url);
-    if (url.pathname === '/web' || url.pathname === '/web/' || url.pathname.startsWith('/web/')) return handleWebRequest(request, env, url);
-    if (/\/api\/?$/.test(url.pathname)) return tanganiApi(request, env, url);
-    
-    // Akar folder → index.html, disajikan langsung tanpa redirect (lihat wrangler.toml).
-    if (url.pathname.endsWith('/')) {
-      return env.ASSETS.fetch(new Request(new URL(url.pathname + 'index.html', url), request));
+    try {
+      const url = new URL(request.url);
+      if (url.pathname.endsWith('/api/sehat')) return sehat(env);
+      if (url.pathname === '/api/web' || url.pathname === '/api/web/') return handleWebBridgeApi(request, env, url);
+      if (url.pathname === '/web' || url.pathname === '/web/' || url.pathname.startsWith('/web/')) return handleWebRequest(request, env, url);
+      if (/\/api\/?$/.test(url.pathname)) return tanganiApi(request, env, url);
+      
+      // Akar folder → index.html, disajikan langsung tanpa redirect (lihat wrangler.toml).
+      if (url.pathname.endsWith('/')) {
+        return env.ASSETS.fetch(new Request(new URL(url.pathname + 'index.html', url), request));
+      }
+      return env.ASSETS.fetch(request);
+    } catch (err) {
+      console.error('Unhandled worker exception di sum:', err);
+      return new Response('Terjadi kesalahan internal pada worker SUM: ' + ((err && err.message) || err), {
+        status: 500,
+        headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' }
+      });
     }
-    return env.ASSETS.fetch(request);
   },
 };
 

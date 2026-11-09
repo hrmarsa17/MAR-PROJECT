@@ -262,16 +262,24 @@ export async function handleWebRequest(request, env, url) {
   }
 
   // 4. Render HTML
-  const html = renderWebPage(page, context);
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
-      'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
-      'X-Abadi-Web': page,
-    },
-  });
+  try {
+    const html = renderWebPage(page, context);
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Abadi-Rumah': env.RUMAH || 'sum',
+        'X-Abadi-Web': page,
+      },
+    });
+  } catch (err) {
+    console.error('Error saat merender halaman web:', err);
+    return new Response(renderPesanWeb('Galat Tampilan Web', 'Terjadi kesalahan saat memuat halaman web: ' + ((err && err.message) || err), 'https://abadiops.com', 'Kembali ke Pintu'), {
+      status: 500,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
 }
 
 export async function handleWebBridgeApi(request, env, url) {

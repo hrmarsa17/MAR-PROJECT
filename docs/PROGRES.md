@@ -12,6 +12,27 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Error 1101 Worker Threw Exception di Web Desktop SUM Staging)
+- Berubah:
+  - **Akar Masalah Error 1101 Teridentifikasi**: Saat membuka `https://abadiops-sum-staging.kawanabadigrup.workers.dev/web?token=79fc...` (role supervisor), default diarahkan ke halaman `approvals`. Template `workers/sum/web/Approval.html` memanggil global Google Apps Script: `Utilities.formatDate(...)` dan `Session.getScriptTimeZone()`. Di lingkungan V8 Worker / Node.js, `Utilities` dan `Session` belum didefinisikan sehingga memicu `ReferenceError: Utilities is not defined` yang tidak tertangkap, menyebabkan Cloudflare melempar `Error 1101 Worker threw exception`.
+  - **Penyediaan Shim `Utilities.formatDate` dan `Session`**: Memperbarui compiler template `scripts/build-web-templates.mjs` agar menginjeksi shim `Session.getScriptTimeZone()` (Asia/Jakarta) dan implementasi lengkap `Utilities.formatDate` berbasis `Intl.DateTimeFormat` (mendukung `yyyy`, `yy`, `MMM`, `MM`, `dd`, `HH`, `mm`, `ss`).
+  - **Rebuild Template Web**: Menjalankan ulang `node scripts/build-web-templates.mjs` untuk ketiga rumah (`workers/sum`, `workers/kmb`, `workers/kmbprojek`).
+  - **Guardrail Penanganan Error**:
+    - Membungkus `renderWebPage` di `workers/sum/src/web-handler.js` dan `workers/kmb/src/web-handler.js` dengan blok `try...catch` agar merender halaman galat ramah pengguna jika terjadi error rendering daripada melempar uncaught exception.
+    - Memperbaiki default header `'X-Abadi-Rumah'` menjadi `env.RUMAH || 'sum'` di SUM dan `env.RUMAH || 'kmb'` di KMB.
+    - Menambahkan top-level `try...catch` pada handler `fetch` di `workers/sum/src/index.js` dan `workers/kmb/src/index.js` untuk mencegah Error 1101 pada uncaught runtime errors.
+  - **Pengujian & Verifikasi**:
+    - `node --check` lulus 100% pada semua file terkait.
+    - Verifikasi lokal dan live di staging: `https://abadiops-sum-staging.kawanabadigrup.workers.dev/web?token=79fc...` sukses mengembalikan HTTP 200 (Title: `MAR SUM V2 — Approvals`, ukuran ~1,11 MB HTML, tanpa Error 1101).
+    - Verifikasi seluruh halaman web SUM staging (`approvals`, `dashboard`, `mechanic`, `create`, `monitoring`) terbukti mengembalikan HTTP 200.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-sum-staging` (`72d58f5c-ac0f-4c0f-9741-0641971d020a`)
+    - `abadiops-kmb-staging` (`5d8683c7-64f8-46cb-872e-6f97a09a65d5`)
+- Belum selesai / berikutnya:
+  - User me-refresh browser pada tautan Web Desktop SUM staging untuk memastikan tampilan Approvals terbuka dengan lancar.
+
+---
+
 ### 2026-11-09 · Raka (+ AI) · bersama (Eksekusi Penuh Panduan 16: Sinkronisasi SQL Staging & Deploy 5 Worker Staging)
 - Berubah:
   - **Sinkronisasi SQL Panduan 16**: Memperbarui `db/kmb_projek/pasang_rpc_config_staging.sql` persis 1:1 dengan blok SQL perbaikan penuh (1.338 baris) mencakup perbaikan pencocokan mekanik SUM, helper `_kode_mekanik_kanonik`, helper `_ambil_teks_jsonb`, cascade dropdown KMB, `NOTIFY pgrst, 'reload schema'`, dan kueri diagnostik.
