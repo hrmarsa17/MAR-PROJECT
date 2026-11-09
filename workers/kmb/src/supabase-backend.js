@@ -134,6 +134,79 @@ function normalisasiAksi(action) {
   return map[a] || a;
 }
 
+const cacheRefsPerRumah = {};
+
+async function ambilRefsUntukLookup(env, token, rpcPrefix, supaHeaders) {
+  const sekarang = Date.now();
+  const c = cacheRefsPerRumah[rpcPrefix];
+  if (c && (sekarang - c.waktu < 300000) && c.data) {
+    return c.data;
+  }
+  try {
+    const rpcUrl = `${env.SUPABASE_URL}/rest/v1/rpc/${rpcPrefix}_create_refs_bertoken`;
+    const res = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: supaHeaders,
+      body: JSON.stringify({ p_token: token }),
+    });
+    if (res.ok) {
+      const j = await res.json();
+      const data = j.result || j.data || {};
+      cacheRefsPerRumah[rpcPrefix] = { waktu: sekarang, data };
+      return data;
+    }
+  } catch (_) {}
+  return cacheRefsPerRumah[rpcPrefix]?.data || {};
+}
+
+function lengkapiDataBlokDenganRefs(b, refs) {
+  if (!b || typeof b !== 'object') return {};
+  const comps = (refs && refs.components) || [];
+  const units = (refs && refs.units) || [];
+
+  const compId = String(b.component_id || b.component_no || b.component || '').trim();
+  const unitId = String(b.unit_id || b.unit_code || '').trim();
+
+  const c = comps.find((x) =>
+    (x.component_no && x.component_no.toUpperCase() === compId.toUpperCase()) ||
+    (x.component_id && x.component_id.toUpperCase() === compId.toUpperCase())
+  );
+  const u = units.find((x) =>
+    (x.unit_id && x.unit_id.toUpperCase() === unitId.toUpperCase()) ||
+    (x.unit_code && x.unit_code.toUpperCase() === unitId.toUpperCase())
+  );
+
+  const rawCompName = b.component_name || b.component;
+  const isUnknownComp = !rawCompName || rawCompName === 'UNKNOWN';
+  const compName = (!isUnknownComp ? rawCompName : null) || c?.component_name || c?.component_no || b.others_description || b.keterangan || compId || 'Pekerjaan';
+
+  const rawUnitName = b.unit_name || b.unit_code;
+  const isUnknownUnit = !rawUnitName || rawUnitName === 'UNKNOWN';
+  const unitName = (!isUnknownUnit ? rawUnitName : null) || u?.unit_name || unitId || 'WORKSHOP';
+
+  const unitFactor = Number(b.unit_factor ?? b.others_unit_factor ?? b.manual_unit_factor ?? u?.unit_factor ?? 1.0);
+  const basePoints = Number(b.base_points ?? b.others_base_points ?? b.manual_base_points ?? c?.base_points ?? c?.base_point ?? 1.0);
+  const targetHours = Number(b.target_hours ?? b.others_target_hours ?? b.manual_target_hours ?? c?.target_hours ?? 2.0);
+  const category = b.category || c?.category || 'General';
+
+  return {
+    ...b,
+    unit_id: unitId || 'WORKSHOP',
+    unit_code: unitId || 'WORKSHOP',
+    unit_name: unitName,
+    unit_factor: unitFactor,
+    component_id: compId || 'COM-001',
+    component_no: compId || 'COM-001',
+    component: compName,
+    component_name: compName,
+    activity: b.activity || b.job_description || compName,
+    job_description: b.job_description || b.activity || compName,
+    base_points: basePoints,
+    target_hours: targetHours,
+    category: category,
+  };
+}
+
 export function normalisasiBlokWo(blk) {
   if (!blk || typeof blk !== 'object') return {};
   const b = { ...blk };
@@ -271,7 +344,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
             ...CORS,
             'Content-Type': 'application/json; charset=utf-8',
             'Cache-Control': 'no-store',
-            'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
+            'X-Abadi-Rumah': env.RUMAH || 'kmb',
             'X-Abadi-Jalur': 'supabase',
           },
         });
@@ -302,7 +375,8 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
   }
 
   if (cleanAksi === 'create_wo') {
-    payload = normalisasiBlokWo(payload);
+    const refs = await ambilRefsUntukLookup(env, cleanToken, rpcPrefix, supaHeaders);
+    payload = lengkapiDataBlokDenganRefs(normalisasiBlokWo(payload), refs);
     if (!payload.lead_mechanic_id && Array.isArray(payload.team) && payload.team.length > 0) {
       payload.lead_mechanic_id = payload.team[0].mechanic_id;
     }
@@ -327,22 +401,32 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     // 1. Batch creation jika ada blocks (format form Web WorkOrder.html)
     const blocks = payload.blocks || (payload.data && payload.data.blocks);
     if (cleanAksi === 'create_wo' && Array.isArray(blocks) && blocks.length > 0) {
+      const refs = await ambilRefsUntukLookup(env, cleanToken, rpcPrefix, supaHeaders);
       const created = [];
       const failed = [];
       for (let i = 0; i < blocks.length; i++) {
-        const b = normalisasiBlokWo(blocks[i]);
+        const rawB = normalisasiBlokWo(blocks[i]);
+        const b = lengkapiDataBlokDenganRefs(rawB, refs);
         const blockPayload = {
-          unit_code: b.unit_id || b.unit_name || b.unit_code || 'UNKNOWN',
-          component: b.component || b.component_name || 'UNKNOWN',
-          activity: b.job_description || b.activity || 'UNKNOWN',
+          unit_id: b.unit_id,
+          unit_code: b.unit_id,
+          unit_name: b.unit_name,
+          unit_factor: b.unit_factor,
+          component_id: b.component_id,
+          component_no: b.component_id,
+          component: b.component,
+          component_name: b.component_name,
+          activity: b.activity,
+          job_description: b.job_description,
+          category: b.category,
           lead_mechanic_id: b.lead_mechanic_id || (b.team && b.team[0] && b.team[0].mechanic_id) || '',
           shift: b.shift || payload.shift || '1',
           work_condition: b.work_condition || 'normal',
           duration_hours: b.duration_hours || b.actual_hours || 0,
-          target_hours: b.target_hours || b.others_target_hours || 0,
-          base_points: b.base_points || b.others_base_points || 0,
-          unit_factor: b.unit_factor || b.others_unit_factor || 1.0,
+          target_hours: b.target_hours,
+          base_points: b.base_points,
           team: b.team || [],
+          keterangan: b.keterangan || '',
           data: b
         };
         const res = await fetch(rpcUrl, {
@@ -364,9 +448,11 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
               wo_number: woNum,
               wo_id: woNum,
               id: woNum,
-              unit_id: b.unit_id || b.unit_name || b.unit_code,
-              component: b.component || b.component_name,
-              activity: b.job_description || b.activity,
+              unit_id: b.unit_id,
+              unit_name: b.unit_name,
+              component: b.component,
+              component_name: b.component_name,
+              activity: b.activity,
               status: resData.result.status || 'assigned'
             });
           } else {
@@ -399,7 +485,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           ...CORS,
           'Content-Type': 'application/json; charset=utf-8',
           'Cache-Control': 'no-store',
-          'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
+          'X-Abadi-Rumah': env.RUMAH || 'kmb',
           'X-Abadi-Jalur': 'supabase',
         },
       });
@@ -456,7 +542,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           ...CORS,
           'Content-Type': 'application/json; charset=utf-8',
           'Cache-Control': 'no-store',
-          'X-Abadi-Rumah': env.RUMAH || 'kmbprojek',
+          'X-Abadi-Rumah': env.RUMAH || 'kmb',
           'X-Abadi-Jalur': 'supabase',
         },
       });

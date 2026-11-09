@@ -67,6 +67,14 @@ DECLARE
     v_team jsonb := '[]'::jsonb;
     v_wo_id text;
     v_result jsonb;
+    v_comp_id text;
+    v_comp_name text;
+    v_unit_id text;
+    v_unit_name text;
+    v_bp numeric;
+    v_th numeric;
+    v_uf numeric;
+    v_cat text;
 BEGIN
     -- Autentikasi token
     SELECT * INTO v_user FROM sum._autentikasi_token(p_token);
@@ -301,9 +309,72 @@ BEGIN
              WHERE lower(btrim(td.key)) NOT IN ('', 'undefined', 'null');
         END IF;
 
+        -- Ekstrak id komponen & unit dari p_payload atau data
+        v_comp_id := coalesce(nullif(p_payload->>'component_id', ''), nullif(p_payload->'data'->>'component_id', ''), nullif(p_payload->>'component_no', ''), '');
+        v_comp_name := coalesce(nullif(p_payload->>'component_name', ''), nullif(p_payload->>'component', ''), nullif(p_payload->>'activity', ''), nullif(p_payload->>'job_description', ''), '');
+        IF v_comp_name = 'UNKNOWN' THEN v_comp_name := ''; END IF;
+
+        v_unit_id := coalesce(nullif(p_payload->>'unit_id', ''), nullif(p_payload->>'unit_code', ''), nullif(p_payload->'data'->>'unit_id', ''), '');
+        v_unit_name := coalesce(nullif(p_payload->>'unit_name', ''), nullif(p_payload->>'unit_code', ''), '');
+        IF v_unit_name = 'UNKNOWN' THEN v_unit_name := ''; END IF;
+
+        v_bp := coalesce(nullif(p_payload->>'base_points', '')::numeric, nullif(p_payload->>'base_point', '')::numeric, nullif(p_payload->>'others_base_points', '')::numeric, nullif(p_payload->>'manual_base_points', '')::numeric, null);
+        v_th := coalesce(nullif(p_payload->>'target_hours', '')::numeric, nullif(p_payload->>'others_target_hours', '')::numeric, nullif(p_payload->>'manual_target_hours', '')::numeric, null);
+        v_uf := coalesce(nullif(p_payload->>'unit_factor', '')::numeric, nullif(p_payload->>'others_unit_factor', '')::numeric, nullif(p_payload->>'manual_unit_factor', '')::numeric, null);
+
+        -- Lengkapi unit dari sum.config_units jika unit_id ada
+        IF v_unit_id <> '' AND v_unit_id <> 'WORKSHOP' AND v_unit_id <> 'OTHERS' THEN
+            BEGIN
+                SELECT coalesce(nullif(v_unit_name, ''), nullif(data->>'unit_name', ''), v_unit_id),
+                       coalesce(v_uf, nullif(data->>'unit_factor', '')::numeric, 1.0)
+                  INTO v_unit_name, v_uf
+                  FROM sum.config_units
+                 WHERE upper(btrim(coalesce(data->>'unit_id', data->>'unit_code', ''))) = upper(btrim(v_unit_id))
+                 LIMIT 1;
+            EXCEPTION WHEN OTHERS THEN NULL;
+            END;
+        END IF;
+        v_unit_name := coalesce(nullif(v_unit_name, ''), v_unit_id, 'WORKSHOP');
+        v_uf := coalesce(v_uf, 1.0);
+
+        -- Lengkapi komponen dari sum.components jika component_id ada
+        IF v_comp_id <> '' AND (v_comp_name = '' OR v_bp IS NULL OR v_bp = 0 OR v_th IS NULL OR v_th = 0) THEN
+            BEGIN
+                SELECT coalesce(nullif(v_comp_name, ''), nullif(data->>'component_name', ''), nullif(data->>'component', ''), data->>'activity', v_comp_id),
+                       coalesce(v_bp, nullif(data->>'base_points', '')::numeric, nullif(data->>'base_point', '')::numeric, 1.0),
+                       coalesce(v_th, nullif(data->>'target_hours', '')::numeric, 2.0),
+                       coalesce(nullif(data->>'category', ''), 'General')
+                  INTO v_comp_name, v_bp, v_th, v_cat
+                  FROM sum.components
+                 WHERE upper(btrim(coalesce(data->>'component_no', data->>'component_id', ''))) = upper(btrim(v_comp_id))
+                 LIMIT 1;
+            EXCEPTION WHEN OTHERS THEN NULL;
+            END;
+        END IF;
+
+        IF v_comp_name = '' THEN
+            v_comp_name := coalesce(nullif(p_payload->>'others_description', ''), nullif(p_payload->>'keterangan', ''), nullif(p_payload->'data'->>'keterangan', ''), v_comp_id, 'Pekerjaan');
+        END IF;
+        v_bp := coalesce(v_bp, 1.0);
+        v_th := coalesce(v_th, 2.0);
+        v_cat := coalesce(nullif(v_cat, ''), nullif(p_payload->>'category', ''), 'General');
+
         v_new_data := p_payload || jsonb_build_object(
             'id', v_wo_number,
             'wo_number', v_wo_number,
+            'unit_id', coalesce(nullif(v_unit_id, ''), 'WORKSHOP'),
+            'unit_code', coalesce(nullif(v_unit_id, ''), 'WORKSHOP'),
+            'unit_name', v_unit_name,
+            'unit_factor', v_uf,
+            'component_id', coalesce(nullif(v_comp_id, ''), 'COM-001'),
+            'component_no', coalesce(nullif(v_comp_id, ''), 'COM-001'),
+            'component', v_comp_name,
+            'component_name', v_comp_name,
+            'activity', v_comp_name,
+            'job_description', v_comp_name,
+            'category', v_cat,
+            'base_points', v_bp,
+            'target_hours', v_th,
             'team', v_team,
             'lead_mechanic_id', coalesce(nullif(p_payload->>'lead_mechanic_id', ''), v_team->0->>'mechanic_id', v_user.mechanic_id),
             'status', coalesce(

@@ -1835,7 +1835,7 @@ _out += "\" data-link=\"";
 _out += _esc(mlink);
 _out += "\"\n                     title=\"Token login mekanik\" onclick=\"this.select()\">\n              <button class=\"mon-btn copy\" onclick=\"copyToken(this)\">📋 Copy Token</button>\n              <button class=\"mon-btn open\" onclick=\"openAs(this)\">Buka →</button>\n            </div>\n            ";
  } else { 
-_out += "\n            <div class=\"mon-no-token\">⚠️ Belum ada token. Jalankan <b>generateMissingTokens</b> di editor GAS.</div>\n            ";
+_out += "\n            <div class=\"mon-no-token\">⚠️ Belum ada token. Hubungi admin untuk membuat token.</div>\n            ";
  } 
 _out += "\n          </div>\n        ";
  } 

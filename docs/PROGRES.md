@@ -12,6 +12,26 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Judul UNKNOWN dan Target Hours 0 Menit pada Pembuatan WO SUM Staging)
+- Berubah:
+  - **Akar Masalah "UNKNOWN" & "0 menit" Teridentifikasi**: Saat form Web Desktop `WorkOrder.html` membuat WO baru, formulir hanya mengirimkan `component_id` (misal `COM-224` atau `COM-078`) dan `unit_id` (misal `UNIT-002` atau `UNIT-017`). Di worker `supabase-backend.js`, `blockPayload` sebelumnya mengekstrak `component: b.component || b.component_name || 'UNKNOWN'` dan `target_hours: b.target_hours || 0`. Karena `b.component` tidak dikirim oleh form, nilai tersimpan di database menjadi `UNKNOWN` dan target jam menjadi `0 menit`.
+  - **Resolusi Otomatis Komponen & Unit di Worker**: Menambahkan helper `ambilRefsUntukLookup` dan `lengkapiDataBlokDenganRefs` di `workers/sum/src/supabase-backend.js` dan `workers/kmb/src/supabase-backend.js`. Sebelum WO disimpan ke Supabase via RPC `create_wo`, worker secara otomatis mencocokkan `component_id` ke tabel `components` (mengisi `component_name`, `activity`, `category`, `base_points`, `target_hours`) dan `unit_id` ke tabel `config_units` (mengisi `unit_name` dan `unit_factor`).
+  - **Fallback Lookup di PostgreSQL RPC**: Menambahkan resolusi otomatis komponen dan unit di fungsi RPC `public.sum_eksekusi_aksi_bertoken` (`db/sum/rpc_backend_penuh.sql`) sehingga data tetap terlengkapi bahkan jika dipanggil langsung tanpa worker.
+  - **Verifikasi**: Uji pembuatan WO baru (`WO-20261109-0006`) berhasil tersimpan dengan nama komponen lengkap `"Brake Chamber + Brake Relay - Remove & Install"`, unit `"SUM 025"`, target hours `2 jam`, dan poin `1.0`. Terverifikasi muncul sempurna di halaman mekanik tanpa tulisan "UNKNOWN" atau "0 menit".
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-sum-staging` (`8fb121d8-f602-4825-980f-6ed0621f0432`)
+    - `abadiops-kmb-staging` (`6b8c285d-deac-42c7-9ada-0de068eba164`)
+- Belum selesai / berikutnya:
+  - User menjalankan kueri perbaikan untuk 2 WO uji sebelumnya (`WO-20261109-0004` dan `WO-20261109-0005`) di Supabase SQL Editor jika ingin memperbarui data historisnya.
+
+---
+
+### 2026-11-09 · Gabriel (+ AI) · kmb (Perbaiki Pesan Error Token di Monitoring Web)
+- Berubah:
+  - Pesan error "Jalankan generateMissingTokens di editor GAS" di halaman Monitoring sudah tidak relevan karena sistem sudah pakai Supabase.
+  - Diperbarui menjadi "Hubungi admin untuk membuat token" di `workers/kmb/src/web-templates.js:1838`.
+- Belum selesai: Verifikasi di staging.
+
 ### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Error 1101 Worker Threw Exception di Web Desktop SUM Staging)
 - Berubah:
   - **Akar Masalah Error 1101 Teridentifikasi**: Saat membuka `https://abadiops-sum-staging.kawanabadigrup.workers.dev/web?token=79fc...` (role supervisor), default diarahkan ke halaman `approvals`. Template `workers/sum/web/Approval.html` memanggil global Google Apps Script: `Utilities.formatDate(...)` dan `Session.getScriptTimeZone()`. Di lingkungan V8 Worker / Node.js, `Utilities` dan `Session` belum didefinisikan sehingga memicu `ReferenceError: Utilities is not defined` yang tidak tertangkap, menyebabkan Cloudflare melempar `Error 1101 Worker threw exception`.
