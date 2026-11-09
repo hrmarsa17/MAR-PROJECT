@@ -12,6 +12,24 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · bersama (Solusi Tuntas WO Masuk ke Mekanik SUM & KMB di Staging)
+- Berubah:
+  - **Akar Masalah WO Tidak Masuk diidentifikasi & diperbaiki**: Fungsi `bacaStatusSaklar` pada worker `sum` dan `kmb` sebelumnya menimpa konfigurasi `SAKLAR = "supabase"` di staging menjadi `"gas"` karena membaca status dari endpoint Durable Object pintu staging (`abadiops-pintu-staging/api/saklar/status`) yang masih menyimpan nilai awal `"gas"`. Akibatnya, pembuatan WO dari formulir Web Desktop (`/web?page=create` → `/api/web` action `handleCreateWO`) diteruskan ke `abadiops-gas-tiruan` dan menghasilkan respons mock `Simulasi Staging` tanpa tersimpan ke PostgreSQL Supabase.
+  - **Perbaikan `bacaStatusSaklar`**: Menambahkan penjaga di `workers/sum/src/supabase-backend.js` dan `workers/kmb/src/supabase-backend.js` agar langsung mengembalikan `'supabase'` jika `env.STORAGE_MODE === 'SUPABASE' || env.SAKLAR === 'supabase'`. Konfigurasi staging dari `wrangler.toml` kini dihormati penuh tanpa tertimpa status pintu yang usang.
+  - **Perbaikan RPC Call di `gas-tiruan`**: Menyelaraskan panggilan RPC `create_wo` di `workers/gas-tiruan/src/index.js` agar menggunakan parameter `p_extra: null` untuk skema `sum` dan `p_skor_js: null` untuk skema lainnya, mencegah error parameter mismatch jika ada request fallback.
+  - **Verifikasi End-to-End di Live Staging**:
+    - `GET /api/sehat` di SUM staging terverifikasi: `{"ok":true,"rumah":"sum","saklar":"supabase","jalur":"SUPABASE","supabase_configured":true}`.
+    - Uji `POST /api/web` dengan `action: handleCreateWO` berhasil membuat WO baru di Supabase Gedung 2 (`WO-20261109-0003`) dengan `source: "SUPABASE"` dan status `assigned`.
+    - Halaman mekanik Christmas Nainggolan (`MECH-SVP-028`, token `b59abcc757d54344877b`) terverifikasi menampilkan `Assigned 3` dan seluruh daftar Work Order ter-render lengkap di HTML.
+  - **Deploy Cloudflare Staging**: Berhasil men-deploy:
+    - `abadiops-gas-tiruan` (`3b2b2dc3-4b00-4dfc-b5e7-911422104f42`)
+    - `abadiops-sum-staging` (`c1d4d644-69a2-4782-a4d0-391fe5378d75`)
+    - `abadiops-kmb-staging` (`a10ae08f-34b2-4fa4-bc19-3e5d55531c22`)
+- Belum selesai / berikutnya:
+  - User menguji langsung pembuatan WO baru dari browser di `https://abadiops-sum-staging.kawanabadigrup.workers.dev/web?page=create` dan melihat hasilnya langsung muncul di halaman mekanik Christmas Nainggolan.
+
+---
+
 ### 2026-11-09 · Raka (+ AI) · bersama (Penyelidikan & Perbaikan WO Masuk Mekanik SUM + Deploy Staging)
 - Berubah:
   - **Investigasi Akar Masalah WO Tidak Masuk ke Mekanik SUM**: Membuktikan secara langsung pada live Supabase Gedung 2 (`dnnqrslftndcbmnvuveb`) bahwa saat `create_wo` dijalankan di SUM, PostgreSQL melempar galat `42703 (column "disinkron_at" of relation "work_orders" does not exist)` karena tabel cermin `sum.work_orders` belum memiliki kolom `disinkron_at`. Akibatnya transaksi dibatalkan dan WO tidak pernah tersimpan ke PostgreSQL.

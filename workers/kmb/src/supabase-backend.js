@@ -67,6 +67,9 @@ function hitungSkorMandiri(m) {
 let cacheSaklar = { nilai: null, waktu: 0 };
 
 export async function bacaStatusSaklar(env) {
+  if (env.STORAGE_MODE === 'SUPABASE' || env.SAKLAR === 'supabase') {
+    return 'supabase';
+  }
   const sekarang = Date.now();
   if (cacheSaklar.nilai && cacheSaklar.waktu > sekarang) {
     return cacheSaklar.nilai;

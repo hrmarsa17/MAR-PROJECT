@@ -127,13 +127,10 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     let rpcRes = null;
     try {
       if (token && env && env.SUPABASE_URL) {
-        rpcRes = await panggilRpcGedung2(rpcName, {
-          p_token: token,
-          p_aksi: 'create_wo',
-          p_op_id: `gas-tiruan-${Date.now()}`,
-          p_payload: parsed,
-          p_skor_js: null,
-        }, env);
+        const payloadRpc = (rumah === 'sum')
+          ? { p_token: token, p_aksi: 'create_wo', p_op_id: `gas-tiruan-${Date.now()}`, p_payload: parsed, p_extra: null }
+          : { p_token: token, p_aksi: 'create_wo', p_op_id: `gas-tiruan-${Date.now()}`, p_payload: parsed, p_skor_js: null };
+        rpcRes = await panggilRpcGedung2(rpcName, payloadRpc, env);
       }
     } catch (err) {
       console.warn(`[gas-tiruan] RPC ${rpcName} fallback: ${err && err.message}`);
