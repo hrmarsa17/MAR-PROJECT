@@ -84,20 +84,25 @@ BEGIN
         baris integer PRIMARY KEY,
         nilai jsonb NOT NULL DEFAULT '[]'::jsonb,
         data jsonb NOT NULL DEFAULT '{}'::jsonb,
-        disinkron_at timestamptz NOT NULL DEFAULT now()
+        disinkron_at timestamptz NOT NULL DEFAULT now(),
+        sinkron_at timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE sum.work_orders ADD COLUMN IF NOT EXISTS disinkron_at timestamptz NOT NULL DEFAULT now();
+    ALTER TABLE sum.work_orders ADD COLUMN IF NOT EXISTS sinkron_at timestamptz NOT NULL DEFAULT now();
     CREATE TABLE IF NOT EXISTS sum.transfer_requests (
         id bigserial PRIMARY KEY,
         baris integer,
         data jsonb NOT NULL DEFAULT '{}'::jsonb,
         dibuat_at timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE sum.transfer_requests ADD COLUMN IF NOT EXISTS dibuat_at timestamptz NOT NULL DEFAULT now();
     CREATE TABLE IF NOT EXISTS sum.push_subscriptions (
         id bigserial PRIMARY KEY,
         token text,
         data jsonb NOT NULL DEFAULT '{}'::jsonb,
         dibuat_at timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE sum.push_subscriptions ADD COLUMN IF NOT EXISTS dibuat_at timestamptz NOT NULL DEFAULT now();
 
     -- =========================================================================
     -- Aksi BACA (READ ACTIONS)
@@ -133,23 +138,53 @@ BEGIN
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_my_wos' THEN
+        WITH gabungan AS (
+            SELECT data FROM sum.work_orders
+            WHERE data->>'created_by' = v_user.name
+               OR data->>'mechanic_id' = v_user.mechanic_id
+               OR lower(trim(coalesce(data->>'lead_mechanic_id', ''))) = lower(trim(v_user.mechanic_id))
+               OR public._kode_mekanik_kanonik(coalesce(data->>'lead_mechanic_id', data->>'mechanic_id', '')) = public._kode_mekanik_kanonik(v_user.mechanic_id)
+               OR upper(trim(coalesce(data->>'lead_mechanic_name', data->>'mechanic_name', ''))) = upper(trim(v_user.name))
+               OR EXISTS (
+                   SELECT 1
+                     FROM jsonb_array_elements(CASE WHEN jsonb_typeof(data->'team') = 'array' THEN data->'team' ELSE '[]'::jsonb END) member
+                      WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', member->>'user_id', ''))) = lower(trim(v_user.mechanic_id))
+                         OR public._kode_mekanik_kanonik(coalesce(member->>'mechanic_id', member->>'id', member->>'user_id', '')) = public._kode_mekanik_kanonik(v_user.mechanic_id)
+                         OR upper(trim(coalesce(member->>'mechanic_name', member->>'name', ''))) = upper(trim(v_user.name))
+               )
+               OR EXISTS (
+                   SELECT 1
+                     FROM sum.work_order_team tc
+                    WHERE (tc.data->>'wo_id' = data->>'wo_number' OR tc.data->>'wo_id' = data->>'id' OR tc.nilai->>0 = data->>'wo_number' OR tc.nilai->>0 = data->>'id')
+                      AND (
+                        lower(trim(coalesce(tc.data->>'mechanic_id', tc.nilai->>1, ''))) = lower(trim(v_user.mechanic_id))
+                        OR public._kode_mekanik_kanonik(coalesce(tc.data->>'mechanic_id', tc.nilai->>1, '')) = public._kode_mekanik_kanonik(v_user.mechanic_id)
+                        OR upper(trim(coalesce(tc.data->>'mechanic_name', tc.nilai->>2, ''))) = upper(trim(v_user.name))
+                      )
+               )
+            UNION ALL
+            SELECT s.data FROM sum.wo_supabase s
+             WHERE to_regclass('sum.wo_supabase') IS NOT NULL
+               AND (
+                 lower(trim(coalesce(s.data->>'lead_mechanic_id', ''))) = lower(trim(v_user.mechanic_id))
+                 OR public._kode_mekanik_kanonik(coalesce(s.data->>'lead_mechanic_id', s.data->>'mechanic_id', '')) = public._kode_mekanik_kanonik(v_user.mechanic_id)
+                 OR EXISTS (
+                     SELECT 1
+                       FROM jsonb_array_elements(CASE WHEN jsonb_typeof(s.data->'team') = 'array' THEN s.data->'team' ELSE '[]'::jsonb END) member
+                      WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', ''))) = lower(trim(v_user.mechanic_id))
+                         OR public._kode_mekanik_kanonik(coalesce(member->>'mechanic_id', member->>'id', '')) = public._kode_mekanik_kanonik(v_user.mechanic_id)
+                 )
+               )
+        )
         SELECT jsonb_build_object(
             'success', true,
             'result', jsonb_build_object(
-                'wos', coalesce(jsonb_agg(data), '[]'::jsonb)
+                'wos', coalesce(jsonb_agg(data ORDER BY coalesce(data->>'created_at', '') DESC), '[]'::jsonb)
             ),
             'source', 'SUPABASE'
         )
         INTO v_result
-        FROM sum.work_orders
-        WHERE data->>'created_by' = v_user.name
-           OR data->>'mechanic_id' = v_user.mechanic_id
-           OR lower(trim(data->>'lead_mechanic_id')) = lower(trim(v_user.mechanic_id))
-           OR EXISTS (
-               SELECT 1
-                 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(data->'team') = 'array' THEN data->'team' ELSE '[]'::jsonb END) member
-                  WHERE lower(trim(coalesce(member->>'mechanic_id', member->>'id', member->>'user_id', ''))) = lower(trim(v_user.mechanic_id))
-           );
+        FROM gabungan;
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_wo_detail' THEN
@@ -284,8 +319,17 @@ BEGIN
             'source', 'SUPABASE'
         );
 
-        INSERT INTO sum.work_orders (baris, nilai, data, disinkron_at)
-        VALUES (v_next_baris, '[]'::jsonb, v_new_data, now());
+        INSERT INTO sum.work_orders (baris, nilai, data, disinkron_at, sinkron_at)
+        VALUES (v_next_baris, '[]'::jsonb, v_new_data, now(), now());
+
+        IF to_regclass('sum.work_order_team') IS NOT NULL AND jsonb_array_length(v_team) > 0 THEN
+            INSERT INTO sum.work_order_team (baris, nilai, data, sinkron_at)
+            SELECT (coalesce((SELECT max(baris) FROM sum.work_order_team), 0) + row_number() OVER())::int,
+                   jsonb_build_array(v_wo_number, m->>'mechanic_id', m->>'percentage'),
+                   jsonb_build_object('wo_id', v_wo_number, 'mechanic_id', m->>'mechanic_id', 'percentage', m->>'percentage'),
+                   now()
+              FROM jsonb_array_elements(v_team) m;
+        END IF;
 
         RETURN jsonb_build_object(
             'success', true,
@@ -302,7 +346,8 @@ BEGIN
                'submitted_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
                'submitted_by', v_user.name
            ),
-           disinkron_at = now()
+           disinkron_at = now(),
+           sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'source', 'SUPABASE');
@@ -315,7 +360,8 @@ BEGIN
                'override_by', v_user.name,
                'override_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
-           disinkron_at = now()
+           disinkron_at = now(),
+           sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'source', 'SUPABASE');
@@ -328,7 +374,8 @@ BEGIN
                'approved_l1_by', v_user.name,
                'approved_l1_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
-           disinkron_at = now()
+           disinkron_at = now(),
+           sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L2', 'source', 'SUPABASE');
@@ -341,7 +388,8 @@ BEGIN
                'approved_l2_by', v_user.name,
                'approved_l2_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
-           disinkron_at = now()
+           disinkron_at = now(),
+           sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'APPROVED', 'source', 'SUPABASE');
@@ -355,7 +403,8 @@ BEGIN
                'reject_reason', coalesce(p_payload->>'reason', p_payload->>'catatan', ''),
                'rejected_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
-           disinkron_at = now()
+           disinkron_at = now(),
+           sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'REJECTED', 'source', 'SUPABASE');
@@ -368,7 +417,8 @@ BEGIN
                'canceled_by', v_user.name,
                'canceled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
-           disinkron_at = now()
+           disinkron_at = now(),
+           sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'CANCELED', 'source', 'SUPABASE');

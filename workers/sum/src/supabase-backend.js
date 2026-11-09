@@ -364,7 +364,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
               unit_id: b.unit_id || b.unit_name || b.unit_code,
               component: b.component || b.component_name,
               activity: b.job_description || b.activity,
-              status: resData.result.status || 'PENDING_L1'
+              status: resData.result.status || 'assigned'
             });
           } else {
             failed.push({ index: i, error: (resData && resData.error) || 'Gagal membuat WO' });
@@ -387,7 +387,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           wo_id: created[0]?.wo_number || '',
           id: created[0]?.wo_number || '',
           created: created,
-          status: created[0]?.status || 'PENDING_L1',
+          status: created[0]?.status || 'assigned',
         },
         source: 'SUPABASE'
       }), {
@@ -427,7 +427,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           unit_id: payload.unit_code || payload.unit_id || '',
           component: payload.component || '',
           activity: payload.activity || payload.job_description || '',
-          status: data.result.status || 'PENDING_L1'
+          status: data.result.status || 'assigned'
         }];
         data.data = {
           wo_id: woNum,

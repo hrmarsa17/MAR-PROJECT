@@ -12,6 +12,20 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · bersama (Penyelidikan & Perbaikan WO Masuk Mekanik SUM + Deploy Staging)
+- Berubah:
+  - **Investigasi Akar Masalah WO Tidak Masuk ke Mekanik SUM**: Membuktikan secara langsung pada live Supabase Gedung 2 (`dnnqrslftndcbmnvuveb`) bahwa saat `create_wo` dijalankan di SUM, PostgreSQL melempar galat `42703 (column "disinkron_at" of relation "work_orders" does not exist)` karena tabel cermin `sum.work_orders` belum memiliki kolom `disinkron_at`. Akibatnya transaksi dibatalkan dan WO tidak pernah tersimpan ke PostgreSQL.
+  - **Perbaikan Skema & RPC `sum`**: Memperbarui `db/sum/rpc_backend_penuh.sql` dan `db/kmb/rpc_backend_penuh.sql` dengan `ALTER TABLE ... ADD COLUMN IF NOT EXISTS disinkron_at` dan `sinkron_at`, menyelaraskan penulisan kolom pada `INSERT INTO sum.work_orders`, serta memperkaya `sum_my_wos` dengan pencocokan nama, email, array tim, dan format ID kanonik.
+  - **Perbaikan Status Fallback Worker**: Mengubah status fallback respons `create_wo` di `workers/sum/src/supabase-backend.js` dan `workers/kmb/src/supabase-backend.js` dari `'PENDING_L1'` ke `'assigned'` agar WO baru langsung mendarat di tab filter default `Assigned` halaman mekanik.
+  - **Verifikasi KMB Projek**: Memastikan bahwa di `abadiops-kmbprojek-staging` mekanik `kmbp-mnt002-7d03949a` telah memiliki 6 Work Order dengan status `assigned` yang aktif.
+  - **Deploy Ulang Staging**: Berhasil men-deploy ulang `abadiops-sum-staging` (`a9a0de23-aa13-4235-8190-3f191550bf61`) dan `abadiops-kmb-staging` (`edc8771f-2320-4db0-bb14-19bab50e945e`) menggunakan `npx wrangler deploy --env staging`.
+  - **Uji Otomatis**: Semua pengujian lokal lulus 100% (Backend mandiri: 40/40, User admin pusat: 27/27, Serahan token PWA: 24/24, Test cascade & mekanik: 3/3).
+- Belum selesai / berikutnya:
+  - Gabriel menjalankan blok SQL perbaikan kolom `disinkron_at` dan RPC `sum_my_wos` di Supabase SQL Editor Gedung 2 (`dnnqrslftndcbmnvuveb`).
+  - Uji coba pembuatan WO baru di SUM `/web?page=create` lalu verifikasi muncul di `/web?page=mechanic`.
+
+---
+
 ### 2026-11-09 · Raka (+ AI) · bersama (Eksekusi Penuh Panduan 14: Perbaikan SUM Matching, KMB Cascade, dan Deploy Staging 5 Worker)
 - Berubah:
   - Eksekusi penuh instruksi `docs/panduan_deploy_staging_kamis (14).md`:
