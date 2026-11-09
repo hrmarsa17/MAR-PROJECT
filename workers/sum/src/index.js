@@ -116,17 +116,11 @@ async function cobaSupabaseSum(action, token, parsed, env) {
       rpcName = 'sum_ping';
       payload = { p_token: token };
     } else if (action === 'handleGetWoDetailForMechanic' && token) {
-      rpcName = 'sum_wo_detail_bertoken';
-      payload = { p_token: token, p_wo_id: (parsed.wo_id || parsed.id || '').toString() };
-    } else if (action === 'pull_create_refs' && token) {
-      rpcName = 'sum_create_refs_bertoken';
-      payload = { p_token: token };
-    } else if (action === 'pull_monitoring' && token) {
-      rpcName = 'sum_monitoring_bertoken';
-      payload = { p_token: token };
+      rpcName = 'sum_eksekusi_aksi_bertoken';
+      payload = { p_token: token, p_aksi: 'pull_wo_detail', p_payload: { wo_id: (parsed.wo_id || parsed.id || '').toString() } };
     } else if (action === 'pull_my_wos' && token) {
-      rpcName = 'sum_my_wos_bertoken';
-      payload = { p_token: token };
+      rpcName = 'sum_eksekusi_aksi_bertoken';
+      payload = { p_token: token, p_aksi: 'pull_my_wos', p_payload: {} };
     } else if (action === 'admin_daftar_user' && token) {
       rpcName = 'sum_admin_daftar_user_bertoken';
       payload = { p_token: token };

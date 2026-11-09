@@ -351,6 +351,8 @@ BEGIN
         UPDATE kmb.work_orders
            SET data = data || p_payload || jsonb_build_object(
                'status', 'PENDING_L1',
+               'status_group', 'pending_approval',
+               'status_label', 'Menunggu Approval L1',
                'actual_hours', v_act_hours,
                'duration_hours', v_act_hours,
                'submitted_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
@@ -365,8 +367,10 @@ BEGIN
             'source', 'SUPABASE',
             'wo_id', v_wo_id,
             'status', 'PENDING_L1',
-            'data', jsonb_build_object('wo_id', v_wo_id, 'status', 'PENDING_L1', 'actual_hours', v_act_hours, 'duration_hours', v_act_hours),
-            'result', jsonb_build_object('wo_id', v_wo_id, 'status', 'PENDING_L1', 'actual_hours', v_act_hours, 'duration_hours', v_act_hours)
+            'status_group', 'pending_approval',
+            'status_label', 'Menunggu Approval L1',
+            'data', jsonb_build_object('wo_id', v_wo_id, 'status', 'PENDING_L1', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L1', 'actual_hours', v_act_hours, 'duration_hours', v_act_hours),
+            'result', jsonb_build_object('wo_id', v_wo_id, 'status', 'PENDING_L1', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L1', 'actual_hours', v_act_hours, 'duration_hours', v_act_hours)
         );
 
     ELSIF v_aksi IN ('save_override', 'override') THEN

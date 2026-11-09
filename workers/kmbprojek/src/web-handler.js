@@ -57,15 +57,26 @@ function lengkapiObjekWoWeb(w) {
         : (st === 'pending_transfer'
           ? 'Menunggu Keputusan Transfer'
           : (w.status_label || 'Perlu Diisi Mekanik'))));
+  const validOrEmpty = (str) => {
+    const s = String(str || '').trim();
+    return (s && s.toUpperCase() !== 'UNKNOWN' && s.toUpperCase() !== 'UNDEFINED' && s !== '-') ? s : '';
+  };
   const unitObj = (w.unit && typeof w.unit === 'object') ? w.unit : {};
-  const unit_id = String(w.unit_id || w.unit_code || unitObj.unit_id || 'WORKSHOP');
-  const unit_name = String(w.unit_name || unitObj.unit_name || unit_id);
+  const unit_id = validOrEmpty(w.unit_id) || validOrEmpty(w.unit_code) || validOrEmpty(unitObj.unit_id) || 'WORKSHOP';
+  const unit_name = validOrEmpty(w.unit_name) || validOrEmpty(unitObj.unit_name) || unit_id;
   const unit_factor = Number(w.unit_factor ?? unitObj.unit_factor ?? 1.0);
 
   const compObj = (w.component && typeof w.component === 'object') ? w.component : {};
   const compStr = typeof w.component === 'string' ? w.component : '';
-  const component_id = String(w.component_id || compObj.component_no || compObj.component_id || compStr || w.job_id || 'COM-001');
-  const component_name = String(w.component_name || w.others_description || w.activity || compObj.component_name || compStr || component_id || 'Pekerjaan');
+  const component_id = validOrEmpty(w.component_id) || validOrEmpty(compObj.component_no) || validOrEmpty(compObj.component_id) || validOrEmpty(compStr) || validOrEmpty(w.job_id) || 'COM-001';
+  const component_name = validOrEmpty(w.component_name) ||
+    validOrEmpty(compObj.component_name) ||
+    validOrEmpty(compStr) ||
+    validOrEmpty(w.others_description) ||
+    validOrEmpty(w.activity) ||
+    validOrEmpty(w.job_description) ||
+    validOrEmpty(component_id) ||
+    'Pekerjaan';
   const base_points = Number(w.base_points ?? w.points ?? compObj.base_points ?? 1.0);
   const target_hours = Number(w.target_hours ?? compObj.target_hours ?? 2.0);
   const effective_base_points = Number(w.effective_base_points ?? base_points);

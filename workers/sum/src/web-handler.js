@@ -42,24 +42,50 @@ function lengkapiObjekWoWeb(w) {
   if (!w || typeof w !== 'object') return {};
   const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
   const wo_number = String(w.wo_number || id);
-  const st = String(w.status || 'pending_mechanic_work').toLowerCase();
-  const sg = w.status_group || (
-    ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
-      ? 'pending_approval'
-      : (st === 'approved' ? 'done' : 'assigned')
-  );
-  const sl = w.status_label || (
-    sg === 'done' ? 'Approved' : (sg === 'pending_approval' ? 'Menunggu Approval' : 'Perlu Diisi Mekanik')
-  );
+
+  const st = String(w.status || 'pending_mechanic_work').toLowerCase().trim();
+  let sg = 'assigned';
+  if (['approved', 'done', 'closed'].includes(st)) {
+    sg = 'done';
+  } else if (['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer', 'submitted', 'pending_approval'].includes(st)) {
+    sg = 'pending_approval';
+  } else if (w.status_group && ['assigned', 'pending_approval', 'done'].includes(String(w.status_group).toLowerCase().trim())) {
+    sg = String(w.status_group).toLowerCase().trim();
+  }
+
+  let sl = 'Perlu Diisi Mekanik';
+  if (sg === 'done') {
+    sl = 'Approved';
+  } else if (sg === 'pending_approval') {
+    if (st === 'pending_l2' || st === 'pending_superintendent') sl = 'Menunggu Approval L2';
+    else if (st === 'pending_l1' || st === 'pending_supervisor') sl = 'Menunggu Approval L1';
+    else if (st === 'pending_transfer') sl = 'Menunggu Transfer';
+    else sl = 'Menunggu Approval';
+  } else {
+    sl = (w.status_label && w.status_label !== 'Menunggu Approval') ? w.status_label : 'Perlu Diisi Mekanik';
+  }
+
+  const validOrEmpty = (str) => {
+    const s = String(str || '').trim();
+    return (s && s.toUpperCase() !== 'UNKNOWN' && s.toUpperCase() !== 'UNDEFINED' && s !== '-') ? s : '';
+  };
+
   const unitObj = (w.unit && typeof w.unit === 'object') ? w.unit : {};
-  const unit_id = String(w.unit_id || w.unit_code || unitObj.unit_id || 'WORKSHOP');
-  const unit_name = String(w.unit_name || unitObj.unit_name || unit_id);
+  const unit_id = validOrEmpty(w.unit_id) || validOrEmpty(w.unit_code) || validOrEmpty(unitObj.unit_id) || 'WORKSHOP';
+  const unit_name = validOrEmpty(w.unit_name) || validOrEmpty(unitObj.unit_name) || unit_id;
   const unit_factor = Number(w.unit_factor ?? unitObj.unit_factor ?? 1.0);
 
   const compObj = (w.component && typeof w.component === 'object') ? w.component : {};
   const compStr = typeof w.component === 'string' ? w.component : '';
-  const component_id = String(w.component_id || compObj.component_no || compObj.component_id || compStr || w.job_id || 'COM-001');
-  const component_name = String(w.component_name || w.others_description || w.activity || compObj.component_name || compStr || component_id || 'Pekerjaan');
+  const component_id = validOrEmpty(w.component_id) || validOrEmpty(compObj.component_no) || validOrEmpty(compObj.component_id) || validOrEmpty(compStr) || validOrEmpty(w.job_id) || 'COM-001';
+  const component_name = validOrEmpty(w.component_name) ||
+    validOrEmpty(compObj.component_name) ||
+    validOrEmpty(compStr) ||
+    validOrEmpty(w.others_description) ||
+    validOrEmpty(w.activity) ||
+    validOrEmpty(w.job_description) ||
+    validOrEmpty(component_id) ||
+    'Pekerjaan';
   const base_points = Number(w.base_points ?? w.points ?? compObj.base_points ?? 1.0);
   const target_hours = Number(w.target_hours ?? compObj.target_hours ?? 2.0);
   const effective_base_points = Number(w.effective_base_points ?? base_points);

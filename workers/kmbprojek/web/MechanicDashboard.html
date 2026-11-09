@@ -816,7 +816,7 @@
           .withSuccessHandler(function(r) {
             if (r && r.success) {
               timerClear(woId);   // timer baru dibersihkan setelah kerja benar-benar terkirim
-              var url = appState.baseUrl + '?page=mechanic';
+              var url = appState.baseUrl + '?page=mechanic&filter=pending_approval';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
               var actHours = (r && r.data && r.data.actual_hours !== undefined)
                 ? r.data.actual_hours
@@ -1074,7 +1074,7 @@
             if (r.success) {
               timerClear(wo.id);   // timer baru dibersihkan setelah kerja benar-benar terkirim
               closeModal();
-              var url = appState.baseUrl + '?page=mechanic';
+              var url = appState.baseUrl + '?page=mechanic&filter=pending_approval';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
               // AUDIT T2: bawa &back → tombol "Kembali ke Monitoring" tetap ada setelah submit
               var actHours = (r && r.data && r.data.actual_hours !== undefined)
@@ -1509,7 +1509,7 @@
           .withSuccessHandler(function(r) {
             if (r.success) {
               closeModal();
-              var url = appState.baseUrl + '?page=mechanic';
+              var url = appState.baseUrl + '?page=mechanic&filter=pending_approval';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
               showSuccessAndRedirect('Permintaan transfer terkirim.\nWO: ' + wo.id +
                                      '\nMenunggu keputusan Planner/PIC Lapangan.', urlWithBack(urlWithToken(url)));

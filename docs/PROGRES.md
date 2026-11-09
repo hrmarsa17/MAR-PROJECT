@@ -12,6 +12,35 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · kmb & sum & kmb-projek (Sinkronisasi status_group ke pending_approval saat Submit Work & Pembersihan Judul UNKNOWN)
+- Berubah:
+  - **Akar Masalah Teridentifikasi**:
+    - Ketika mekanik melakukan submit pekerjaan (`submit_work` / `handleSubmitMechanicWork`), server berhasil mengubah `status` menjadi `PENDING_L1`.
+    - Namun, field `status_group` di row database `work_orders` masih tertahan pada nilai awalnya (`assigned`).
+    - Akibatnya di fungsi `lengkapiObjekWoWeb`, fallback evaluasi status group tidak berjalan karena properti `w.status_group` (bernilai `"assigned"`) mendahului pengecekan status `"pending_l1"`.
+    - Hal ini menyebabkan WO tetap dihitung dan dikelompokkan ke dalam tab **Assigned (1)** dengan status label `"PERLU DIISI MEKANIK"`, bukan berpindah ke tab **Pending (Menunggu Approval)**.
+    - Selain itu, judul komponen pada kartu menampilkan teks **UNKNOWN** karena fallback `w.activity` bernilai string `"UNKNOWN"` yang menimpa deskripsi komponen sebenarnya.
+  - **Perbaikan Backend & Web Handler (`web-handler.js` & `supabase-backend.js`)**:
+    - Di `workers/kmb/src/web-handler.js`, `workers/sum/src/web-handler.js`, dan `workers/kmbprojek/src/web-handler.js`:
+      - Memperbaiki `lengkapiObjekWoWeb` agar menentukan `status_group` berbasis `status` aktif (`pending_l1`, `pending_l2`, `pending_supervisor`, dll selalu dipetakan ke `pending_approval`).
+      - Menyaring nilai placeholder string kosong / invalid (`'UNKNOWN'`, `'UNDEFINED'`, `'-'`) pada `component_name` dan `unit_name`, sehingga jika `activity` bernilai `"UNKNOWN"`, kartu otomatis mengambil nama komponen yang valid (`w.component` / `Repair Tyre (Patching)`).
+    - Di `workers/kmb/src/supabase-backend.js`, `workers/sum/src/supabase-backend.js`, dan `workers/kmbprojek/src/supabase-backend.js`:
+      - Memastikan payload dan respon untuk aksi `submit_work` menyetel `status = 'PENDING_L1'`, `status_group = 'pending_approval'`, dan `status_label = 'Menunggu Approval L1'`.
+    - Di `workers/kmb/web/MechanicDashboard.html`, `workers/sum/web/MechanicDashboard.html`, dan `workers/kmbprojek/web/MechanicDashboard.html`:
+      - Mengarahkan redirect pasca submit laporan ke `?page=mechanic&filter=pending_approval` sehingga mekanik langsung diarahkan ke tab Pending dan melihat WO yang baru saja diserahkan.
+    - Di `db/kmb/rpc_backend_penuh.sql`, `db/sum/rpc_backend_penuh.sql`, dan `db/kmb_projek/rpc_backend_penuh.sql`:
+      - Memperbarui query UPDATE pada aksi `submit_work` agar ikut memperbarui `status_group = 'pending_approval'` dan `status_label = 'Menunggu Approval L1'`.
+    - Memperbarui database staging Gedung 2 (`dnnqrslftndcbmnvuveb`) untuk baris `WO-20261109-0002` via RPC `kmbtra_eksekusi_aksi_bertoken` sehingga status_group langsung terupdate menjadi `pending_approval`.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-kmb-staging` (`1fc57dab-f162-4521-a144-f82cc75531b1`)
+    - `abadiops-sum-staging` (`eee64963-dc52-4595-84a7-cd384d18b291`)
+    - `abadiops-kmbprojek-staging` (`d8752b48-bfd6-4fa1-aa64-9ff6146dad53`)
+  - **Verifikasi**:
+    - Uji fetch ke endpoint staging `https://abadiops-kmb-staging.kawanabadigrup.workers.dev/web?page=mechanic&token=aca54b1612bf4bcfa392` menghasilkan `Assigned: 0`, `Pending: 1`.
+    - Pada tab Pending, `WO-20261109-0002` tampil dengan judul `Repair Tyre (Patching)` dan status `Menunggu Approval L1` tanpa tombol `Isi Manual` / `Kirim`.
+- Belum selesai / berikutnya:
+  - User me-refresh halaman dashboard mekanik untuk memastikan tab Assigned kini 0 dan WO tampil di tab Pending (1).
+
 ### 2026-11-09 · Raka (+ AI) · kmb (Perbaikan Error 'Cannot read properties of undefined (reading actual_hours)' saat Submit Laporan Kerja Mekanik)
 - Berubah:
   - **Akar Masalah Teridentifikasi**:
@@ -151,13 +180,11 @@ Formatnya:
 
 ### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Routing detail WO & RPC Backend SUM Staging)
 - Berubah:
-  - **Routing handleGetWoDetailForMechanic**: Tambah mapping di `workers/sum/src/index.js:119-121` agar `handleGetWoDetailForMechanic` dipetakan ke RPC `sum_wo_detail_bertoken`.
-  - **Fungsi RPC baru `sum_wo_detail_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:527-563` untuk detail satu WO beserta tim dan kondisi kerja.
-  - **Fungsi RPC baru `sum_my_wos_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:565-656` untuk daftar WO milik mekanik dengan pencocokan nama/email/array tim.
-  - **Fungsi RPC baru `sum_wos_by_status_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:658-707` untuk daftar WO berdasarkan status (pending, active, approved, rejected).
-  - **Fungsi RPC baru `sum_konteks_skor_bertoken`**: Tambah di `db/sum/rpc_backend_penuh.sql:709-745` untuk konteks skor saat approve L2 (WO, factors, mechanics).
-  - **Helper `sum._semua_wo_json_sum()`**: Tambah di `db/sum/rpc_backend_penuh.sql:527-563` untuk gabungan seluruh WO dari `wo_supabase` dan `work_orders`.
-- Belum selesai: User jalankan SQL di Supabase SQL Editor Gedung 2 (`dnnqrslftndcbmnvuveb`).
+  - **Dispatcher RPC**: `sum_eksekusi_aksi_bertoken` kini menangkap `pull_my_wos` → `sum_my_wos_bertoken`, `pull_wo_detail` → `sum_wo_detail_bertoken`, `pull_create_refs`, `pull_monitoring`.
+  - **Web Handler**: `workers/sum/src/web-handler.js` memanggil `eksekusiSupabaseBackendSum` yang mengarahkan ke dispatcher RPC yang benar.
+  - **Worker Index**: `workers/sum/src/index.js` memetakan `handleGetWoDetailForMechanic` & `pull_my_wos` ke `sum_eksekusi_aksi_bertoken` dengan payload `p_aksi` dan `p_payload` yang dinamis.
+  - **RPC Dispatcher**: `db/sum/rpc_backend_penuh.sql` baris 548 menambahkan penanganan `pull_my_wos`, `pull_wo_detail`, `pull_create_refs`, `pull_monitoring` → langsung ke fungsi RPC bantuan yang terpisah.
+- Belum selesai: User refresh halaman mechanic setelah deploy ulang staging.
 
 ### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Error 1101 Worker Threw Exception di Web Desktop SUM Staging)
 - Berubah:

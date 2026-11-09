@@ -312,10 +312,10 @@ BEGIN
                submitted_at = now(),
                points = coalesce((p_payload->>'points')::numeric, (p_payload->>'final_points')::numeric, points),
                idr_value = coalesce((p_payload->>'idr')::numeric, (p_payload->>'idr_value')::numeric, idr_value),
-               data = coalesce(data, '{}'::jsonb) || p_payload || jsonb_build_object('status', 'PENDING_L1', 'submitted_by', v_user.name)
+               data = coalesce(data, '{}'::jsonb) || p_payload || jsonb_build_object('status', 'PENDING_L1', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L1', 'submitted_by', v_user.name)
          WHERE wo_number = v_wo_id OR id = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'source', 'SUPABASE');
+        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L1', 'source', 'SUPABASE');
 
     ELSIF v_aksi IN ('save_override', 'override') THEN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');

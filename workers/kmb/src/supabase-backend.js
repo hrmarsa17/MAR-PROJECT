@@ -382,19 +382,24 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     }
   }
 
-  // Jika submit work, hitung poin jika belum tersedia
-  if (cleanAksi === 'submit_work' && payload.actual_hours && payload.target_hours && !payload.final_points) {
-    const skor = hitungSkorMandiri({
-      basePoints: payload.base_points || payload.plan_points || 0,
-      unitFactor: payload.unit_factor || 1.0,
-      workCondition: payload.work_condition || 'normal',
-      actualHours: payload.actual_hours,
-      targetHours: payload.target_hours,
-      safetyIncident: payload.safety_incident,
-      mtbfStatus: payload.mtbf_status,
-    });
-    payload.final_points = skor.finalPoints;
-    payload.points = skor.finalPoints;
+  // Jika submit work, pastikan status & status_group disetel ke pending_approval
+  if (cleanAksi === 'submit_work') {
+    payload.status = payload.status || 'PENDING_L1';
+    payload.status_group = 'pending_approval';
+    payload.status_label = 'Menunggu Approval L1';
+    if (payload.actual_hours && payload.target_hours && !payload.final_points) {
+      const skor = hitungSkorMandiri({
+        basePoints: payload.base_points || payload.plan_points || 0,
+        unitFactor: payload.unit_factor || 1.0,
+        workCondition: payload.work_condition || 'normal',
+        actualHours: payload.actual_hours,
+        targetHours: payload.target_hours,
+        safetyIncident: payload.safety_incident,
+        mtbfStatus: payload.mtbf_status,
+      });
+      payload.final_points = skor.finalPoints;
+      payload.points = skor.finalPoints;
+    }
   }
 
   try {
@@ -547,7 +552,9 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
         const submitData = {
           wo_id: payload.wo_id || data.wo_id || '',
           wo_number: payload.wo_id || data.wo_id || '',
-          status: data.status || 'PENDING_L1',
+          status: 'PENDING_L1',
+          status_group: 'pending_approval',
+          status_label: 'Menunggu Approval L1',
           actual_hours: actHours,
           duration_hours: actHours,
           ...(data.data || data.result || {})

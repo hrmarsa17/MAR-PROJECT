@@ -414,6 +414,8 @@ BEGIN
         UPDATE sum.work_orders
            SET data = data || p_payload || jsonb_build_object(
                'status', 'PENDING_L1',
+               'status_group', 'pending_approval',
+               'status_label', 'Menunggu Approval L1',
                'submitted_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
                'submitted_by', v_user.name
            ),
@@ -421,7 +423,7 @@ BEGIN
            sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'source', 'SUPABASE');
+        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L1', 'source', 'SUPABASE');
 
     ELSIF v_aksi IN ('save_override', 'override') THEN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
@@ -533,6 +535,19 @@ BEGIN
         INSERT INTO sum.push_subscriptions (token, data)
         VALUES (p_token, p_payload);
         RETURN jsonb_build_object('success', true, 'source', 'SUPABASE');
+
+    -- AKSI BACA (Sesuai Audit Parity 1:1)
+    ELSIF v_aksi = 'pull_my_wos' THEN
+        RETURN public.sum_my_wos_bertoken(p_token)::jsonb;
+
+    ELSIF v_aksi = 'pull_wo_detail' THEN
+        RETURN public.sum_wo_detail_bertoken(p_token, coalesce(p_payload->>'wo_id', p_payload->>'id', ''))::jsonb;
+
+    ELSIF v_aksi = 'pull_create_refs' THEN
+        RETURN public.sum_create_refs_bertoken(p_token)::jsonb;
+
+    ELSIF v_aksi = 'pull_monitoring' THEN
+        RETURN public.sum_monitoring_bertoken(p_token)::jsonb;
 
     ELSE
         RETURN jsonb_build_object(

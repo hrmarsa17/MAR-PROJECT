@@ -1521,7 +1521,7 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
           .withSuccessHandler(function(r) {
             if (r.success) {
               closeModal();
-              var url = appState.baseUrl + '?page=mechanic';
+              var url = appState.baseUrl + '?page=mechanic&filter=pending_approval';
               if (appState.viewingAs && appState.viewingAs.id) url += '&as=' + appState.viewingAs.id;
               var actHours = (r && r.data && r.data.actual_hours !== undefined)
                 ? r.data.actual_hours

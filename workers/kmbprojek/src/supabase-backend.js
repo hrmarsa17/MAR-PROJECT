@@ -555,15 +555,27 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
     if (d && d.success) {
       const rawWos = Array.isArray(d.result) ? d.result : (Array.isArray(d.result?.wos) ? d.result.wos : []);
       const enrichedWos = rawWos.map(lengkapiWoObj).map((w) => {
-        const st = String(w.status || 'pending_mechanic_work').toLowerCase();
-        const sg = w.status_group || (
-          ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
-            ? 'pending_approval'
-            : (st === 'approved' ? 'done' : 'assigned')
-        );
-        const sl = w.status_label || (
-          sg === 'done' ? 'Approved' : (sg === 'pending_approval' ? 'Menunggu Approval' : 'Perlu Diisi Mekanik')
-        );
+        const st = String(w.status || 'pending_mechanic_work').toLowerCase().trim();
+        let sg = 'assigned';
+        if (['approved', 'done', 'closed'].includes(st)) {
+          sg = 'done';
+        } else if (['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer', 'submitted', 'pending_approval'].includes(st)) {
+          sg = 'pending_approval';
+        } else if (w.status_group && ['assigned', 'pending_approval', 'done'].includes(String(w.status_group).toLowerCase().trim())) {
+          sg = String(w.status_group).toLowerCase().trim();
+        }
+
+        let sl = 'Perlu Diisi Mekanik';
+        if (sg === 'done') {
+          sl = 'Approved';
+        } else if (sg === 'pending_approval') {
+          if (st === 'pending_l2' || st === 'pending_superintendent') sl = 'Menunggu Approval L2';
+          else if (st === 'pending_l1' || st === 'pending_supervisor') sl = 'Menunggu Approval L1';
+          else if (st === 'pending_transfer') sl = 'Menunggu Transfer';
+          else sl = 'Menunggu Approval';
+        } else {
+          sl = (w.status_label && w.status_label !== 'Menunggu Approval') ? w.status_label : 'Perlu Diisi Mekanik';
+        }
         const teamArr = Array.isArray(w.team) ? w.team : [];
         return {
           ...w,
