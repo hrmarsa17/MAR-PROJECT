@@ -121,8 +121,29 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100 + Math.random() * 900);
     const mockWoId = `WO-${today}-${randomSuffix}`;
-    
-    // Simpan ke Gedung 2
+    const rpcName = dapatkanNamaRpc(rumah || 'kmbprojek', 'eksekusi_aksi_bertoken');
+
+    // Coba simpan via Supabase RPC jika token tersedia agar muncul di tab mechanic
+    let rpcRes = null;
+    try {
+      if (token && env && env.SUPABASE_URL) {
+        rpcRes = await panggilRpcGedung2(rpcName, {
+          p_token: token,
+          p_aksi: 'create_wo',
+          p_op_id: `gas-tiruan-${Date.now()}`,
+          p_payload: parsed,
+          p_skor_js: null,
+        }, env);
+      }
+    } catch (err) {
+      console.warn(`[gas-tiruan] RPC ${rpcName} fallback: ${err && err.message}`);
+    }
+
+    if (rpcRes && rpcRes.success && rpcRes.result) {
+      return responJson(rpcRes);
+    }
+
+    // Simpan ke Gedung 2 fallback
     await simpanWoGedung2(rumah, mockWoId, parsed, env);
 
     const blocks = (parsed.data && parsed.data.blocks) || parsed.blocks || [];
@@ -131,9 +152,9 @@ async function tanganiAksi(action, token, rumah, parsed, env) {
           wo_number: `WO-${today}-${Math.floor(1000 + Math.random() * 9000)}`,
           wo_id: `WO-${today}-${randomSuffix}-${idx + 1}`,
           unit_id: b.unit_id || b.unit_name || '',
-          component: b.component || '',
-          activity: b.job_description || '',
-          lead_mechanic_id: b.lead_mechanic_id || '',
+          component: b.component || b.component_name || '',
+          activity: b.job_description || b.activity || '',
+          lead_mechanic_id: b.lead_mechanic_id || (b.team && b.team[0]?.mechanic_id) || '',
           status: 'pending'
         }))
       : [{ wo_number: mockWoId, wo_id: mockWoId, id: mockWoId, status: 'pending' }];

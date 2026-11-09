@@ -12,6 +12,22 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · bersama (Eksekusi Penuh Panduan 14: Perbaikan SUM Matching, KMB Cascade, dan Deploy Staging 5 Worker)
+- Berubah:
+  - Eksekusi penuh instruksi `docs/panduan_deploy_staging_kamis (14).md`:
+  - **SUM & KMB Pencocokan WO Mekanik Tahan Format**: Menyediakan `_kode_mekanik_kanonik` (mengabaikan tanda hubung dan nol di depan, misal `SUM-01` == `SUM-001`, `MNT-02` == `MNT-002`) dan `_ambil_teks_jsonb` case-insensitive pada SQL. Memperbarui `sum._wo_milik_mekanik_sum` dan `kmb_projek._wo_milik_mekanik` agar memeriksa kanonik ID, nama, email, array `team`, `effective_team`, `team_names`, dan `team_distribution`.
+  - **Perbaikan Masalah Form `team: []` + `team_distribution` (Solusi Bug `Assigned 0`)**: Memperbaiki percabangan SQL pada pembuatan WO di `db/kmb_projek/migrasi_kamis_full_penuh.sql`, `db/kmb/rpc_backend_penuh.sql`, `db/sum/rpc_backend_penuh.sql`, dan `db/kmb_projek/rpc_backend_penuh.sql` dengan `IF jsonb_typeof(...) = 'array' AND jsonb_array_length(...) > 0`, sehingga ketika form desktop mengirim `team: []` (array kosong), sistem otomatis mengambil data teknisi dari `team_distribution` dan menetapkan `lead_mechanic_id`.
+  - **Katalog Cascade Anti-Putus (`Unit → Component → Sub Component → Job`)**: Menambahkan fungsi `normalisasiKatalogCascade` pada `workers/kmbprojek/src/supabase-backend.js` yang otomatis memberi nilai default `'Standard'` untuk sub-komponen kosong, menyelaraskan model unit dengan model pekerjaan, dan melengkapi template universal jobs.
+  - **Worker `gas-tiruan` Staging**: Memperbarui aksi `create_wo` / `handleCreateWO` di `workers/gas-tiruan/src/index.js` agar mendelegasikan pembuatan WO langsung ke Supabase RPC sehingga WO tercatat resmi di database dan muncul di halaman monitoring & mechanic saat diuji di staging.
+  - **Pembaruan SQL Lengkap**: Menyatukan seluruh fungsi RPC Master Config 3 rumah, helper kanonik, pencocokan mekanik SUM & KMB, cascade KMB TRA, `NOTIFY pgrst, 'reload schema';`, dan kueri diagnostik ke `db/kmb_projek/pasang_rpc_config_staging.sql`.
+  - **Pengujian & Verifikasi**: Seluruh rangkaian uji otomatis lulus tanpa galat (Backend mandiri: 40/40, User admin pusat: 27/27, Serahan token PWA: 24/24, Uji cascade & mekanik: 3/3).
+  - **Deploy Staging Cloudflare**: Berhasil men-deploy kelima worker ke panggung latihan Cloudflare Staging (`abadiops-gas-tiruan`, `abadiops-pintu-staging`, `abadiops-kmbprojek-staging`, `abadiops-kmb-staging`, `abadiops-sum-staging`).
+- Belum selesai / berikutnya:
+  - Gabriel menjalankan blok SQL `db/kmb_projek/pasang_rpc_config_staging.sql` di Supabase SQL Editor Gedung 2 (`dnnqrslftndcbmnvuveb`) untuk merefresh skema PostgreSQL secara permanen.
+  - Verifikasi langsung di browser pada Web Desktop `/web?page=create` dan `/web?page=mechanic` serta Panel Saklar `/saklar`.
+
+---
+
 ### 2026-11-06 · Raka (+ AI) · bersama (Ringkasan pekerjaan hari ini)
 - Berubah:
   - SUM: menyamakan katalog Create WO dengan kontrak form, membuat filter status/role/work condition tidak sensitif kapitalisasi, memperbaiki token dan nama Monitoring, serta memperluas pencocokan WO ke identitas dan anggota tim mekanik.

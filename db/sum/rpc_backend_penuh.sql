@@ -254,7 +254,7 @@ BEGIN
 
         SELECT coalesce(max(baris), 1) + 1 INTO v_next_baris FROM sum.work_orders;
 
-        IF jsonb_typeof(p_payload->'team') = 'array' THEN
+        IF jsonb_typeof(p_payload->'team') = 'array' AND jsonb_array_length(p_payload->'team') > 0 THEN
             v_team := p_payload->'team';
         ELSIF jsonb_typeof(p_payload->'team_distribution') = 'object' THEN
             SELECT coalesce(jsonb_agg(jsonb_build_object(

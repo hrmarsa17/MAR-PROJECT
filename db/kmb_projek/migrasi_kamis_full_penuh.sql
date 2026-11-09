@@ -1187,7 +1187,7 @@ BEGIN
       v_bp := coalesce(v_bp, 1.25);
       v_th := coalesce(v_th, 2.0);
 
-      IF jsonb_typeof(v_blk->'team') = 'array' THEN
+      IF jsonb_typeof(v_blk->'team') = 'array' AND jsonb_array_length(v_blk->'team') > 0 THEN
         FOR v_elem IN SELECT * FROM jsonb_array_elements(v_blk->'team') LOOP
           v_mid := btrim(coalesce(v_elem->>'mechanic_id', v_elem->>'id', v_elem #>> '{}', ''));
           IF v_mid <> '' THEN

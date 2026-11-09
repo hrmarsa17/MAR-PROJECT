@@ -369,14 +369,121 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
     return await panggilRpcSupabase(`${RPC_PREFIX}_ping`, { p_token: cleanToken }, env);
   }
 
+  // Helper normalisasi Cascade Unit -> Component -> Sub Component -> Job (Anti-Putus di KMB & KMB Projek)
+  const normalisasiKatalogCascade = (rawRefs) => {
+    if (!rawRefs || typeof rawRefs !== 'object') return rawRefs;
+    const normJob = (j, idx) => {
+      if (!j || typeof j !== 'object') return null;
+      const jid = String(j.job_id || j.id || j.component_id || `JOB-${idx + 1}`).trim();
+      const umod = String(j.unit_model ?? j.model ?? j.unit_type ?? '').trim();
+      const comp = String(j.component || j.component_name || j.category || 'General').trim() || 'General';
+      const sub = String(j.sub_component || j.sub_component_name || j.subcomponent || 'Standard').trim() || 'Standard';
+      const desc = String(j.job_description || j.job_name || j.activity || j.description || comp || jid).trim() || jid;
+      const ph = Number(j.plan_hours || j.target_hours || 2.0) || 2.0;
+      const bp = Number(j.base_points || j.base_point || ph || 1.0) || ph;
+      const jtype = String(j.job_type || 'Preventive').trim() || 'Preventive';
+      return {
+        ...j,
+        id: jid,
+        job_id: jid,
+        unit_model: umod,
+        model: umod,
+        component: comp,
+        component_name: comp,
+        sub_component: sub,
+        sub_component_name: sub,
+        job_description: desc,
+        job_name: desc,
+        activity: desc,
+        plan_hours: ph,
+        target_hours: ph,
+        base_point: bp,
+        base_points: bp,
+        job_type: jtype,
+      };
+    };
+
+    const jf = (Array.isArray(rawRefs.jobs_field) ? rawRefs.jobs_field : []).map(normJob).filter(Boolean);
+    const jw = (Array.isArray(rawRefs.jobs_workshop) ? rawRefs.jobs_workshop : []).map(normJob).filter(Boolean);
+    const jv = (Array.isArray(rawRefs.jobs_vessel) ? rawRefs.jobs_vessel : []).map(normJob).filter(Boolean);
+
+    // Kumpulkan daftar unit_model yang ada di katalog jobs_field
+    const modelKatalogSet = new Set(jf.map((j) => j.unit_model.toUpperCase()).filter(Boolean));
+    const unitsNorm = (Array.isArray(rawRefs.units) ? rawRefs.units : []).map((u) => {
+      if (!u || typeof u !== 'object') return u;
+      const uid = String(u.unit_id || u.unit_code || u.id || '').trim();
+      let umod = String(u.unit_model ?? u.model ?? u.unit_type ?? '').trim();
+      if (umod && modelKatalogSet.size > 0 && !modelKatalogSet.has(umod.toUpperCase())) {
+        const uUp = umod.toUpperCase();
+        for (const mKat of modelKatalogSet) {
+          if (uUp.includes(mKat) || mKat.includes(uUp)) {
+            umod = mKat;
+            break;
+          }
+        }
+      }
+      return {
+        ...u,
+        id: uid,
+        unit_id: uid,
+        unit_code: uid,
+        unit_name: String(u.unit_name || u.name || uid).trim(),
+        unit_model: umod,
+        model: umod,
+        unit_factor: Number(u.unit_factor ?? 1.0) || 1.0,
+      };
+    });
+
+    // Pastikan setiap unit_model pada units memiliki minimal 1 set pekerjaan di jobs_field agar Cascade Unit -> Component tidak pernah kosong
+    const templateUniversal = jf.filter((j) => !j.unit_model).length > 0
+      ? jf.filter((j) => !j.unit_model)
+      : jf.slice(0, 25);
+    const tambahanJobsField = [];
+    const modelSudahAda = new Set(jf.map((j) => j.unit_model.toUpperCase()));
+    for (const u of unitsNorm) {
+      const mUp = String(u.unit_model || '').toUpperCase();
+      if (mUp && !modelSudahAda.has(mUp) && templateUniversal.length > 0) {
+        modelSudahAda.add(mUp);
+        for (const tpl of templateUniversal) {
+          tambahanJobsField.push({
+            ...tpl,
+            unit_model: u.unit_model,
+            model: u.unit_model,
+          });
+        }
+      }
+    }
+
+    const mechsNorm = (Array.isArray(rawRefs.mechanics) ? rawRefs.mechanics : []).map((m) => {
+      if (!m || typeof m !== 'object') return m;
+      const mid = String(m.mechanic_id || m.id || '').trim();
+      const mname = String(m.name || m.mechanic_name || mid).trim();
+      return {
+        ...m,
+        id: mid,
+        mechanic_id: mid,
+        name: mname,
+        mechanic_name: mname,
+      };
+    });
+
+    return {
+      ...rawRefs,
+      units: unitsNorm,
+      mechanics: mechsNorm,
+      jobs_field: [...jf, ...tambahanJobsField],
+      jobs_workshop: jw.length > 0 ? jw : [...jf, ...tambahanJobsField],
+      jobs_vessel: jv.length > 0 ? jv : [...jf, ...tambahanJobsField],
+    };
+  };
+
   // 2. Katalog & Referensi Pembuatan WO
   if (['pull_create_refs', 'loadJobsCatalog', 'siapkanFormTyre'].includes(cleanAction)) {
     const d = await panggilRpcSupabase(`${RPC_PREFIX}_create_refs_bertoken`, { p_token: cleanToken }, env);
-    if (d && d.success && d.result && !d.result.refs) {
-      d.result = { ...d.result, refs: d.result };
-    }
-    if (d && d.success && !d.data) {
-      d.data = (d.result && d.result.refs) || d.result;
+    if (d && d.success && d.result) {
+      const baseRefs = normalisasiKatalogCascade(d.result.refs || d.result);
+      d.result = { ...baseRefs, refs: baseRefs };
+      d.data = baseRefs;
     }
     return d;
   }
@@ -385,7 +492,7 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
   if (cleanAction === 'getJobCatalogCached') {
     const sec = String(dataObj.section || dataObj.kategori || 'maintenance').trim().toLowerCase();
     const d = await panggilRpcSupabase(`${RPC_PREFIX}_create_refs_bertoken`, { p_token: cleanToken }, env);
-    const refs = (d && d.result && (d.result.refs || d.result)) || {};
+    const refs = normalisasiKatalogCascade((d && d.result && (d.result.refs || d.result)) || {});
     let jobs = [];
     if (sec === 'vessel' && Array.isArray(refs.jobs_vessel) && refs.jobs_vessel.length > 0) {
       jobs = refs.jobs_vessel;

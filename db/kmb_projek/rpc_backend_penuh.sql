@@ -244,7 +244,8 @@ BEGIN
                 nullif(p_payload->>'status', ''),
                 CASE
                     WHEN nullif(p_payload->>'lead_mechanic_id', '') IS NOT NULL
-                      OR jsonb_typeof(p_payload->'team') = 'array'
+                      OR (jsonb_typeof(p_payload->'team') = 'array' AND jsonb_array_length(p_payload->'team') > 0)
+                      OR jsonb_typeof(p_payload->'team_distribution') = 'object'
                     THEN 'assigned'
                     ELSE 'PENDING_L1'
                 END
