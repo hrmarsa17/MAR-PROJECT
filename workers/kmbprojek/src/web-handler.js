@@ -43,7 +43,8 @@ function lengkapiObjekWoWeb(w) {
   if (!w || typeof w !== 'object') return {};
   const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
   const wo_number = String(w.wo_number || id);
-  const st = String(w.status || 'pending_mechanic_work').toLowerCase();
+  const rawStatus = String(w.status || 'pending_mechanic_work').toLowerCase();
+  const st = (rawStatus === 'pending_l1' ? 'pending_supervisor' : (rawStatus === 'pending_l2' ? 'pending_superintendent' : rawStatus));
   const sg = ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
     ? 'pending_approval'
     : (st === 'approved' ? 'done' : (['rejected', 'cancelled'].includes(st) ? 'rejected' : 'assigned'));
@@ -256,7 +257,28 @@ export async function handleWebRequest(request, env, url) {
       const saringWoSah = (arr) => (Array.isArray(arr) ? arr : []).filter((x) => x && typeof x === 'object' && (x.id || x.wo_id || x.wo_number) && String(x.wo_number || x.id) !== 'WO-0');
       const semuaPending = saringWoSah(dp.pending || dp.wos || (Array.isArray(dp) ? dp : [])).map(lengkapiObjekWoWeb);
       const semuaTransfer = saringWoSah(dp.transfers || []).map(lengkapiObjekWoWeb);
-      context.pendingApprovals = semuaPending.filter((w) => w.status !== 'pending_transfer');
+
+      // Pembatasan Visibilitas Approval berdasarkan Role:
+      // L1 (supervisor): CUMA BISA LIHAT DATA L1 (pending_supervisor / pending_l1)
+      // L2 (superintendent): CUMA BISA LIHAT DATA L2 (pending_superintendent / pending_l2)
+      // Admin: melihat semua antrean pending
+      const userRole = String(user.role || '').toLowerCase();
+      let pendingList = semuaPending.filter((w) => w.status !== 'pending_transfer');
+      if (userRole === 'supervisor') {
+        pendingList = pendingList.filter((w) => {
+          const wst = String(w.status || '').toLowerCase();
+          return wst === 'pending_supervisor' || wst === 'pending_l1';
+        });
+      } else if (userRole === 'superintendent') {
+        pendingList = pendingList.filter((w) => {
+          const wst = String(w.status || '').toLowerCase();
+          return wst === 'pending_superintendent' || wst === 'pending_l2';
+        });
+      }
+
+      context.pendingApprovals = pendingList;
+      context.pendingTotal = pendingList.length;
+      context.pendingCount = pendingList.length;
       context.pendingTransfers = semuaTransfer.length > 0 ? semuaTransfer : semuaPending.filter((w) => w.status === 'pending_transfer');
       context.activeWos = saringWoSah(da.active || da.wos || (Array.isArray(da) ? da : [])).map(lengkapiObjekWoWeb);
       context.approvedWos = saringWoSah(dap.approved || dap.wos || (Array.isArray(dap) ? dap : [])).map(lengkapiObjekWoWeb);

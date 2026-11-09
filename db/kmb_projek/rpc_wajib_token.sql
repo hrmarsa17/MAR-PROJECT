@@ -99,16 +99,64 @@ CREATE OR REPLACE FUNCTION public.kmb_wos_by_status_bertoken(p_token text, p_sta
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, kmb_projek, pg_temp
 AS $$
+DECLARE
+    v_user record;
+    v_wos json;
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM kmb_projek.api_tokens t
-         WHERE t.token = btrim(coalesce(p_token, '')) AND t.status = 'ACTIVE'
-    ) THEN
+    SELECT t.token, coalesce(t.role, 'mechanic') as role, t.name, t.user_id as mechanic_id
+      INTO v_user
+      FROM kmb_projek.api_tokens t
+     WHERE t.token = btrim(coalesce(p_token, '')) AND t.status = 'ACTIVE'
+     LIMIT 1;
+
+    IF v_user.token IS NULL THEN
         RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
     END IF;
-    RETURN public.kmb_wos_by_status(p_status);
+
+    SELECT coalesce(json_agg(json_build_object(
+        'id', coalesce(w.data->>'id', w.wo_number),
+        'wo_id', coalesce(w.data->>'id', w.wo_number),
+        'wo_number', w.wo_number,
+        'date', w.date::text,
+        'shift', coalesce(w.shift, '1'),
+        'unit_code', w.unit_code,
+        'unit_id', w.unit_code,
+        'component', w.component,
+        'component_name', w.component,
+        'activity', w.activity,
+        'duration_hours', coalesce(w.duration_hours, 0),
+        'status', w.status,
+        'points', coalesce(w.points, 0),
+        'lead_mechanic_id', w.lead_mechanic_id,
+        'created_at', w.created_at,
+        'created_at_str', to_char(w.created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI'),
+        'data', w.data
+    ) ORDER BY w.created_at DESC), '[]'::json)
+    INTO v_wos
+    FROM kmb_projek.work_orders w
+    WHERE (
+        (p_status = 'pending' AND (
+            (v_user.role = 'supervisor' AND w.status IN ('pending_supervisor', 'pending_l1', 'PENDING_L1')) OR
+            (v_user.role = 'superintendent' AND w.status IN ('pending_superintendent', 'pending_l2', 'PENDING_L2')) OR
+            (v_user.role NOT IN ('supervisor', 'superintendent') AND (w.status LIKE 'PENDING%' OR w.status IN ('pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2')))
+        )) OR
+        (p_status = 'active' AND w.status IN ('assigned', 'in_progress', 'draft', 'ACTIVE', 'IN_PROGRESS', 'OPEN')) OR
+        (p_status = 'approved' AND w.status IN ('approved', 'APPROVED')) OR
+        (p_status = 'rejected' AND w.status IN ('rejected', 'REJECTED')) OR
+        (w.status = p_status)
+    );
+
+    RETURN json_build_object(
+        'success', true,
+        'source', 'SUPABASE',
+        'result', json_build_object(
+            'wos', v_wos,
+            p_status, v_wos,
+            'pulled_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF')
+        )
+    );
 END;
 $$;
 

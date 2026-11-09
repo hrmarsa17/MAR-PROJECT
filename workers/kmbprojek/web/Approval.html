@@ -474,6 +474,8 @@
     <? if (pendingApprovals && pendingApprovals.length > 0) { ?>
       <div class="wo-list-layout" id="pendingGrid">
         <? for (var i = 0; i < pendingApprovals.length; i++) { var wo = pendingApprovals[i]; ?>
+          <? if (user.role === 'supervisor' && (wo.status === 'pending_superintendent' || wo.status === 'pending_l2')) continue; ?>
+          <? if (user.role === 'superintendent' && (wo.status === 'pending_supervisor' || wo.status === 'pending_l1')) continue; ?>
           <div class="wo-card wo-list-item" data-wo-id="<?= wo.id ?>" id="wo_card_<?= wo.id ?>" data-wo-number="<?= wo.wo_number ?>">
             <!-- BARIS LIST RINGKAS (INFORMASI PENTING) -->
             <div class="wo-list-main-row">
@@ -488,7 +490,7 @@
                 </div>
                 <div class="wo-row-badges">
                   <span class="status-badge status-<?= wo.status.replace(/_/g, '-') ?>" style="font-size:0.68rem;padding:0.18rem 0.5rem;font-weight:700;">
-                    <?= wo.status === 'pending_supervisor' ? 'Level 1' : 'Level 2' ?>
+                    <?= (wo.status === 'pending_supervisor' || wo.status === 'pending_l1' || wo.status === 'PENDING_L1') ? 'Level 1' : 'Level 2' ?>
                   </span>
                   <? if (wo.kembar && wo.kembar.length > 0) { ?>
                     <span class="badge-mini-danger" title="Mungkin sama dengan <?= wo.kembar.length ?> WO lain">⚠️ Mirip <?= wo.kembar.length ?> WO</span>
@@ -1293,6 +1295,10 @@
     var currentApproveStatus = null;
     var currentApproveCard = null;
     function approveWO(woId, status, buttonElement) {
+      if (userRole === 'supervisor' && (status === 'pending_superintendent' || status === 'pending_l2')) {
+        alert('Akses Ditolak: Supervisor (L1) hanya berhak melakukan Approval Level 1.');
+        return;
+      }
       currentApproveWoId = woId;
       currentApproveStatus = status;
       currentApproveCard = buttonElement.closest('.wo-card');
@@ -1309,7 +1315,7 @@
       }
 
       document.getElementById('approveWoNumber').textContent = wo ? wo.wo_number : woId;
-      var isFinal = (status === 'pending_superintendent');
+      var isFinal = (status === 'pending_superintendent' || status === 'pending_l2' || status === 'PENDING_L2');
       document.getElementById('approveLevelText').textContent = isFinal
         ? 'Approval Final (Layer 2) — poin akan dihitung & didistribusikan.'
         : 'Approval Level 1 — WO akan diteruskan ke Layer 2.';
@@ -1355,6 +1361,12 @@
     function confirmApproveWO() {
       if (!currentApproveWoId) return;
       var woId = currentApproveWoId, status = currentApproveStatus, card = currentApproveCard;
+      if (userRole === 'supervisor' && (status === 'pending_superintendent' || status === 'pending_l2')) {
+        hideApproveOverlay();
+        closeApproveModal();
+        alert('Akses Ditolak: Supervisor (L1) hanya berhak melakukan Approval Level 1.');
+        return;
+      }
       var safety = document.getElementById('approveSafetyCheck').checked;
       var mtbfStatus = document.getElementById('approveMtbfRedoCheck').checked ? 'redo' : 'first_time';
       var confirmBtn = document.getElementById('approveConfirmBtn');
@@ -1362,15 +1374,16 @@
       var btns = card ? card.querySelectorAll('.btn') : [];
       for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
       if (card) card.classList.add('processing');
-      showApproveOverlay(status === 'pending_supervisor' ? 'Memproses Approval Level 1...' : 'Memproses Approval Level 2 — poin sedang di-award...');
-      var fnName = status === 'pending_supervisor' ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1' || status === 'PENDING_L1');
+      showApproveOverlay(isL1 ? 'Memproses Approval Level 1...' : 'Memproses Approval Level 2 — poin sedang di-award...');
+      var fnName = isL1 ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
       google.script.run.withSuccessHandler(function(result) {
         hideApproveOverlay();
         confirmBtn.disabled = false; confirmBtn.textContent = '✓ Konfirmasi Approve';
         if (result && result.success) {
           closeApproveModal();
           var successMsg = '';
-          if (status === 'pending_supervisor') {
+          if (isL1) {
             successMsg = 'Level 1 Approved!\nWO pindah ke Level 2.' + (safety ? '\n\n⚠️ Insiden dicatat untuk review Layer 2.' : '') + (mtbfStatus === 'redo' ? '\n\n🔧 Ditandai REDO untuk review Layer 2.' : '');
           } else {
             successMsg = 'Fully Approved!' + (safety ? '\n\n⚠️ Safety incident → poin = 0.' : '\n\nPoin terdistribusi.') + (mtbfStatus === 'redo' ? '\n\n🔧 Redo Judgment: REDO (faktor redo diterapkan).' : '');
@@ -1396,7 +1409,7 @@
       for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
       buttonElement.textContent = '⏳ Rejecting...'; card.classList.add('processing');
       showApproveOverlay('Memproses Penolakan WO...');
-      var fnName = status === 'pending_supervisor' ? 'handleSupervisorReject' : 'handleSuperintendentReject';
+      var fnName = (status === 'pending_supervisor' || status === 'pending_l1' || status === 'PENDING_L1') ? 'handleSupervisorReject' : 'handleSuperintendentReject';
       google.script.run.withSuccessHandler(function(result) {
         hideApproveOverlay();
         if (result && result.success) { 
@@ -2044,8 +2057,9 @@
         var isRedo = (w.mtbf_redo_status === 'redo');
         var isKembar = (w.kembar && w.kembar.length > 0);
 
-        var lvlLabel = w.status === 'pending_supervisor' ? 'Level 1' : 'Level 2';
-        var lvlClass = w.status === 'pending_supervisor' ? 'status-pending-supervisor' : 'status-pending-superintendent';
+        var isL1 = (w.status === 'pending_supervisor' || w.status === 'pending_l1' || w.status === 'PENDING_L1');
+        var lvlLabel = isL1 ? 'Level 1' : 'Level 2';
+        var lvlClass = isL1 ? 'status-pending-supervisor' : 'status-pending-superintendent';
         var rowClasses = [];
         if (isSafety) rowClasses.push('has-safety');
         if (isRedo) rowClasses.push('has-redo');
@@ -2206,7 +2220,17 @@
           logBox.scrollTop = logBox.scrollHeight;
         }
 
-        var fnName = (item.status === 'pending_supervisor') ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
+        var fnName = (item.status === 'pending_supervisor' || item.status === 'pending_l1') ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
+        if (userRole === 'supervisor' && fnName === 'handleSuperintendentApprove') {
+          failCount++;
+          if (logItem) {
+            logItem.className = 'bulk-log-item fail';
+            logItem.innerHTML = '<span>❌ ' + (item.wo_number || item.id) + '</span><span>Akses ditolak (L1 hanya boleh approve L1)</span>';
+          }
+          updateBulkBarUI();
+          step(index + 1);
+          return;
+        }
         var safety = (item.safety_incident === true || String(item.safety_incident).toLowerCase() === 'true');
         var mtbf = (item.mtbf_redo_status === 'redo') ? 'redo' : 'first_time';
 

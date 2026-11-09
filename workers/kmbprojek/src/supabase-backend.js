@@ -169,7 +169,8 @@ function lengkapiWoObj(w) {
   if (!w || typeof w !== 'object') return {};
   const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
   const wo_number = String(w.wo_number || id);
-  const st = String(w.status || 'pending_mechanic_work').toLowerCase();
+  const rawStatus = String(w.status || 'pending_mechanic_work').toLowerCase();
+  const st = (rawStatus === 'pending_l1' ? 'pending_supervisor' : (rawStatus === 'pending_l2' ? 'pending_superintendent' : rawStatus));
   const sg = ['pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2', 'pending_transfer'].includes(st)
     ? 'pending_approval'
     : (st === 'approved' ? 'done' : (['rejected', 'cancelled'].includes(st) ? 'rejected' : 'assigned'));
@@ -607,7 +608,24 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
       p_status: st,
     }, env);
     if (d && d.success && d.result) {
-      const rawList = Array.isArray(d.result) ? d.result : (d.result.wos || d.result[st] || []);
+      let rawList = Array.isArray(d.result) ? d.result : (d.result.wos || d.result[st] || []);
+      if (cleanAction === 'pull_pending') {
+        const pingUser = await panggilRpcSupabase(`${RPC_PREFIX}_ping`, { p_token: cleanToken }, env);
+        const callerRole = String(pingUser?.result?.role || '').toLowerCase();
+        if (callerRole === 'supervisor') {
+          // L1 HANYA boleh melihat WO pending L1 (pending_supervisor / pending_l1 / pending_transfer)
+          rawList = rawList.filter((w) => {
+            const wst = String(w.status || '').toLowerCase();
+            return wst === 'pending_supervisor' || wst === 'pending_l1' || wst === 'pending_transfer';
+          });
+        } else if (callerRole === 'superintendent') {
+          // L2 HANYA boleh melihat WO pending L2 (pending_superintendent / pending_l2)
+          rawList = rawList.filter((w) => {
+            const wst = String(w.status || '').toLowerCase();
+            return wst === 'pending_superintendent' || wst === 'pending_l2';
+          });
+        }
+      }
       const wos = rawList
         .filter((x) => x && typeof x === 'object' && (x.id || x.wo_id || x.wo_number) && String(x.wo_number || x.id) !== 'WO-0')
         .map(lengkapiWoObj);
@@ -845,6 +863,20 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
       : (Array.isArray(dataObj.ids) ? dataObj.ids : []);
     const level = Number(dataObj.level || 1);
     const subAction = level === 2 ? 'approve_l2' : 'approve_l1';
+
+    // Verifikasi wewenang: Supervisor (L1) DILARANG bulk approve L2!
+    if (subAction === 'approve_l2') {
+      const pingCheck = await panggilRpcSupabase(`${RPC_PREFIX}_ping`, { p_token: cleanToken }, env);
+      const userRole = String(pingCheck?.result?.role || '').toLowerCase();
+      if (userRole === 'supervisor' || (userRole !== 'superintendent' && userRole !== 'admin' && userRole !== 'manager')) {
+        return {
+          success: false,
+          source: 'SUPABASE',
+          error: 'Akses ditolak: Hanya Superintendent (L2) yang berhak melakukan approval L2',
+        };
+      }
+    }
+
     const results = [];
     for (const id of ids) {
       const subRes = await eksekusiAksiSupabaseMandiri(
@@ -943,9 +975,32 @@ export async function eksekusiAksiSupabaseMandiri(action, token, parsed, env) {
     };
   }
 
-  // 12. Khusus Approve L2: Hitung Poin & Rupiah di JS (`src/domain/scoring.mjs`) sebelum simpan ke Supabase
+  // 12. Validasi Hak Akses Approval
+  if (aksiRpc === 'approve_l1') {
+    const pingUser = await panggilRpcSupabase(`${RPC_PREFIX}_ping`, { p_token: cleanToken }, env);
+    const callerRole = String(pingUser?.result?.role || '').toLowerCase();
+    if (callerRole === 'mechanic') {
+      return {
+        success: false,
+        source: 'SUPABASE',
+        error: 'Akses ditolak: Mekanik tidak memiliki hak akses approval',
+      };
+    }
+  }
+
+  // 12b. Khusus Approve L2: Supervisor (L1) DILARANG KERAS mengeksekusi L2!
+  // Hitung Poin & Rupiah di JS (`src/domain/scoring.mjs`) sebelum simpan ke Supabase
   let skorJs = null;
   if (aksiRpc === 'approve_l2') {
+    const pingUser = await panggilRpcSupabase(`${RPC_PREFIX}_ping`, { p_token: cleanToken }, env);
+    const callerRole = String(pingUser?.result?.role || '').toLowerCase();
+    if (callerRole === 'supervisor' || (callerRole !== 'superintendent' && callerRole !== 'admin' && callerRole !== 'manager')) {
+      return {
+        success: false,
+        source: 'SUPABASE',
+        error: 'Akses ditolak: Hanya Superintendent (L2) yang berhak melakukan approval L2',
+      };
+    }
     const woId = String(dataObj.wo_id || dataObj.id || '').trim();
     if (woId) {
       try {

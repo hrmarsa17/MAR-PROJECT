@@ -145,15 +145,21 @@ BEGIN
         SELECT jsonb_build_object(
             'success', true,
             'result', jsonb_build_object(
-                'pending_l1', coalesce(jsonb_agg(coalesce(w.data, to_jsonb(w))) FILTER (WHERE w.status = 'PENDING_L1'), '[]'::jsonb),
-                'pending_l2', coalesce(jsonb_agg(coalesce(w.data, to_jsonb(w))) FILTER (WHERE w.status = 'PENDING_L2'), '[]'::jsonb),
-                'pending', coalesce(jsonb_agg(coalesce(w.data, to_jsonb(w))) FILTER (WHERE w.status LIKE 'PENDING%'), '[]'::jsonb)
+                'pending_l1', coalesce(jsonb_agg(coalesce(w.data, to_jsonb(w))) FILTER (WHERE w.status IN ('PENDING_L1', 'pending_supervisor', 'pending_l1')), '[]'::jsonb),
+                'pending_l2', coalesce(jsonb_agg(coalesce(w.data, to_jsonb(w))) FILTER (WHERE w.status IN ('PENDING_L2', 'pending_superintendent', 'pending_l2')), '[]'::jsonb),
+                'pending', coalesce(jsonb_agg(coalesce(w.data, to_jsonb(w))) FILTER (
+                    WHERE (
+                        (v_user.role = 'supervisor' AND w.status IN ('PENDING_L1', 'pending_supervisor', 'pending_l1'))
+                        OR (v_user.role = 'superintendent' AND w.status IN ('PENDING_L2', 'pending_superintendent', 'pending_l2'))
+                        OR (v_user.role NOT IN ('supervisor', 'superintendent') AND (w.status LIKE 'PENDING%' OR w.status IN ('pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2')))
+                    )
+                ), '[]'::jsonb)
             ),
             'source', 'SUPABASE'
         )
         INTO v_result
         FROM kmb_projek.work_orders w
-        WHERE w.status LIKE 'PENDING%';
+        WHERE w.status LIKE 'PENDING%' OR w.status IN ('pending_supervisor', 'pending_superintendent', 'pending_l1', 'pending_l2');
         RETURN v_result;
 
     ELSIF v_aksi = 'pull_active' THEN
@@ -320,6 +326,11 @@ BEGIN
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'source', 'SUPABASE');
 
     ELSIF v_aksi = 'approve_l1' THEN
+        -- Validasi wewenang: Supervisor, Superintendent, Admin
+        IF v_user.role NOT IN ('supervisor', 'superintendent', 'admin', 'manager') THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Akses ditolak: Tidak memiliki wewenang approval L1', 'source', 'SUPABASE');
+        END IF;
+
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE kmb_projek.work_orders
            SET status = 'PENDING_L2',
@@ -331,6 +342,15 @@ BEGIN
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L2', 'source', 'SUPABASE');
 
     ELSIF v_aksi = 'approve_l2' THEN
+        -- Validasi wewenang ketat: Supervisor (L1) DILARANG approval L2!
+        IF v_user.role IN ('supervisor', 'mechanic') OR v_user.role NOT IN ('superintendent', 'admin', 'manager') THEN
+            RETURN jsonb_build_object(
+                'success', false,
+                'error', 'Akses ditolak: Hanya Superintendent (L2) yang berhak melakukan approval L2',
+                'source', 'SUPABASE'
+            );
+        END IF;
+
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE kmb_projek.work_orders
            SET status = 'APPROVED',

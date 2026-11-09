@@ -12,6 +12,54 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · kmb-projek (Pembatasan Role Approval L1 Supervisor: Hanya Bisa Lihat & Approve L1)
+- Berubah:
+  - **Akar Masalah Akses L2 oleh L1 Teridentifikasi**:
+    1. Di SQL `public.kmb_wos_by_status_bertoken` dan RPC `public.kmb_eksekusi_aksi_bertoken('pull_pending')`, status `pending` sebelumnya mengembalikan seluruh WO (`pending_supervisor` dan `pending_superintendent` sekaligus) tanpa memfilter peran pemanggil.
+    2. Di `workers/kmbprojek/src/web-handler.js`, antrean `context.pendingApprovals` tidak menyaring WO berdasarkan `user.role`, sehingga peran `supervisor` menerima antrean pending L2.
+    3. Di `workers/kmbprojek/web/Approval.html`, ekspresi lencana memeriksa `wo.status === 'pending_supervisor' ? 'Level 1' : 'Level 2'`. Karena status WO yang lahir dari form adalah `pending_l1`, ekspresi ini mengevaluasi ke `Level 2`, tombol `approveWO` memanggil `handleSuperintendentApprove` (L2), dan backend tidak memverifikasi apakah pemanggil berhak melakukan approval L2.
+  - **Pembatasan Visibilitas Data di Database (SQL & Staging Gedung 2)**:
+    - Memperbarui `public.kmb_wos_by_status_bertoken` (`db/kmb_projek/pembatasan_l1_approval.sql` dan `db/kmb_projek/rpc_wajib_token.sql`) agar membaca peran pengguna dari `api_tokens`:
+      - Peran `supervisor` (L1): HANYA mengembalikan WO berstatus `pending_supervisor` / `pending_l1` / `PENDING_L1`. Data L2 disaring sepenuhnya.
+      - Peran `superintendent` (L2): HANYA mengembalikan WO berstatus `pending_superintendent` / `pending_l2` / `PENDING_L2`.
+      - Peran `admin` / `manager`: Mengembalikan seluruh antrean pending.
+    - Menerapkan migrasi SQL yang sama pada dispatcher `public.kmb_eksekusi_aksi_bertoken` (`db/kmb_projek/rpc_backend_penuh.sql`) untuk aksi `pull_pending`.
+    - Migrasi telah dieksekusi dan aktif di database Gedung 2 Staging (`dnnqrslftndcbmnvuveb`).
+  - **Proteksi Otorisasi Eksekusi Approval di Backend**:
+    - Di `public.kmb_eksekusi_aksi_bertoken`:
+      - Pada `approve_l2`: Memasang validasi peran ketat `IF v_user.role IN ('supervisor', 'mechanic') OR v_user.role NOT IN ('superintendent', 'admin', 'manager') THEN RETURN json_build_object('success', false, 'error', 'Akses ditolak: Hanya Superintendent (L2) yang berhak melakukan approval L2', 'source', 'SUPABASE'); END IF;`.
+      - Pada `approve_l1`: Memasang validasi peran agar mekanik tidak dapat melakukan approval L1.
+    - Di `workers/kmbprojek/src/supabase-backend.js`:
+      - Memvalidasi peran pemanggil pada `approve_l2` dan `handleBulkApprove` (level 2). Jika akun adalah `supervisor`, request langsung ditolak dengan pesan error resmi.
+      - Menormalisasi status `pending_l1` -> `pending_supervisor` dan `pending_l2` -> `pending_superintendent` di `lengkapiWoObj`.
+  - **Penyelarasan Web Handler & Template UI**:
+    - Di `workers/kmbprojek/src/web-handler.js`: Menyaring `context.pendingApprovals` berdasarkan `userRole === 'supervisor'` (hanya L1) dan `userRole === 'superintendent'` (hanya L2). Menormalisasi `st` di `lengkapiObjekWoWeb`.
+    - Di `workers/kmbprojek/web/Approval.html`:
+      - Menambahkan proteksi loop kartu approval: kartu L2 dilewati saat user adalah `supervisor`, dan kartu L1 dilewati saat user adalah `superintendent`.
+      - Menyelaraskan pendeteksian L1 (`pending_supervisor`, `pending_l1`, `PENDING_L1`) pada lencana status, dialog konfirmasi modal, pemanggilan fungsi (`handleSupervisorApprove`), dan antrean bulk approve.
+      - Menolak eksekusi `approveWO`, `confirmApproveWO`, dan bulk approve jika peran supervisor mencoba menyetujui kartu L2.
+    - Mengompilasi ulang template via `node scripts/build-web-templates.mjs`.
+  - **Pengujian & Verifikasi**:
+    - Uji database SQL di Gedung 2 (`dnnqrslftndcbmnvuveb`):
+      - Token L1 (`52fd...`) memanggil `kmb_wos_by_status_bertoken('pending')`: 13 WO L1 ditemukan, 0 WO L2 ditemukan (LULUS).
+      - Token L2 (`67e8...`) memanggil `kmb_wos_by_status_bertoken('pending')`: 1 WO L2 ditemukan, 0 WO L1 ditemukan (LULUS).
+      - Token L1 memanggil `approve_l2`: DITOLAK dengan pesan *"Akses ditolak: Hanya Superintendent (L2) yang berhak melakukan approval L2"* (LULUS).
+      - Token L1 memanggil `approve_l1`: SUKSES (status WO berubah ke `PENDING_L2`).
+      - Token L2 memanggil `approve_l2`: SUKSES (status WO berubah ke `APPROVED`).
+    - Uji Web Render & API Web:
+      - Halaman `/web?page=approvals` dengan token L1 mengembalikan 12 kartu L1, 0 kartu L2 (LULUS).
+      - Panggilan API `/api/web` (`handleSuperintendentApprove` dan `handleBulkApprove` level 2) dengan token L1 ditolak dengan HTTP 200 `{ success: false, error: { message: 'Akses ditolak: Hanya Superintendent (L2) yang berhak melakukan approval L2' } }` (LULUS).
+    - Uji Live di Worker Staging (`abadiops-kmbprojek-staging.kawanabadigrup.workers.dev`):
+      - `/api/sehat`: HTTP 200 OK.
+      - `/web?page=approvals` token L1: 12 pending data, 0 data L2.
+      - `POST /api/web` handleSuperintendentApprove token L1: Berhasil diblokir.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-kmbprojek-staging` (`52518e59-b54f-4648-9e56-099bd967c018`)
+- Belum selesai / berikutnya:
+  - Pengguna menguji langsung di antarmuka Web Desktop KMB Project staging dengan token L1 miliknya.
+
+---
+
 ### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Judul UNKNOWN dan Target Hours 0 Menit pada Pembuatan WO SUM Staging)
 - Berubah:
   - **Akar Masalah "UNKNOWN" & "0 menit" Teridentifikasi**: Saat form Web Desktop `WorkOrder.html` membuat WO baru, formulir hanya mengirimkan `component_id` (misal `COM-224` atau `COM-078`) dan `unit_id` (misal `UNIT-002` atau `UNIT-017`). Di worker `supabase-backend.js`, `blockPayload` sebelumnya mengekstrak `component: b.component || b.component_name || 'UNKNOWN'` dan `target_hours: b.target_hours || 0`. Karena `b.component` tidak dikirim oleh form, nilai tersimpan di database menjadi `UNKNOWN` dan target jam menjadi `0 menit`.
@@ -26,11 +74,11 @@ Formatnya:
 
 ---
 
-### 2026-11-09 · Gabriel (+ AI) · kmb (Perbaiki Pesan Error Token di Monitoring Web)
+### 2026-11-09 · Gabriel (+ AI) · kmb (Perbaiki Pesan Error & Data Monitoring Kosong)
 - Berubah:
-  - Pesan error "Jalankan generateMissingTokens di editor GAS" di halaman Monitoring sudah tidak relevan karena sistem sudah pakai Supabase.
-  - Diperbarui menjadi "Hubungi admin untuk membuat token" di `workers/kmb/src/web-templates.js:1838`.
-- Belum selesai: Verifikasi di staging.
+  - Pesan error "Jalankan generateMissingTokens di editor GAS" di halaman Monitoring sudah diperbarui menjadi "Hubungi admin untuk membuat token".
+  - Memperbaiki data monitoring kosong: Menambahkan fallback `coalesce(name, mechanic_id)` pada RPC `kmbtra_monitoring_bertoken` karena field `name` di tabel `config_mechanics` bernilai null.
+- Belum selesai: Deploy SQL perbaikan ke Supabase.
 
 ### 2026-11-09 · Raka (+ AI) · sum (Perbaikan Error 1101 Worker Threw Exception di Web Desktop SUM Staging)
 - Berubah:
