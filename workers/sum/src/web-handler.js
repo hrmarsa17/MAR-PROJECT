@@ -234,7 +234,25 @@ export async function handleWebRequest(request, env, url) {
       const pending = await panggilAksiInternal('pull_pending', token, {}, env);
       const pendingData = pending && pending.result ? pending.result : (pending && pending.data ? pending.data : {});
       if (pending && pendingData) {
-        context.pendingApprovals = (pendingData.pending || pendingData.approvals || pendingData.wos || (Array.isArray(pendingData) ? pendingData : [])).map(lengkapiObjekWoWeb);
+        const rawList = (pendingData.pending || pendingData.approvals || pendingData.wos || (Array.isArray(pendingData) ? pendingData : [])).map(lengkapiObjekWoWeb);
+        // Sesuai docs/SPEK-LAYAR/04-APPROVALS.md baris 49-52:
+        // Antrean L1 (supervisor) hanya pending_supervisor / pending_l1.
+        // Antrean L2 (superintendent) hanya pending_superintendent / pending_l2.
+        let pendingList = rawList.filter((w) => w.status !== 'pending_transfer');
+        if (roleLower === 'supervisor') {
+          pendingList = pendingList.filter((w) => {
+            const wst = String(w.status || '').toLowerCase().trim();
+            return wst === 'pending_supervisor' || wst === 'pending_l1';
+          });
+        } else if (roleLower === 'superintendent') {
+          pendingList = pendingList.filter((w) => {
+            const wst = String(w.status || '').toLowerCase().trim();
+            return wst === 'pending_superintendent' || wst === 'pending_l2';
+          });
+        }
+        context.pendingApprovals = pendingList;
+        context.pendingCount = pendingList.length;
+        context.pendingTotal = pendingList.length;
         context.pendingTransfers = (pendingData.transfers || []).map(lengkapiObjekWoWeb);
         context.activeWos = (pendingData.active || []).map(lengkapiObjekWoWeb);
         context.approvedWos = (pendingData.approved || []).map(lengkapiObjekWoWeb);

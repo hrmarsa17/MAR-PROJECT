@@ -541,9 +541,13 @@
                 <button type="button" class="btn-toggle-card" id="btn_toggle_<?= wo.id ?>" onclick="toggleWoCardDetail('<?= wo.id ?>')">
                   <span>👁️ Lihat Detail</span>
                 </button>
-                <button type="button" class="btn btn-approve btn-action-list" onclick="approveWO('<?= wo.id ?>', '<?= wo.status ?>', this)">
-                  ✓ Approve
-                </button>
+                <? if (user.role === 'supervisor' && (wo.status === 'pending_superintendent' || wo.status === 'pending_l2')) { ?>
+                  <span class="badge" style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:0.4rem 0.6rem;border-radius:6px;font-weight:600;">Menunggu L2</span>
+                <? } else { ?>
+                  <button type="button" class="btn btn-approve btn-action-list" onclick="approveWO('<?= wo.id ?>', '<?= wo.status ?>', this)">
+                    ✓ Approve
+                  </button>
+                <? } ?>
                 <div style="display:flex;gap:0.25rem;">
                   <button type="button" class="btn btn-edit btn-icon-mini" onclick="openEditModal('<?= wo.id ?>')" title="Edit Override">✏️</button>
                   <button type="button" class="btn btn-kembali btn-icon-mini" onclick="kembalikanWO('<?= wo.id ?>', this)" title="Kembalikan ke mekanik">↩</button>
@@ -718,7 +722,11 @@
               <div class="wo-actions" style="margin-top:1rem;">
                 <button type="button" class="btn btn-edit" onclick="openEditModal('<?= wo.id ?>')" title="Edit Override">✏️ Edit Override</button>
                 <button type="button" class="btn btn-cancel-wo" onclick="openCancelModal('<?= wo.id ?>', '<?= wo.wo_number ?>', '<?= wo.status ?>', false)" title="Cancel WO">🚫 Batal WO</button>
-                <button type="button" class="btn btn-approve" onclick="approveWO('<?= wo.id ?>', '<?= wo.status ?>', this)">✓ Setujui WO</button>
+                <? if (user.role === 'supervisor' && (wo.status === 'pending_superintendent' || wo.status === 'pending_l2')) { ?>
+                  <span class="badge" style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:0.4rem 0.6rem;border-radius:6px;font-weight:600;">Menunggu L2</span>
+                <? } else { ?>
+                  <button type="button" class="btn btn-approve" onclick="approveWO('<?= wo.id ?>', '<?= wo.status ?>', this)">✓ Setujui WO</button>
+                <? } ?>
                 <button type="button" class="btn btn-kembali" onclick="kembalikanWO('<?= wo.id ?>', this)" title="Minta mekanik memperbaiki laporannya">↩ Kembalikan</button>
                 <button type="button" class="btn btn-reject" onclick="rejectWO('<?= wo.id ?>', '<?= wo.status ?>', this)">✗ Tolak</button>
               </div>
@@ -1293,6 +1301,10 @@
     var currentApproveStatus = null;
     var currentApproveCard = null;
     function approveWO(woId, status, buttonElement) {
+      if ('<?= user.role ?>' === 'supervisor' && (status === 'pending_superintendent' || status === 'pending_l2')) {
+        alert('❌ Akses ditolak: Anda hanya berwenang melakukan Approval Level 1.');
+        return;
+      }
       currentApproveWoId = woId;
       currentApproveStatus = status;
       currentApproveCard = buttonElement.closest('.wo-card');

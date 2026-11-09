@@ -12,6 +12,29 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · kmb & sum (Penegakan Dokumen Spek 04-APPROVALS: Pembatasan Antrean & Approval L1 vs L2)
+- Berubah:
+  - **Audit Dokumen Spek (`docs/SPEK-LAYAR/04-APPROVALS.md` baris 49-52)**:
+    - Dokumen spek menyatakan secara eksplisit:
+      > *"Hanya L1/L2 masuk layar ini. Antrean utama L1 hanya `pending_supervisor`, L2 hanya `pending_superintendent`; wewenang backend L2 untuk approve tahap L1 tetap ada. Alasannya: WO yang muncul di dua meja mengundang L2 melewati L1 tanpa sengaja."*
+    - Dokumen juga menegaskan bahwa L1 tidak boleh memutus atau mengambil tindakan pada meja L2 (`04-APPROVALS.md` baris 648).
+  - **Perbaikan Web Handler (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`)**:
+    - Sesuai spesifikasi, pada tampilan `approvals`:
+      - Jika akun pemanggil adalah `supervisor` (L1): Antrean disaring secara ketat hanya menampilkan `pending_supervisor` / `pending_l1`. Data Level 2 tidak dimunculkan di antrean L1.
+      - Jika akun pemanggil adalah `superintendent` (L2): Antrean disaring menampilkan `pending_superintendent` / `pending_l2`.
+      - Penghitungan `pendingCount` / `pendingTotal` disesuaikan dengan antrean masing-masing peran.
+  - **Perbaikan UI Template (`workers/kmb/web/Approval.html`)**:
+    - Tombol `✓ Approve` untuk kartu Level 2 diproteksi agar tidak dapat diklik oleh peran `supervisor` (L1), dengan fallback label `Menunggu L2`.
+    - Menambahkan alert proteksi di JavaScript `approveWO` jika status yang diapprove adalah `pending_superintendent` tetapi peran pemanggil adalah `supervisor`.
+  - **Perbaikan RPC Supabase (`db/kmb/rpc_backend_penuh.sql` & `db/sum/rpc_backend_penuh.sql`)**:
+    - Memperbarui `pull_pending` agar menyaring antrean berdasarkan role pemanggil (`v_user.role`).
+    - Memperbarui `approve_l2` dengan validasi role: menolak eksekusi jika role bukan `superintendent`, `admin`, atau `manager`.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-kmb-staging` (`8748c084-ff00-4b0f-b7d3-d7a029d68c0f`)
+    - `abadiops-sum-staging` (`bde5d573-6355-418b-983a-f1cc254298f5`)
+- Belum selesai / berikutnya:
+  - Pengujian alur approval L1 dan L2 di KMB V2 staging oleh user.
+
 ### 2026-11-09 · Raka (+ AI) · kmb & sum & kmb-projek (Sinkronisasi status_group ke pending_approval saat Submit Work & Pembersihan Judul UNKNOWN)
 - Berubah:
   - **Akar Masalah Teridentifikasi**:

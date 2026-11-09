@@ -90,6 +90,46 @@ BEGIN
     );
     ALTER TABLE kmb.work_orders ADD COLUMN IF NOT EXISTS disinkron_at timestamptz NOT NULL DEFAULT now();
     ALTER TABLE kmb.work_orders ADD COLUMN IF NOT EXISTS sinkron_at timestamptz NOT NULL DEFAULT now();
+
+    CREATE TABLE IF NOT EXISTS kmb.wo_counter_supabase (
+        tanggal text PRIMARY KEY,
+        terakhir integer NOT NULL DEFAULT 0,
+        diubah_at timestamptz NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS kmb.wo_supabase (
+        id text PRIMARY KEY,
+        wo_number text NOT NULL,
+        status text NOT NULL DEFAULT 'pending_mechanic_work',
+        data jsonb NOT NULL DEFAULT '{}'::jsonb,
+        team jsonb NOT NULL DEFAULT '[]'::jsonb,
+        points jsonb NOT NULL DEFAULT '[]'::jsonb,
+        snapshot jsonb,
+        dibuat_at timestamptz NOT NULL DEFAULT now(),
+        diubah_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS kmb_wo_supa_status_idx ON kmb.wo_supabase (status);
+    CREATE INDEX IF NOT EXISTS kmb_wo_supa_number_idx ON kmb.wo_supabase (wo_number);
+
+    CREATE TABLE IF NOT EXISTS kmb.wo_ops_supabase (
+        op_id text PRIMARY KEY,
+        action text NOT NULL,
+        actor_id text,
+        result_json jsonb NOT NULL,
+        processed_at timestamptz NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS kmb.meter_panel_supabase (
+        id bigserial PRIMARY KEY,
+        unit_id text NOT NULL,
+        jenis text NOT NULL,
+        nilai_baru numeric NOT NULL,
+        diganti_pada timestamptz NOT NULL,
+        alasan text NOT NULL,
+        actor_id text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+    );
+
     CREATE TABLE IF NOT EXISTS kmb.transfer_requests (
         id bigserial PRIMARY KEY,
         baris integer,
@@ -211,7 +251,13 @@ BEGIN
             'result', jsonb_build_object(
                 'pending_l1', coalesce(jsonb_agg(data) FILTER (WHERE lower(data->>'status') IN ('pending_l1', 'pending_supervisor')), '[]'::jsonb),
                 'pending_l2', coalesce(jsonb_agg(data) FILTER (WHERE lower(data->>'status') IN ('pending_l2', 'pending_superintendent')), '[]'::jsonb),
-                'pending', coalesce(jsonb_agg(data) FILTER (WHERE lower(data->>'status') LIKE 'pending%'), '[]'::jsonb)
+                'pending', coalesce(jsonb_agg(data) FILTER (
+                    WHERE (
+                        (lower(v_user.role) = 'supervisor' AND lower(data->>'status') IN ('pending_l1', 'pending_supervisor')) OR
+                        (lower(v_user.role) = 'superintendent' AND lower(data->>'status') IN ('pending_l2', 'pending_superintendent')) OR
+                        (lower(v_user.role) NOT IN ('supervisor', 'superintendent') AND lower(data->>'status') LIKE 'pending%')
+                    )
+                ), '[]'::jsonb)
             ),
             'source', 'SUPABASE'
         )
@@ -388,10 +434,20 @@ BEGIN
         RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'source', 'SUPABASE');
 
     ELSIF v_aksi = 'approve_l1' THEN
+        IF lower(v_user.role) NOT IN ('supervisor', 'superintendent', 'admin', 'manager') THEN
+            RETURN jsonb_build_object(
+                'success', false,
+                'error', 'Akses ditolak: Tidak memiliki wewenang approval L1',
+                'source', 'SUPABASE'
+            );
+        END IF;
+
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE kmb.work_orders
            SET data = data || jsonb_build_object(
                'status', 'PENDING_L2',
+               'status_group', 'pending_approval',
+               'status_label', 'Menunggu Approval L2',
                'approved_l1_by', v_user.name,
                'approved_l1_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
@@ -399,13 +455,23 @@ BEGIN
            sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L2', 'source', 'SUPABASE');
+        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L2', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L2', 'source', 'SUPABASE');
 
     ELSIF v_aksi = 'approve_l2' THEN
+        IF lower(v_user.role) NOT IN ('superintendent', 'admin', 'manager') THEN
+            RETURN jsonb_build_object(
+                'success', false,
+                'error', 'Akses ditolak: Hanya Level 2 (Superintendent / Manager) yang berhak melakukan Approval Level 2',
+                'source', 'SUPABASE'
+            );
+        END IF;
+
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE kmb.work_orders
            SET data = data || jsonb_build_object(
                'status', 'APPROVED',
+               'status_group', 'done',
+               'status_label', 'Approved',
                'approved_l2_by', v_user.name,
                'approved_l2_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
@@ -413,7 +479,7 @@ BEGIN
            sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'APPROVED', 'source', 'SUPABASE');
+        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'APPROVED', 'status_group', 'done', 'status_label', 'Approved', 'source', 'SUPABASE');
 
     ELSIF v_aksi = 'reject' THEN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
