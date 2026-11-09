@@ -12,6 +12,22 @@ Formatnya:
 
 ---
 
+### 2026-11-09 · Raka (+ AI) · bersama (Eksekusi Penuh Panduan 16: Sinkronisasi SQL Staging & Deploy 5 Worker Staging)
+- Berubah:
+  - **Sinkronisasi SQL Panduan 16**: Memperbarui `db/kmb_projek/pasang_rpc_config_staging.sql` persis 1:1 dengan blok SQL perbaikan penuh (1.338 baris) mencakup perbaikan pencocokan mekanik SUM, helper `_kode_mekanik_kanonik`, helper `_ambil_teks_jsonb`, cascade dropdown KMB, `NOTIFY pgrst, 'reload schema'`, dan kueri diagnostik.
+  - **Penyelarasan Saklar Staging KMB Projek**: Menyelaraskan fungsi `bacaStatusSaklar` di `workers/kmbprojek/src/index.js` agar langsung mengembalikan `'supabase'` jika `STORAGE_MODE === 'SUPABASE' || SAKLAR === 'supabase'`.
+  - **Pengujian & Verifikasi**: Pengujian serahan token PWA (24/24 lulus) dan pengujian cascade & pencocokan mekanik (3/3 lulus).
+  - **Deploy Cloudflare Workers Staging**: Men-deploy ulang seluruh worker staging terkait:
+    - `abadiops-kmbprojek-staging` (`935cf7c9-0f69-44f5-a6d8-c5f774d1a85d`)
+    - `abadiops-pintu-staging` (`204608d3-fba3-49a7-b50a-9d287d74a7e0`)
+    - `abadiops-gas-tiruan` (`3b2b2dc3-4b00-4dfc-b5e7-911422104f42`)
+    - `abadiops-sum-staging` (`c1d4d644-69a2-4782-a4d0-391fe5378d75`)
+    - `abadiops-kmb-staging` (`a10ae08f-34b2-4fa4-bc19-3e5d55531c22`)
+- Belum selesai / berikutnya:
+  - User menguji langsung alur create WO dan pencocokan mechanic di ketiga rumah pada lingkungan staging.
+
+---
+
 ### 2026-11-09 · Raka (+ AI) · bersama (Solusi Tuntas WO Masuk ke Mekanik SUM & KMB di Staging)
 - Berubah:
   - **Akar Masalah WO Tidak Masuk diidentifikasi & diperbaiki**: Fungsi `bacaStatusSaklar` pada worker `sum` dan `kmb` sebelumnya menimpa konfigurasi `SAKLAR = "supabase"` di staging menjadi `"gas"` karena membaca status dari endpoint Durable Object pintu staging (`abadiops-pintu-staging/api/saklar/status`) yang masih menyimpan nilai awal `"gas"`. Akibatnya, pembuatan WO dari formulir Web Desktop (`/web?page=create` → `/api/web` action `handleCreateWO`) diteruskan ke `abadiops-gas-tiruan` dan menghasilkan respons mock `Simulasi Staging` tanpa tersimpan ke PostgreSQL Supabase.

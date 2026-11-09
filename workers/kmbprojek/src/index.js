@@ -187,6 +187,9 @@ function catat(env, isi) {
 let cacheSaklar = { nilai: null, waktu: 0 };
 
 export async function bacaStatusSaklar(env) {
+  if (env && (env.STORAGE_MODE === 'SUPABASE' || env.SAKLAR === 'supabase')) {
+    return 'supabase';
+  }
   const sekarang = Date.now();
   // Jika PINTU service binding tersedia, panggil langsung (0ms internal RPC) agar pembalikan saklar berlaku seketika tanpa jeda cache
   if (!(env && env.PINTU) && cacheSaklar.nilai && cacheSaklar.waktu > sekarang) {

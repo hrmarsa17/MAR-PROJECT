@@ -1,915 +1,4 @@
 -- ==============================================================================
--- PASANG RPC MASTER CONFIG & USER ADMIN PUSAT (3 RUMAH: SUM, KMB TRA, KMB PROJEK)
--- Database: Supabase Staging (dnnqrslftndcbmnvuveb)
--- ==============================================================================
-
--- 1. PASTIKAN TIGA SKEMA TERSEDIA
-CREATE SCHEMA IF NOT EXISTS kmb_projek;
-CREATE SCHEMA IF NOT EXISTS sum;
-CREATE SCHEMA IF NOT EXISTS kmb;
-
--- 1a. PASTIKAN KOLOM DISINKRON_AT & SINKRON_AT TERSEDIA PADA TABEL WORK_ORDERS (Mencegah Galat 42703)
-DO $$
-BEGIN
-  IF to_regclass('sum.work_orders') IS NOT NULL THEN
-    ALTER TABLE sum.work_orders ADD COLUMN IF NOT EXISTS disinkron_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-    ALTER TABLE sum.work_orders ADD COLUMN IF NOT EXISTS sinkron_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-  END IF;
-  IF to_regclass('kmb.work_orders') IS NOT NULL THEN
-    ALTER TABLE kmb.work_orders ADD COLUMN IF NOT EXISTS disinkron_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-    ALTER TABLE kmb.work_orders ADD COLUMN IF NOT EXISTS sinkron_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-  END IF;
-  IF to_regclass('kmb_projek.work_orders') IS NOT NULL THEN
-    ALTER TABLE kmb_projek.work_orders ADD COLUMN IF NOT EXISTS disinkron_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-    ALTER TABLE kmb_projek.work_orders ADD COLUMN IF NOT EXISTS sinkron_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-  END IF;
-END $$;
-
--- 2. TABEL CONFIG & MASTER DATA RUMAH KMB PROJEK (Relasional)
-CREATE TABLE IF NOT EXISTS kmb_projek.config_units (
-    unit_code TEXT PRIMARY KEY,
-    unit_name TEXT,
-    model TEXT,
-    section TEXT DEFAULT 'field',
-    unit_factor NUMERIC DEFAULT 1.0,
-    status TEXT NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb_projek.config_components (
-    component_id TEXT PRIMARY KEY,
-    component_name TEXT NOT NULL,
-    category TEXT DEFAULT 'General',
-    base_points NUMERIC DEFAULT 1.0,
-    target_hours NUMERIC DEFAULT 1.0,
-    status TEXT NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb_projek.catalog_jobs (
-    job_id TEXT NOT NULL,
-    section TEXT NOT NULL DEFAULT 'maintenance',
-    unit_model TEXT,
-    component TEXT NOT NULL,
-    sub_component TEXT,
-    job_description TEXT NOT NULL,
-    plan_hours NUMERIC DEFAULT 2.0,
-    base_point NUMERIC DEFAULT 1.0,
-    job_type TEXT DEFAULT 'Preventive',
-    status TEXT NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (section, job_id)
-);
-
-CREATE TABLE IF NOT EXISTS kmb_projek.config_factors (
-    factor_type TEXT NOT NULL,
-    key TEXT NOT NULL,
-    value NUMERIC NOT NULL DEFAULT 1.0,
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (factor_type, key)
-);
-
-CREATE TABLE IF NOT EXISTS kmb_projek.api_tokens (
-    token TEXT PRIMARY KEY,
-    role TEXT NOT NULL DEFAULT 'mechanic',
-    user_id TEXT NOT NULL,
-    name TEXT,
-    status TEXT NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb_projek.config_mechanics (
-    mechanic_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'mechanic',
-    section TEXT DEFAULT 'field',
-    email TEXT,
-    jabatan_aktual TEXT,
-    golongan TEXT,
-    status TEXT NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. TABEL CONFIG & MASTER DATA RUMAH SUM V2 (Cermin JSONB)
-CREATE TABLE IF NOT EXISTS sum.config_units (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS sum.config_components (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS sum.config_factors (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS sum.api_tokens (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS sum.config_mechanics (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. TABEL CONFIG & MASTER DATA RUMAH KMB TRA (Cermin JSONB)
-CREATE TABLE IF NOT EXISTS kmb.config_units (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb.config_components (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb.config_factors (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb.api_tokens (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS kmb.config_mechanics (
-    baris INT PRIMARY KEY,
-    nilai JSONB DEFAULT '[]'::jsonb,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    sinkron_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- REVOKE AKSES LANGSUNG KE TABEL DARI ANON & AUTHENTICATED
-REVOKE ALL ON ALL TABLES IN SCHEMA sum FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON ALL TABLES IN SCHEMA kmb FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON ALL TABLES IN SCHEMA kmb_projek FROM PUBLIC, anon, authenticated;
-GRANT ALL ON ALL TABLES IN SCHEMA sum TO postgres, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA kmb TO postgres, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA kmb_projek TO postgres, service_role;
-
--- ==============================================================================
--- 5. VALIDASI ADMIN TOKEN PUSAT & SESI PANEL
--- ==============================================================================
-
-CREATE OR REPLACE FUNCTION public._sum_validasi_admin_token(p_token text)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_clean text := btrim(coalesce(p_token, ''));
-  v_user  record;
-BEGIN
-  IF v_clean = '' THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
-  END IF;
-
-  IF v_clean = '__PANEL_SAKLAR_PUSAT__' THEN
-    RETURN jsonb_build_object('ok', true, 'mechanic_id', 'GABRIEL-PANEL', 'name', 'Panel Saklar Pusat', 'role', 'admin');
-  END IF;
-
-  SELECT t.data->>'token' AS token,
-         coalesce(nullif(trim(m.data->>'mechanic_id'), ''), trim(t.data->>'mechanic_id'), '') AS mechanic_id,
-         coalesce(nullif(trim(m.data->>'name'), ''), trim(t.data->>'name'), trim(t.data->>'mechanic_id'), '') AS name,
-         lower(coalesce(nullif(trim(m.data->>'role'), ''), trim(t.data->>'role'), 'mechanic')) AS role
-    INTO v_user
-    FROM sum.api_tokens t
-    LEFT JOIN sum.config_mechanics m
-      ON (nullif(trim(t.data->>'mechanic_id'), '') IS NOT NULL AND trim(t.data->>'mechanic_id') = trim(m.data->>'mechanic_id'))
-   WHERE trim(t.data->>'token') = v_clean
-     AND (t.data->>'is_active' IS NULL OR lower(trim(t.data->>'is_active')) <> 'false')
-   LIMIT 1;
-
-  IF v_user.token IS NULL THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
-  END IF;
-
-  RETURN jsonb_build_object('ok', true, 'mechanic_id', v_user.mechanic_id, 'name', v_user.name, 'role', v_user.role);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public._kmbtra_validasi_admin_token(p_token text)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_clean text := btrim(coalesce(p_token, ''));
-  v_user  record;
-BEGIN
-  IF v_clean = '' THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
-  END IF;
-
-  IF v_clean = '__PANEL_SAKLAR_PUSAT__' THEN
-    RETURN jsonb_build_object('ok', true, 'mechanic_id', 'GABRIEL-PANEL', 'name', 'Panel Saklar Pusat', 'role', 'admin');
-  END IF;
-
-  SELECT t.data->>'token' AS token,
-         coalesce(nullif(trim(m.data->>'mechanic_id'), ''), trim(t.data->>'mechanic_id'), '') AS mechanic_id,
-         coalesce(nullif(trim(m.data->>'name'), ''), trim(t.data->>'name'), trim(t.data->>'mechanic_id'), '') AS name,
-         lower(coalesce(nullif(trim(m.data->>'role'), ''), trim(t.data->>'role'), 'mechanic')) AS role
-    INTO v_user
-    FROM kmb.api_tokens t
-    LEFT JOIN kmb.config_mechanics m
-      ON (nullif(trim(t.data->>'mechanic_id'), '') IS NOT NULL AND trim(t.data->>'mechanic_id') = trim(m.data->>'mechanic_id'))
-   WHERE trim(t.data->>'token') = v_clean
-     AND (t.data->>'is_active' IS NULL OR lower(trim(t.data->>'is_active')) <> 'false')
-   LIMIT 1;
-
-  IF v_user.token IS NULL THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
-  END IF;
-
-  RETURN jsonb_build_object('ok', true, 'mechanic_id', v_user.mechanic_id, 'name', v_user.name, 'role', v_user.role);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public._kmb_validasi_admin_token(p_token text)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_clean text := btrim(coalesce(p_token, ''));
-  v_user  record;
-BEGIN
-  IF v_clean = '' THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
-  END IF;
-
-  IF v_clean = '__PANEL_SAKLAR_PUSAT__' THEN
-    RETURN jsonb_build_object('ok', true, 'mechanic_id', 'GABRIEL-PANEL', 'name', 'Panel Saklar Pusat', 'role', 'admin');
-  END IF;
-
-  SELECT t.token,
-         coalesce(nullif(trim(m.mechanic_id), ''), trim(t.user_id), '') AS mechanic_id,
-         coalesce(nullif(trim(m.name), ''), trim(t.name), trim(t.user_id), '') AS name,
-         lower(coalesce(nullif(trim(m.role), ''), trim(t.role), 'mechanic')) AS role
-    INTO v_user
-    FROM kmb_projek.api_tokens t
-    LEFT JOIN kmb_projek.config_mechanics m
-      ON (nullif(trim(t.user_id), '') IS NOT NULL AND trim(t.user_id) = trim(m.mechanic_id))
-   WHERE trim(t.token) = v_clean
-     AND upper(coalesce(t.status, 'ACTIVE')) = 'ACTIVE'
-   LIMIT 1;
-
-  IF v_user.token IS NULL THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Token tidak dikenal / nonaktif');
-  END IF;
-
-  RETURN jsonb_build_object('ok', true, 'mechanic_id', v_user.mechanic_id, 'name', v_user.name, 'role', v_user.role);
-END;
-$$;
-
--- ==============================================================================
--- 6. RPC DAFTAR, SIMPAN, HAPUS CONFIG UNTUK RUMAH SUM V2
--- ==============================================================================
-
-CREATE OR REPLACE FUNCTION public._sum_admin_daftar_config_internal(p_jenis text DEFAULT 'all')
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_units   jsonb := '[]'::jsonb;
-  v_comps   jsonb := '[]'::jsonb;
-  v_jobs    jsonb := '[]'::jsonb;
-  v_factors jsonb := '[]'::jsonb;
-BEGIN
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'unit_id', coalesce(data->>'unit_id', data->>'unit_code', ''),
-    'unit_code', coalesce(data->>'unit_code', data->>'unit_id', ''),
-    'unit_name', coalesce(data->>'unit_name', data->>'name', ''),
-    'model', coalesce(data->>'model', data->>'unit_model', ''),
-    'section', coalesce(data->>'section', 'field'),
-    'unit_factor', coalesce(nullif(regexp_replace(coalesce(data->>'unit_factor', data->>'factor', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'status', upper(coalesce(data->>'status', 'ACTIVE'))
-  ) ORDER BY coalesce(data->>'unit_id', data->>'unit_code', '')), '[]'::jsonb)
-  INTO v_units
-  FROM sum.config_units
-  WHERE coalesce(data->>'unit_id', data->>'unit_code', '') <> '';
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'component_id', coalesce(data->>'component_id', data->>'component_no', ''),
-    'component_no', coalesce(data->>'component_no', data->>'component_id', ''),
-    'component_name', coalesce(data->>'component_name', data->>'name', ''),
-    'category', coalesce(data->>'category', data->>'section', 'General'),
-    'section', coalesce(data->>'section', data->>'category', 'General'),
-    'base_points', coalesce(nullif(regexp_replace(coalesce(data->>'base_points', data->>'base_point', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'target_hours', coalesce(nullif(regexp_replace(coalesce(data->>'target_hours', data->>'plan_hours', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'status', upper(coalesce(data->>'status', 'ACTIVE'))
-  ) ORDER BY coalesce(data->>'component_id', data->>'component_no', '')), '[]'::jsonb)
-  INTO v_comps
-  FROM sum.config_components
-  WHERE coalesce(data->>'component_id', data->>'component_no', '') <> '';
-
-  v_jobs := v_comps;
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'kunci', coalesce(data->>'factor_type', data->>'type', 'factor') || ':' || coalesce(data->>'key', data->>'factor_key', ''),
-    'factor_type', coalesce(data->>'factor_type', data->>'type', 'work_condition'),
-    'key', coalesce(data->>'key', data->>'factor_key', ''),
-    'value', coalesce(nullif(regexp_replace(coalesce(data->>'value', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'description', coalesce(data->>'description', '')
-  ) ORDER BY coalesce(data->>'factor_type', data->>'type', ''), coalesce(data->>'key', '')), '[]'::jsonb)
-  INTO v_factors
-  FROM sum.config_factors
-  WHERE coalesce(data->>'key', data->>'factor_key', '') <> '';
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'source', 'SUPABASE',
-    'rumah', 'sum',
-    'result', jsonb_build_object('rumah', 'sum', 'units', v_units, 'components', v_comps, 'jobs', v_jobs, 'factors', v_factors),
-    'data', jsonb_build_object('rumah', 'sum', 'units', v_units, 'components', v_comps, 'jobs', v_jobs, 'factors', v_factors)
-  )::json;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.sum_admin_daftar_config_bertoken(p_token text, p_jenis text DEFAULT 'all')
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth jsonb := public._sum_validasi_admin_token(p_token);
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-  RETURN public._sum_admin_daftar_config_internal(p_jenis);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.sum_admin_simpan_config_bertoken(
-  p_token   text,
-  p_op_id   text,
-  p_jenis   text,
-  p_payload jsonb
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth  jsonb := public._sum_validasi_admin_token(p_token);
-  v_jenis text := lower(btrim(coalesce(p_jenis, '')));
-  v_id    text;
-  v_baris int;
-  v_obj   jsonb;
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-
-  IF v_jenis IN ('unit', 'units') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'unit_id', p_payload->>'unit_code', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Kode Unit wajib diisi'); END IF;
-    v_obj := jsonb_build_object('unit_id', v_id, 'unit_code', v_id, 'unit_name', coalesce(p_payload->>'unit_name', v_id), 'model', coalesce(p_payload->>'model', ''), 'section', coalesce(p_payload->>'section', 'field'), 'unit_factor', coalesce(nullif(p_payload->>'unit_factor', '')::numeric, 1.0), 'status', upper(coalesce(p_payload->>'status', 'ACTIVE')));
-    SELECT baris INTO v_baris FROM sum.config_units WHERE upper(btrim(coalesce(data->>'unit_id', data->>'unit_code', ''))) = v_id LIMIT 1;
-    IF v_baris IS NOT NULL THEN
-      UPDATE sum.config_units SET data = data || v_obj, sinkron_at = now() WHERE baris = v_baris;
-    ELSE
-      SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM sum.config_units WHERE baris < 0;
-      IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
-      INSERT INTO sum.config_units (baris, nilai, data, sinkron_at) VALUES (v_baris, jsonb_build_array(v_id), v_obj, now());
-    END IF;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'unit', 'id', v_id));
-
-  ELSIF v_jenis IN ('component', 'components') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'component_id', p_payload->>'component_no', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'ID Komponen wajib diisi'); END IF;
-    v_obj := jsonb_build_object('component_id', v_id, 'component_no', v_id, 'component_name', coalesce(p_payload->>'component_name', v_id), 'category', coalesce(p_payload->>'category', 'General'), 'section', coalesce(p_payload->>'section', 'General'), 'base_points', coalesce(nullif(p_payload->>'base_points', '')::numeric, 1.0), 'target_hours', coalesce(nullif(p_payload->>'target_hours', '')::numeric, 1.0), 'status', upper(coalesce(p_payload->>'status', 'ACTIVE')));
-    SELECT baris INTO v_baris FROM sum.config_components WHERE upper(btrim(coalesce(data->>'component_id', data->>'component_no', ''))) = v_id LIMIT 1;
-    IF v_baris IS NOT NULL THEN
-      UPDATE sum.config_components SET data = data || v_obj, sinkron_at = now() WHERE baris = v_baris;
-    ELSE
-      SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM sum.config_components WHERE baris < 0;
-      IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
-      INSERT INTO sum.config_components (baris, nilai, data, sinkron_at) VALUES (v_baris, jsonb_build_array(v_id), v_obj, now());
-    END IF;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'component', 'id', v_id));
-
-  ELSIF v_jenis IN ('factor', 'factors') THEN
-    v_id := coalesce(p_payload->>'key', p_payload->>'factor_key', '');
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Key factor wajib diisi'); END IF;
-    v_obj := jsonb_build_object('factor_type', coalesce(p_payload->>'factor_type', 'work_condition'), 'key', v_id, 'value', coalesce(nullif(p_payload->>'value', '')::numeric, 1.0), 'description', coalesce(p_payload->>'description', ''));
-    SELECT baris INTO v_baris FROM sum.config_factors WHERE upper(btrim(coalesce(data->>'key', ''))) = upper(v_id) LIMIT 1;
-    IF v_baris IS NOT NULL THEN
-      UPDATE sum.config_factors SET data = data || v_obj, sinkron_at = now() WHERE baris = v_baris;
-    ELSE
-      SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM sum.config_factors WHERE baris < 0;
-      IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
-      INSERT INTO sum.config_factors (baris, nilai, data, sinkron_at) VALUES (v_baris, jsonb_build_array(v_id), v_obj, now());
-    END IF;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'factor', 'id', v_id));
-  END IF;
-
-  RETURN json_build_object('success', false, 'error', 'Jenis config tidak didukung: ' || v_jenis);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.sum_admin_hapus_config_bertoken(
-  p_token text,
-  p_op_id text,
-  p_jenis text,
-  p_kunci text
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth  jsonb := public._sum_validasi_admin_token(p_token);
-  v_jenis text := lower(btrim(coalesce(p_jenis, '')));
-  v_kunci text := upper(btrim(coalesce(p_kunci, '')));
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-
-  IF v_jenis IN ('unit', 'units') THEN
-    DELETE FROM sum.config_units WHERE upper(btrim(coalesce(data->>'unit_id', data->>'unit_code', ''))) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'unit', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('component', 'components') THEN
-    DELETE FROM sum.config_components WHERE upper(btrim(coalesce(data->>'component_id', data->>'component_no', ''))) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'component', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('factor', 'factors') THEN
-    DELETE FROM sum.config_factors WHERE upper(btrim(coalesce(data->>'factor_type', '') || ':' || coalesce(data->>'key', ''))) = v_kunci OR upper(btrim(coalesce(data->>'key', ''))) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'factor', 'kunci', v_kunci));
-  END IF;
-
-  RETURN json_build_object('success', false, 'error', 'Jenis config tidak didukung: ' || v_jenis);
-END;
-$$;
-
--- ==============================================================================
--- 7. RPC DAFTAR, SIMPAN, HAPUS CONFIG UNTUK RUMAH KMB TRA
--- ==============================================================================
-
-CREATE OR REPLACE FUNCTION public._kmbtra_admin_daftar_config_internal(p_jenis text DEFAULT 'all')
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_units   jsonb := '[]'::jsonb;
-  v_comps   jsonb := '[]'::jsonb;
-  v_jobs    jsonb := '[]'::jsonb;
-  v_factors jsonb := '[]'::jsonb;
-BEGIN
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'unit_id', coalesce(data->>'unit_id', data->>'unit_code', ''),
-    'unit_code', coalesce(data->>'unit_code', data->>'unit_id', ''),
-    'unit_name', coalesce(data->>'unit_name', data->>'name', ''),
-    'model', coalesce(data->>'model', data->>'unit_model', ''),
-    'section', coalesce(data->>'section', 'field'),
-    'unit_factor', coalesce(nullif(regexp_replace(coalesce(data->>'unit_factor', data->>'factor', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'status', upper(coalesce(data->>'status', 'ACTIVE'))
-  ) ORDER BY coalesce(data->>'unit_id', data->>'unit_code', '')), '[]'::jsonb)
-  INTO v_units
-  FROM kmb.config_units
-  WHERE coalesce(data->>'unit_id', data->>'unit_code', '') <> '';
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'component_id', coalesce(data->>'component_id', data->>'component_no', ''),
-    'component_no', coalesce(data->>'component_no', data->>'component_id', ''),
-    'component_name', coalesce(data->>'component_name', data->>'name', ''),
-    'category', coalesce(data->>'category', data->>'section', 'General'),
-    'section', coalesce(data->>'section', data->>'category', 'General'),
-    'base_points', coalesce(nullif(regexp_replace(coalesce(data->>'base_points', data->>'base_point', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'target_hours', coalesce(nullif(regexp_replace(coalesce(data->>'target_hours', data->>'plan_hours', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'status', upper(coalesce(data->>'status', 'ACTIVE'))
-  ) ORDER BY coalesce(data->>'component_id', data->>'component_no', '')), '[]'::jsonb)
-  INTO v_comps
-  FROM kmb.config_components
-  WHERE coalesce(data->>'component_id', data->>'component_no', '') <> '';
-
-  v_jobs := v_comps;
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'kunci', coalesce(data->>'factor_type', data->>'type', 'factor') || ':' || coalesce(data->>'key', data->>'factor_key', ''),
-    'factor_type', coalesce(data->>'factor_type', data->>'type', 'work_condition'),
-    'key', coalesce(data->>'key', data->>'factor_key', ''),
-    'value', coalesce(nullif(regexp_replace(coalesce(data->>'value', ''), '[^0-9.-]', '', 'g'), '')::numeric, 1.0),
-    'description', coalesce(data->>'description', '')
-  ) ORDER BY coalesce(data->>'factor_type', data->>'type', ''), coalesce(data->>'key', '')), '[]'::jsonb)
-  INTO v_factors
-  FROM kmb.config_factors
-  WHERE coalesce(data->>'key', data->>'factor_key', '') <> '';
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'source', 'SUPABASE',
-    'rumah', 'kmbtra',
-    'result', jsonb_build_object('rumah', 'kmbtra', 'units', v_units, 'components', v_comps, 'jobs', v_jobs, 'factors', v_factors),
-    'data', jsonb_build_object('rumah', 'kmbtra', 'units', v_units, 'components', v_comps, 'jobs', v_jobs, 'factors', v_factors)
-  )::json;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmbtra_admin_daftar_config_bertoken(p_token text, p_jenis text DEFAULT 'all')
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth jsonb := public._kmbtra_validasi_admin_token(p_token);
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-  RETURN public._kmbtra_admin_daftar_config_internal(p_jenis);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmbtra_admin_simpan_config_bertoken(
-  p_token   text,
-  p_op_id   text,
-  p_jenis   text,
-  p_payload jsonb
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth  jsonb := public._kmbtra_validasi_admin_token(p_token);
-  v_jenis text := lower(btrim(coalesce(p_jenis, '')));
-  v_id    text;
-  v_baris int;
-  v_obj   jsonb;
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-
-  IF v_jenis IN ('unit', 'units') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'unit_id', p_payload->>'unit_code', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Kode Unit wajib diisi'); END IF;
-    v_obj := jsonb_build_object('unit_id', v_id, 'unit_code', v_id, 'unit_name', coalesce(p_payload->>'unit_name', v_id), 'model', coalesce(p_payload->>'model', ''), 'section', coalesce(p_payload->>'section', 'field'), 'unit_factor', coalesce(nullif(p_payload->>'unit_factor', '')::numeric, 1.0), 'status', upper(coalesce(p_payload->>'status', 'ACTIVE')));
-    SELECT baris INTO v_baris FROM kmb.config_units WHERE upper(btrim(coalesce(data->>'unit_id', data->>'unit_code', ''))) = v_id LIMIT 1;
-    IF v_baris IS NOT NULL THEN
-      UPDATE kmb.config_units SET data = data || v_obj, sinkron_at = now() WHERE baris = v_baris;
-    ELSE
-      SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM kmb.config_units WHERE baris < 0;
-      IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
-      INSERT INTO kmb.config_units (baris, nilai, data, sinkron_at) VALUES (v_baris, jsonb_build_array(v_id), v_obj, now());
-    END IF;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'unit', 'id', v_id));
-
-  ELSIF v_jenis IN ('component', 'components') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'component_id', p_payload->>'component_no', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'ID Komponen wajib diisi'); END IF;
-    v_obj := jsonb_build_object('component_id', v_id, 'component_no', v_id, 'component_name', coalesce(p_payload->>'component_name', v_id), 'category', coalesce(p_payload->>'category', 'General'), 'section', coalesce(p_payload->>'section', 'General'), 'base_points', coalesce(nullif(p_payload->>'base_points', '')::numeric, 1.0), 'target_hours', coalesce(nullif(p_payload->>'target_hours', '')::numeric, 1.0), 'status', upper(coalesce(p_payload->>'status', 'ACTIVE')));
-    SELECT baris INTO v_baris FROM kmb.config_components WHERE upper(btrim(coalesce(data->>'component_id', data->>'component_no', ''))) = v_id LIMIT 1;
-    IF v_baris IS NOT NULL THEN
-      UPDATE kmb.config_components SET data = data || v_obj, sinkron_at = now() WHERE baris = v_baris;
-    ELSE
-      SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM kmb.config_components WHERE baris < 0;
-      IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
-      INSERT INTO kmb.config_components (baris, nilai, data, sinkron_at) VALUES (v_baris, jsonb_build_array(v_id), v_obj, now());
-    END IF;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'component', 'id', v_id));
-
-  ELSIF v_jenis IN ('factor', 'factors') THEN
-    v_id := coalesce(p_payload->>'key', p_payload->>'factor_key', '');
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Key factor wajib diisi'); END IF;
-    v_obj := jsonb_build_object('factor_type', coalesce(p_payload->>'factor_type', 'work_condition'), 'key', v_id, 'value', coalesce(nullif(p_payload->>'value', '')::numeric, 1.0), 'description', coalesce(p_payload->>'description', ''));
-    SELECT baris INTO v_baris FROM kmb.config_factors WHERE upper(btrim(coalesce(data->>'key', ''))) = upper(v_id) LIMIT 1;
-    IF v_baris IS NOT NULL THEN
-      UPDATE kmb.config_factors SET data = data || v_obj, sinkron_at = now() WHERE baris = v_baris;
-    ELSE
-      SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM kmb.config_factors WHERE baris < 0;
-      IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
-      INSERT INTO kmb.config_factors (baris, nilai, data, sinkron_at) VALUES (v_baris, jsonb_build_array(v_id), v_obj, now());
-    END IF;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'factor', 'id', v_id));
-  END IF;
-
-  RETURN json_build_object('success', false, 'error', 'Jenis config tidak didukung: ' || v_jenis);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmbtra_admin_hapus_config_bertoken(
-  p_token text,
-  p_op_id text,
-  p_jenis text,
-  p_kunci text
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth  jsonb := public._kmbtra_validasi_admin_token(p_token);
-  v_jenis text := lower(btrim(coalesce(p_jenis, '')));
-  v_kunci text := upper(btrim(coalesce(p_kunci, '')));
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-
-  IF v_jenis IN ('unit', 'units') THEN
-    DELETE FROM kmb.config_units WHERE upper(btrim(coalesce(data->>'unit_id', data->>'unit_code', ''))) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'unit', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('component', 'components') THEN
-    DELETE FROM kmb.config_components WHERE upper(btrim(coalesce(data->>'component_id', data->>'component_no', ''))) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'component', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('factor', 'factors') THEN
-    DELETE FROM kmb.config_factors WHERE upper(btrim(coalesce(data->>'factor_type', '') || ':' || coalesce(data->>'key', ''))) = v_kunci OR upper(btrim(coalesce(data->>'key', ''))) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'factor', 'kunci', v_kunci));
-  END IF;
-
-  RETURN json_build_object('success', false, 'error', 'Jenis config tidak didukung: ' || v_jenis);
-END;
-$$;
-
--- ==============================================================================
--- 8. RPC DAFTAR, SIMPAN, HAPUS CONFIG UNTUK RUMAH KMB PROJEK
--- ==============================================================================
-
-CREATE OR REPLACE FUNCTION public._kmb_admin_daftar_config_internal(p_jenis text DEFAULT 'all')
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_units   jsonb := '[]'::jsonb;
-  v_comps   jsonb := '[]'::jsonb;
-  v_jobs    jsonb := '[]'::jsonb;
-  v_factors jsonb := '[]'::jsonb;
-BEGIN
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'unit_id', coalesce(u.unit_code, ''),
-    'unit_code', coalesce(u.unit_code, ''),
-    'unit_name', coalesce(u.unit_name, u.unit_code, ''),
-    'model', coalesce(u.model, ''),
-    'section', coalesce(u.section, 'field'),
-    'unit_factor', coalesce(u.unit_factor, 1.0),
-    'status', upper(coalesce(u.status, 'ACTIVE'))
-  ) ORDER BY u.unit_code), '[]'::jsonb)
-  INTO v_units
-  FROM kmb_projek.config_units u;
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'component_id', coalesce(c.component_id, ''),
-    'component_no', coalesce(c.component_id, ''),
-    'component_name', coalesce(c.component_name, c.component_id, ''),
-    'category', coalesce(c.category, 'General'),
-    'section', coalesce(c.category, 'General'),
-    'base_points', coalesce(c.base_points, 1.0),
-    'target_hours', coalesce(c.target_hours, 1.0),
-    'status', upper(coalesce(c.status, 'ACTIVE'))
-  ) ORDER BY c.component_id), '[]'::jsonb)
-  INTO v_comps
-  FROM kmb_projek.config_components c;
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'job_id', coalesce(j.job_id, ''),
-    'section', coalesce(j.section, 'maintenance'),
-    'unit_model', coalesce(j.unit_model, 'All'),
-    'component', coalesce(j.component, ''),
-    'sub_component', coalesce(j.sub_component, ''),
-    'job_description', coalesce(j.job_description, ''),
-    'plan_hours', coalesce(j.plan_hours, 1.0),
-    'base_point', coalesce(j.base_point, 1.0),
-    'job_type', coalesce(j.job_type, 'Preventive'),
-    'status', upper(coalesce(j.status, 'ACTIVE'))
-  ) ORDER BY j.section, j.job_id), '[]'::jsonb)
-  INTO v_jobs
-  FROM kmb_projek.catalog_jobs j;
-
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'kunci', coalesce(f.factor_type, 'factor') || ':' || coalesce(f.key, ''),
-    'factor_type', coalesce(f.factor_type, 'work_condition'),
-    'key', coalesce(f.key, ''),
-    'value', coalesce(f.value, 1.0),
-    'description', coalesce(f.description, '')
-  ) ORDER BY f.factor_type, f.key), '[]'::jsonb)
-  INTO v_factors
-  FROM kmb_projek.config_factors f;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'source', 'SUPABASE',
-    'rumah', 'kmbprojek',
-    'result', jsonb_build_object('rumah', 'kmbprojek', 'units', v_units, 'components', v_comps, 'jobs', v_jobs, 'factors', v_factors),
-    'data', jsonb_build_object('rumah', 'kmbprojek', 'units', v_units, 'components', v_comps, 'jobs', v_jobs, 'factors', v_factors)
-  )::json;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmb_admin_daftar_config_bertoken(p_token text, p_jenis text DEFAULT 'all')
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth jsonb := public._kmb_validasi_admin_token(p_token);
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-  RETURN public._kmb_admin_daftar_config_internal(p_jenis);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmb_admin_simpan_config_bertoken(
-  p_token   text,
-  p_op_id   text,
-  p_jenis   text,
-  p_payload jsonb
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth  jsonb := public._kmb_validasi_admin_token(p_token);
-  v_jenis text := lower(btrim(coalesce(p_jenis, '')));
-  v_id    text;
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-
-  IF v_jenis IN ('unit', 'units') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'unit_id', p_payload->>'unit_code', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Kode Unit wajib diisi'); END IF;
-    INSERT INTO kmb_projek.config_units (unit_code, unit_name, model, section, unit_factor, status, created_at)
-    VALUES (v_id, coalesce(p_payload->>'unit_name', v_id), coalesce(p_payload->>'model', ''), coalesce(p_payload->>'section', 'field'), coalesce(nullif(p_payload->>'unit_factor', '')::numeric, 1.0), upper(coalesce(p_payload->>'status', 'ACTIVE')), now())
-    ON CONFLICT (unit_code) DO UPDATE
-    SET unit_name = EXCLUDED.unit_name, model = EXCLUDED.model, section = EXCLUDED.section, unit_factor = EXCLUDED.unit_factor, status = EXCLUDED.status;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'unit', 'id', v_id));
-
-  ELSIF v_jenis IN ('component', 'components') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'component_id', p_payload->>'component_no', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'ID Komponen wajib diisi'); END IF;
-    INSERT INTO kmb_projek.config_components (component_id, component_name, category, base_points, target_hours, status, created_at)
-    VALUES (v_id, coalesce(p_payload->>'component_name', v_id), coalesce(p_payload->>'category', 'General'), coalesce(nullif(p_payload->>'base_points', '')::numeric, 1.0), coalesce(nullif(p_payload->>'target_hours', '')::numeric, 1.0), upper(coalesce(p_payload->>'status', 'ACTIVE')), now())
-    ON CONFLICT (component_id) DO UPDATE
-    SET component_name = EXCLUDED.component_name, category = EXCLUDED.category, base_points = EXCLUDED.base_points, target_hours = EXCLUDED.target_hours, status = EXCLUDED.status;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'component', 'id', v_id));
-
-  ELSIF v_jenis IN ('job', 'jobs') THEN
-    v_id := upper(btrim(coalesce(p_payload->>'job_id', '')));
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Job ID wajib diisi'); END IF;
-    INSERT INTO kmb_projek.catalog_jobs (job_id, section, unit_model, component, sub_component, job_description, plan_hours, base_point, job_type, status, created_at)
-    VALUES (v_id, coalesce(p_payload->>'section', 'maintenance'), coalesce(p_payload->>'unit_model', 'All'), coalesce(p_payload->>'component', ''), coalesce(p_payload->>'sub_component', ''), coalesce(p_payload->>'job_description', ''), coalesce(nullif(p_payload->>'plan_hours', '')::numeric, 1.0), coalesce(nullif(p_payload->>'base_point', '')::numeric, 1.0), coalesce(p_payload->>'job_type', 'Preventive'), upper(coalesce(p_payload->>'status', 'ACTIVE')), now())
-    ON CONFLICT (section, job_id) DO UPDATE
-    SET unit_model = EXCLUDED.unit_model, component = EXCLUDED.component, sub_component = EXCLUDED.sub_component, job_description = EXCLUDED.job_description, plan_hours = EXCLUDED.plan_hours, base_point = EXCLUDED.base_point, job_type = EXCLUDED.job_type, status = EXCLUDED.status;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'job', 'id', v_id));
-
-  ELSIF v_jenis IN ('factor', 'factors') THEN
-    v_id := coalesce(p_payload->>'key', p_payload->>'factor_key', '');
-    IF v_id = '' THEN RETURN json_build_object('success', false, 'error', 'Key factor wajib diisi'); END IF;
-    INSERT INTO kmb_projek.config_factors (factor_type, key, value, description, created_at)
-    VALUES (coalesce(p_payload->>'factor_type', 'work_condition'), v_id, coalesce(nullif(p_payload->>'value', '')::numeric, 1.0), coalesce(p_payload->>'description', ''), now())
-    ON CONFLICT (factor_type, key) DO UPDATE
-    SET value = EXCLUDED.value, description = EXCLUDED.description;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'factor', 'id', v_id));
-  END IF;
-
-  RETURN json_build_object('success', false, 'error', 'Jenis config tidak didukung: ' || v_jenis);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmb_admin_hapus_config_bertoken(
-  p_token text,
-  p_op_id text,
-  p_jenis text,
-  p_kunci text
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_auth  jsonb := public._kmb_validasi_admin_token(p_token);
-  v_jenis text := lower(btrim(coalesce(p_jenis, '')));
-  v_kunci text := upper(btrim(coalesce(p_kunci, '')));
-BEGIN
-  IF NOT coalesce((v_auth->>'ok')::boolean, false) THEN
-    RETURN json_build_object('success', false, 'error', v_auth->>'error', 'source', 'SUPABASE');
-  END IF;
-
-  IF v_jenis IN ('unit', 'units') THEN
-    DELETE FROM kmb_projek.config_units WHERE upper(btrim(unit_code)) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'unit', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('component', 'components') THEN
-    DELETE FROM kmb_projek.config_components WHERE upper(btrim(component_id)) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'component', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('job', 'jobs') THEN
-    DELETE FROM kmb_projek.catalog_jobs WHERE upper(btrim(job_id)) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'job', 'kunci', v_kunci));
-  ELSIF v_jenis IN ('factor', 'factors') THEN
-    DELETE FROM kmb_projek.config_factors WHERE upper(btrim(factor_type || ':' || key)) = v_kunci OR upper(btrim(key)) = v_kunci;
-    RETURN json_build_object('success', true, 'source', 'SUPABASE', 'result', json_build_object('jenis', 'factor', 'kunci', v_kunci));
-  END IF;
-
-  RETURN json_build_object('success', false, 'error', 'Jenis config tidak didukung: ' || v_jenis);
-END;
-$$;
-
--- ==============================================================================
--- 9. USER ADMIN RPC ALIASES
--- ==============================================================================
-
-CREATE OR REPLACE FUNCTION public.sum_admin_daftar_users_bertoken(p_token text)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  RETURN public.sum_admin_daftar_user_bertoken(p_token);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmbtra_admin_daftar_users_bertoken(p_token text)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  RETURN public.kmbtra_admin_daftar_user_bertoken(p_token);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.kmb_admin_daftar_users_bertoken(p_token text)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  RETURN public.kmb_admin_daftar_user_bertoken(p_token);
-END;
-$$;
-
--- ==============================================================================
--- 10. GRANTS UNTUK RPC
--- ==============================================================================
-
-GRANT EXECUTE ON FUNCTION public.sum_admin_daftar_config_bertoken(text, text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.sum_admin_simpan_config_bertoken(text, text, text, jsonb) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.sum_admin_hapus_config_bertoken(text, text, text, text) TO anon, authenticated, service_role;
-
-GRANT EXECUTE ON FUNCTION public.kmbtra_admin_daftar_config_bertoken(text, text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmbtra_admin_simpan_config_bertoken(text, text, text, jsonb) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmbtra_admin_hapus_config_bertoken(text, text, text, text) TO anon, authenticated, service_role;
-
-GRANT EXECUTE ON FUNCTION public.kmb_admin_daftar_config_bertoken(text, text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_admin_simpan_config_bertoken(text, text, text, jsonb) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_admin_hapus_config_bertoken(text, text, text, text) TO anon, authenticated, service_role;
-
-GRANT EXECUTE ON FUNCTION public.sum_admin_daftar_users_bertoken(text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmbtra_admin_daftar_users_bertoken(text) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.kmb_admin_daftar_users_bertoken(text) TO anon, authenticated, service_role;
-
--- ==============================================================================
 -- PERBAIKAN PENUH PENCOCOKAN WO MEKANIK SUM V2 (`sum`) & CASCADE + WO MEKANIK KMB (`kmb`)
 -- ==============================================================================
 
@@ -1586,6 +675,630 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.kmbtra_create_refs_bertoken(text) TO anon, authenticated, service_role;
 
+
+-- ==============================================================================
+-- C. PERBAIKAN KOLOM `disinkron_at` & AUTO-TOKEN MEKANIK (`generateMissingTokens`) DI `kmb` & `sum`
+-- ==============================================================================
+DO $$
+DECLARE
+  r record;
+  v_mid text;
+  v_mname text;
+  v_memail text;
+  v_mrole text;
+  v_tok text;
+  v_baris int;
+BEGIN
+  -- 1. Pastikan kolom disinkron_at dan sinkron_at tersedia di seluruh tabel cermin kmb & sum
+  --    (Mencegah galat 42703: column "disinkron_at" of relation "work_orders" does not exist)
+  IF to_regclass('kmb.work_orders') IS NOT NULL THEN
+    ALTER TABLE kmb.work_orders ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE kmb.work_orders ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+  IF to_regclass('kmb.work_order_team') IS NOT NULL THEN
+    ALTER TABLE kmb.work_order_team ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE kmb.work_order_team ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+  IF to_regclass('kmb.config_mechanics') IS NOT NULL THEN
+    ALTER TABLE kmb.config_mechanics ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE kmb.config_mechanics ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+  IF to_regclass('kmb.api_tokens') IS NOT NULL THEN
+    ALTER TABLE kmb.api_tokens ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE kmb.api_tokens ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+
+  IF to_regclass('sum.work_orders') IS NOT NULL THEN
+    ALTER TABLE sum.work_orders ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE sum.work_orders ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+  IF to_regclass('sum.work_order_team') IS NOT NULL THEN
+    ALTER TABLE sum.work_order_team ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE sum.work_order_team ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+  IF to_regclass('sum.config_mechanics') IS NOT NULL THEN
+    ALTER TABLE sum.config_mechanics ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE sum.config_mechanics ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+  IF to_regclass('sum.api_tokens') IS NOT NULL THEN
+    ALTER TABLE sum.api_tokens ADD COLUMN IF NOT EXISTS sinkron_at timestamptz DEFAULT now();
+    ALTER TABLE sum.api_tokens ADD COLUMN IF NOT EXISTS disinkron_at timestamptz DEFAULT now();
+  END IF;
+
+  -- 2. Auto-Generate Token (`generateMissingTokens` di Supabase) untuk seluruh mekanik aktif di `kmb` yang belum punya token
+  IF to_regclass('kmb.config_mechanics') IS NOT NULL AND to_regclass('kmb.api_tokens') IS NOT NULL THEN
+    FOR r IN SELECT baris, nilai, data FROM kmb.config_mechanics LOOP
+      v_mid   := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'mechanic_id', 'id', 'code'), ''), nullif(btrim(r.nilai->>0), ''), '');
+      v_mname := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'name', 'mechanic_name', 'nama'), ''), nullif(btrim(r.nilai->>1), ''), v_mid);
+      v_memail := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'email'), ''), nullif(btrim(r.nilai->>2), ''), '');
+      v_mrole := lower(coalesce(nullif(public._ambil_teks_jsonb(r.data, 'role'), ''), nullif(btrim(r.nilai->>3), ''), 'mechanic'));
+      IF v_mid <> '' AND upper(coalesce(nullif(public._ambil_teks_jsonb(r.data, 'status'), ''), 'ACTIVE')) = 'ACTIVE' THEN
+        IF NOT EXISTS (
+          SELECT 1 FROM kmb.api_tokens t
+           WHERE public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')) = public._kode_mekanik_kanonik(v_mid)
+             AND (t.data->>'is_active' IS NULL OR lower(btrim(t.data->>'is_active')) <> 'false')
+        ) THEN
+          v_tok := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'token'), ''), 'kmb-' || lower(regexp_replace(v_mid, '[^a-zA-Z0-9]', '', 'g')) || '-' || substr(md5(v_mid || '-kmbtra'), 1, 8));
+          SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM kmb.api_tokens WHERE baris < 0;
+          IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
+          INSERT INTO kmb.api_tokens (baris, nilai, data, sinkron_at)
+          VALUES (
+            v_baris,
+            jsonb_build_array(v_tok, v_mid, v_memail, 'true', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+            jsonb_build_object(
+              'token', v_tok,
+              'mechanic_id', v_mid,
+              'user_id', v_mid,
+              'name', v_mname,
+              'email', v_memail,
+              'role', v_mrole,
+              'status', 'ACTIVE',
+              'is_active', 'true'
+            ),
+            now()
+          );
+        END IF;
+      END IF;
+    END LOOP;
+  END IF;
+
+  -- 3. Auto-Generate Token (`generateMissingTokens` di Supabase) untuk seluruh mekanik aktif di `sum` yang belum punya token
+  IF to_regclass('sum.config_mechanics') IS NOT NULL AND to_regclass('sum.api_tokens') IS NOT NULL THEN
+    FOR r IN SELECT baris, nilai, data FROM sum.config_mechanics LOOP
+      v_mid   := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'mechanic_id', 'id', 'code'), ''), nullif(btrim(r.nilai->>0), ''), '');
+      v_mname := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'name', 'mechanic_name', 'nama'), ''), nullif(btrim(r.nilai->>1), ''), v_mid);
+      v_memail := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'email'), ''), nullif(btrim(r.nilai->>2), ''), '');
+      v_mrole := lower(coalesce(nullif(public._ambil_teks_jsonb(r.data, 'role'), ''), nullif(btrim(r.nilai->>3), ''), 'mechanic'));
+      IF v_mid <> '' AND upper(coalesce(nullif(public._ambil_teks_jsonb(r.data, 'status'), ''), 'ACTIVE')) = 'ACTIVE' THEN
+        IF NOT EXISTS (
+          SELECT 1 FROM sum.api_tokens t
+           WHERE public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')) = public._kode_mekanik_kanonik(v_mid)
+             AND (t.data->>'is_active' IS NULL OR lower(btrim(t.data->>'is_active')) <> 'false')
+        ) THEN
+          v_tok := coalesce(nullif(public._ambil_teks_jsonb(r.data, 'token'), ''), 'sum-' || lower(regexp_replace(v_mid, '[^a-zA-Z0-9]', '', 'g')) || '-' || substr(md5(v_mid || '-sumv2'), 1, 8));
+          SELECT coalesce(min(baris), 0) - 1 INTO v_baris FROM sum.api_tokens WHERE baris < 0;
+          IF v_baris IS NULL OR v_baris >= 0 THEN v_baris := -1; END IF;
+          INSERT INTO sum.api_tokens (baris, nilai, data, sinkron_at)
+          VALUES (
+            v_baris,
+            jsonb_build_array(v_tok, v_mid, v_memail, 'true', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+            jsonb_build_object(
+              'token', v_tok,
+              'mechanic_id', v_mid,
+              'user_id', v_mid,
+              'name', v_mname,
+              'email', v_memail,
+              'role', v_mrole,
+              'status', 'ACTIVE',
+              'is_active', 'true'
+            ),
+            now()
+          );
+        END IF;
+      END IF;
+    END LOOP;
+  END IF;
+END $$;
+
+-- ==============================================================================
+-- D. FUNGSI MONITORING & MY_WOS KMB TRA (`kmbtra_monitoring`, `kmbtra_monitoring_bertoken`, `kmbtra_my_wos`, `kmbtra_my_wos_bertoken`)
+-- Menampilkan Nama, ID, Token, dan Angka WO per Kartu Mekanik dengan Lengkap (Tanpa `?` dan Tanpa Peringatan `generateMissingTokens`)
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.kmbtra_my_wos(p_mechanic_id text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_mid_in    text := btrim(coalesce(p_mechanic_id, ''));
+  v_mid_canon text := '';
+  v_mname     text := '';
+  v_memail    text := '';
+  v_wos       jsonb := '[]'::jsonb;
+  v_pulled    text := to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF');
+BEGIN
+  SELECT coalesce(nullif(public._ambil_teks_jsonb(data, 'mechanic_id', 'id'), ''), nullif(btrim(nilai->>0), ''), v_mid_in),
+         coalesce(nullif(public._ambil_teks_jsonb(data, 'name', 'mechanic_name'), ''), nullif(btrim(nilai->>1), ''), ''),
+         coalesce(nullif(public._ambil_teks_jsonb(data, 'email'), ''), nullif(btrim(nilai->>2), ''), '')
+    INTO v_mid_canon, v_mname, v_memail
+    FROM kmb.config_mechanics
+   WHERE public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(data, 'mechanic_id', 'id'), nilai->>0, '')) = public._kode_mekanik_kanonik(v_mid_in)
+      OR upper(btrim(coalesce(public._ambil_teks_jsonb(data, 'name', 'mechanic_name'), nilai->>1, ''))) = upper(v_mid_in)
+   LIMIT 1;
+
+  v_mid_canon := coalesce(nullif(v_mid_canon, ''), v_mid_in);
+
+  WITH master_mekanik AS (
+    SELECT DISTINCT ON (public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0)))
+           public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0)) AS k_id,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''), btrim(m.nilai->>0)) AS mechanic_id,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'name', 'mechanic_name'), ''), nullif(btrim(m.nilai->>1), ''), btrim(m.nilai->>0)) AS name
+      FROM kmb.config_mechanics m
+     WHERE coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0, '') <> ''
+  ),
+  tim_cermin AS (
+    SELECT upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number', 'work_order_id', 'id'), ''), nullif(t.nilai->>0, ''), ''))) AS wo_key,
+           jsonb_agg(jsonb_build_object(
+             'mechanic_id', coalesce(mm.mechanic_id, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'id', 'user_id'), ''), nullif(btrim(t.nilai->>1), ''), ''),
+             'mechanic_name', coalesce(mm.name, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), nullif(btrim(t.nilai->>2), ''), nullif(btrim(t.nilai->>1), ''), ''),
+             'name', coalesce(mm.name, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), nullif(btrim(t.nilai->>2), ''), nullif(btrim(t.nilai->>1), ''), ''),
+             'role_in_wo', coalesce(nullif(public._ambil_teks_jsonb(t.data, 'role_in_wo', 'role'), ''), 'lead'),
+             'percentage', 100
+           )) AS team_arr,
+           jsonb_agg(coalesce(mm.name, nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id'), ''), nullif(btrim(t.nilai->>1), ''), '')) AS team_names_arr
+      FROM kmb.work_order_team t
+      LEFT JOIN master_mekanik mm
+        ON mm.k_id = public._kode_mekanik_kanonik(coalesce(nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'id', 'user_id'), ''), t.nilai->>1, ''))
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number', 'work_order_id'), t.nilai->>0, '')), '') IS NOT NULL
+     GROUP BY 1
+  ),
+  gabungan_wo AS (
+    SELECT s.data || jsonb_build_object(
+             'id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+             'wo_id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+             'wo_number', coalesce(nullif(btrim(s.wo_number), ''), btrim(s.id)),
+             'status', sum._normalisasi_status_wo_sum(coalesce(s.data->>'status', s.status))
+           ) AS wo
+      FROM kmb.wo_supabase s
+     WHERE to_regclass('kmb.wo_supabase') IS NOT NULL
+       AND nullif(btrim(coalesce(s.wo_number, s.id, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(s.wo_number, s.id, ''))) <> 'WO-0'
+    UNION ALL
+    SELECT w.data || jsonb_build_object(
+             'id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+             'wo_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+             'wo_number', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), ''), btrim(w.nilai->>0)),
+             'status', sum._normalisasi_status_wo_sum(public._ambil_teks_jsonb(w.data, 'status')),
+             'unit_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'unit_id', 'unit_code'), ''), 'WORKSHOP'),
+             'component_id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'component_id', 'component_no'), ''), 'COM-001'),
+             'component_name', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'component_name', 'others_description', 'activity', 'component_id'), ''), 'Pekerjaan'),
+             'team', CASE
+               WHEN tc.team_arr IS NOT NULL THEN tc.team_arr
+               WHEN jsonb_typeof(w.data->'team') = 'array' AND jsonb_array_length(w.data->'team') > 0 THEN w.data->'team'
+               ELSE '[]'::jsonb
+             END,
+             'effective_team', CASE
+               WHEN tc.team_arr IS NOT NULL THEN tc.team_arr
+               WHEN jsonb_typeof(w.data->'effective_team') = 'array' AND jsonb_array_length(w.data->'effective_team') > 0 THEN w.data->'effective_team'
+               WHEN jsonb_typeof(w.data->'team') = 'array' AND jsonb_array_length(w.data->'team') > 0 THEN w.data->'team'
+               ELSE '[]'::jsonb
+             END,
+             'team_names', COALESCE(tc.team_names_arr, CASE WHEN jsonb_typeof(w.data->'team_names') = 'array' THEN w.data->'team_names' ELSE '[]'::jsonb END)
+           ) AS wo
+      FROM kmb.work_orders w
+      LEFT JOIN tim_cermin tc
+        ON tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), w.nilai->>0, '')))
+        OR tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number'), ''), w.nilai->>0, '')))
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, ''))) <> 'WO-0'
+       AND NOT EXISTS (
+         SELECT 1 FROM kmb.wo_supabase s2
+          WHERE s2.id = coalesce(public._ambil_teks_jsonb(w.data, 'wo_id', 'id'), '')
+             OR s2.wo_number = coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id'), '')
+       )
+  ),
+  milik_mekanik AS (
+    SELECT wo FROM gabungan_wo
+     WHERE sum._wo_milik_mekanik_sum(wo, v_mid_canon, v_mname, v_memail, v_mid_in)
+  )
+  SELECT coalesce(jsonb_agg(wo ORDER BY coalesce(wo->>'created_at', '') DESC), '[]'::jsonb)
+    INTO v_wos
+    FROM milik_mekanik;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'source', 'SUPABASE',
+    'result', jsonb_build_object('wos', v_wos, 'pulled_at', v_pulled),
+    'data', jsonb_build_object('wos', v_wos)
+  )::json;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.kmbtra_my_wos_bertoken(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_clean text := btrim(coalesce(p_token, ''));
+  v_mid   text := '';
+BEGIN
+  IF v_clean = '' THEN
+    RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+  END IF;
+
+  SELECT coalesce(
+           nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''),
+           nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), ''),
+           nullif(btrim(t.nilai->>1), ''),
+           nullif(public._ambil_teks_jsonb(t.data, 'name', 'email'), ''),
+           ''
+         )
+    INTO v_mid
+    FROM kmb.api_tokens t
+    LEFT JOIN kmb.config_mechanics m
+      ON public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0, '')) = public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, ''))
+      OR (nullif(public._ambil_teks_jsonb(t.data, 'email'), '') IS NOT NULL AND lower(public._ambil_teks_jsonb(m.data, 'email')) = lower(public._ambil_teks_jsonb(t.data, 'email')))
+   WHERE btrim(coalesce(public._ambil_teks_jsonb(t.data, 'token'), t.nilai->>0, '')) = v_clean
+     AND (t.data->>'is_active' IS NULL OR lower(btrim(t.data->>'is_active')) <> 'false')
+   LIMIT 1;
+
+  IF coalesce(v_mid, '') = '' THEN
+    SELECT coalesce(nullif(public._ambil_teks_jsonb(data, 'mechanic_id', 'id'), ''), btrim(nilai->>0))
+      INTO v_mid
+      FROM kmb.config_mechanics
+     WHERE btrim(public._ambil_teks_jsonb(data, 'token')) = v_clean
+     LIMIT 1;
+  END IF;
+
+  IF coalesce(v_mid, '') = '' THEN
+    RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+  END IF;
+
+  RETURN public.kmbtra_my_wos(v_mid);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.kmbtra_my_wos_bertoken(text) TO anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.kmbtra_monitoring()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_mechs  jsonb := '[]'::jsonb;
+  v_total  int := 0;
+  v_p_work int := 0;
+  v_exp    int := 0;
+  v_p_l1   int := 0;
+  v_p_l2   int := 0;
+  v_app    int := 0;
+  v_pulled text := to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF');
+BEGIN
+  WITH token_aktif AS (
+    SELECT DISTINCT ON (public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')))
+           public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')) AS k_id,
+           btrim(coalesce(public._ambil_teks_jsonb(t.data, 'token'), t.nilai->>0, '')) AS token
+      FROM kmb.api_tokens t
+     WHERE coalesce(public._ambil_teks_jsonb(t.data, 'token'), t.nilai->>0, '') <> ''
+       AND (t.data->>'is_active' IS NULL OR lower(btrim(t.data->>'is_active')) <> 'false')
+     ORDER BY public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')), t.baris DESC
+  ),
+  tim_cermin AS (
+    SELECT upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number', 'work_order_id'), ''), t.nilai->>0, ''))) AS wo_key,
+           jsonb_agg(jsonb_build_object(
+             'mechanic_id', coalesce(nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'id', 'user_id'), ''), btrim(t.nilai->>1), ''),
+             'name', coalesce(nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), btrim(t.nilai->>2), '')
+           )) AS team_arr
+      FROM kmb.work_order_team t
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number'), t.nilai->>0, '')), '') IS NOT NULL
+     GROUP BY 1
+  ),
+  semua_wo AS (
+    SELECT s.data || jsonb_build_object(
+             'id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+             'status', sum._normalisasi_status_wo_sum(coalesce(s.data->>'status', s.status))
+           ) AS wo
+      FROM kmb.wo_supabase s
+     WHERE to_regclass('kmb.wo_supabase') IS NOT NULL
+       AND nullif(btrim(coalesce(s.wo_number, s.id, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(s.wo_number, s.id, ''))) <> 'WO-0'
+    UNION ALL
+    SELECT w.data || jsonb_build_object(
+             'id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+             'status', sum._normalisasi_status_wo_sum(public._ambil_teks_jsonb(w.data, 'status')),
+             'team', COALESCE(tc.team_arr, CASE WHEN jsonb_typeof(w.data->'team') = 'array' THEN w.data->'team' ELSE '[]'::jsonb END)
+           ) AS wo
+      FROM kmb.work_orders w
+      LEFT JOIN tim_cermin tc
+        ON tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), w.nilai->>0, '')))
+        OR tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number'), ''), w.nilai->>0, '')))
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, ''))) <> 'WO-0'
+       AND NOT EXISTS (
+         SELECT 1 FROM kmb.wo_supabase s2
+          WHERE s2.id = coalesce(public._ambil_teks_jsonb(w.data, 'wo_id', 'id'), '')
+             OR s2.wo_number = coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id'), '')
+       )
+  ),
+  daftar_mek AS (
+    SELECT coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id', 'code'), ''), btrim(m.nilai->>0)) AS mid,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'name', 'mechanic_name', 'nama'), ''), nullif(btrim(m.nilai->>1), ''), btrim(m.nilai->>0)) AS mname,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'email'), ''), nullif(btrim(m.nilai->>2), ''), '') AS memail,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'section'), ''), nullif(btrim(m.nilai->>4), ''), 'field') AS msec,
+           (lower(coalesce(public._ambil_teks_jsonb(m.data, 'is_test_account', 'uji'), 'false')) IN ('true', '1')) AS muji,
+           coalesce(
+             ta.token,
+             nullif(public._ambil_teks_jsonb(m.data, 'token'), ''),
+             'kmb-' || lower(regexp_replace(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''), btrim(m.nilai->>0)), '[^a-zA-Z0-9]', '', 'g')) || '-' || substr(md5(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''), btrim(m.nilai->>0)) || '-kmbtra'), 1, 8)
+           ) AS mtok
+      FROM kmb.config_mechanics m
+      LEFT JOIN token_aktif ta
+        ON ta.k_id = public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0))
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0, '')), '') IS NOT NULL
+       AND lower(btrim(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'role'), ''), nullif(m.nilai->>3, ''), 'mechanic'))) = 'mechanic'
+       AND upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'status'), ''), 'ACTIVE'))) = 'ACTIVE'
+  ),
+  mech_counts AS (
+    SELECT dm.mid AS id,
+           dm.mid AS mechanic_id,
+           dm.mname AS name,
+           dm.mname AS mechanic_name,
+           dm.msec AS section,
+           dm.mtok AS token,
+           true AS has_token,
+           dm.muji AS uji,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'pending_mechanic_work'), 0)::int AS pending_mechanic_work,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'expired'), 0)::int AS expired,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'pending_supervisor'), 0)::int AS pending_l1,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'pending_superintendent'), 0)::int AS pending_l2,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'approved'), 0)::int AS approved
+      FROM daftar_mek dm
+      LEFT JOIN semua_wo sw ON sum._wo_milik_mekanik_sum(sw.wo, dm.mid, dm.mname, dm.memail)
+     GROUP BY dm.mid, dm.mname, dm.msec, dm.mtok, dm.muji
+  )
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+           'id', id,
+           'mechanic_id', mechanic_id,
+           'name', name,
+           'mechanic_name', mechanic_name,
+           'section', section,
+           'token', token,
+           'has_token', true,
+           'uji', uji,
+           'pending_mechanic_work', pending_mechanic_work,
+           'pending_work', pending_mechanic_work,
+           'perlu_diisi', pending_mechanic_work,
+           'expired', expired,
+           'pending_l1', pending_l1,
+           'pending_l2', pending_l2,
+           'pending_approval', pending_l1 + pending_l2,
+           'approved', approved
+         ) ORDER BY id), '[]'::jsonb),
+         count(*)::int,
+         coalesce(sum(pending_mechanic_work), 0)::int,
+         coalesce(sum(expired), 0)::int,
+         coalesce(sum(pending_l1), 0)::int,
+         coalesce(sum(pending_l2), 0)::int,
+         coalesce(sum(approved), 0)::int
+    INTO v_mechs, v_total, v_p_work, v_exp, v_p_l1, v_p_l2, v_app
+    FROM mech_counts;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'source', 'SUPABASE',
+    'result', jsonb_build_object(
+      'overall', jsonb_build_object(
+        'mechanics', coalesce(v_total, 0),
+        'total_mechanics', coalesce(v_total, 0),
+        'mechanic_count', coalesce(v_total, 0),
+        'pending_mechanic_work', coalesce(v_p_work, 0),
+        'pending_work', coalesce(v_p_work, 0),
+        'perlu_diisi', coalesce(v_p_work, 0),
+        'expired', coalesce(v_exp, 0),
+        'pending_l1', coalesce(v_p_l1, 0),
+        'pending_l2', coalesce(v_p_l2, 0),
+        'pending_approval', coalesce(v_p_l1, 0) + coalesce(v_p_l2, 0),
+        'menunggu_approval', coalesce(v_p_l1, 0) + coalesce(v_p_l2, 0),
+        'approved', coalesce(v_app, 0)
+      ),
+      'mechanics', coalesce(v_mechs, '[]'::jsonb),
+      'pulled_at', v_pulled
+    )
+  )::json;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.kmbtra_monitoring_bertoken(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF btrim(coalesce(p_token, '')) = '' THEN
+    RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+  END IF;
+  RETURN public.kmbtra_monitoring();
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.kmbtra_monitoring_bertoken(text) TO anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.sum_monitoring()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_mechs  jsonb := '[]'::jsonb;
+  v_total  int := 0;
+  v_p_work int := 0;
+  v_exp    int := 0;
+  v_p_l1   int := 0;
+  v_p_l2   int := 0;
+  v_app    int := 0;
+  v_pulled text := to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SSOF');
+BEGIN
+  WITH token_aktif AS (
+    SELECT DISTINCT ON (public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')))
+           public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')) AS k_id,
+           btrim(coalesce(public._ambil_teks_jsonb(t.data, 'token'), t.nilai->>0, '')) AS token
+      FROM sum.api_tokens t
+     WHERE coalesce(public._ambil_teks_jsonb(t.data, 'token'), t.nilai->>0, '') <> ''
+       AND (t.data->>'is_active' IS NULL OR lower(btrim(t.data->>'is_active')) <> 'false')
+     ORDER BY public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'user_id', 'id'), t.nilai->>1, '')), t.baris DESC
+  ),
+  tim_cermin AS (
+    SELECT upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number', 'work_order_id'), ''), t.nilai->>0, ''))) AS wo_key,
+           jsonb_agg(jsonb_build_object(
+             'mechanic_id', coalesce(nullif(public._ambil_teks_jsonb(t.data, 'mechanic_id', 'id', 'user_id'), ''), btrim(t.nilai->>1), ''),
+             'name', coalesce(nullif(public._ambil_teks_jsonb(t.data, 'mechanic_name', 'name'), ''), btrim(t.nilai->>2), '')
+           )) AS team_arr
+      FROM sum.work_order_team t
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(t.data, 'wo_id', 'wo_number'), t.nilai->>0, '')), '') IS NOT NULL
+     GROUP BY 1
+  ),
+  semua_wo AS (
+    SELECT s.data || jsonb_build_object(
+             'id', coalesce(nullif(btrim(s.id), ''), btrim(s.wo_number)),
+             'status', sum._normalisasi_status_wo_sum(coalesce(s.data->>'status', s.status))
+           ) AS wo
+      FROM sum.wo_supabase s
+     WHERE to_regclass('sum.wo_supabase') IS NOT NULL
+       AND nullif(btrim(coalesce(s.wo_number, s.id, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(s.wo_number, s.id, ''))) <> 'WO-0'
+    UNION ALL
+    SELECT w.data || jsonb_build_object(
+             'id', coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), btrim(w.nilai->>0)),
+             'status', sum._normalisasi_status_wo_sum(public._ambil_teks_jsonb(w.data, 'status')),
+             'team', COALESCE(tc.team_arr, CASE WHEN jsonb_typeof(w.data->'team') = 'array' THEN w.data->'team' ELSE '[]'::jsonb END)
+           ) AS wo
+      FROM sum.work_orders w
+      LEFT JOIN tim_cermin tc
+        ON tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_id', 'id', 'wo_number'), ''), w.nilai->>0, '')))
+        OR tc.wo_key = upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(w.data, 'wo_number'), ''), w.nilai->>0, '')))
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, '')), '') IS NOT NULL
+       AND upper(btrim(coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id', 'id'), w.nilai->>0, ''))) <> 'WO-0'
+       AND NOT EXISTS (
+         SELECT 1 FROM sum.wo_supabase s2
+          WHERE s2.id = coalesce(public._ambil_teks_jsonb(w.data, 'wo_id', 'id'), '')
+             OR s2.wo_number = coalesce(public._ambil_teks_jsonb(w.data, 'wo_number', 'wo_id'), '')
+       )
+  ),
+  daftar_mek AS (
+    SELECT coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id', 'code'), ''), btrim(m.nilai->>0)) AS mid,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'name', 'mechanic_name', 'nama'), ''), nullif(btrim(m.nilai->>1), ''), btrim(m.nilai->>0)) AS mname,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'email'), ''), nullif(btrim(m.nilai->>2), ''), '') AS memail,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'jabatan_aktual', 'section'), ''), nullif(btrim(m.nilai->>4), ''), 'Mekanik') AS mjab,
+           coalesce(nullif(public._ambil_teks_jsonb(m.data, 'golongan'), ''), nullif(btrim(m.nilai->>5), ''), '') AS mgol,
+           (lower(coalesce(public._ambil_teks_jsonb(m.data, 'is_test_account', 'uji'), 'false')) IN ('true', '1')) AS muji,
+           coalesce(
+             ta.token,
+             nullif(public._ambil_teks_jsonb(m.data, 'token'), ''),
+             'sum-' || lower(regexp_replace(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''), btrim(m.nilai->>0)), '[^a-zA-Z0-9]', '', 'g')) || '-' || substr(md5(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), ''), btrim(m.nilai->>0)) || '-sumv2'), 1, 8)
+           ) AS mtok
+      FROM sum.config_mechanics m
+      LEFT JOIN token_aktif ta
+        ON ta.k_id = public._kode_mekanik_kanonik(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0))
+     WHERE nullif(btrim(coalesce(public._ambil_teks_jsonb(m.data, 'mechanic_id', 'id'), m.nilai->>0, '')), '') IS NOT NULL
+       AND lower(btrim(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'role'), ''), nullif(m.nilai->>3, ''), 'mechanic'))) = 'mechanic'
+       AND upper(btrim(coalesce(nullif(public._ambil_teks_jsonb(m.data, 'status'), ''), 'ACTIVE'))) = 'ACTIVE'
+  ),
+  mech_counts AS (
+    SELECT dm.mid AS id,
+           dm.mid AS mechanic_id,
+           dm.mname AS name,
+           dm.mname AS mechanic_name,
+           dm.mjab AS jabatan_aktual,
+           dm.mgol AS golongan,
+           dm.mtok AS token,
+           true AS has_token,
+           dm.muji AS uji,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'pending_mechanic_work'), 0)::int AS pending_mechanic_work,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'expired'), 0)::int AS expired,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'pending_supervisor'), 0)::int AS pending_l1,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'pending_superintendent'), 0)::int AS pending_l2,
+           coalesce(count(sw.wo) FILTER (WHERE (sw.wo->>'status') = 'approved'), 0)::int AS approved
+      FROM daftar_mek dm
+      LEFT JOIN semua_wo sw ON sum._wo_milik_mekanik_sum(sw.wo, dm.mid, dm.mname, dm.memail)
+     GROUP BY dm.mid, dm.mname, dm.mjab, dm.mgol, dm.mtok, dm.muji
+  )
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+           'id', id,
+           'mechanic_id', mechanic_id,
+           'name', name,
+           'mechanic_name', mechanic_name,
+           'jabatan_aktual', jabatan_aktual,
+           'golongan', golongan,
+           'token', token,
+           'has_token', true,
+           'uji', uji,
+           'pending_mechanic_work', pending_mechanic_work,
+           'pending_work', pending_mechanic_work,
+           'perlu_diisi', pending_mechanic_work,
+           'expired', expired,
+           'pending_l1', pending_l1,
+           'pending_l2', pending_l2,
+           'pending_approval', pending_l1 + pending_l2,
+           'approved', approved
+         ) ORDER BY id), '[]'::jsonb),
+         count(*)::int,
+         coalesce(sum(pending_mechanic_work), 0)::int,
+         coalesce(sum(expired), 0)::int,
+         coalesce(sum(pending_l1), 0)::int,
+         coalesce(sum(pending_l2), 0)::int,
+         coalesce(sum(approved), 0)::int
+    INTO v_mechs, v_total, v_p_work, v_exp, v_p_l1, v_p_l2, v_app
+    FROM mech_counts;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'source', 'SUPABASE',
+    'result', jsonb_build_object(
+      'overall', jsonb_build_object(
+        'mechanics', coalesce(v_total, 0),
+        'total_mechanics', coalesce(v_total, 0),
+        'mechanic_count', coalesce(v_total, 0),
+        'pending_mechanic_work', coalesce(v_p_work, 0),
+        'pending_work', coalesce(v_p_work, 0),
+        'perlu_diisi', coalesce(v_p_work, 0),
+        'expired', coalesce(v_exp, 0),
+        'pending_l1', coalesce(v_p_l1, 0),
+        'pending_l2', coalesce(v_p_l2, 0),
+        'pending_approval', coalesce(v_p_l1, 0) + coalesce(v_p_l2, 0),
+        'menunggu_approval', coalesce(v_p_l1, 0) + coalesce(v_p_l2, 0),
+        'approved', coalesce(v_app, 0)
+      ),
+      'mechanics', coalesce(v_mechs, '[]'::jsonb),
+      'pulled_at', v_pulled
+    )
+  )::json;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.sum_monitoring_bertoken(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF btrim(coalesce(p_token, '')) = '' THEN
+    RETURN json_build_object('success', false, 'error', 'Token tidak dikenal / nonaktif', 'source', 'SUPABASE');
+  END IF;
+  RETURN public.sum_monitoring();
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sum_monitoring_bertoken(text) TO anon, authenticated, service_role;
+
+
 -- Segarkan cache skema PostgREST agar seluruh fungsi RPC baru langsung aktif tanpa delay 404 PGRST202
 NOTIFY pgrst, 'reload schema';
 
@@ -1622,106 +1335,3 @@ FROM (
     jsonb_array_length(coalesce((public.kmbtra_create_refs()::jsonb #> '{result,jobs_field}'), '[]'::jsonb)) AS jumlah_job_cascade
 ) ringkasan
 ORDER BY rumah;
-```
-
--- ==============================================================================
--- PERBAIKAN PENCOCOKAN WO MEKANIK KMB PROJEK (_kode_mekanik_kanonik)
--- ==============================================================================
-CREATE OR REPLACE FUNCTION kmb_projek._wo_milik_mekanik(p_wo jsonb, p_mid text, p_mname text DEFAULT '')
-RETURNS boolean
-LANGUAGE plpgsql
-IMMUTABLE
-AS $$
-DECLARE
-  v_id    text := upper(btrim(coalesce(p_mid, '')));
-  v_name  text := upper(btrim(coalesce(p_mname, '')));
-  v_kanon text := public._kode_mekanik_kanonik(p_mid);
-  v_kandidat text;
-BEGIN
-  IF v_id = '' AND v_name = '' THEN
-    RETURN false;
-  END IF;
-
-  FOR v_kandidat IN
-    SELECT unnest(ARRAY[
-      coalesce(p_wo->>'lead_mechanic_id', ''),
-      coalesce(p_wo->>'mechanic_id', ''),
-      coalesce(p_wo->>'assigned_to', ''),
-      coalesce(p_wo->>'mechanic_name', ''),
-      coalesce(p_wo->>'lead_mechanic_name', ''),
-      coalesce(p_wo->>'name', '')
-    ])
-  LOOP
-    v_kandidat := btrim(v_kandidat);
-    IF v_kandidat <> '' THEN
-      IF (v_id <> '' AND upper(v_kandidat) = v_id)
-         OR (v_kanon <> '' AND public._kode_mekanik_kanonik(v_kandidat) = v_kanon)
-         OR (v_name <> '' AND upper(v_kandidat) = v_name) THEN
-        RETURN true;
-      END IF;
-    END IF;
-  END LOOP;
-
-  IF jsonb_typeof(p_wo->'team') = 'array' THEN
-    IF EXISTS (
-      SELECT 1 FROM jsonb_array_elements(p_wo->'team') el
-       WHERE (v_id <> '' AND upper(btrim(coalesce(el->>'mechanic_id', el->>'id', el #>> '{}', ''))) = v_id)
-          OR (v_kanon <> '' AND public._kode_mekanik_kanonik(coalesce(el->>'mechanic_id', el->>'id', el #>> '{}', '')) = v_kanon)
-          OR (v_name <> '' AND upper(btrim(coalesce(el->>'mechanic_name', el->>'name', el->>'mechanic_id', ''))) = v_name)
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  IF jsonb_typeof(p_wo->'effective_team') = 'array' THEN
-    IF EXISTS (
-      SELECT 1 FROM jsonb_array_elements(p_wo->'effective_team') el
-       WHERE (v_id <> '' AND upper(btrim(coalesce(el->>'mechanic_id', el->>'id', el #>> '{}', ''))) = v_id)
-          OR (v_kanon <> '' AND public._kode_mekanik_kanonik(coalesce(el->>'mechanic_id', el->>'id', el #>> '{}', '')) = v_kanon)
-          OR (v_name <> '' AND upper(btrim(coalesce(el->>'mechanic_name', el->>'name', el->>'mechanic_id', ''))) = v_name)
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  IF jsonb_typeof(p_wo->'team_distribution') = 'object' THEN
-    IF EXISTS (
-      SELECT 1 FROM jsonb_each_text(p_wo->'team_distribution') td
-       WHERE (v_id <> '' AND upper(btrim(td.key)) = v_id)
-          OR (v_kanon <> '' AND public._kode_mekanik_kanonik(td.key) = v_kanon)
-          OR (v_name <> '' AND upper(btrim(td.key)) = v_name)
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  IF jsonb_typeof(p_wo->'team_names') = 'array' THEN
-    IF EXISTS (
-      SELECT 1 FROM jsonb_array_elements_text(p_wo->'team_names') tn
-       WHERE (v_name <> '' AND upper(btrim(tn)) = v_name)
-          OR (v_id <> '' AND upper(btrim(tn)) = v_id)
-          OR (v_kanon <> '' AND public._kode_mekanik_kanonik(tn) = v_kanon)
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  IF coalesce(p_wo->>'mechanic_ids', p_wo->>'mechanics', '') <> '' THEN
-    IF EXISTS (
-      SELECT 1 FROM regexp_split_to_table(coalesce(p_wo->>'mechanic_ids', '') || ',' || coalesce(p_wo->>'mechanics', ''), '[,;]') s
-       WHERE btrim(s) <> ''
-         AND (
-              (v_id <> '' AND upper(btrim(s)) = v_id)
-           OR (v_kanon <> '' AND public._kode_mekanik_kanonik(s) = v_kanon)
-           OR (v_name <> '' AND upper(btrim(s)) = v_name)
-         )
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  RETURN false;
-END;
-$$;
-
-NOTIFY pgrst, 'reload schema';
