@@ -496,9 +496,9 @@ BEGIN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE sum.work_orders
            SET data = data || p_payload || jsonb_build_object(
-               'status', 'PENDING_L1',
+               'status', 'pending_supervisor',
                'status_group', 'pending_approval',
-               'status_label', 'Menunggu Approval L1',
+               'status_label', 'Menunggu Level 1',
                'submitted_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'),
                'submitted_by', v_user.name
            ),
@@ -506,7 +506,7 @@ BEGIN
            sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L1', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L1', 'source', 'SUPABASE');
+        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'pending_supervisor', 'status_group', 'pending_approval', 'status_label', 'Menunggu Level 1', 'source', 'SUPABASE');
 
     ELSIF v_aksi IN ('save_override', 'override') THEN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
@@ -534,9 +534,9 @@ BEGIN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE sum.work_orders
            SET data = data || jsonb_build_object(
-               'status', 'PENDING_L2',
+               'status', 'pending_superintendent',
                'status_group', 'pending_approval',
-               'status_label', 'Menunggu Approval L2',
+               'status_label', 'Menunggu Level 2',
                'approved_l1_by', v_user.name,
                'approved_l1_at', to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS')
            ),
@@ -544,7 +544,7 @@ BEGIN
            sinkron_at = now()
          WHERE data->>'wo_number' = v_wo_id OR data->>'id' = v_wo_id;
 
-        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'PENDING_L2', 'status_group', 'pending_approval', 'status_label', 'Menunggu Approval L2', 'source', 'SUPABASE');
+        RETURN jsonb_build_object('success', true, 'wo_id', v_wo_id, 'status', 'pending_superintendent', 'status_group', 'pending_approval', 'status_label', 'Menunggu Level 2', 'source', 'SUPABASE');
 
     ELSIF v_aksi = 'approve_l2' THEN
         IF lower(v_user.role) NOT IN ('superintendent', 'admin', 'manager') THEN
@@ -558,7 +558,7 @@ BEGIN
         v_wo_id := coalesce(p_payload->>'wo_id', p_payload->>'id', '');
         UPDATE sum.work_orders
            SET data = data || jsonb_build_object(
-               'status', 'APPROVED',
+               'status', 'approved',
                'status_group', 'done',
                'status_label', 'Approved',
                'approved_l2_by', v_user.name,

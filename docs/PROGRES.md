@@ -12,6 +12,40 @@ Formatnya:
 
 ---
 
+### 2026-11-10 · Raka (+ AI) · kmb & sum (Perbaikan Alur Approval L1 -> L2 & Pencegahan Lolos Langsung ke Approved)
+- Berubah:
+  - **Akar Masalah Approval L1 Langsung Selesai (Bypass L2 ke Status APPROVED)**:
+    - Di `Approval.html` baris 1378: `var fnName = status === 'pending_supervisor' ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';`.
+    - Karena sebelumnya status yang tersimpan dari `submit_work` atau RPC berupa `PENDING_L1` (huruf kapital atau alias lain), pengecekan `status === 'pending_supervisor'` bernilai `false`, sehingga frontend menganggap kartu tersebut adalah kartu Level 2.
+    - Saat Supervisor (Yoel) menekan "Approve", browser memanggil `handleSuperintendentApprove` (Level 2). Di backend, ini memicu `approve_l2` yang langsung mengubah status menjadi `APPROVED` (`status_group: 'done'`), melewati Superintendent (Level 2) sepenuhnya dan langsung masuk ke tab "Done" di Monitoring Mekanik.
+  - **Perbaikan Frontend (`workers/kmb/web/Approval.html` & `workers/sum/web/Approval.html`)**:
+    - Memperbarui pengecekan level approval: `var isL1 = (status === 'pending_supervisor' || status === 'pending_l1'); if ('<?= user.role ?>' === 'supervisor') isL1 = true;`.
+    - Jika pengguna berperan `supervisor`, aksi approval & reject selalu dipaksa ke `handleSupervisorApprove` / `handleSupervisorReject`.
+    - Pengecekan lencana status, modal approval, dan bulk approval diselaraskan agar mendukung `pending_supervisor` dan `pending_l1`.
+    - Kompilasi ulang web templates via `node scripts/build-web-templates.mjs`.
+  - **Perbaikan Backend (`workers/kmb/src/` & `workers/sum/src/`)**:
+    - Menambahkan Role Guard di `handleWebBridgeApi`: Permintaan `superintendentApprove` / `approve_l2` dari actor ber-role `supervisor` langsung ditolak dengan HTTP 403 Forbidden.
+    - Menyelaraskan status di `supabase-backend.js`:
+      - `submit_work`: status `pending_supervisor`, status_group `pending_approval`, status_label `Menunggu Level 1`.
+      - `approve_l1`: status `pending_superintendent`, status_group `pending_approval`, status_label `Menunggu Level 2`.
+      - `approve_l2`: status `approved`, status_group `done`, status_label `Approved`.
+    - Memperbarui query SQL `db/kmb/rpc_backend_penuh.sql` dan `db/sum/rpc_backend_penuh.sql` agar nilai status konsisten dengan GAS (`pending_supervisor` dan `pending_superintendent`).
+  - **Pemulihan Data WO Uji di Staging (Gedung 2)**:
+    - `WO-20261110-0008` dipulihkan ke status `pending_superintendent` (`approved_l1_by: Yoel`, `status_group: pending_approval`).
+    - Verifikasi antrean live:
+      - Muncul di antrean Superintendent Yoga (`token=49ae897c18534448998a`).
+      - Tidak muncul di antrean Supervisor Yoel (`kmb-767db2f62a87`).
+      - Uji proteksi role guard: Yoel memanggil `superintendentApprove` ditolak 403.
+      - Uji approve L2 Yoga pada `WO-20261110-0007` berhasil 200 OK dan berpindah ke `APPROVED` / `done`.
+  - **Deploy Staging**:
+    - `abadiops-kmb-staging`: Version `696efa71-1662-423a-848b-b66da5bd5859`
+    - `abadiops-sum-staging`: Version `268e7b03-0b70-4d21-b72b-58946df7fef1`
+    - `uji-serahan-token` (24/24 lulus), `uji-siklus-wo-lengkap` (12/12 lulus).
+- Belum selesai / berikutnya:
+  - Verifikasi menyeluruh alur monitoring mekanik tab Pending vs Done saat approval bertahap.
+
+---
+
 ### 2026-11-10 · Gabriel (+ AI) · sum (Perbaikan Render WO Mechanic Staging)
 - Berubah: `web-templates.js` (fix `var _rawWos` assignment + JSON stringify tanpa HTML escape), `web-handler.js` (fallback `status` ke `data`). Data di HTML valid (369 WO, 81 pending) dan API valid.
 - Belum selesai: Frontend render masih loading (kemungkinan JS error di `renderWOs()` atau logic filter). Perlu browser DevTools inspect. Lanjut debug setelah browser console check.

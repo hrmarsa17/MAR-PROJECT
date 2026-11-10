@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
             <div class="wo-header">
               <div class="wo-number"><?= wo.wo_number ?></div>
               <div class="wo-header-right">
-                <div class="status-badge status-<?= wo.status.replace(/_/g, '-') ?>"><?= wo.status === 'pending_supervisor' ? 'Level 1' : 'Level 2' ?></div>
+                <div class="status-badge status-<?= wo.status.replace(/_/g, '-') ?>"><?= (wo.status === 'pending_supervisor' || wo.status === 'pending_l1') ? 'Level 1' : 'Level 2' ?></div>
                 <? if (wo.timeliness) { ?>
                   <span class="timeliness-badge timeliness-<?= wo.timeliness.status ?>" title="Actual <?= fmtJam(wo.timeliness.actual_hours) ?> vs Target <?= fmtJam(wo.timeliness.target_hours) ?> (<?= wo.timeliness.ratio_percent ?>%) — factor ×<?= wo.timeliness.factor ?>">⏱️ <?= wo.timeliness.label ?></span>
                 <? } ?>
@@ -718,7 +718,11 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
       var wo = null;
       for (var i = 0; i < pendingApprovalsData.length; i++) { if (pendingApprovalsData[i].id === woId) { wo = pendingApprovalsData[i]; break; } }
       document.getElementById('approveWoNumber').textContent = wo ? wo.wo_number : woId;
-      var isFinal = (status === 'pending_superintendent');
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1');
+      if ('<?= user.role ?>' === 'supervisor') {
+        isL1 = true;
+      }
+      var isFinal = (status === 'pending_superintendent' || status === 'pending_l2' || !isL1);
       document.getElementById('approveLevelText').textContent = isFinal
         ? 'Approval Final (Layer 2) — poin akan dihitung & didistribusikan.'
         : 'Approval Level 1 — WO akan diteruskan ke Layer 2.';
@@ -779,14 +783,18 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
       var btns = card ? card.querySelectorAll('.btn') : [];
       for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
       if (card) card.classList.add('processing');
-      var fnName = status === 'pending_supervisor' ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
-      showApprovalOverlay('Memproses approval — mohon tunggu...');
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1');
+      if ('<?= user.role ?>' === 'supervisor') {
+        isL1 = true;
+      }
+      var fnName = isL1 ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
+      showApprovalOverlay(isL1 ? 'Memproses Approval Level 1 — mohon tunggu...' : 'Memproses Approval Level 2 — mohon tunggu...');
       google.script.run.withSuccessHandler(function(result) {
         hideApprovalOverlay();
         confirmBtn.disabled = false; confirmBtn.textContent = '✓ Konfirmasi Approve';
         if (result && result.success) {
           closeApproveModal();
-          if (status === 'pending_supervisor') {
+          if (isL1) {
             alert('✅ Level 1 Approved!\nWO pindah ke Level 2.' + (safety ? '\n⚠️ Insiden dicatat untuk review Layer 2.' : ''));
           } else {
             alert('✅ Fully Approved!' + (safety ? '\n⚠️ Safety incident → poin = 0.' : '\nPoin terdistribusi.'));
@@ -812,7 +820,11 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
       var card = buttonElement.closest('.wo-card'); var btns = card.querySelectorAll('.btn');
       for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
       buttonElement.textContent = '⏳ Rejecting...'; card.classList.add('processing');
-      var fnName = status === 'pending_supervisor' ? 'handleSupervisorReject' : 'handleSuperintendentReject';
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1');
+      if ('<?= user.role ?>' === 'supervisor') {
+        isL1 = true;
+      }
+      var fnName = isL1 ? 'handleSupervisorReject' : 'handleSuperintendentReject';
       google.script.run.withSuccessHandler(function(result) {
         if (result && result.success) { alert('✅ WO ditolak.\nAlasan: ' + reason); if (card) removeCardAndCheck(card); }
         else { alert('❌ Gagal: ' + (result && result.error ? result.error.message : 'Unknown error')); for (var b = 0; b < btns.length; b++) btns[b].disabled = false; buttonElement.textContent = '✗ Reject'; card.classList.remove('processing'); }

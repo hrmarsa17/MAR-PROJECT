@@ -388,15 +388,15 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     }
   }
 
-  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAksi)) {
+  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic', 'approve_l1', 'approve_l2', 'reject', 'cancel_wo', 'save_override', 'approve_transfer', 'reject_transfer'].includes(cleanAksi)) {
     payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
   }
 
   // Jika submit work, pastikan status & status_group disetel ke pending_approval
   if (cleanAksi === 'submit_work') {
-    payload.status = payload.status || 'PENDING_L1';
+    payload.status = payload.status || 'pending_supervisor';
     payload.status_group = 'pending_approval';
-    payload.status_label = 'Menunggu Approval L1';
+    payload.status_label = 'Menunggu Level 1';
     if (payload.actual_hours && payload.target_hours && !payload.final_points) {
       const skor = hitungSkorMandiri({
         basePoints: payload.base_points || payload.plan_points || 0,
@@ -562,15 +562,37 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
         const submitData = {
           wo_id: payload.wo_id || data.wo_id || '',
           wo_number: payload.wo_id || data.wo_id || '',
-          status: 'PENDING_L1',
+          status: 'pending_supervisor',
           status_group: 'pending_approval',
-          status_label: 'Menunggu Approval L1',
+          status_label: 'Menunggu Level 1',
           actual_hours: actHours,
           duration_hours: actHours,
           ...(data.data || data.result || {})
         };
         data.data = submitData;
         data.result = submitData;
+      } else if (cleanAksi === 'approve_l1' && data.success) {
+        const l1Data = {
+          wo_id: payload.wo_id || data.wo_id || '',
+          wo_number: payload.wo_id || data.wo_id || '',
+          status: 'pending_superintendent',
+          status_group: 'pending_approval',
+          status_label: 'Menunggu Level 2',
+          ...(data.data || data.result || {})
+        };
+        data.data = l1Data;
+        data.result = l1Data;
+      } else if (cleanAksi === 'approve_l2' && data.success) {
+        const l2Data = {
+          wo_id: payload.wo_id || data.wo_id || '',
+          wo_number: payload.wo_id || data.wo_id || '',
+          status: 'approved',
+          status_group: 'done',
+          status_label: 'Approved',
+          ...(data.data || data.result || {})
+        };
+        data.data = l2Data;
+        data.result = l2Data;
       } else if (!data.data && data.result) {
         data.data = data.result;
       } else if (!data.data) {

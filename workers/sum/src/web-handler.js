@@ -360,6 +360,23 @@ export async function handleWebBridgeApi(request, env, url) {
     data.token = token;
   }
 
+  // Role Guard untuk Approval L1 vs L2
+  if (['approve_l2', 'handleSuperintendentApprove', 'superintendentApprove'].includes(action)) {
+    const userRes = await panggilAksiInternal('ping', token, {}, env);
+    const user = (userRes && userRes.result) ? userRes.result : (userRes && userRes.data ? userRes.data : {});
+    const roleLower = String(user.role || '').toLowerCase();
+    if (roleLower === 'supervisor') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { message: 'Akses ditolak: Hanya Level 2 (Superintendent / Manager) yang berhak melakukan Approval Level 2' },
+        source: 'SUPABASE'
+      }), {
+        status: 403,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
+      });
+    }
+  }
+
   // Buku Tamu Kiriman (Idempotency Store di Cloudflare, docs/SAKLAR.md)
   const opId = body.op_id || body.kiriman_id || data.op_id || data.kiriman_id;
   if (opId) {

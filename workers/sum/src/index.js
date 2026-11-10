@@ -25,8 +25,25 @@ import {
 } from './supabase-backend.js';
 import { cekBukuTamu, catatBukuTamu } from './buku-tamu.js';
 
-// Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
+// Gerbang uji kembar (bug #12). Kosong sampai aksi lulus uji kembar rumah ini.
+// Saklar (docs/SAKLAR.md) yang memilih jalur, bukan set ini.
 const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
+
+// Aksi tulis pada satu WO. Saat saklar dua_cabang, WO lama (GAS) tetap ke GAS.
+const AKSI_TULIS_WO = new Set([
+  'submit_work',
+  'submit_job',
+  'save_override',
+  'approve_l1',
+  'approve_l2',
+  'reject',
+  'cancel_wo',
+  'request_transfer',
+  'approve_transfer',
+  'reject_transfer',
+  'report_expired',
+  'reopen_expired',
+]);
 
 export default {
   async fetch(request, env) {
@@ -84,12 +101,19 @@ async function tanganiApi(request, env, url) {
     }
   }
 
-  // Aturan Saklar Balik & Satu Rumah Seumur Hidup:
-  // 1. Jika WO lahir di Supabase (4 digit / WO-SB-*), WAJIB ke Supabase bahkan saat saklar 'gas'.
-  // 2. Jika WO lama lahir di GAS (3 digit), saat dua_cabang tetap diteruskan ke GAS.
-  const harusKeSupabase = woSupabase || (liveSaklar === 'supabase') || ((liveSaklar !== 'gas' || ujiSupabase) && !woGas);
+  // docs/SAKLAR.md — tiga posisi, satu WO satu rumah.
+  // gas: semua ke GAS, kecuali WO yang sudah lahir di Supabase, atau aksi yang lulus uji kembar.
+  // dua_cabang: WO baru + daftar/monitoring ke Supabase; aksi tulis WO lama tetap GAS.
+  // supabase: semua ke Supabase, tanpa fallback GAS.
+  const aksiTulisWoLama = liveSaklar === 'dua_cabang' && AKSI_TULIS_WO.has(action) && woGas && !woSupabase;
+  const harusKeSupabase = !aksiTulisWoLama && (
+    woSupabase ||
+    liveSaklar === 'supabase' ||
+    liveSaklar === 'dua_cabang' ||
+    ujiSupabase ||
+    (liveSaklar === 'gas' && AKSI_SUPABASE_LULUS_KEMBAR.has(action))
+  );
 
-  // Coba jalur Supabase jika saklar tidak 'gas' ATAU sedang diuji (?uji=supabase)
   if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     const resSupa = await eksekusiSupabaseBackendSum(action, token, parsed, env);
     if (resSupa && resSupa.status === 200) {
@@ -150,6 +174,12 @@ async function cobaSupabaseSum(action, token, parsed, env) {
     if (action === 'ping' && token) {
       rpcName = 'sum_ping';
       payload = { p_token: token };
+    } else if (action === 'pull_monitoring' && token) {
+      rpcName = 'sum_eksekusi_aksi_bertoken';
+      payload = { p_token: token, p_aksi: 'pull_monitoring', p_payload: {} };
+    } else if (action === 'pull_monitoring_daftar' && token) {
+      rpcName = 'sum_eksekusi_aksi_bertoken';
+      payload = { p_token: token, p_aksi: 'pull_monitoring_daftar', p_payload: {} };
     } else if (action === 'handleGetWoDetailForMechanic' && token) {
       rpcName = 'sum_eksekusi_aksi_bertoken';
       payload = { p_token: token, p_aksi: 'pull_wo_detail', p_payload: { wo_id: (parsed.wo_id || parsed.id || '').toString() } };
@@ -242,7 +272,7 @@ async function sehat(env) {
     ok: true,
     rumah: env.RUMAH,
     saklar: liveSaklar,
-    jalur: liveSaklar === 'gas' ? 'gas' : (env.STORAGE_MODE || 'dua_cabang'),
+    jalur: liveSaklar === 'gas' ? 'gas' : liveSaklar,
     supabase_configured: !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY),
   }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },

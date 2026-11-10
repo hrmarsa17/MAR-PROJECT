@@ -35,5 +35,9 @@ cadangkan-produksi.cmd
 # Direktori skrip uji coba sementara
 scratch/
 
+# Backup / unduhan source code GAS lokal (jangan di-commit)
+gas-backup/
+
+
 # Sisa wrangler dev lokal (jangan di-commit)
 .wrangler/

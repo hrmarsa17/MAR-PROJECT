@@ -25,8 +25,25 @@ import {
 } from './supabase-backend.js';
 import { cekBukuTamu, catatBukuTamu } from './buku-tamu.js';
 
-// Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
+// Gerbang uji kembar (bug #12). Kosong sampai aksi lulus uji kembar rumah ini.
+// Saklar (docs/SAKLAR.md) yang memilih jalur, bukan set ini.
 const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
+
+// Aksi tulis pada satu WO. Saat saklar dua_cabang, WO lama (GAS) tetap ke GAS.
+const AKSI_TULIS_WO = new Set([
+  'submit_work',
+  'submit_job',
+  'save_override',
+  'approve_l1',
+  'approve_l2',
+  'reject',
+  'cancel_wo',
+  'request_transfer',
+  'approve_transfer',
+  'reject_transfer',
+  'report_expired',
+  'reopen_expired',
+]);
 
 export default {
   async fetch(request, env) {
@@ -84,12 +101,19 @@ async function tanganiApi(request, env, url) {
     }
   }
 
-  // Aturan Saklar Balik & Satu Rumah Seumur Hidup:
-  // 1. Jika WO lahir di Supabase (4 digit / WO-SB-*), WAJIB ke Supabase bahkan saat saklar 'gas'.
-  // 2. Jika WO lama lahir di GAS (3 digit), saat dua_cabang tetap diteruskan ke GAS.
-  const harusKeSupabase = woSupabase || (liveSaklar === 'supabase') || ((liveSaklar !== 'gas' || ujiSupabase) && !woGas);
+  // docs/SAKLAR.md — tiga posisi, satu WO satu rumah.
+  // gas: semua ke GAS, kecuali WO yang sudah lahir di Supabase, atau aksi yang lulus uji kembar.
+  // dua_cabang: WO baru + daftar/monitoring ke Supabase; aksi tulis WO lama tetap GAS.
+  // supabase: semua ke Supabase, tanpa fallback GAS.
+  const aksiTulisWoLama = liveSaklar === 'dua_cabang' && AKSI_TULIS_WO.has(action) && woGas && !woSupabase;
+  const harusKeSupabase = !aksiTulisWoLama && (
+    woSupabase ||
+    liveSaklar === 'supabase' ||
+    liveSaklar === 'dua_cabang' ||
+    ujiSupabase ||
+    (liveSaklar === 'gas' && AKSI_SUPABASE_LULUS_KEMBAR.has(action))
+  );
 
-  // Logic routing berdasarkan status saklar atau mode uji kembar
   if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
       const resSupa = await eksekusiSupabaseBackendKmb(action, token, parsed, env);
       if (resSupa && resSupa.status === 200) {
@@ -109,6 +133,7 @@ async function tanganiApi(request, env, url) {
           headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
         });
       }
+      // Jika saklar dua_cabang atau gas, fallback aman ke GAS
       const fallbackSupa = await cobaSupabaseKmbTra(action, token, parsed, env);
       if (fallbackSupa) {
         if (opId && fallbackSupa.status === 200) {
@@ -240,7 +265,7 @@ async function sehat(env) {
     ok: true,
     rumah: env.RUMAH,
     saklar: liveSaklar,
-    jalur: liveSaklar === 'gas' ? 'gas' : (env.STORAGE_MODE || 'dua_cabang'),
+    jalur: liveSaklar === 'gas' ? 'gas' : liveSaklar,
     supabase_configured: !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY),
   }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },

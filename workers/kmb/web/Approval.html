@@ -488,7 +488,7 @@
                 </div>
                 <div class="wo-row-badges">
                   <span class="status-badge status-<?= wo.status.replace(/_/g, '-') ?>" style="font-size:0.68rem;padding:0.18rem 0.5rem;font-weight:700;">
-                    <?= wo.status === 'pending_supervisor' ? 'Level 1' : 'Level 2' ?>
+                    <?= (wo.status === 'pending_supervisor' || wo.status === 'pending_l1') ? 'Level 1' : 'Level 2' ?>
                   </span>
                   <? if (wo.kembar && wo.kembar.length > 0) { ?>
                     <span class="badge-mini-danger" title="Mungkin sama dengan <?= wo.kembar.length ?> WO lain">⚠️ Mirip <?= wo.kembar.length ?> WO</span>
@@ -1321,7 +1321,11 @@
       }
 
       document.getElementById('approveWoNumber').textContent = wo ? wo.wo_number : woId;
-      var isFinal = (status === 'pending_superintendent');
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1');
+      if ('<?= user.role ?>' === 'supervisor') {
+        isL1 = true;
+      }
+      var isFinal = (status === 'pending_superintendent' || status === 'pending_l2' || !isL1);
       document.getElementById('approveLevelText').textContent = isFinal
         ? 'Approval Final (Layer 2) — poin akan dihitung & didistribusikan.'
         : 'Approval Level 1 — WO akan diteruskan ke Layer 2.';
@@ -1374,15 +1378,19 @@
       var btns = card ? card.querySelectorAll('.btn') : [];
       for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
       if (card) card.classList.add('processing');
-      showApproveOverlay(status === 'pending_supervisor' ? 'Memproses Approval Level 1...' : 'Memproses Approval Level 2 — poin sedang di-award...');
-      var fnName = status === 'pending_supervisor' ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
+      showApproveOverlay((status === 'pending_supervisor' || status === 'pending_l1' || '<?= user.role ?>' === 'supervisor') ? 'Memproses Approval Level 1...' : 'Memproses Approval Level 2 — poin sedang di-award...');
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1');
+      if ('<?= user.role ?>' === 'supervisor') {
+        isL1 = true;
+      }
+      var fnName = isL1 ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
       google.script.run.withSuccessHandler(function(result) {
         hideApproveOverlay();
         confirmBtn.disabled = false; confirmBtn.textContent = '✓ Konfirmasi Approve';
         if (result && result.success) {
           closeApproveModal();
           var successMsg = '';
-          if (status === 'pending_supervisor') {
+          if (isL1) {
             successMsg = 'Level 1 Approved!\nWO pindah ke Level 2.' + (safety ? '\n\n⚠️ Insiden dicatat untuk review Layer 2.' : '') + (mtbfStatus === 'redo' ? '\n\n🔧 Ditandai REDO untuk review Layer 2.' : '');
           } else {
             successMsg = 'Fully Approved!' + (safety ? '\n\n⚠️ Safety incident → poin = 0.' : '\n\nPoin terdistribusi.') + (mtbfStatus === 'redo' ? '\n\n🔧 Redo Judgment: REDO (faktor redo diterapkan).' : '');
@@ -1408,7 +1416,11 @@
       for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
       buttonElement.textContent = '⏳ Rejecting...'; card.classList.add('processing');
       showApproveOverlay('Memproses Penolakan WO...');
-      var fnName = status === 'pending_supervisor' ? 'handleSupervisorReject' : 'handleSuperintendentReject';
+      var isL1 = (status === 'pending_supervisor' || status === 'pending_l1');
+      if ('<?= user.role ?>' === 'supervisor') {
+        isL1 = true;
+      }
+      var fnName = isL1 ? 'handleSupervisorReject' : 'handleSuperintendentReject';
       google.script.run.withSuccessHandler(function(result) {
         hideApproveOverlay();
         if (result && result.success) { 
@@ -2218,7 +2230,11 @@
           logBox.scrollTop = logBox.scrollHeight;
         }
 
-        var fnName = (item.status === 'pending_supervisor') ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
+        var isL1 = (item.status === 'pending_supervisor' || item.status === 'pending_l1');
+        if ('<?= user.role ?>' === 'supervisor') {
+          isL1 = true;
+        }
+        var fnName = isL1 ? 'handleSupervisorApprove' : 'handleSuperintendentApprove';
         var safety = (item.safety_incident === true || String(item.safety_incident).toLowerCase() === 'true');
         var mtbf = (item.mtbf_redo_status === 'redo') ? 'redo' : 'first_time';
 
