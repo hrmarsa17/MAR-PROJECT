@@ -274,7 +274,7 @@ export function apakahWoLamaDariGas(woId) {
 /**
  * Eksekusi Backend Mandiri Supabase untuk Rumah KMB Project & Multi-Rumah
  */
-export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
+export async function eksekusiSupabaseBackendSum(action, token, body, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return null;
   }
@@ -387,7 +387,7 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     }
   }
 
-  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAksi)) {
+  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic', 'approve_l1', 'approve_l2', 'reject', 'cancel_wo', 'save_override', 'approve_transfer', 'reject_transfer'].includes(cleanAksi)) {
     payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
   }
 
@@ -674,5 +674,5 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
   }
 }
 
-export const eksekusiSupabaseBackendKmb = eksekusiSupabaseBackendKmbp;
-export const eksekusiSupabaseBackendSum = eksekusiSupabaseBackendKmbp;
+export const eksekusiSupabaseBackendKmb = eksekusiSupabaseBackendSum;
+export const eksekusiSupabaseBackendKmbp = eksekusiSupabaseBackendSum;

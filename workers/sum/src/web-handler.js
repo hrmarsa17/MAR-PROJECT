@@ -5,7 +5,7 @@
 
 import { renderWebPage } from './web-templates.js';
 import {
-  eksekusiSupabaseBackendKmbp,
+  eksekusiSupabaseBackendSum,
   bacaStatusSaklar,
   ekstrakWoId,
   apakahWoLahirDiSupabase,
@@ -41,10 +41,12 @@ const ROUTER_ACTIONS = new Set([
 
 function lengkapiObjekWoWeb(w) {
   if (!w || typeof w !== 'object') return {};
-  const id = String(w.id || w.wo_id || w.wo_number || 'WO-0');
-  const wo_number = String(w.wo_number || id);
+  const d = (w.data && typeof w.data === 'object') ? w.data : {};
+  const id = String(w.id || w.wo_id || w.wo_number || d.id || d.wo_id || d.wo_number || 'WO-0');
+  const wo_number = String(w.wo_number || d.wo_number || id);
 
-  const st = String(w.status || 'pending_mechanic_work').toLowerCase().trim();
+  const rawStatus = w.status || d.status || 'pending_mechanic_work';
+  const st = String(rawStatus).toLowerCase().trim();
   let sg = 'assigned';
   if (['approved', 'done', 'closed'].includes(st)) {
     sg = 'done';
@@ -187,6 +189,8 @@ export async function handleWebRequest(request, env, url) {
     mechanic_id: mechanic_id,
   };
 
+  const roleLower = String(role || user.role || '').toLowerCase();
+
   // 2. Tentukan halaman
   let page = (url.searchParams.get('page') || '').toLowerCase().trim().split('&')[0];
 
@@ -198,7 +202,6 @@ export async function handleWebRequest(request, env, url) {
   }
 
   if (!page) {
-    const roleLower = String(role).toLowerCase();
     page = (roleLower === 'mechanic') ? 'mechanic'
          : (roleLower === 'supervisor') ? 'approvals'
          : 'dashboard';
@@ -232,39 +235,44 @@ export async function handleWebRequest(request, env, url) {
         context.userScope = actualRefs.user_scope || refsData.user_scope || null;
       }
     } else if (['approvals', 'approval'].includes(page)) {
-      const pending = await panggilAksiInternal('pull_pending', token, {}, env);
+      const [pending, active, approved, rejected, mechList] = await Promise.all([
+        panggilAksiInternal('pull_pending', token, {}, env),
+        panggilAksiInternal('pull_active', token, {}, env),
+        panggilAksiInternal('pull_approved', token, {}, env),
+        panggilAksiInternal('pull_rejected', token, {}, env),
+        panggilAksiInternal('pull_create_refs', token, {}, env),
+      ]);
       const pendingData = pending && pending.result ? pending.result : (pending && pending.data ? pending.data : {});
-      if (pending && pendingData) {
-        const rawList = (pendingData.pending || pendingData.approvals || pendingData.wos || (Array.isArray(pendingData) ? pendingData : [])).map(lengkapiObjekWoWeb);
-        // Sesuai docs/SPEK-LAYAR/04-APPROVALS.md baris 49-52:
-        // Antrean L1 (supervisor) hanya pending_supervisor / pending_l1.
-        // Antrean L2 (superintendent) hanya pending_superintendent / pending_l2.
-        let pendingList = rawList.filter((w) => w.status !== 'pending_transfer');
-        if (roleLower === 'supervisor') {
-          pendingList = pendingList.filter((w) => {
-            const wst = String(w.status || '').toLowerCase().trim();
-            return wst === 'pending_supervisor' || wst === 'pending_l1';
-          });
-        } else if (roleLower === 'superintendent') {
-          pendingList = pendingList.filter((w) => {
-            const wst = String(w.status || '').toLowerCase().trim();
-            return wst === 'pending_superintendent' || wst === 'pending_l2';
-          });
-        }
-        context.pendingApprovals = pendingList;
-        context.pendingCount = pendingList.length;
-        context.pendingTotal = pendingList.length;
-        context.pendingTransfers = (pendingData.transfers || []).map(lengkapiObjekWoWeb);
-        context.activeWos = (pendingData.active || []).map(lengkapiObjekWoWeb);
-        context.approvedWos = (pendingData.approved || []).map(lengkapiObjekWoWeb);
-        context.rejectedWos = (pendingData.rejected || []).map(lengkapiObjekWoWeb);
-      }
-      const mechList = await panggilAksiInternal('pull_create_refs', token, {}, env);
+      const activeData = active && active.result ? active.result : (active && active.data ? active.data : {});
+      const approvedData = approved && approved.result ? approved.result : (approved && approved.data ? approved.data : {});
+      const rejectedData = rejected && rejected.result ? rejected.result : (rejected && rejected.data ? rejected.data : {});
       const mechData = mechList && mechList.result ? mechList.result : (mechList && mechList.data ? mechList.data : {});
       const actualMechRefs = (mechData && mechData.refs) ? mechData.refs : mechData;
-      if (mechList && actualMechRefs && (actualMechRefs.mechanics || actualMechRefs.allMechanics)) {
-        context.allMechanics = actualMechRefs.mechanics || actualMechRefs.allMechanics || [];
+
+      const rawList = (pendingData.pending || pendingData.approvals || pendingData.wos || (Array.isArray(pendingData) ? pendingData : [])).map(lengkapiObjekWoWeb);
+      // Sesuai docs/SPEK-LAYAR/04-APPROVALS.md baris 49-52:
+      // Antrean L1 (supervisor) hanya pending_supervisor / pending_l1.
+      // Antrean L2 (superintendent) hanya pending_superintendent / pending_l2.
+      let pendingList = rawList.filter((w) => w.status !== 'pending_transfer');
+      if (roleLower === 'supervisor') {
+        pendingList = pendingList.filter((w) => {
+          const wst = String(w.status || '').toLowerCase().trim();
+          return wst === 'pending_supervisor' || wst === 'pending_l1';
+        });
+      } else if (roleLower === 'superintendent') {
+        pendingList = pendingList.filter((w) => {
+          const wst = String(w.status || '').toLowerCase().trim();
+          return wst === 'pending_superintendent' || wst === 'pending_l2';
+        });
       }
+      context.pendingApprovals = pendingList;
+      context.pendingCount = pendingList.length;
+      context.pendingTotal = pendingList.length;
+      context.pendingTransfers = (pendingData.transfers || []).map(lengkapiObjekWoWeb);
+      context.activeWos = (activeData.active || activeData.wos || (Array.isArray(activeData) ? activeData : [])).map(lengkapiObjekWoWeb);
+      context.approvedWos = (approvedData.approved || approvedData.wos || (Array.isArray(approvedData) ? approvedData : [])).map(lengkapiObjekWoWeb);
+      context.rejectedWos = (rejectedData.rejected || rejectedData.wos || (Array.isArray(rejectedData) ? rejectedData : [])).map(lengkapiObjekWoWeb);
+      context.allMechanics = actualMechRefs.mechanics || actualMechRefs.allMechanics || [];
     } else if (['mechanic', 'monitoring', 'mechanicdashboard'].includes(page)) {
       const myWos = await panggilAksiInternal('pull_my_wos', token, {}, env);
       const mon = await panggilAksiInternal('pull_monitoring', token, {}, env);
@@ -376,7 +384,7 @@ export async function handleWebBridgeApi(request, env, url) {
 
   if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     try {
-      const resSupa = await eksekusiSupabaseBackendKmbp(action, token, body, env);
+      const resSupa = await eksekusiSupabaseBackendSum(action, token, body, env);
       if (resSupa && resSupa.status === 200) {
         if (opId) {
           try {
@@ -471,7 +479,7 @@ async function panggilAksiInternal(action, token, data, env) {
 
   if (harusKeSupabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     try {
-      const resSupa = await eksekusiSupabaseBackendKmbp(action, token, { data: data || {} }, env);
+      const resSupa = await eksekusiSupabaseBackendSum(action, token, { data: data || {} }, env);
       if (resSupa && resSupa.status === 200) {
         const json = await resSupa.json().catch(() => null);
         if (json) return json;

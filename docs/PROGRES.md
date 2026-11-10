@@ -12,6 +12,32 @@ Formatnya:
 
 ---
 
+### 2026-11-10 · Gabriel (+ AI) · sum (Perbaikan Render WO Mechanic Staging)
+- Berubah: `web-templates.js` (perbaiki assignment `var _rawWos` dan penghapusan HTML escaping ganda pada payload JSON), `web-handler.js` (fallback `status` ke `data`). WO di staging (`253de60cc43340d68d5a`) muncul dengan benar (81 pending approval).
+- Belum selesai: Deploy RPC `db/sum/rpc_backend_penuh.sql` ke produksi oleh Gabriel.
+
+---
+
+### 2026-11-10 · Raka (+ AI) · kmb & sum (Perbaikan Layar Approvals L1 KMB TRA & Pemuatan Paralel Status WO)
+- Berubah:
+  - **Akar Masalah KMB TRA Approvals L1 Kosong (`Pending Approvals 0`)**:
+    - **Penyebab**: Variabel `const roleLower = String(role).toLowerCase();` di `workers/kmb/src/web-handler.js` dideklarasikan di dalam blok `if (!page)`. Saat pengguna membuka URL eksplisit `?page=approvals`, blok `if (!page)` dilewati sehingga `roleLower` tidak terdefinisi (*ReferenceError: roleLower is not defined*). Blok `try-catch` context menangkap galat tersebut dan mengabaikan pengisian antrean `context.pendingApprovals`, sehingga template `Approval.html` merender daftar kosong (*Pending Approvals 0* dan *Tidak ada WO yang menunggu persetujuan*).
+    - **Perbaikan**:
+      - Memindahkan deklarasi `const roleLower = String(role || user.role || '').toLowerCase();` ke cakupan utama `handleWebRequest` sebelum penentuan halaman, diterapkan pada `workers/kmb/src/web-handler.js` dan `workers/sum/src/web-handler.js`.
+      - Memperbarui pemanggilan data halaman approval menjadi paralel via `Promise.all` (`pull_pending`, `pull_active`, `pull_approved`, `pull_rejected`, dan `pull_create_refs`) sehingga tab *WO Approval*, *WO Aktif*, *WO Approved*, dan *Ditolak* terisi penuh.
+      - Memastikan `payload.wo_id` pada aksi `approve_l1`, `approve_l2`, `reject`, `cancel_wo`, `save_override` selalu diekstrak aman dari berbagai format payload di `supabase-backend.js`.
+  - **Deploy & Verifikasi Staging**:
+    - `abadiops-kmb-staging`: Version `429768ca-4d53-4ba7-80b1-dca41c1df627`
+    - `abadiops-sum-staging`: Version `163a32de-478d-4d11-986a-f4c46af49463`
+    - Verifikasi HTML live endpoint `https://abadiops-kmb-staging.kawanabadigrup.workers.dev/web?page=approvals&token=kmb-767db2f62a87`:
+      - Berhasil merender `149` kartu WO Level 1 pada lencana `section-count` dan kartu `wo-card wo-list-item`.
+      - Uji aksi live `handleSupervisorApprove` untuk `WO-20261110-0001` via `/api/web`: Sukses `200 OK`, berpindah ke status `PENDING_L2`, dan antrean L1 berkurang otomatis menjadi `148`.
+    - Semua test suite lulus: `uji-serahan-token` (24/24), `uji-backend-mandiri` (40/40), `uji-siklus-wo-lengkap` (12/12), `uji-user-admin-pusat` (27/27).
+- Belum selesai / berikutnya:
+  - Uji approval massal (bulk approve) dan pengembalian WO ke mekanik di UI staging.
+
+---
+
 ### 2026-11-10 · Raka (+ AI) · sum & kmb (Perbaikan Modal Detail WO Mekanik & Normalisasi Aksi Web Desktop)
 - Berubah:
   - **Perbaikan Galat "Gagal memuat detail WO: undefined" di SUM Mechanic Dashboard (`workers/sum/web/MechanicDashboard.html` & `workers/sum/src/supabase-backend.js`)**:
