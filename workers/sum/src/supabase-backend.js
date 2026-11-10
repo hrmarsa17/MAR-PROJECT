@@ -128,8 +128,13 @@ function normalisasiAksi(action) {
     'handleApproveTransfer': 'approve_transfer',
     'handleRejectTransfer': 'reject_transfer',
     'getMyWos': 'pull_my_wos',
+    'handleGetMyWos': 'pull_my_wos',
     'getWoDetailForMechanic': 'pull_wo_detail',
+    'handleGetWoDetailForMechanic': 'pull_wo_detail',
     'getWODetails': 'pull_wo_detail',
+    'handleMonitoringDetail': 'pull_wo_detail',
+    'handleMonitoringDetailWo': 'pull_wo_detail',
+    'getMonitoringDetailWo': 'pull_wo_detail',
   };
   return map[a] || a;
 }
@@ -382,6 +387,10 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     }
   }
 
+  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAksi)) {
+    payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
+  }
+
   // Jika submit work, pastikan status & status_group disetel ke pending_approval
   if (cleanAksi === 'submit_work') {
     payload.status = payload.status || 'PENDING_L1';
@@ -531,10 +540,20 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
         };
       } else if (cleanAksi === 'pull_create_refs' && data.result) {
         data.data = (data.result && data.result.refs) ? data.result.refs : data.result;
-      } else if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic'].includes(cleanAksi) && data.result) {
+      } else if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAksi) && data.result) {
         const woObj = data.result.wo || data.result;
         const teamArr = woObj.team || data.result.team || [];
-        const fullDetail = { ...woObj, wo: woObj, team: teamArr };
+        const compName = woObj.component_name || woObj.component || woObj.activity || 'Pekerjaan';
+        const unitName = woObj.unit_name || woObj.unit_code || woObj.unit_id || '-';
+        const fullDetail = {
+          ...woObj,
+          wo: woObj,
+          team: teamArr,
+          component: { component_name: compName, component_id: woObj.component_id || '' },
+          unit: { unit_name: unitName, unit_id: woObj.unit_id || '' },
+          target_hours: woObj.target_hours || 0,
+          status_label: woObj.status_label || woObj.status || 'Perlu Diisi Mekanik',
+        };
         data.result = fullDetail;
         data.data = fullDetail;
       } else if (cleanAksi === 'submit_work' && data.success) {
@@ -575,6 +594,63 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           'X-Abadi-Jalur': 'supabase',
         },
       });
+    }
+
+    // Fallback khusus pull_wo_detail via pull_my_wos jika RPC detail gagal
+    if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAksi)) {
+      try {
+        const myWosRes = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: supaHeaders,
+          body: JSON.stringify({
+            p_token: cleanToken,
+            p_aksi: 'pull_my_wos',
+            p_op_id: 'detail-fallback-' + Date.now(),
+            p_payload: {},
+            p_extra: null,
+          }),
+        });
+        if (myWosRes.ok) {
+          const myWosData = await myWosRes.json();
+          const listWos = Array.isArray(myWosData.result) ? myWosData.result : (myWosData.result?.wos || myWosData.data?.wos || []);
+          const targetId = String(payload.wo_id || ekstrakWoId(body) || '').toUpperCase().trim();
+          const foundWo = listWos.find((w) => {
+            const wid = String(w.id || w.wo_id || w.wo_number || w.data?.wo_number || '').toUpperCase().trim();
+            return wid === targetId;
+          });
+          if (foundWo) {
+            const rawData = foundWo.data || {};
+            const compName = foundWo.component_name || foundWo.component || foundWo.activity || rawData.component_name || rawData.component || 'Pekerjaan';
+            const unitName = foundWo.unit_name || foundWo.unit_code || foundWo.unit_id || rawData.unit_name || rawData.unit_code || '-';
+            const fullDetail = {
+              ...rawData,
+              ...foundWo,
+              wo: { ...rawData, ...foundWo },
+              component: { component_name: compName, component_id: foundWo.component_id || rawData.component_id || '' },
+              unit: { unit_name: unitName, unit_id: foundWo.unit_id || rawData.unit_id || '' },
+              target_hours: foundWo.target_hours || rawData.target_hours || 0,
+              status_label: foundWo.status_label || foundWo.status || rawData.status || 'Perlu Diisi Mekanik',
+            };
+            return new Response(JSON.stringify({
+              success: true,
+              result: fullDetail,
+              data: fullDetail,
+              source: 'SUPABASE'
+            }), {
+              status: 200,
+              headers: {
+                ...CORS,
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store',
+                'X-Abadi-Rumah': env.RUMAH || 'sum',
+                'X-Abadi-Jalur': 'supabase',
+              },
+            });
+          }
+        }
+      } catch (errFallback) {
+        console.warn('Fallback pull_wo_detail gagal:', errFallback);
+      }
     }
 
     const errText = await res.text();

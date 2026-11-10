@@ -12,6 +12,44 @@ Formatnya:
 
 ---
 
+### 2026-11-10 · Raka (+ AI) · sum & kmb (Perbaikan Modal Detail WO Mekanik & Normalisasi Aksi Web Desktop)
+- Berubah:
+  - **Perbaikan Galat "Gagal memuat detail WO: undefined" di SUM Mechanic Dashboard (`workers/sum/web/MechanicDashboard.html` & `workers/sum/src/supabase-backend.js`)**:
+    - **Penyebab**: Pemanggilan `google.script.run.handleGetWoDetailForMechanic` di web desktop SUM mengirim nama aksi `handleGetWoDetailForMechanic`. Di `supabase-backend.js`, aksi ini belum dinormalisasi ke `pull_wo_detail`, sehingga RPC menolak dengan galat teks string (`r.error` string, bukan objek `{message: ...}`), menyebabkan `r.error.message` bernilai `undefined` dan memunculkan alert popup `Gagal memuat detail WO: undefined` yang menutup modal.
+    - **Perbaikan Backend**:
+      - Menambahkan pemetaan aksi di `normalisasiAksi`:
+        - `'handleGetWoDetailForMechanic': 'pull_wo_detail'`
+        - `'handleGetMyWos': 'pull_my_wos'`
+        - `'handleMonitoringDetail': 'pull_wo_detail'`
+        - `'handleMonitoringDetailWo': 'pull_wo_detail'`
+        - `'getMonitoringDetailWo': 'pull_wo_detail'`
+      - Memastikan `payload.wo_id` diekstrak dengan aman dari `payload.wo_id || payload.id || ekstrakWoId(body)`.
+      - Menyusun struktur respon `fullDetail` (`wo`, `component`, `unit`, `target_hours`, `status_label`) sesuai format yang diharap oleh frontend.
+      - Menambahkan mekanisme fallback berketahanan tinggi: jika RPC `pull_wo_detail` gagal, worker langsung menarik data dari `pull_my_wos` (yang sudah memuat objek WO lengkap) dan mengembalikan format `fullDetail`.
+    - **Perbaikan Frontend (`workers/sum/web/MechanicDashboard.html`)**:
+      - Memperbaiki parsing pesan error secara null-safe: `(r.error && r.error.message) || r.error || (r.data && r.data.error) || 'Gagal memuat detail WO'`.
+      - Jika modal sudah berhasil diisi oleh data lokal (`fastRendered`), kegagalan pembaruan latar belakang hanya mencatat console warning tanpa memunculkan alert yang memblokir atau menutup modal pengguna.
+    - **Perbaikan SQL (`db/sum/rpc_backend_penuh.sql`)**:
+      - Menambahkan definisi helper `sum._normalisasi_status_wo_sum(p_status text)`.
+      - Memperluas penanganan aksi `v_aksi IN ('pull_wo_detail', 'getwodetailformechanic', 'handlegetwodetailformechanic', 'getwodetails')`.
+  - **Sinkronisasi Normalisasi Aksi di KMB (`workers/kmb/src/supabase-backend.js`)**:
+    - Menerapkan pemetaan normalisasi aksi dan ekstraksi `payload.wo_id` yang sama untuk mencegah masalah serupa di KMB V2.
+  - **Kompilasi Ulang Web Templates**:
+    - Menjalankan `node scripts/build-web-templates.mjs` untuk memperbarui `workers/sum/src/web-templates.js` dan `workers/kmb/src/web-templates.js`.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-sum-staging`: Version `d7317e1b-fffc-415f-9e90-cbd0f6b9a69a`
+    - `abadiops-kmb-staging`: Version `413967e8-c8f0-4522-9186-6b6b2acde6f8`
+  - **Pengujian & Verifikasi**:
+    - Pengujian live endpoint `https://abadiops-sum-staging.kawanabadigrup.workers.dev/api/web` untuk `handleGetWoDetailForMechanic` dengan token `253de60cc43340d68d5a` dan ID `WO-20261110-0001`: Berhasil `200 OK`, `success: true`, mengembalikan objek detail lengkap.
+    - `scripts/uji-siklus-wo-lengkap.mjs`: 12/12 LULUS.
+    - `scripts/uji-backend-mandiri.mjs`: 40/40 LULUS.
+    - `scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS.
+    - `scripts/uji-serahan-token.mjs`: 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Latihan skenario operasional pengguna di UI staging untuk approval dan monitoring lintas rumah.
+
+---
+
 ### 2026-11-10 · Raka (+ AI) · bersama & tiga rumah (Implementasi Penuh Buku Tamu Kiriman Idempotency Store di Cloudflare DO, Multi-Select Section Dropdown, & Uji Siklus WO Lengkap)
 - Berubah:
   - **Buku Tamu Kiriman (Idempotency Store di Cloudflare DO, `docs/SAKLAR.md` baris 34)**:

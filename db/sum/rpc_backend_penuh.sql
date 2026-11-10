@@ -643,7 +643,7 @@ BEGIN
     ELSIF v_aksi = 'pull_my_wos' THEN
         RETURN public.sum_my_wos_bertoken(p_token)::jsonb;
 
-    ELSIF v_aksi = 'pull_wo_detail' THEN
+    ELSIF v_aksi IN ('pull_wo_detail', 'getwodetailformechanic', 'handlegetwodetailformechanic', 'getwodetails') THEN
         RETURN public.sum_wo_detail_bertoken(p_token, coalesce(p_payload->>'wo_id', p_payload->>'id', ''))::jsonb;
 
     ELSIF v_aksi = 'pull_create_refs' THEN
@@ -662,7 +662,37 @@ BEGIN
 END;
 $$;
 
--- 3. Helper gabungan seluruh WO SUM (untuk detail, monitoring, dll)
+-- 3. Helper normalisasi status WO SUM
+CREATE OR REPLACE FUNCTION sum._normalisasi_status_wo_sum(p_status text)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  s text := lower(btrim(coalesce(p_status, '')));
+BEGIN
+  IF s IN ('', 'open', 'active', 'assigned', 'in_progress', 'in progress', 'draft', 'revised', 'returned', 'kembali', 'kembalikan', 'waiting_mechanic', 'pending_mechanic', 'pending_mechanic_work', 'belum', 'on_progress', 'revisi') THEN
+    RETURN 'pending_mechanic_work';
+  ELSIF s IN ('pending_l1', 'pending_supervisor', 'waiting_l1', 'submitted', 'menunggu_l1') THEN
+    RETURN 'pending_supervisor';
+  ELSIF s IN ('pending_l2', 'pending_superintendent', 'waiting_l2', 'approved_l1', 'menunggu_l2') THEN
+    RETURN 'pending_superintendent';
+  ELSIF s = 'pending_transfer' THEN
+    RETURN 'pending_transfer';
+  ELSIF s IN ('approved', 'done', 'completed', 'closed', 'approved_l2', 'selesai') THEN
+    RETURN 'approved';
+  ELSIF s IN ('rejected', 'ditolak') THEN
+    RETURN 'rejected';
+  ELSIF s IN ('cancelled', 'canceled', 'batal') THEN
+    RETURN 'cancelled';
+  ELSIF s = 'expired' THEN
+    RETURN 'expired';
+  END IF;
+  RETURN 'pending_mechanic_work';
+END;
+$$;
+
+-- 4. Helper gabungan seluruh WO SUM (untuk detail, monitoring, dll)
 CREATE OR REPLACE FUNCTION sum._semua_wo_json_sum()
 RETURNS SETOF jsonb
 LANGUAGE plpgsql

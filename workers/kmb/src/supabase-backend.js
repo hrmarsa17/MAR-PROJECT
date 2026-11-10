@@ -129,8 +129,13 @@ function normalisasiAksi(action) {
     'handleApproveTransfer': 'approve_transfer',
     'handleRejectTransfer': 'reject_transfer',
     'getMyWos': 'pull_my_wos',
+    'handleGetMyWos': 'pull_my_wos',
     'getWoDetailForMechanic': 'pull_wo_detail',
+    'handleGetWoDetailForMechanic': 'pull_wo_detail',
     'getWODetails': 'pull_wo_detail',
+    'handleMonitoringDetail': 'pull_wo_detail',
+    'handleMonitoringDetailWo': 'pull_wo_detail',
+    'getMonitoringDetailWo': 'pull_wo_detail',
   };
   return map[a] || a;
 }
@@ -381,6 +386,10 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     if (!payload.lead_mechanic_id && Array.isArray(payload.team) && payload.team.length > 0) {
       payload.lead_mechanic_id = payload.team[0].mechanic_id;
     }
+  }
+
+  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic'].includes(cleanAksi)) {
+    payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
   }
 
   // Jika submit work, pastikan status & status_group disetel ke pending_approval

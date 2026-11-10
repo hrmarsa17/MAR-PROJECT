@@ -932,11 +932,16 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
           .withSuccessHandler(function(r) {
             try {
               if (!r.success) {
-                alert('Gagal memuat detail WO: ' + r.error.message);
-                closeModal();
+                var errMsg = (r.error && r.error.message) || r.error || (r.data && r.data.error) || 'Gagal memuat detail WO';
+                if (!fastRendered) {
+                  alert('Gagal memuat detail WO: ' + errMsg);
+                  closeModal();
+                } else {
+                  console.warn('Silent refresh detail WO gagal, menggunakan data lokal:', errMsg);
+                }
                 return;
               }
-              var wo = r.data ? r.data.wo : null;
+              var wo = (r.data && r.data.wo) ? r.data.wo : (r.data || r.result || (fastRendered ? targetWo : null));
               if (!wo) {
                 alert('Gagal memuat: Objek WO kosong');
                 closeModal();
