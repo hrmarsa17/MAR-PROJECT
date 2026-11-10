@@ -12,6 +12,34 @@ Formatnya:
 
 ---
 
+### 2026-11-10 · Raka (+ AI) · bersama & tiga rumah (Implementasi Penuh Buku Tamu Kiriman Idempotency Store di Cloudflare DO, Multi-Select Section Dropdown, & Uji Siklus WO Lengkap)
+- Berubah:
+  - **Buku Tamu Kiriman (Idempotency Store di Cloudflare DO, `docs/SAKLAR.md` baris 34)**:
+    - Di `workers/pintu/src/saklar-do.js`: Menambahkan aksi `buku_tamu_cek` dan `buku_tamu_simpan` berbasis penyimpanan Durable Object (`ctx.storage`), dengan penyimpanan record per `op:<op_id>`.
+    - Di `workers/pintu/src/index.js`: Mengekspos rute `GET /api/buku-tamu/cek` dan `POST /api/buku-tamu/simpan` dengan dukungan CORS penuh antar-rumah.
+    - Di modul baru `buku-tamu.js` (`workers/kmb/src/buku-tamu.js`, `workers/sum/src/buku-tamu.js`, `workers/kmbprojek/src/buku-tamu.js`):
+      - Menambahkan helper `cekBukuTamu(opId, env)` dan `catatBukuTamu(opId, result, rumah, env)`.
+    - Di `workers/kmb/src/index.js`, `workers/sum/src/index.js`, dan `workers/kmbprojek/src/index.js` (serta seluruh handler `web-handler.js`):
+      - Mendeteksi `op_id` / `kiriman_id` pada payload mutasi (pembuatan WO, submit laporan mekanik, approval, transfer).
+      - Jika `op_id` sudah tercatat di Buku Tamu: langsung mengembalikan respon yang tersimpan dengan header `X-Abadi-Buku-Tamu: hit` tanpa mengeksekusi ulang database atau membuat WO kembar.
+      - Jika belum tercatat: setelah aksi berhasil dieksekusi (baik di Supabase mandiri maupun GAS fallback), respon otomatis dicatat ke Buku Tamu Cloudflare DO.
+  - **Pemilihan Section Multi-Select di Modal Manajemen Pengguna (`saklar.html`)**:
+    - Memastikan dropdown checkbox multi-select dinamis per sistem (`maintenance`, `vessel` untuk KMB Projek; `field`, `workshop`, `tyreman` untuk KMB TRA; hidden untuk SUM).
+  - **Pemetaan Kunci Saklar KMB V2 (`workers/kmb/src/supabase-backend.js`)**:
+    - Memetakan `env.RUMAH === 'kmb'` ke kunci status `kmbtra` di `bacaStatusSaklar`.
+  - **Deploy Cloudflare Workers Staging**:
+    - `abadiops-pintu-staging`: Version `e9205d51-6a01-4aa6-bc23-21fc9afac8fc`
+    - `abadiops-kmb-staging`: Version `e48604bc-4f88-4e57-998b-b2c8cea3946a`
+    - `abadiops-sum-staging`: Version `013ef34d-71d1-4695-b6e9-792da53b4181`
+    - `abadiops-kmbprojek-staging`: Version `f81f28ee-fe6c-40b0-97c8-5d1911ac66fd`
+  - **Pengujian & Verifikasi Otomatis**:
+    - `scripts/uji-siklus-wo-lengkap.mjs`: 12/12 LULUS (Buku Tamu simpan/cek, hit idempotency header, isolasi 3 rumah, rute staging).
+    - `scripts/uji-backend-mandiri.mjs`: 40/40 LULUS.
+    - `scripts/uji-user-admin-pusat.mjs`: 27/27 LULUS.
+    - `scripts/uji-serahan-token.mjs`: 24/24 LULUS.
+- Belum selesai / berikutnya:
+  - Gabriel meninjau hasil staging dan menguji simulasi saklar balik bila diperlukan.
+
 ### 2026-11-09 · Raka (+ AI) · kmb & sum (Penegakan Dokumen Spek 04-APPROVALS: Pembatasan Antrean & Approval L1 vs L2)
 - Berubah:
   - **Audit Dokumen Spek (`docs/SPEK-LAYAR/04-APPROVALS.md` baris 49-52)**:

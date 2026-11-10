@@ -16,6 +16,7 @@ import {
   eksekusiAksiSupabaseMandiri,
   eksekusiSupabaseBackendKmbp,
 } from './supabase-backend.js';
+import { cekBukuTamu, catatBukuTamu } from './buku-tamu.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -56,6 +57,19 @@ async function tanganiApi(request, env, url) {
 
   const action = parsed.action || '';
   const token = parsed.token || (parsed.data && parsed.data.token) || '';
+
+  // Buku Tamu Kiriman (Idempotency Store di Cloudflare, docs/SAKLAR.md)
+  const opId = parsed.op_id || parsed.kiriman_id || parsed.data?.op_id || parsed.data?.kiriman_id;
+  if (opId) {
+    const cached = await cekBukuTamu(opId, env);
+    if (cached && cached.result) {
+      return new Response(JSON.stringify(cached.result), {
+        status: 200,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'X-Abadi-Buku-Tamu': 'hit' }
+      });
+    }
+  }
+
   const liveSaklar = await bacaStatusSaklar(env);
   const tanpaGas = !env.GAS_URL || String(env.GAS_URL).trim() === '';
   const reqEngine = (
@@ -92,6 +106,13 @@ async function tanganiApi(request, env, url) {
   if (bolehSupabase(action) && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     const resSupa = await cobaSupabaseMandiri(action, token, parsed, liveSaklar, tanpaGas, env);
     if (resSupa) {
+      if (opId && resSupa.status === 200) {
+        try {
+          const klon = resSupa.clone();
+          const dataResult = await klon.json();
+          await catatBukuTamu(opId, dataResult, env.RUMAH || 'kmbprojek', env);
+        } catch (_) {}
+      }
       return resSupa;
     }
   }
@@ -113,7 +134,15 @@ async function tanganiApi(request, env, url) {
     });
   }
 
-  return teruskanKeGas(bodyText, action, env);
+  const resGas = await teruskanKeGas(bodyText, action, env);
+  if (resGas && resGas.status === 200 && opId) {
+    try {
+      const klon = resGas.clone();
+      const dataResult = await klon.json();
+      await catatBukuTamu(opId, dataResult, env.RUMAH || 'kmbprojek', env);
+    } catch (_) {}
+  }
+  return resGas;
 }
 
 async function cobaSupabaseMandiri(action, token, parsed, liveSaklar, tanpaGas, env) {

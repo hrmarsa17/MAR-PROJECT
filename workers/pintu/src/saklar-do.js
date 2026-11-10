@@ -51,6 +51,39 @@ export class SaklarDO {
       });
     }
 
+    // Buku Tamu Kiriman (Idempotency Store di Cloudflare, docs/SAKLAR.md)
+    if (action === 'buku_tamu_cek') {
+      const opId = url.searchParams.get('op_id');
+      if (!opId) return new Response(JSON.stringify({ found: false }), { headers: { 'Content-Type': 'application/json' } });
+      const record = await this.ctx.storage.get('op:' + opId);
+      if (record) {
+        return new Response(JSON.stringify({ found: true, record }), { headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ found: false }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'buku_tamu_simpan' && method === 'POST') {
+      let body = {};
+      try {
+        if (typeof request !== 'string' && request && typeof request.json === 'function') {
+          body = await request.json();
+        } else if (init && init.body) {
+          body = typeof init.body === 'string' ? JSON.parse(init.body) : init.body;
+        }
+      } catch (_) {}
+      const opId = body.op_id;
+      if (opId) {
+        const record = {
+          op_id: opId,
+          result: body.result,
+          timestamp: new Date().toISOString(),
+          rumah: body.rumah || 'unknown'
+        };
+        await this.ctx.storage.put('op:' + opId, record);
+      }
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'ubah' && method === 'POST') {
       let body = {};
       try {

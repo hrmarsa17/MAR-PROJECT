@@ -11,6 +11,7 @@ import {
   apakahWoLahirDiSupabase,
   apakahWoLamaDariGas
 } from './supabase-backend.js';
+import { cekBukuTamu, catatBukuTamu } from './buku-tamu.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -351,6 +352,18 @@ export async function handleWebBridgeApi(request, env, url) {
     data.token = token;
   }
 
+  // Buku Tamu Kiriman (Idempotency Store di Cloudflare, docs/SAKLAR.md)
+  const opId = body.op_id || body.kiriman_id || data.op_id || data.kiriman_id;
+  if (opId) {
+    const cached = await cekBukuTamu(opId, env);
+    if (cached && cached.result) {
+      return new Response(JSON.stringify(cached.result), {
+        status: 200,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'X-Abadi-Buku-Tamu': 'hit' }
+      });
+    }
+  }
+
   const liveSaklar = await bacaStatusSaklar(env);
   const targetWoId = ekstrakWoId(body);
   const woSupabase = apakahWoLahirDiSupabase(targetWoId);
@@ -365,6 +378,13 @@ export async function handleWebBridgeApi(request, env, url) {
     try {
       const resSupa = await eksekusiSupabaseBackendKmbp(action, token, body, env);
       if (resSupa && resSupa.status === 200) {
+        if (opId) {
+          try {
+            const klon = resSupa.clone();
+            const dataResult = await klon.json();
+            await catatBukuTamu(opId, dataResult, env.RUMAH || 'sum', env);
+          } catch (_) {}
+        }
         return resSupa;
       }
       if (liveSaklar === 'supabase' || woSupabase) {
@@ -420,6 +440,12 @@ export async function handleWebBridgeApi(request, env, url) {
     }
 
     const resText = await res.text();
+    if (res.ok && opId) {
+      try {
+        const dataResult = JSON.parse(resText);
+        await catatBukuTamu(opId, dataResult, env.RUMAH || 'sum', env);
+      } catch (_) {}
+    }
     return new Response(resText, {
       status: res.status,
       headers: {

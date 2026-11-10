@@ -23,6 +23,7 @@ import {
   apakahWoLahirDiSupabase,
   apakahWoLamaDariGas
 } from './supabase-backend.js';
+import { cekBukuTamu, catatBukuTamu } from './buku-tamu.js';
 
 // Aksi yang sudah lulus uji kembar dan diizinkan dilayani langsung dari Supabase
 const AKSI_SUPABASE_LULUS_KEMBAR = new Set([]);
@@ -71,6 +72,18 @@ async function tanganiApi(request, env, url) {
   const woSupabase = apakahWoLahirDiSupabase(targetWoId);
   const woGas = apakahWoLamaDariGas(targetWoId);
 
+  // Buku Tamu Kiriman (Idempotency Store di Cloudflare, docs/SAKLAR.md)
+  const opId = parsed.op_id || parsed.kiriman_id || parsed.data?.op_id || parsed.data?.kiriman_id;
+  if (opId) {
+    const cached = await cekBukuTamu(opId, env);
+    if (cached && cached.result) {
+      return new Response(JSON.stringify(cached.result), {
+        status: 200,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'X-Abadi-Buku-Tamu': 'hit' }
+      });
+    }
+  }
+
   // Aturan Saklar Balik & Satu Rumah Seumur Hidup:
   // 1. Jika WO lahir di Supabase (4 digit / WO-SB-*), WAJIB ke Supabase bahkan saat saklar 'gas'.
   // 2. Jika WO lama lahir di GAS (3 digit), saat dua_cabang tetap diteruskan ke GAS.
@@ -81,6 +94,13 @@ async function tanganiApi(request, env, url) {
     const resSupa = await eksekusiSupabaseBackendSum(action, token, parsed, env);
     if (resSupa && resSupa.status === 200) {
       catat(env, { aksi: action, jalur: 'supabase', status: 200, wo: targetWoId });
+      if (opId) {
+        try {
+          const klon = resSupa.clone();
+          const dataResult = await klon.json();
+          await catatBukuTamu(opId, dataResult, env.RUMAH || 'sum', env);
+        } catch (_) {}
+      }
       return resSupa;
     }
     // Jika saklar 'supabase' murni atau WO lahir di Supabase, jangan fallback ke GAS
@@ -93,12 +113,27 @@ async function tanganiApi(request, env, url) {
     // Fallback lama cobaSupabaseSum jika ada rpc spesifik
     const fallbackSupa = await cobaSupabaseSum(action, token, parsed, env);
     if (fallbackSupa) {
+      if (opId && fallbackSupa.status === 200) {
+        try {
+          const klon = fallbackSupa.clone();
+          const dataResult = await klon.json();
+          await catatBukuTamu(opId, dataResult, env.RUMAH || 'sum', env);
+        } catch (_) {}
+      }
       return fallbackSupa;
     }
   }
 
   // Fallback ke GAS
-  return teruskanKeGas(bodyText, action, env);
+  const resGas = await teruskanKeGas(bodyText, action, env);
+  if (resGas && resGas.status === 200 && opId) {
+    try {
+      const klon = resGas.clone();
+      const dataResult = await klon.json();
+      await catatBukuTamu(opId, dataResult, env.RUMAH || 'sum', env);
+    } catch (_) {}
+  }
+  return resGas;
 }
 
 async function cobaSupabaseSum(action, token, parsed, env) {

@@ -13,6 +13,7 @@ import {
   apakahWoLamaDariGas
 } from './supabase-backend.js';
 import { bacaStatusSaklar } from './index.js';
+import { cekBukuTamu, catatBukuTamu } from './buku-tamu.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -479,6 +480,18 @@ export async function handleWebBridgeApi(request, env, url) {
     data.token = token;
   }
 
+  // Buku Tamu Kiriman (Idempotency Store di Cloudflare, docs/SAKLAR.md)
+  const opId = body.op_id || body.kiriman_id || data.op_id || data.kiriman_id;
+  if (opId) {
+    const cached = await cekBukuTamu(opId, env);
+    if (cached && cached.result) {
+      return new Response(JSON.stringify(cached.result), {
+        status: 200,
+        headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'X-Abadi-Buku-Tamu': 'hit' }
+      });
+    }
+  }
+
   const liveSaklar = await bacaStatusSaklar(env);
   const tanpaGas = !env.GAS_URL || String(env.GAS_URL).trim() === '';
   const pakaiSupabase = url.searchParams.get('uji') !== 'gas' && Boolean(env && env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
@@ -492,6 +505,9 @@ export async function handleWebBridgeApi(request, env, url) {
         }
         if (hasilSupa.success === false && typeof hasilSupa.error === 'string') {
           hasilSupa.error = { message: hasilSupa.error };
+        }
+        if (opId && hasilSupa.success !== false) {
+          await catatBukuTamu(opId, hasilSupa, env.RUMAH || 'kmbprojek', env);
         }
         return new Response(JSON.stringify(hasilSupa), {
           status: 200,
@@ -551,6 +567,12 @@ export async function handleWebBridgeApi(request, env, url) {
     }
 
     const resText = await res.text();
+    if (res.ok && opId) {
+      try {
+        const dataResult = JSON.parse(resText);
+        await catatBukuTamu(opId, dataResult, env.RUMAH || 'kmbprojek', env);
+      } catch (_) {}
+    }
     return new Response(resText, {
       status: res.status,
       headers: {

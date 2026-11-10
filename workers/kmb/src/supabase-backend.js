@@ -91,7 +91,8 @@ export async function bacaStatusSaklar(env) {
     clearTimeout(t);
     if (r.ok) {
       const data = await r.json();
-      const val = data?.switches?.[env.RUMAH];
+      const rKey = (env.RUMAH === 'kmb') ? 'kmbtra' : env.RUMAH;
+      const val = data?.switches?.[rKey] || data?.switches?.[env.RUMAH];
       if (val) {
         hasil = val;
         cacheSaklar = { nilai: hasil, waktu: sekarang + 5000 };
