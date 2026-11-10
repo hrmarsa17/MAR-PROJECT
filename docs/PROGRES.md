@@ -13,8 +13,8 @@ Formatnya:
 ---
 
 ### 2026-11-10 · Gabriel (+ AI) · sum (Perbaikan Render WO Mechanic Staging)
-- Berubah: `web-templates.js` (perbaiki assignment `var _rawWos` dan penghapusan HTML escaping ganda pada payload JSON), `web-handler.js` (fallback `status` ke `data`). WO di staging (`253de60cc43340d68d5a`) muncul dengan benar (81 pending approval).
-- Belum selesai: Deploy RPC `db/sum/rpc_backend_penuh.sql` ke produksi oleh Gabriel.
+- Berubah: `web-templates.js` (fix `var _rawWos` assignment + JSON stringify tanpa HTML escape), `web-handler.js` (fallback `status` ke `data`). Data di HTML valid (369 WO, 81 pending) dan API valid.
+- Belum selesai: Frontend render masih loading (kemungkinan JS error di `renderWOs()` atau logic filter). Perlu browser DevTools inspect. Lanjut debug setelah browser console check.
 
 ---
 
