@@ -336,3 +336,4 @@ export async function buildPayrollWorkbook({ periodLabel, generatedAt, summaryRo
 
   return wb;
 }
+

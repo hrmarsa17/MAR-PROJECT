@@ -22,6 +22,9 @@ const CORS = {
 const ROUTER_ACTIONS = new Set([
   'createWO', 'startWO', 'finishWO', 'submitWO',
   'getMyWos', 'getWoDetailForMechanic', 'submitMechanicWork',
+  'handleSubmitMechanicWork', 'submitWork', 'submit_work', 'kirim_kerja',
+  'handleRequestTransfer', 'requestTransfer', 'request_transfer', 'minta_transfer',
+  'reportExpiredWO', 'report_expired',
   'siapkanFormTyre', 'dataDashboardTeknis', 'dataDashboardField',
   'riwayatHmUnit', 'koreksiHmWo', 'gantiPanelHm',
   'riwayatKmUnit', 'koreksiKmWo', 'gantiPanelKm',
@@ -60,12 +63,12 @@ function lengkapiObjekWoWeb(w) {
   if (sg === 'done') {
     sl = 'Approved';
   } else if (sg === 'pending_approval') {
-    if (st === 'pending_l2' || st === 'pending_superintendent') sl = 'Menunggu Approval L2';
-    else if (st === 'pending_l1' || st === 'pending_supervisor') sl = 'Menunggu Approval L1';
+    if (st === 'pending_l2' || st === 'pending_superintendent') sl = 'Menunggu Level 2';
+    else if (st === 'pending_l1' || st === 'pending_supervisor') sl = 'Menunggu Level 1';
     else if (st === 'pending_transfer') sl = 'Menunggu Transfer';
     else sl = 'Menunggu Approval';
   } else {
-    sl = (w.status_label && w.status_label !== 'Menunggu Approval') ? w.status_label : 'Perlu Diisi Mekanik';
+    sl = 'Perlu Diisi Mekanik';
   }
 
   const validOrEmpty = (str) => {
@@ -126,6 +129,7 @@ function lengkapiObjekWoWeb(w) {
     status: st,
     status_group: sg,
     status_label: sl,
+    boleh_kirim: sg === 'assigned',
     unit_id,
     unit_code: unit_id,
     unit_name,

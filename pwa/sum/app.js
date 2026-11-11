@@ -6,7 +6,7 @@
    ============================================================ */
 
 var CONFIG = { API_URL: './api' };
-var APP_VERSION = 'sum-v49'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
+var APP_VERSION = 'sum-v51'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
 var S = { mechTab:'assigned', token:null, me:null, role:null, wos:[], refs:null, refsAt:null, pending:[], active:[], approved:[], rejected:[], cancelable:[], monitoring:[], monitoringOverall:{}, monitoringPeriode:'', outbox:[], lastSync:null, syncing:false, tab:'wos', appSub:'pending', showOutbox:false, timerStates:{} };
 // Referensi kecil (komponen/unit/mekanik) — tarik ulang maks 1x/12 jam.
 // Katalog SUM kecil (±148 komponen, 47 unit) — menariknya murah, jadi tak perlu
@@ -1764,11 +1764,11 @@ function badgeFor(wo,pendingOp) {
     // sebenarnya masih berjalan membuat orang berhenti mempercayai warna merah.
     if (pendingOp.status==='failed') return ['📤 Belum terkirim','#b45309'];
   }
-  var s=String(wo.status||'');
-  if (s==='pending_mechanic_work') return ['📝 Perlu diisi','#1d4ed8'];
+  var s=String(wo.status||'').toLowerCase().trim();
+  if (s==='pending_mechanic_work'||s==='assigned'||s==='open'||s==='in_progress'||s==='perlu_diisi_mekanik') return ['📝 Perlu diisi','#1d4ed8'];
   if (s==='pending_transfer') return ['🔀 Pending Transfer','#4f46e5'];
-  if (s==='pending_supervisor') return ['⏳ L1','#7c3aed'];
-  if (s==='pending_superintendent') return ['⏳ L2','#7c3aed'];
+  if (s==='pending_supervisor'||s==='pending_l1'||s==='waiting_l1') return ['⏳ L1','#7c3aed'];
+  if (s==='pending_superintendent'||s==='pending_l2'||s==='waiting_l2') return ['⏳ L2','#7c3aed'];
   if (s==='approved') return ['✅ Approved','#15803d'];
   return [s||'-','#475569'];
 }
@@ -1878,11 +1878,10 @@ function switchMechTab(t) { S.mechTab = t; renderAll(); }
 
 /** Kelompokkan status WO ke tab mekanik. */
 function mechGroupOf(wo) {
-  var st = String(wo.status || '');
-  if (st === 'approved') return 'done';
-  if (st === 'rejected' || st === 'cancelled') return 'done';
-  if (st === 'pending_supervisor' || st === 'pending_superintendent') return 'pending';
-  return 'assigned';   // pending_mechanic_work / in_progress / pending_transfer / created
+  var st = String(wo.status || '').toLowerCase().trim();
+  if (st === 'approved' || st === 'rejected' || st === 'cancelled') return 'done';
+  if (st === 'pending_supervisor' || st === 'pending_superintendent' || st === 'pending_l1' || st === 'pending_l2' || st === 'waiting_l1' || st === 'waiting_l2' || st === 'pending_approval') return 'pending';
+  return 'assigned';   // pending_mechanic_work / in_progress / pending_transfer / created / assigned / open
 }
 
 function renderWos(el) {
@@ -1908,7 +1907,8 @@ function renderWos(el) {
       var t = new Date(refTime).getTime();
       if (!isNaN(t) && (Date.now() - t > 12 * 60 * 60 * 1000)) isExpiredTime = true;
     }
-    var canFill=String(wo.status)==='pending_mechanic_work'&&!isReportedExp&&(!op||op.status==='failed'||op.status==='done');
+    var stNorm = String(wo.status || '').toLowerCase().trim();
+    var canFill = (stNorm === 'pending_mechanic_work' || stNorm === 'assigned' || stNorm === 'open' || stNorm === 'in_progress' || stNorm === 'perlu_diisi_mekanik') && !isReportedExp && (!op || op.status === 'failed' || op.status === 'done');
 
     // Live Timer Widget
     var st = getTimerState(wo.id);

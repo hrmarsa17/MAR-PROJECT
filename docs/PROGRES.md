@@ -12,6 +12,43 @@ Formatnya:
 
 ---
 
+### 2026-11-11 · Raka (+ AI) · sum (Perbaikan 1:1 Form "Isi Jam Kerja", Live Timer, & Tombol Kartu WO Halaman Mekanik)
+- Berubah:
+  - **Normalisasi Status WO**:
+    - Memperbaiki normalisasi status di backend (`workers/sum/src/web-handler.js`, `workers/sum/src/supabase-backend.js`) dan template (`workers/sum/web/MechanicDashboard.html`, `pwa/sum/app.js`, `scripts/sum-app.js`) dengan `.toLowerCase().trim()`.
+    - Semua variasi status tugas (`assigned`, `pending_mechanic_work`, `open`, `in_progress`, `perlu_diisi_mekanik`) kini konsisten berlabel `"Perlu Diisi Mekanik"` dan berkelas `status-assigned`.
+    - Memastikan form `ISI JAM KERJA` tidak lagi tersembunyi/kosong saat WO berstatus `assigned`.
+  - **Kartu WO Tab Assigned (1:1 Standar KMB/ModalKerja)**:
+    - Di bagian bawah kartu Assigned, merender 2 tombol berdampingan:
+      - Tombol kiri: `✍️ Isi Manual` (membuka modal detail & input jam/timer manual).
+      - Tombol kanan: `📮 Kirim` (warna hijau tua `#4d5e3e`, submit instan menggunakan durasi live timer).
+    - Status badge kartu WO menampilkan `"Perlu Diisi Mekanik"`.
+    - Live timer pill status di kartu (`⏱ Berjalan` atau `⏸ Jeda`) muncul otomatis bila timer aktif/tersimpan.
+  - **Modal WO (`submitTimeSection` - ISI JAM KERJA)**:
+    - Header seksi: `ISI JAM KERJA`.
+    - Kotak Live Timer (`#timerPill`) dengan background hijau muda `#f0fdf4`, border hijau `#86efac`:
+      - Judul: `⏱️ LIVE TIMER REKAM WAKTU`
+      - Monospace besar `00:00:00`.
+      - Tombol kontrol: `▶ Start` (`#10b981`), `⏸ Jeda` (`#f59e0b`), `⏹ Selesai` (`#ef4444`), dan `↺ Reset` (outline border).
+      - Teks petunjuk biru: `▶ mulai kerja · ⏸ jeda · ⏹ selesai. Durasi terhitung otomatis. Memulai WO lain akan menjeda WO ini. Jam di bawah boleh Anda koreksi manual.`
+    - Input `Start Time`: date picker + 2 dropdown 24 jam (Jam 00-23, Menit 00-59) via `DateTime24.html`. Saat tombol `▶ Start` ditekan, otomatis mengisi `Start Time` bila masih kosong.
+    - Input `End Time`: date picker + 2 dropdown 24 jam via `DateTime24.html`. Saat tombol `⏹ Selesai` ditekan, otomatis mengisi `End Time` dengan waktu selesai dan menghitung durasi.
+    - Input Khusus Tyre (Conditional): seksi `#tyreSection` (Inspeksi 10 posisi, Remove/Instal per posisi, dan Repair) jika WO merupakan pekerjaan ban.
+    - Textarea Catatan Shift: label `Catatan bila WO dioper ke shift berikutnya (opsional)` dan placeholder `cth: baut roda kiri belum kencang,`.
+    - Modal Footer (3 tombol): `Cancel`, `🔄 Transfer ke Shift Berikutnya` (`#btnTransfer`), dan `📮 Kirim` (`#btnSubmit` hijau tua `#4d5e3e`, aktif setelah Start & End time valid).
+  - **Backend Endpoint Submit & Transfer di SUM**:
+    - Menambahkan `handleSubmitMechanicWork`, `handleRequestTransfer`, `request_transfer` ke `ROUTER_ACTIONS` di `web-handler.js` dan `normalisasiAksi` di `supabase-backend.js`.
+    - Menangani penyimpanan `start_time`, `end_time`, `actual_hours`, catatan, dan transisi status WO ke `pending_supervisor` / `Menunggu Level 1`.
+  - **Build & Deploy Staging**:
+    - Menambahkan partial template `workers/sum/web/DateTime24.html`.
+    - Kompilasi ulang template via `scripts/build-web-templates.mjs`.
+    - Bump Service Worker cache ke `mar-sum-v51` di `pwa/sum/sw.js` dan `pwa/sum/app.js`.
+    - Deploy ke Cloudflare Workers `abadiops-sum-staging` dan terverifikasi live 100% lulus uji.
+- Belum selesai / berikutnya:
+  - Pantau pemakaian operasional di SUM Staging bersama Gabriel sebelum integrasi ke produksi.
+
+---
+
 ### 2026-11-11 · Raka (+ AI) · kmb & sum (Laporan Payroll Excel 1:1 Sesuai Dokumen Asli GAS: Sheet Ringkasan & Detail WO)
 - Berubah:
   - **Penyelarasan Format Ekspor Payroll 1:1 Excel (.xlsx)**:

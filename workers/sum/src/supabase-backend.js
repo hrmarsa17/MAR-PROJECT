@@ -136,6 +136,11 @@ function normalisasiAksi(action) {
     'handleOverrideTargetHours': 'save_override',
     'handleApproveTransfer': 'approve_transfer',
     'handleRejectTransfer': 'reject_transfer',
+    'requestTransfer': 'request_transfer',
+    'handleRequestTransfer': 'request_transfer',
+    'minta_transfer': 'request_transfer',
+    'reportExpiredWO': 'report_expired',
+    'report_expired': 'report_expired',
     'getMyWos': 'pull_my_wos',
     'handleGetMyWos': 'pull_my_wos',
     'getWoDetailForMechanic': 'pull_wo_detail',
@@ -399,12 +404,25 @@ export async function eksekusiSupabaseBackendSum(action, token, body, env) {
     }
   }
 
-  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic', 'approve_l1', 'approve_l2', 'reject', 'cancel_wo', 'save_override', 'approve_transfer', 'reject_transfer'].includes(cleanAksi)) {
+  if (['pull_wo_detail', 'getWODetails', 'getWoDetailForMechanic', 'handleGetWoDetailForMechanic', 'approve_l1', 'approve_l2', 'reject', 'cancel_wo', 'save_override', 'approve_transfer', 'reject_transfer', 'submit_work', 'request_transfer', 'report_expired'].includes(cleanAksi)) {
     payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
   }
 
   // Jika submit work, pastikan status & status_group disetel ke pending_approval
   if (cleanAksi === 'submit_work') {
+    payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
+    if (body.start_time && !payload.start_time) payload.start_time = body.start_time;
+    if (body.end_time && !payload.end_time) payload.end_time = body.end_time;
+    if (body.notes && !payload.notes) payload.notes = body.notes;
+    if (body.transfer_note && !payload.transfer_note) payload.transfer_note = body.transfer_note;
+    if (body.detail_tyre && !payload.detail_tyre) payload.detail_tyre = body.detail_tyre;
+    if (!payload.actual_hours && payload.start_time && payload.end_time) {
+      const stMs = new Date(payload.start_time).getTime();
+      const etMs = new Date(payload.end_time).getTime();
+      if (!isNaN(stMs) && !isNaN(etMs) && etMs > stMs) {
+        payload.actual_hours = Number(((etMs - stMs) / 3600000).toFixed(2));
+      }
+    }
     payload.status = payload.status || 'pending_supervisor';
     payload.status_group = 'pending_approval';
     payload.status_label = 'Menunggu Level 1';
@@ -421,6 +439,16 @@ export async function eksekusiSupabaseBackendSum(action, token, body, env) {
       payload.final_points = skor.finalPoints;
       payload.points = skor.finalPoints;
     }
+  }
+
+  if (cleanAksi === 'request_transfer') {
+    payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
+    if (body.start_time && !payload.start_time) payload.start_time = body.start_time;
+    if (body.transfer_note && !payload.transfer_note) payload.transfer_note = body.transfer_note;
+    if (body.notes && !payload.notes) payload.notes = body.notes;
+    payload.status = 'pending_transfer';
+    payload.status_group = 'pending_approval';
+    payload.status_label = 'Menunggu Transfer';
   }
 
   try {
