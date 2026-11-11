@@ -12,6 +12,43 @@ Formatnya:
 
 ---
 
+### 2026-11-11 · Raka (+ AI) · kmb & sum (Laporan Payroll Excel 1:1 Sesuai Dokumen Asli GAS: Sheet Ringkasan & Detail WO)
+- Berubah:
+  - **Penyelarasan Format Ekspor Payroll 1:1 Excel (.xlsx)**:
+    - Mengganti generator CSV sementara dengan modul penghasil binary OpenXML (`.xlsx`) murni menggunakan `exceljs/dist/exceljs.bare.min.js` (`workers/kmb/src/payroll-excel.js` dan `workers/sum/src/payroll-excel.js`).
+    - File yang dihasilkan identik 1:1 dengan format GAS `Payroll_26_Okt___25_Nov_2026.xlsx`:
+      - **Sheet 1: `Ringkasan`**:
+        - Judul A1:H1 merged `'LAPORAN PAYROLL INSENTIF MEKANIK'` dengan latar oranye `#F59E0B`, font Arial 14pt tebal putih, tengah.
+        - Sub-header metadata: Periode (`26 Okt – 25 Nov 2026`), Waktu dibuat, keterangan variasi rate per jabatan.
+        - Header kolom oranye baris 6: `['No', 'Nama Mekanik', 'Jabatan', 'Mechanic ID', 'Total WO Selesai', 'Total Poin', 'Rate/Poin', 'Total IDR (Rp)']`.
+        - Format angka Rupiah (`"Rp "#,##0`), desimal poin (`#,##0.##`), dan baris belang abu/putih (`#F8FAFC` / `#FFFFFF`).
+        - Baris ringkasan `TOTAL` di bagian bawah dengan latar oranye pekat dan teks tebal putih.
+      - **Sheet 2: `Detail WO`**:
+        - Judul A1:Y1 merged `'DETAIL WO PER MEKANIK — <periode>'` latar oranye.
+        - Keterangan formula insentif: `Formula: Base Pts × Unit × Kondisi × Waktu × Safety × Redo = WO Poin → Poin Mekanik`.
+        - 25 kolom lengkap dengan color banding header sesuai standar GAS:
+          - Info WO (No..End): latar oranye `#F59E0B`
+          - Jam Kerja (Actual & Plan): latar abu-abu `#4B5563`
+          - Faktor Pengali (Base Pts..×Redo): latar merah marun `#AD1457`
+          - Poin & Rupiah (WO Poin..IDR): latar cokelat emas `#B45309`
+        - Baris data dikelompokkan per mekanik dengan selang-seling warna latar biru muda `#F0F9FF` dan abu muda `#F9FAFB`.
+        - Penanda merah insiden safety: jika `snap_safety === 0`, kolom `×Safety` dan `WO Poin` disorot merah muda `#FEE2E2` dengan teks merah tua `#991B1B`.
+  - **Integrasi Backend Mandiri Supabase**:
+    - `workers/kmb/src/supabase-backend.js` & `workers/sum/src/supabase-backend.js`:
+      - Mengagregasi WO approved, lookup metadata mekanik via `ambilRefsUntukLookup`, dan menghitung poin/rate/IDR per anggota tim.
+      - Menghasilkan binary Excel via `writeBuffer()`, di-encode ke base64 (`file_b64`) dengan metode chunked Uint8Array agar aman di Cloudflare Worker.
+      - Mengirim respons JSON dengan `filename: Payroll_<periode>.xlsx` dan `file_b64` yang langsung diunduh otomatis oleh peramban pengguna.
+  - **Verifikasi Live Staging**:
+    - KMB TRA (`abadiops-kmb-staging`): POST `generate_payroll_report` menghasilkan berkas Excel biner valid `Payroll_26_Okt___25_Nov_2026.xlsx` (36.3 KB) dengan 2 sheet (`Ringkasan` dan `Detail WO`), 257 baris detail WO, dan summary total Rp 642.500.
+    - SUM (`abadiops-sum-staging`): POST `generate_payroll_report` sukses menghasilkan berkas Excel biner valid dengan 2 sheet.
+  - **Deploy Staging**:
+    - `abadiops-kmb-staging`: Version `3abd87f6-8dca-4326-a981-67d3645b4022`.
+    - `abadiops-sum-staging`: Version `6f1388a7-0305-46b8-99b6-27dbb7f912c8`.
+- Belum selesai / berikutnya:
+  - Verifikasi pengujian user langsung dari layar Reports browser di `abadiops-kmb-staging` dan `abadiops-sum-staging`.
+
+---
+
 ### 2026-11-11 · Raka (+ AI) · sum (Perbaikan Bug #29: Stale Cache / Angka 0 di Mechanic Dashboard SUM)
 - Berubah:
   - **Akar Masalah Angka 0 & Kartu Kosong di Tab Assigned / Pending SUM**:

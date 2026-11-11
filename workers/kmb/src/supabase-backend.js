@@ -8,6 +8,15 @@
  * - Penomoran WO 4-digit WIB (WO-YYYYMMDD-XXXX)
  */
 
+import {
+  buildPayrollWorkbook,
+  uint8ArrayToBase64,
+  formatDateId,
+  formatTimeOnly,
+  labelKondisi,
+  getRateForJabatan,
+} from './payroll-excel.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -537,20 +546,22 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
       const sectionFilter = String(payload.section_filter || payload.section || 'all').toLowerCase();
 
       let startDate, endDate, periodLabel;
-      const MONTH_NAMES = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      const SHORT_MONTHS = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
       if (filterType === 'month') {
         const prevMonth = month === 1 ? 12 : month - 1;
         const prevYear = month === 1 ? year - 1 : year;
         startDate = new Date(prevYear, prevMonth - 1, 26, 0, 0, 0);
         endDate = new Date(year, month - 1, 25, 23, 59, 59);
-        periodLabel = `26 ${MONTH_NAMES[prevMonth]} ${prevYear} — 25 ${MONTH_NAMES[month]} ${year}`;
+        periodLabel = prevYear !== year
+          ? `26 ${SHORT_MONTHS[prevMonth]} ${prevYear} – 25 ${SHORT_MONTHS[month]} ${year}`
+          : `26 ${SHORT_MONTHS[prevMonth]} – 25 ${SHORT_MONTHS[month]} ${year}`;
       } else {
         const sStr = payload.start_date || payload.startDate;
         const eStr = payload.end_date || payload.endDate;
         startDate = sStr ? new Date(sStr + 'T00:00:00') : new Date(0);
         endDate = eStr ? new Date(eStr + 'T23:59:59') : new Date();
-        periodLabel = `${sStr || '-'} s/d ${eStr || '-'}`;
+        periodLabel = `${formatDateId(startDate)} – ${formatDateId(endDate)}`;
       }
 
       const matchingWos = allApproved.filter((w) => {
@@ -565,65 +576,138 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
         return true;
       });
 
-      const mechSet = new Set();
-      let totalIdr = 0;
-      let totalPoints = 0;
-      const csvRows = [
-        'No WO,Tanggal Approved,Section,Unit,Komponen/Pekerjaan,Mekanik,Jam Kerja,Poin Final,Rupiah (IDR)'
-      ];
-
-      for (const w of matchingWos) {
-        const pts = Number(w.final_points ?? w.points ?? w.base_points ?? 0) || 0;
-        const idr = Number(w.final_idr ?? w.idr_value ?? (pts * 10000)) || 0;
-        totalPoints += pts;
-        totalIdr += idr;
-
-        let tNames = [];
-        if (Array.isArray(w.team)) {
-          tNames = w.team.map((m) => m.mechanic_name || m.name || m.mechanic_id || '-');
-        } else if (Array.isArray(w.team_names)) {
-          tNames = w.team_names;
-        } else {
-          tNames = [w.lead_mechanic_id || w.submitted_by || '-'];
-        }
-        tNames.forEach((m) => { if (m && m !== '-') mechSet.add(m); });
-
-        const cleanCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-        const appDate = w.approved_l2_at || w.superintendent_approved_at || w.submitted_at || w.created_at || '';
-        csvRows.push([
-          cleanCsv(w.wo_number || w.id),
-          cleanCsv(appDate),
-          cleanCsv(w.section || ''),
-          cleanCsv(w.unit_name || w.unit_id || ''),
-          cleanCsv(w.component_name || w.component || w.activity || ''),
-          cleanCsv(tNames.join('; ')),
-          cleanCsv(w.actual_hours ?? w.duration_hours ?? 0),
-          cleanCsv(pts),
-          cleanCsv(idr),
-        ].join(','));
+      // Load refs untuk metadata mekanik
+      const refs = await ambilRefsUntukLookup(env, cleanToken, rpcPrefix, supaHeaders);
+      const mechsList = (refs && refs.mechanics) || [];
+      const allMechanics = {};
+      for (const m of mechsList) {
+        if (m.mechanic_id) allMechanics[m.mechanic_id] = m;
       }
 
-      const csvText = csvRows.join('\r\n');
+      const now = new Date();
+      const generatedAt = `${formatDateId(now)} ${now.toLocaleTimeString('id-ID')}`;
+
+      const detailRows = [];
+      const mechanicMap = {};
+
+      for (const w of matchingWos) {
+        const pts = Number(w.final_points ?? w.points ?? w.base_points ?? 1) || 1;
+        let teamMembers = [];
+        if (Array.isArray(w.team) && w.team.length > 0) {
+          teamMembers = w.team;
+        } else if (w.lead_mechanic_id) {
+          teamMembers = [{ mechanic_id: w.lead_mechanic_id, percentage: 100 }];
+        } else if (w.submitted_by) {
+          teamMembers = [{ mechanic_id: w.submitted_by, percentage: 100 }];
+        } else {
+          teamMembers = [{ mechanic_id: 'VES-011', percentage: 100 }];
+        }
+
+        for (const tm of teamMembers) {
+          const mid = String(tm.mechanic_id || 'MECH-01').trim();
+          const mechInfo = allMechanics[mid];
+          const mName = mechInfo?.mechanic_name || mechInfo?.name || tm.mechanic_name || mid;
+          const mJabatan = mechInfo?.grade || mechInfo?.position || (mid.startsWith('TYRE') ? 'Mekanik Jr' : 'Mekanik Jr');
+          const rate = getRateForJabatan(mJabatan, mechInfo?.position);
+          const pct = Number(tm.percentage || 100) / 100;
+          const mPoints = Number((pts * pct).toFixed(2));
+          const mIdr = Math.round(mPoints * rate);
+
+          detailRows.push({
+            mechanic_id: mid,
+            mechanic_name: mName,
+            jabatan: mJabatan,
+            tgl_submit: formatDateId(w.submitted_at || w.created_at),
+            tgl_approved: formatDateId(w.approved_l2_at || w.superintendent_approved_at || w.approved_at || w.created_at),
+            wo_number: w.wo_number || w.id || '-',
+            unit: w.unit_name || w.unit_code || w.unit_id || 'OTHERS',
+            col_i: w.sub_component || w.component_name || w.component || 'Others',
+            col_j: w.job_description || w.activity || w.others_description || 'General Job',
+            kondisi: labelKondisi(w.work_condition),
+            lokasi: w.location ? (String(w.location).charAt(0).toUpperCase() + String(w.location).slice(1)) : 'Workshop',
+            start_time: formatTimeOnly(w.start_time),
+            end_time: formatTimeOnly(w.end_time),
+            actual_hours: Number(w.actual_hours ?? w.duration_hours ?? 0),
+            plan_hours: (w.plan_hours || w.target_hours) ? Number(w.plan_hours || w.target_hours) : null,
+            snap_base: Number(w.base_points ?? 1),
+            snap_unit: Number(w.unit_factor ?? 1),
+            snap_wc: Number(w.work_condition_factor ?? (w.work_condition === 'extreme' ? 1.2 : (w.work_condition === 'difficult' ? 1.1 : 1.0))),
+            snap_time: Number(w.timeliness_factor ?? 1.0),
+            snap_safety: Number(w.safety_incident ? 0 : (w.safety_factor ?? 1.0)),
+            snap_mtbf: Number(w.mtbf_factor ?? 1.0),
+            snap_wo_points: pts,
+            points: mPoints,
+            rate: rate,
+            idr: mIdr,
+          });
+
+          if (!mechanicMap[mid]) {
+            mechanicMap[mid] = {
+              mechanic_id: mid,
+              mechanic_name: mName,
+              jabatan: mJabatan,
+              rate: rate,
+              wo_count: 0,
+              total_points: 0,
+              total_idr: 0,
+            };
+          }
+          mechanicMap[mid].wo_count++;
+          mechanicMap[mid].total_points += mPoints;
+          mechanicMap[mid].total_idr += mIdr;
+        }
+      }
+
+      detailRows.sort((a, b) => {
+        if (a.mechanic_name < b.mechanic_name) return -1;
+        if (a.mechanic_name > b.mechanic_name) return 1;
+        if (a.wo_number < b.wo_number) return -1;
+        if (a.wo_number > b.wo_number) return 1;
+        return 0;
+      });
+
+      const summaryRows = Object.values(mechanicMap).sort((a, b) => b.total_points - a.total_points);
+
+      let grandTotalWos = 0;
+      let grandTotalPoints = 0;
+      let grandTotalIdr = 0;
+      for (const s of summaryRows) {
+        grandTotalWos += s.wo_count;
+        grandTotalPoints += s.total_points;
+        grandTotalIdr += s.total_idr;
+      }
+
+      const filename = `Payroll_${periodLabel.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
       let fileB64 = '';
+
       try {
-        fileB64 = btoa(unescape(encodeURIComponent(csvText)));
-      } catch (_) {}
+        const wb = await buildPayrollWorkbook({
+          periodLabel,
+          generatedAt,
+          summaryRows,
+          detailRows,
+        });
+        const buffer = await wb.xlsx.writeBuffer();
+        fileB64 = uint8ArrayToBase64(new Uint8Array(buffer));
+      } catch (errXlsx) {
+        console.error('Gagal generate Excel binary:', errXlsx);
+      }
 
       const reportOut = {
         period: periodLabel,
         summary: {
-          total_mechanics: mechSet.size,
+          total_mechanics: summaryRows.length,
           total_wos: matchingWos.length,
-          total_idr: Math.round(totalIdr),
-          total_points: Number(totalPoints.toFixed(2)),
+          total_idr: Math.round(grandTotalIdr),
+          total_points: Number(grandTotalPoints.toFixed(2)),
         },
         dikecualikan: { baris: 0, nama: [] },
-        filename: `Payroll_${(env.RUMAH || 'kmb').toUpperCase()}_${filterType === 'month' ? `${year}${String(month).padStart(2, '0')}` : 'Custom'}.csv`,
+        filename: filename,
         file_b64: fileB64,
         download_url: '#',
         wos: matchingWos,
         total_wo: matchingWos.length,
-        generated_at: new Date().toISOString(),
+        generated_at: now.toISOString(),
       };
 
       return new Response(JSON.stringify({
