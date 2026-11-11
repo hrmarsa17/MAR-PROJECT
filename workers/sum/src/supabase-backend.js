@@ -135,6 +135,9 @@ function normalisasiAksi(action) {
     'handleMonitoringDetail': 'pull_wo_detail',
     'handleMonitoringDetailWo': 'pull_wo_detail',
     'getMonitoringDetailWo': 'pull_wo_detail',
+    'generatePayrollReport': 'generate_payroll_report',
+    'handleGeneratePayrollReport': 'generate_payroll_report',
+    'generateReport': 'generate_payroll_report',
   };
   return map[a] || a;
 }
@@ -493,6 +496,140 @@ export async function eksekusiSupabaseBackendSum(action, token, body, env) {
           status: created[0]?.status || 'assigned',
         },
         source: 'SUPABASE'
+      }), {
+        status: 200,
+        headers: {
+          ...CORS,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Abadi-Rumah': env.RUMAH || 'sum',
+          'X-Abadi-Jalur': 'supabase',
+        },
+      });
+    }
+
+    // 1.5 Penanganan laporan insentif / payroll (Reports)
+    if (cleanAksi === 'generate_payroll_report') {
+      const approvedRes = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: supaHeaders,
+        body: JSON.stringify({
+          p_token: cleanToken,
+          p_aksi: 'pull_approved',
+          p_op_id: 'report-' + Date.now(),
+          p_payload: {},
+          p_extra: null,
+        }),
+      });
+
+      let allApproved = [];
+      if (approvedRes.ok) {
+        const approvedData = await approvedRes.json();
+        allApproved = Array.isArray(approvedData.result)
+          ? approvedData.result
+          : (approvedData.result?.approved || approvedData.result?.wos || (Array.isArray(approvedData) ? approvedData : []));
+      }
+
+      const filterType = payload.filter_type || 'month';
+      const year = Number(payload.year) || new Date().getFullYear();
+      const month = Number(payload.month) || (new Date().getMonth() + 1);
+      const sectionFilter = String(payload.section_filter || payload.section || 'all').toLowerCase();
+
+      let startDate, endDate, periodLabel;
+      const MONTH_NAMES = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+      if (filterType === 'month') {
+        const prevMonth = month === 1 ? 12 : month - 1;
+        const prevYear = month === 1 ? year - 1 : year;
+        startDate = new Date(prevYear, prevMonth - 1, 26, 0, 0, 0);
+        endDate = new Date(year, month - 1, 25, 23, 59, 59);
+        periodLabel = `26 ${MONTH_NAMES[prevMonth]} ${prevYear} — 25 ${MONTH_NAMES[month]} ${year}`;
+      } else {
+        const sStr = payload.start_date || payload.startDate;
+        const eStr = payload.end_date || payload.endDate;
+        startDate = sStr ? new Date(sStr + 'T00:00:00') : new Date(0);
+        endDate = eStr ? new Date(eStr + 'T23:59:59') : new Date();
+        periodLabel = `${sStr || '-'} s/d ${eStr || '-'}`;
+      }
+
+      const matchingWos = allApproved.filter((w) => {
+        const dateStr = w.approved_l2_at || w.superintendent_approved_at || w.approved_at || w.submitted_at || w.created_at;
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+        if (d < startDate || d > endDate) return false;
+        if (sectionFilter && sectionFilter !== 'all') {
+          if (String(w.section || '').toLowerCase() !== sectionFilter) return false;
+        }
+        return true;
+      });
+
+      const mechSet = new Set();
+      let totalIdr = 0;
+      let totalPoints = 0;
+      const csvRows = [
+        'No WO,Tanggal Approved,Section,Unit,Komponen/Pekerjaan,Mekanik,Jam Kerja,Poin Final,Rupiah (IDR)'
+      ];
+
+      for (const w of matchingWos) {
+        const pts = Number(w.final_points ?? w.points ?? w.base_points ?? 0) || 0;
+        const idr = Number(w.final_idr ?? w.idr_value ?? (pts * 10000)) || 0;
+        totalPoints += pts;
+        totalIdr += idr;
+
+        let tNames = [];
+        if (Array.isArray(w.team)) {
+          tNames = w.team.map((m) => m.mechanic_name || m.name || m.mechanic_id || '-');
+        } else if (Array.isArray(w.team_names)) {
+          tNames = w.team_names;
+        } else {
+          tNames = [w.lead_mechanic_id || w.submitted_by || '-'];
+        }
+        tNames.forEach((m) => { if (m && m !== '-') mechSet.add(m); });
+
+        const cleanCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        const appDate = w.approved_l2_at || w.superintendent_approved_at || w.submitted_at || w.created_at || '';
+        csvRows.push([
+          cleanCsv(w.wo_number || w.id),
+          cleanCsv(appDate),
+          cleanCsv(w.section || ''),
+          cleanCsv(w.unit_name || w.unit_id || ''),
+          cleanCsv(w.component_name || w.component || w.activity || ''),
+          cleanCsv(tNames.join('; ')),
+          cleanCsv(w.actual_hours ?? w.duration_hours ?? 0),
+          cleanCsv(pts),
+          cleanCsv(idr),
+        ].join(','));
+      }
+
+      const csvText = csvRows.join('\r\n');
+      let fileB64 = '';
+      try {
+        fileB64 = btoa(unescape(encodeURIComponent(csvText)));
+      } catch (_) {}
+
+      const reportOut = {
+        period: periodLabel,
+        summary: {
+          total_mechanics: mechSet.size,
+          total_wos: matchingWos.length,
+          total_idr: Math.round(totalIdr),
+          total_points: Number(totalPoints.toFixed(2)),
+        },
+        dikecualikan: { baris: 0, nama: [] },
+        filename: `Payroll_${(env.RUMAH || 'sum').toUpperCase()}_${filterType === 'month' ? `${year}${String(month).padStart(2, '0')}` : 'Custom'}.csv`,
+        file_b64: fileB64,
+        download_url: '#',
+        wos: matchingWos,
+        total_wo: matchingWos.length,
+        generated_at: new Date().toISOString(),
+      };
+
+      return new Response(JSON.stringify({
+        success: true,
+        source: 'SUPABASE',
+        result: reportOut,
+        data: reportOut,
       }), {
         status: 200,
         headers: {

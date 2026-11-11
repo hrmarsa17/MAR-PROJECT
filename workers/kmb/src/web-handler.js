@@ -362,10 +362,28 @@ export async function handleWebBridgeApi(request, env, url) {
 
   const token = body.token || '';
   const action = body.action || '';
-  const data = body.data || {};
+  let data = body.data || {};
   if (typeof data === 'object' && data !== null && !data.token) {
     data.token = token;
   }
+
+  // Normalisasi payload untuk aksi pembuatan laporan (Reports)
+  if (['generatePayrollReport', 'handleGeneratePayrollReport', 'generateReport'].includes(action)) {
+    if (Array.isArray(body.args) && body.args.length > 0) {
+      data = {
+        filter_type: body.args[0] || 'month',
+        year: body.args[1] || null,
+        month: body.args[2] || null,
+        start_date: body.args[3] || null,
+        end_date: body.args[4] || null,
+        section_filter: body.args[5] || 'all',
+        token: body.args[6] || token
+      };
+    } else if (typeof data === 'string') {
+      data = { filter_type: data, token };
+    }
+  }
+  body.data = data;
 
   // Role Guard untuk Approval L1 vs L2
   if (['approve_l2', 'handleSuperintendentApprove', 'superintendentApprove'].includes(action)) {

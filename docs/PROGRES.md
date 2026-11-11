@@ -12,6 +12,30 @@ Formatnya:
 
 ---
 
+### 2026-11-11 · Raka (+ AI) · kmb & sum (Audit & Perbaikan Fitur Reports / Download Payroll Laporan)
+- Berubah:
+  - **Audit Halaman Laporan (`?page=reports`)**:
+    - Tampilan antarmuka Web Desktop `Reports.html` terverifikasi berfungsi normal (HTTP 200) di kedua rumah (KMB TRA & SUM).
+    - Memuat dropdown Section, selector Bulan/Tahun dengan cut-off payroll 26-25, selector Rentang Tanggal, dan tombol "Generate & Download Excel".
+  - **Perbaikan Aksi Generate & Download Payroll (`generatePayrollReport`)**:
+    - Menangani normalisasi payload di `handleWebBridgeApi` (`workers/kmb/src/web-handler.js` & `workers/sum/src/web-handler.js`): memetakan parameter posisional `body.args` dari client shim ke `body.data` (`{ filter_type, year, month, start_date, end_date, section_filter, token }`).
+    - Menambahkan agregasi data laporan payroll di backend Supabase (`workers/kmb/src/supabase-backend.js` & `workers/sum/src/supabase-backend.js`):
+      - Menarik data WO approved via RPC `pull_approved`.
+      - Memfilter berdasarkan periode cut-off (26 bulan lalu s/d 25 bulan target untuk filter bulanan) atau rentang tanggal custom.
+      - Memfilter section jika dipilih spesifik.
+      - Menghitung ringkasan: `total_mechanics`, `total_wos`, `total_points`, `total_idr`.
+      - Menghasilkan format CSV UTF-8 dengan escape kutip ganda dan base64 string (`file_b64`) untuk diunduh langsung via Blob oleh browser tanpa ketergantungan Google Drive.
+  - **Verifikasi Live Staging**:
+    - KMB TRA (`abadiops-kmb-staging`): GET `?page=reports` 200 OK. POST `generatePayrollReport` (bulanan) mengembalikan 257 WO approved, 3 mekanik, 7 poin, Rp 70.000, `Payroll_KMB_202611.csv`, 29 KB base64. Filter custom range menghasilkan `Payroll_KMB_Custom.csv`.
+    - SUM (`abadiops-sum-staging`): GET `?page=reports` 200 OK. POST `generatePayrollReport` (bulanan & rentang tanggal) sukses 200 OK dengan format CSV valid.
+  - **Deploy Staging**:
+    - `abadiops-kmb-staging`: Version `e651b821-7672-4149-b552-bbda066c59cc`
+    - `abadiops-sum-staging`: Version `9de475d7-89f3-426d-8e5f-f45ce5c39c01`
+- Belum selesai / berikutnya:
+  - Pantau performa eksekusi laporan saat volume WO di Supabase bertambah besar di atas 5000 baris.
+
+---
+
 ### 2026-11-10 · Raka (+ AI) · kmb & sum (Perbaikan Alur Approval L1 -> L2 & Pencegahan Lolos Langsung ke Approved)
 - Berubah:
   - **Akar Masalah Approval L1 Langsung Selesai (Bypass L2 ke Status APPROVED)**:
