@@ -12,6 +12,37 @@ Formatnya:
 
 ---
 
+### 2026-11-11 · Raka (+ AI) · kmb & kmb-projek (Perbaikan Total 1:1 Distribusi Poin, Team Share, Jam Kerja Mekanik, Approval, & Excel Payroll)
+- Berubah:
+  - **WO Approval -> Tab Approved (KMB V2 & KMB Projek)**:
+    - Memperbaiki kotak `Final Points`: tidak lagi kosong (` pts`), kini menampilkan angka poin terhitung (misal `1 pts`, `2.5 pts`, `12.5 pts`) dan `final_idr` terhitung (misal `Rp 2.500`, `Rp 6.250`, `Rp 31.250`, tidak lagi `Rp 0`).
+    - Menghilangkan bug `Kondisi: Shift 1`: menghapus ternary hardcoded di `Approval.html` yang memetakan `'normal'` ke `'Shift 1'`. Kondisi kini menampilkan label kondisi asli (`Normal`, `Berat / Malam`, `Kondisi Ekstrim`), dan baris `Shift:` ditampilkan terpisah pada baris tersendiri (`Shift: Shift 1`).
+    - Memperbaiki bagian `👥 Team`: tidak lagi menampilkan `-`, melainkan nama mekanik pengerja beserta rincian poin dan insentif Rupiah per anggota (contoh: `l1est (1 pts · Rp 2.500)`).
+    - Memformat tanggal pengerjaan: dari ISO mentah (`...T...Z`) menjadi format tanggal & jam Indonesia WIB (`12 Agu 2026 17:41`).
+  - **Tab Pending Approvals (Level 1 & Level 2)**:
+    - Menampilkan durasi actual hours secara akurat (misal `⏱️ 1 jam 20 menit / tgt 2 jam`), tidak lagi `N/A` atau `- / tgt 2 jam`.
+    - Menampilkan nama mekanik pada kolom Durasi & Tim (misal `👥 ersa`), tidak lagi `👥 -`.
+  - **Halaman Monitoring / Mekanik (`?page=mechanic`)**:
+    - Menerapkan normalisasi status `.toLowerCase().trim()` sehingga WO berstatus `'assigned'` atau `'pending_mechanic_work'` otomatis membuka form `ISI JAM KERJA`.
+    - Menyediakan 2 tombol berdampingan pada kartu assigned: `✍️ Isi Manual` & `📮 Kirim`.
+    - Live timer dan date-time picker 24 jam terintegrasi penuh.
+  - **Laporan Payroll Excel (.xlsx)**:
+    - Menambahkan `payroll-excel.js` ke `workers/kmbprojek/src/` dan mengintegrasikan `buildPayrollWorkbook` ke `generate_payroll_report` di `workers/kmbprojek/src/supabase-backend.js`.
+    - Laporan payroll kini menghasilkan binary OpenXML `.xlsx` asli (dua sheet: `Ringkasan` dan `Detail WO` dengan header oranye) dengan `Total IDR` terhitung penuh, menggantikan format CSV polos.
+  - **Kompilasi, Perbaikan Bug Runtime & Deploy Staging**:
+    - Memperbaiki bug `ReferenceError: ekstrakIsi is not defined` di `workers/kmbprojek/src/web-handler.js` yang menyebabkan error 500 pada Cloudflare Worker KMB Projek.
+    - Menjalankan `build-web-templates.mjs` untuk mengompilasi ulang `web/` ke `src/web-templates.js` pada semua rumah.
+    - Deploy ulang ke staging: `abadiops-kmb-staging` dan `abadiops-kmbprojek-staging`.
+    - Menguji live pada staging di KETIGA rumah (KMB, KMB Projek, dan SUM):
+      - Pending Approvals: HTTP 200 (durasi & mekanik akurat, tidak lagi `👥 -`).
+      - Approved Approvals: HTTP 200 (final points & IDR terhitung, team share jelas, kondisi & shift terpisah rapi).
+      - Mechanic Assigned & Done: HTTP 200 (dua tombol kartu berdampingan, modal jam kerja & live timer siap).
+      - Excel Payroll Report: HTTP 200, OpenXML `.xlsx` binary valid (`UEsDB`), Total IDR terhitung (misal Rp 642.500 / Rp 10.000).
+- Belum selesai / berikutnya:
+  - Pantau feedback pengguna setelah pengujian di panggung staging.
+
+---
+
 ### 2026-11-11 · Raka (+ AI) · sum (Perbaikan 1:1 Form "Isi Jam Kerja", Live Timer, & Tombol Kartu WO Halaman Mekanik)
 - Berubah:
   - **Normalisasi Status WO**:

@@ -528,13 +528,13 @@
               <div class="wo-col-meta">
                 <div class="wo-row-field-label">Durasi &amp; Tim</div>
                 <div class="wo-row-field-val" style="font-size:0.82rem;">
-                  ⏱️ <strong><?= wo.actual_hours ? fmtJam(wo.actual_hours) : '-' ?></strong> <span style="color:#64748b;font-weight:400;font-size:0.75rem;" id="card_head_tgt_<?= wo.id ?>">/ tgt <?= fmtJam(wo.effective_target_hours) ?></span>
+                  ⏱️ <strong><?= wo.actual_hours ? fmtJam(wo.actual_hours) : (wo.start_time && wo.end_time ? fmtJam((new Date(wo.end_time)-new Date(wo.start_time))/3600000) : '-') ?></strong> <span style="color:#64748b;font-weight:400;font-size:0.75rem;" id="card_head_tgt_<?= wo.id ?>">/ tgt <?= fmtJam(wo.effective_target_hours) ?></span>
                   <? if (wo.timeliness) { ?>
                     <span class="timeliness-badge timeliness-<?= wo.timeliness.status ?>" style="font-size:0.62rem;padding:0.1rem 0.38rem;vertical-align:middle;margin-left:2px;" title="Actual vs Target">⏱️ <?= wo.timeliness.label ?></span>
                   <? } ?>
                 </div>
                 <div class="wo-row-field-sub" style="margin-top:2px;" title="<?= wo.effective_team.map(function(m){return m.mechanic_name;}).join(', ') ?>">
-                  👥 <?= wo.effective_team && wo.effective_team.length > 0 ? (wo.effective_team[0].mechanic_name + (wo.effective_team.length > 1 ? ' +' + (wo.effective_team.length - 1) + ' org' : '')) : '-' ?>
+                  👥 <?= wo.effective_team && wo.effective_team.length > 0 ? (wo.effective_team[0].mechanic_name + (wo.effective_team.length > 1 ? ' +' + (wo.effective_team.length - 1) + ' org' : '')) : (wo.team_names && wo.team_names.length > 0 ? wo.team_names[0] : (wo.created_by ? wo.created_by.split('@')[0] : '-')) ?>
                 </div>
               </div>
 
@@ -885,9 +885,9 @@
             <div class="points-highlight<? if (awo2.safety_incident) { ?> points-highlight-incident<? } ?>">
               <div>
                 <div class="points-label">Final Points</div>
-                <div class="points-idr">Rp <?= awo2.final_idr ? String(Math.round(awo2.final_idr)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0' ?></div>
+                <div class="points-idr">Rp <?= (awo2.final_idr && Number(awo2.final_idr) > 0) ? String(Math.round(awo2.final_idr)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : (awo2.final_points ? String(Math.round(Number(awo2.final_points) * 2500)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0') ?></div>
               </div>
-              <div class="points-value"><?= awo2.final_points ?> pts</div>
+              <div class="points-value"><?= (awo2.final_points !== null && awo2.final_points !== undefined && Number(awo2.final_points) > 0) ? awo2.final_points : (awo2.base_points || 0) ?> pts</div>
             </div>
             <div class="wo-section">
               <div class="wo-section-title">📦 Pekerjaan</div>
@@ -896,13 +896,14 @@
                    sudah selesai tak menyebut unitnya — padahal itu yang dipakai
                    mencocokkan pekerjaan. 1:1 dengan kartu approved di PWA. -->
               <div class="wo-detail-row"><span class="detail-label">Unit:</span><span class="detail-value"><?= awo2.unit_name || '-' ?></span></div>
-              <div class="wo-detail-row"><span class="detail-label">Kondisi:</span><span class="detail-value"><?= awo2.work_condition === 'normal' ? 'Shift 1' : (awo2.work_condition === 'difficult' ? 'Shift 2' : (awo2.work_condition === 'extreme' ? 'Kondisi Ekstrim' : awo2.work_condition)) ?></span></div>
+              <div class="wo-detail-row"><span class="detail-label">Kondisi:</span><span class="detail-value"><?= (awo2.work_condition === 'normal' || awo2.work_condition === 'Normal') ? 'Normal' : ((awo2.work_condition === 'difficult' || awo2.work_condition === 'Berat') ? 'Berat / Malam' : (awo2.work_condition === 'extreme' ? 'Kondisi Ekstrim' : (awo2.work_condition || 'Normal'))) ?></span></div>
+              <div class="wo-detail-row"><span class="detail-label">Shift:</span><span class="detail-value"><?= awo2.shift || 'Shift 1' ?></span></div>
               <div class="wo-detail-row"><span class="detail-label">Actual Hours:</span><span class="detail-value"><?= fmtJam(awo2.actual_hours) ?></span></div>
               <div class="wo-detail-row"><span class="detail-label">Location:</span><span class="detail-value"><? if (awo2.location === 'field') { ?><span class="location-badge location-field">🚜 Lapangan</span><? } else { ?><span class="location-badge location-workshop">🏭 Bengkel</span><? } ?></span></div>
             </div>
             <div class="wo-section">
               <div class="wo-section-title">👥 Team</div>
-              <div class="team-names-list"><?= awo2.team_names && awo2.team_names.length > 0 ? awo2.team_names.join(', ') : '-' ?></div>
+              <div class="team-names-list"><?= awo2.team_names && awo2.team_names.length > 0 ? awo2.team_names.join(', ') : (awo2.team_members || '-') ?></div>
             </div>
             <div class="wo-detail-row" style="margin-bottom:0.5rem;"><span class="detail-label">Tanggal:</span><span class="detail-value" style="font-size:0.8rem;"><?= awo2.created_at_str ?></span></div>
             <? var ket2 = awo2.keterangan || awo2.Keterangan || awo2.KETERANGAN; ?>

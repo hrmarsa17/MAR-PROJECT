@@ -831,7 +831,7 @@
           })
           .withFailureHandler(function(err) { alert('\u26A0\uFE0F Sambungan terputus sebelum jawaban server sampai.\n\n' + 'Tindakan Anda MUNGKIN sudah tersimpan. JANGAN diulangi buta \u2014 tekan Refresh dulu dan lihat keadaan sebenarnya.\n\n' + 'Rincian teknis: ' + err.message); })
           .handleSubmitMechanicWork({
-            token: PAGE_TOKEN, wo_id: woId,
+            token: PAGE_TOKEN, wo_id: wo.wo_number || woId, id: wo.wo_number || woId, actual_hours: (total / 3600000).toFixed(2),
             start_time: start.toISOString(), end_time: now.toISOString(),
             hour_meter: '', kilometers: '', part_category: '',
             view_as: appState.viewingAs ? appState.viewingAs.id : null
@@ -1003,8 +1003,9 @@
         var ket = wo.keterangan || wo.Keterangan || wo.KETERANGAN || '';
         if (ket) { ketWrap.style.display = 'flex'; document.getElementById('modalKeterangan').textContent = ket; }
         else { ketWrap.style.display = 'none'; }
-        document.getElementById('modalStatus').textContent = wo.status_label || wo.status;
-        var canSubmit = (wo.status_group === 'assigned' || wo.status_group === 'in_progress');
+        var stNorm = String(wo.status || '').toLowerCase().trim();
+        var canSubmit = (wo.status_group === 'assigned' || wo.status_group === 'in_progress' || ['assigned', 'pending_mechanic_work', 'open', 'in_progress', 'perlu_diisi_mekanik'].includes(stNorm));
+        document.getElementById('modalStatus').textContent = canSubmit ? 'Perlu Diisi Mekanik' : (wo.status_label || wo.status || '-');
         document.getElementById('submitTimeSection').style.display = canSubmit ? 'block' : 'none';
         dtSet('inputStartTime', '');
         dtSet('inputEndTime', '');
@@ -1090,7 +1091,7 @@
           .withFailureHandler(function(err) {
             alert('\u26A0\uFE0F Sambungan terputus sebelum jawaban server sampai.\n\n' + 'Tindakan Anda MUNGKIN sudah tersimpan. JANGAN diulangi buta \u2014 tekan Refresh dulu dan lihat keadaan sebenarnya.\n\n' + 'Rincian teknis: ' + err.message); btn.disabled = false; btn.textContent = '📮 Kirim';
           })
-          .handleSubmitMechanicWork({wo_id: wo.id, start_time: st, end_time: et, hour_meter: hm, kilometers: km, part_category: document.getElementById('inputPartCategory').value, view_as: appState.viewingAs ? appState.viewingAs.id : null, token: PAGE_TOKEN,
+          .handleSubmitMechanicWork({wo_id: wo.wo_number || wo.id, id: wo.wo_number || wo.id, start_time: st, end_time: et, actual_hours: ((new Date(et)-new Date(st))/3600000).toFixed(2), hour_meter: hm, kilometers: km, part_category: '', notes: document.getElementById('inputTransferNote') ? document.getElementById('inputTransferNote').value : '', view_as: appState.viewingAs ? appState.viewingAs.id : null, token: PAGE_TOKEN,
                                      // null bila tak ada isian — server melewati
                                      // baris kosong, tapi tak perlu mengirimnya.
                                      detail_tyre: tyreKumpulkan(),
@@ -1447,6 +1448,10 @@
         var n = timerPauseOthers(wo.id);
         var st = timerState(wo.id);
         st.state='running'; st.start_epoch=Date.now();
+        var curStart = document.getElementById('inputStartTime') ? document.getElementById('inputStartTime').value : '';
+        if (!curStart) {
+          dtSet('inputStartTime', toDatetimeLocal(new Date()));
+        }
         timerSave(); timerStartTicker(); timerRefreshUI();
         if (n) alert('⏸ ' + n + ' WO lain otomatis dijeda (waktunya tersimpan).');
       }

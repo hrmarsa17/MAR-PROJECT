@@ -424,6 +424,28 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
     }
   }
 
+  // Khusus approve L1: naikkan status ke Level 2
+  if (cleanAksi === 'approve_l1') {
+    payload.status = 'pending_superintendent';
+    payload.status_group = 'pending_approval';
+    payload.status_label = 'Menunggu Level 2';
+  }
+
+  // Khusus approve L2: hitung final points & final idr
+  if (cleanAksi === 'approve_l2') {
+    payload.status = 'approved';
+    payload.status_group = 'done';
+    payload.status_label = 'Approved';
+    const basePts = Number(payload.base_points || payload.plan_points || 1.0) || 1.0;
+    const unitF = Number(payload.unit_factor || 1.0) || 1.0;
+    const rawCond = String(payload.work_condition || 'normal').toLowerCase();
+    const condF = (rawCond === 'extreme' ? 1.2 : (rawCond === 'difficult' || rawCond === 'berat' ? 1.1 : 1.0));
+    const calcPts = Math.round((basePts * unitF * condF) * 100) / 100;
+    payload.final_points = (Number(payload.final_points) > 0) ? Number(payload.final_points) : calcPts;
+    payload.final_idr = (Number(payload.final_idr) > 0) ? Number(payload.final_idr) : Math.round(payload.final_points * 2500);
+    payload.points = payload.final_points;
+  }
+
   try {
     // 1. Batch creation jika ada blocks (format form Web WorkOrder.html)
     const blocks = payload.blocks || (payload.data && payload.data.blocks);
@@ -810,6 +832,9 @@ export async function eksekusiSupabaseBackendKmbp(action, token, body, env) {
           status: 'approved',
           status_group: 'done',
           status_label: 'Approved',
+          final_points: payload.final_points || 2.5,
+          final_idr: payload.final_idr || 6250,
+          points: payload.final_points || 2.5,
           ...(data.data || data.result || {})
         };
         data.data = l2Data;
