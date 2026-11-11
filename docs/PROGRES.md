@@ -12,6 +12,22 @@ Formatnya:
 
 ---
 
+### 2026-11-11 · Raka (+ AI) · sum (Perbaikan 1:1 Distribusi Final Points, Rupiah, & Team Share Kartu WO Approved)
+- Berubah:
+  - **WO Approval -> Tab Approved (SUM V2)**:
+    - Memperbaiki kotak `Final Points`: tidak ada lagi angka poin kosong (` pts`) atau `Rp 0`. Pada `lengkapiObjekWoWeb` (`workers/sum/src/web-handler.js`) dan template `workers/sum/web/Approval.html`, poin dihitung otomatis dari `base_points * unit_factor * cond_factor` (misal `WO-20261109-0009` kini bernilai `4.8 pts` dan `Rp 12.000`, `WO-20261022-453-P` bernilai `0.26 pts` dan `Rp 650`).
+    - Memperbaiki `👥 Team`: tidak lagi menampilkan tanda `-` atau ID mentah tanpa rincian. Kini menampilkan nama/ID pengerja lengkap dengan bagian poin dan insentif Rupiah per anggota tim (misal `MECH-SVP-005 (4.8 pts · Rp 12.000)` dan `maddogbelieve (0.26 pts · Rp 650)`).
+    - Memperbaiki `Tanggal`: memformat timestamp ISO mentah (`...T...Z`) menjadi format tanggal WIB yang mudah dibaca (`22 Okt 2026 10:55`).
+    - Menyempurnakan `workers/sum/src/supabase-backend.js` pada aksi `approve_l2` agar menghitung dan menyimpan `final_points` dan `final_idr` secara permanen ke objek WO.
+  - **Kompilasi & Deploy Staging**:
+    - Menjalankan `build-web-templates.mjs` untuk mengompilasi `web/Approval.html` ke `src/web-templates.js`.
+    - Deploy ulang ke staging: `abadiops-sum-staging`.
+    - Uji live staging membuktikan: `Has empty pts: false`, `Has Rp 0: false`, `Has 👥 -: false`, `Has visible raw ISO: false`.
+- Belum selesai / berikutnya:
+  - Siap diuji oleh Gabriel / pengguna di staging.
+
+---
+
 ### 2026-11-11 · Raka (+ AI) · kmb & kmb-projek (Perbaikan Total 1:1 Distribusi Poin, Team Share, Jam Kerja Mekanik, Approval, & Excel Payroll)
 - Berubah:
   - **WO Approval -> Tab Approved (KMB V2 & KMB Projek)**:

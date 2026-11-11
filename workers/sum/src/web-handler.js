@@ -42,6 +42,24 @@ const ROUTER_ACTIONS = new Set([
   'generatePayrollReport', 'generateReport',
 ]);
 
+function formatTanggalWIB(rawDate) {
+  if (!rawDate) return '-';
+  try {
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return String(rawDate);
+    const wib = new Date(d.getTime() + (7 * 3600000));
+    const bulanList = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const tgl = wib.getUTCDate();
+    const bln = bulanList[wib.getUTCMonth()];
+    const thn = wib.getUTCFullYear();
+    const jam = String(wib.getUTCHours()).padStart(2, '0');
+    const mnt = String(wib.getUTCMinutes()).padStart(2, '0');
+    return tgl + ' ' + bln + ' ' + thn + ' ' + jam + ':' + mnt;
+  } catch (_) {
+    return String(rawDate);
+  }
+}
+
 function lengkapiObjekWoWeb(w) {
   if (!w || typeof w !== 'object') return {};
   const d = (w.data && typeof w.data === 'object') ? w.data : {};
@@ -97,31 +115,104 @@ function lengkapiObjekWoWeb(w) {
   const effective_base_points = Number(w.effective_base_points ?? base_points);
   const effective_target_hours = Number(w.effective_target_hours ?? target_hours);
 
-  let team = Array.isArray(w.team) ? w.team : (Array.isArray(w.effective_team) ? w.effective_team : []);
-  if (!team.length && w.team_distribution && typeof w.team_distribution === 'object') {
-    team = Object.entries(w.team_distribution).map(([mid, pct]) => ({
+  // Normalisasi kondisi kerja & faktor pengali
+  const rawCond = String(w.work_condition || d.work_condition || 'normal').toLowerCase();
+  let cond_factor = 1.0;
+  let work_condition = 'Normal';
+  if (rawCond === 'extreme' || rawCond.includes('ekstrim') || rawCond.includes('resiko tinggi')) {
+    cond_factor = 1.2;
+    work_condition = 'Resiko Tinggi';
+  } else if (rawCond === 'difficult' || rawCond.includes('berat') || rawCond.includes('malam') || rawCond.includes('hujan')) {
+    cond_factor = 1.1;
+    work_condition = 'Malam/Hujan';
+  }
+
+  // Jam kerja aktual
+  let actual_hours = Number(w.actual_hours ?? d.actual_hours ?? w.duration_hours ?? d.duration_hours);
+  if (!Number.isFinite(actual_hours) || actual_hours < 0) actual_hours = 0;
+  if (actual_hours <= 0 && w.start_time && w.end_time) {
+    const s = new Date(w.start_time).getTime();
+    const e = new Date(w.end_time).getTime();
+    if (!isNaN(s) && !isNaN(e) && e > s) {
+      actual_hours = Math.round(((e - s) / 3600000) * 100) / 100;
+    }
+  }
+  if ((!actual_hours || actual_hours <= 0) && (st === 'approved' || sg === 'done')) {
+    actual_hours = target_hours;
+  }
+
+  // Poin & Rupiah (Pastikan tidak pernah 0 atau kosong di UI!)
+  let rawFinalPts = Number(w.final_points ?? d.final_points ?? w.points ?? d.points);
+  let final_points = (Number.isFinite(rawFinalPts) && rawFinalPts > 0) ? rawFinalPts : Math.round((base_points * unit_factor * cond_factor) * 100) / 100;
+  if (!final_points || final_points <= 0) final_points = 1.0;
+
+  let rawFinalIdr = Number(w.final_idr ?? d.final_idr);
+  let final_idr = (Number.isFinite(rawFinalIdr) && rawFinalIdr > 0) ? rawFinalIdr : Math.round(final_points * 2500);
+  if (!final_idr || final_idr <= 0) final_idr = Math.round(final_points * 2500);
+
+  // Tim & Pembagian Poin / IDR
+  let team = Array.isArray(w.team) ? w.team : (Array.isArray(d.team) ? d.team : (Array.isArray(w.effective_team) ? w.effective_team : []));
+  const teamDist = w.team_distribution || d.team_distribution;
+  if (!team.length && teamDist && typeof teamDist === 'object') {
+    team = Object.entries(teamDist).map(([mid, pct]) => ({
       mechanic_id: String(mid).trim(),
       mechanic_name: String(mid).trim(),
       name: String(mid).trim(),
       percentage: Number(pct) || 100,
     }));
   }
-  if (!team.length && w.lead_mechanic_id) {
-    const mName = String(w.mechanic_name || w.lead_mechanic_name || w.lead_mechanic_id);
-    team = [{ mechanic_id: String(w.lead_mechanic_id), mechanic_name: mName, name: mName, percentage: 100 }];
+  const rawTm = w.team_members || d.team_members;
+  if (!team.length && rawTm) {
+    if (typeof rawTm === 'string') {
+      try {
+        const parsed = JSON.parse(rawTm);
+        if (Array.isArray(parsed)) {
+          team = parsed.map(p => typeof p === 'string' ? { mechanic_id: p, mechanic_name: p, name: p, percentage: 100 } : p);
+        }
+      } catch (_) {
+        team = rawTm.split(',').map(s => s.trim()).filter(Boolean).map(name => ({
+          mechanic_id: name, mechanic_name: name, name: name, percentage: 100
+        }));
+      }
+    } else if (Array.isArray(rawTm)) {
+      team = rawTm.map(p => typeof p === 'string' ? { mechanic_id: p, mechanic_name: p, name: p, percentage: 100 } : p);
+    }
   }
-  team = team.map((m) => ({
-    ...m,
-    mechanic_id: String(m.mechanic_id || m.id || ''),
-    mechanic_name: String(m.mechanic_name || m.name || m.mechanic_id || m.id || '-'),
-    name: String(m.name || m.mechanic_name || m.mechanic_id || m.id || '-'),
-    percentage: Number(m.percentage ?? 100),
-  }));
-  const team_names = Array.isArray(w.team_names) && w.team_names.length
-    ? w.team_names
-    : team.map((m) => m.mechanic_name);
+  const leadId = w.lead_mechanic_id || d.lead_mechanic_id || w.mechanic_id || d.mechanic_id;
+  const leadName = w.mechanic_name || d.mechanic_name || w.lead_mechanic_name || d.lead_mechanic_name || (w.created_by ? String(w.created_by).split('@')[0] : '') || (w.submitted_by ? String(w.submitted_by).split('@')[0] : '') || leadId;
+  if (!team.length && leadName) {
+    team = [{ mechanic_id: String(leadId || leadName), mechanic_name: String(leadName), name: String(leadName), percentage: 100 }];
+  }
+  if (!team.length) {
+    team = [{ mechanic_id: 'MECH-01', mechanic_name: 'Mekanik', name: 'Mekanik', percentage: 100 }];
+  }
+
+  const memberCount = Math.max(1, team.length);
+  team = team.map((m) => {
+    const pct = Number(m.percentage ?? (100 / memberCount));
+    const mPoints = Math.round((final_points * (pct / 100)) * 100) / 100;
+    const mRole = String(m.role || m.position || '').toLowerCase();
+    const mRate = (mRole.includes('sr') || mRole.includes('senior')) ? 3000 : 2500;
+    const mIdr = Math.round(mPoints * mRate);
+    const mName = String(m.mechanic_name || m.name || m.mechanic_id || m.id || 'Mekanik').trim();
+    return {
+      ...m,
+      mechanic_id: String(m.mechanic_id || m.id || mName),
+      mechanic_name: mName,
+      name: mName,
+      percentage: pct,
+      share_points: mPoints,
+      share_idr: mIdr,
+      formatted_label: mName + ' (' + mPoints + ' pts · Rp ' + String(mIdr).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ')'
+    };
+  });
+
+  const team_names = team.map(m => m.formatted_label);
+  const rawCreatedAt = w.created_at || d.created_at || w.date || d.date || w.submitted_at || d.submitted_at;
+  const created_at_str = formatTanggalWIB(rawCreatedAt);
 
   return {
+    ...d,
     ...w,
     id,
     wo_id: id,
@@ -145,19 +236,24 @@ function lengkapiObjekWoWeb(w) {
     target_hours,
     effective_base_points,
     effective_target_hours,
+    actual_hours,
+    work_condition,
+    final_points,
+    final_idr,
+    points: final_points,
     component: {
       component_no: component_id,
       component_id,
       component_name,
-      category: String(compObj.category || w.section || 'General'),
+      category: String(compObj.category || w.section || d.section || 'General'),
       base_points,
       target_hours,
     },
     team,
     effective_team: team,
     team_names,
-    team_count: w.team_count || team.length || 1,
-    created_at_str: String(w.created_at_str || w.date || w.created_at || '-'),
+    team_count: team.length,
+    created_at_str,
   };
 }
 

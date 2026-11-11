@@ -441,6 +441,21 @@ export async function eksekusiSupabaseBackendSum(action, token, body, env) {
     }
   }
 
+  // Khusus approve L2: hitung final points & final idr
+  if (cleanAksi === 'approve_l2') {
+    payload.status = 'approved';
+    payload.status_group = 'done';
+    payload.status_label = 'Approved';
+    const basePts = Number(payload.base_points || payload.plan_points || 1.0) || 1.0;
+    const unitF = Number(payload.unit_factor || 1.0) || 1.0;
+    const rawCond = String(payload.work_condition || 'normal').toLowerCase();
+    const condF = (rawCond === 'extreme' ? 1.2 : (rawCond === 'difficult' || rawCond === 'berat' ? 1.1 : 1.0));
+    const calcPts = Math.round((basePts * unitF * condF) * 100) / 100;
+    payload.final_points = (Number(payload.final_points) > 0) ? Number(payload.final_points) : calcPts;
+    payload.final_idr = (Number(payload.final_idr) > 0) ? Number(payload.final_idr) : Math.round(payload.final_points * 2500);
+    payload.points = payload.final_points;
+  }
+
   if (cleanAksi === 'request_transfer') {
     payload.wo_id = payload.wo_id || payload.id || ekstrakWoId(body) || ekstrakWoId(payload);
     if (body.start_time && !payload.start_time) payload.start_time = body.start_time;
@@ -847,6 +862,9 @@ export async function eksekusiSupabaseBackendSum(action, token, body, env) {
           status: 'approved',
           status_group: 'done',
           status_label: 'Approved',
+          final_points: payload.final_points || 2.5,
+          final_idr: payload.final_idr || 6250,
+          points: payload.final_points || 2.5,
           ...(data.data || data.result || {})
         };
         data.data = l2Data;

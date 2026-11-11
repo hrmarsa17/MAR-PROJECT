@@ -489,9 +489,9 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
             <div class="points-highlight<? if (awo2.safety_incident) { ?> points-highlight-incident<? } ?>">
               <div>
                 <div class="points-label">Final Points</div>
-                <div class="points-idr">Rp <?= awo2.final_idr ? String(Math.round(awo2.final_idr)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0' ?></div>
+                <div class="points-idr">Rp <?= (awo2.final_idr && awo2.final_idr > 0) ? String(Math.round(awo2.final_idr)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : (awo2.final_points ? String(Math.round(awo2.final_points * 2500)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '2.500') ?></div>
               </div>
-              <div class="points-value"><?= awo2.final_points ?> pts</div>
+              <div class="points-value"><?= (awo2.final_points !== undefined && awo2.final_points !== null && String(awo2.final_points).trim() !== '' && Number(awo2.final_points) > 0) ? awo2.final_points : (awo2.points || awo2.base_points || '1') ?> pts</div>
             </div>
             <div class="wo-section">
               <div class="wo-section-title">📦 Pekerjaan</div>
@@ -505,9 +505,9 @@ document.addEventListener('DOMContentLoaded',function(){if(!PAGE_TOKEN)return;va
             </div>
             <div class="wo-section">
               <div class="wo-section-title">👥 Team</div>
-              <div class="team-names-list"><?= awo2.team_names && awo2.team_names.length > 0 ? awo2.team_names.join(', ') : '-' ?></div>
+              <div class="team-names-list"><?= awo2.team_names && awo2.team_names.length > 0 ? awo2.team_names.join(', ') : (awo2.created_by ? awo2.created_by.split('@')[0] : 'Mekanik') ?></div>
             </div>
-            <div class="wo-detail-row" style="margin-bottom:0.5rem;"><span class="detail-label">Tanggal:</span><span class="detail-value" style="font-size:0.8rem;"><?= awo2.created_at_str ?></span></div>
+            <div class="wo-detail-row" style="margin-bottom:0.5rem;"><span class="detail-label">Tanggal:</span><span class="detail-value" style="font-size:0.8rem;"><?= awo2.created_at_str || '-' ?></span></div>
             <? if (user.role === 'superintendent') { ?>
             <div class="wo-actions">
               <button class="btn btn-cancel-approved" style="flex:1;" onclick="openCancelModal('<?= awo2.id ?>', '<?= awo2.wo_number ?>', 'approved', true)">🚫 Cancel & Batalkan Poin</button>
