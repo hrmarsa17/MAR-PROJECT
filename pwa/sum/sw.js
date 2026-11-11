@@ -1,4 +1,4 @@
-var CACHE = 'mar-sum-v49';
+var CACHE = 'mar-sum-v50';
 var ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon-192.png', './icon-512.png', './foto.png', './bg-login.jpg'];
 self.addEventListener('install', function(e) {
   e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(ASSETS);}));
@@ -189,6 +189,8 @@ self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   var url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
+  // Lewatkan permintaan ber-query, /web, atau /api langsung ke jaringan (jangan simpan halaman dinamis ke cache statis)
+  if (url.search || url.pathname.startsWith('/web') || url.pathname.startsWith('/api')) return;
 
   // FILE INTI (index.html / app.js / sw.js) → NETWORK-FIRST.
   // Dulu semuanya cache-first: begitu ter-cache, jaringan tak pernah dicek lagi,

@@ -12,6 +12,23 @@ Formatnya:
 
 ---
 
+### 2026-11-11 · Raka (+ AI) · sum (Perbaikan Bug #29: Stale Cache / Angka 0 di Mechanic Dashboard SUM)
+- Berubah:
+  - **Akar Masalah Angka 0 & Kartu Kosong di Tab Assigned / Pending SUM**:
+    - Service Worker SUM (`pwa/sum/sw.js`) sebelumnya tidak memiliki pengecekan `if (url.search) return;` seperti halnya di `pwa/kmb` dan `pwa/kmbprojek`.
+    - Akibatnya, saat pengguna membuka URL web desktop dengan parameter query (seperti `/web?page=mechanic&filter=assigned&token=...`), *event listener fetch* memperlakukannya sebagai *static asset* (`cache-first`) dan menyimpannya ke *Cache Storage* browser (`mar-sum-v49`).
+    - Halaman lama yang tersimpan saat data kosong terus-menerus disajikan dari *cache* browser tanpa pernah menembus server (sehingga Assigned & Pending tetap 0), sedangkan tab yang baru pertama kali diklik (seperti `filter=done`) mengambil data *live* dari jaringan (menampilkan 287 Assigned, 81 Pending, 1 Approved).
+  - **Perbaikan**:
+    - Menambahkan *bypass* langsung ke jaringan di `pwa/sum/sw.js` untuk semua URL ber-query, `/web`, dan `/api`: `if (url.search || url.pathname.startsWith('/web') || url.pathname.startsWith('/api')) return;`.
+    - Menaikkan versi cache dari `mar-sum-v49` ke `mar-sum-v50` agar seluruh entri *stale cache* lama di browser pengguna otomatis dibersihkan saat aktivasi Service Worker baru.
+    - Uji serahan token `scripts/uji-serahan-token.mjs`: Lulus 24/24.
+  - **Deploy Staging**:
+    - `abadiops-sum-staging`: Version `f5eb3bf9-24f2-4e39-bfc3-73b0b0992bd1`.
+- Belum selesai / berikutnya:
+  - Implementasi handler backend Supabase untuk Koreksi HM, Koreksi KM, dan Teknis.
+
+---
+
 ### 2026-11-11 · Raka (+ AI) · kmb & sum (Audit & Perbaikan Fitur Reports / Download Payroll Laporan)
 - Berubah:
   - **Audit Halaman Laporan (`?page=reports`)**:
