@@ -12,6 +12,13 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (pagi) · Gabriel (+ Claude) · keempat rumah (keputusan pagi, alamat uji, hitung ulang rumus config)
+- Berubah:
+  - **Keputusan Gabriel:** push ke staging; rumus config dihitung ulang otomatis; payroll sebagai XLSX langsung dari abadiops; alamat uji `staging-*.abadiops.com` (`docs/KEPUTUSAN.md`).
+  - **Alamat uji hidup:** `staging.abadiops.com` (panel/pintu uji) dan `staging-kmbbupr`, `staging-kmbprojek`, `staging-kmbtra`, `staging-sum` (.abadiops.com); bisa dibuka lewat DNS biasa (`*.workers.dev` tidak). Bug #28 selesai.
+  - **Hitung ulang rumus config:** rumus `Config_*` dicermin ke `<skema>.cermin_rumus`; mesin rumus `workers/bersama/rumus.js` cocok 1.533/1.533 dengan Google Sheets di tiga rumah keluarga KMB dan 1/1 di SUM; pusat admin menghitung ulang semua sel berumus saat menyimpan, mengunci sel berumus, memberi rumus kolom seragam ke baris baru, dan menolak hapus baris di sheet berumus. Uji staging 7/7 (termasuk XLOOKUP 41/41 baris).
+- Belum selesai / berikutnya: rumus disalin ke cermin produksi lewat sinkron (`cermin_rumus`); payroll XLSX; push (kunci VAPID); cermin balik + latihan; sinkron terakhir produksi lewat GitHub; merge + deploy produksi.
+
 ### 2026-11-14/15 (larut malam) · Claude (otorisasi penuh Gabriel, Gabriel tidur) · keempat rumah (uji 1:1 lengkap, prosedur Mulai/Kembali, tutup GAS, pemicu terjadwal)
 - Berubah:
   - **1:1 lengkap di Cloudflare (Paid) + Gedung 1 (Micro), ruang uji:** aksi baca BUPR 66/66, KMB Projek 286/286, KMB V2 468/468, SUM 672/672; halaman web 27/27, 27/27, 27/27, 45/45; alur tulis buat WO → kerja mekanik → L1 → L2 keempat rumah 4/4 jawaban + seluruh sheet identik (24, 24, 24, 19).

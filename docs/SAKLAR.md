@@ -131,6 +131,7 @@ Saklar dioperasikan dari **satu panel visual di domain pintu**. Daftar kamar dan
 - **Fungsi pendukung** (`db/bersama/migrasi.sql`): `cermin_bandingkan`, `cermin_cadangkan`, `cermin_kesehatan`; terpasang di Gedung 1.
 - **Uji prosedur di staging** (simulasi di ruang uji): 18/18 lulus. Mencakup kembali → mulai lengkap dengan cadangan, sinkron terakhir, periksa selisih 0, dan jam mulai tercatat; penolakan konfirmasi/posisi/prosedur ganda; dan penahanan kiriman HP saat peralihan.
 - **Pemicu terjadwal GAS di Worker:** `config/rumah.json` `gas.pemicu` (cleanupProcessedOps, cleanupKirimanWeb, penjagaOtomatis; jam WIB zona skrip), cron `[triggers]` produksi, `scheduled()` hanya bila saklar `supabase`. Uji kembar di ruang uji 11/11 identik (jawaban + seluruh sheet), termasuk pemangkasan 10.686 baris ProcessedOps KMB V2.
+- **Hitung ulang rumus config** (keputusan 15 Nov): `cermin_rumus` diisi alat sinkron; `workers/bersama/rumus.js`; pusat admin menghitung ulang, mengunci sel berumus, dan menolak hapus baris di sheet berumus. Cermin balik nanti memakai `cermin_rumus` supaya tidak menimpa rumus.
 - **Belum dibangun:** sinkron terakhir produksi lewat GitHub dan cermin balik (Supabase → spreadsheet) beserta latihannya. Selama itu tombol mulai produksi tetap terkunci. Pengganti layanan Google: `docs/INVENTARIS-LAYANAN-GOOGLE.md`.
 
 ## Catatan pembalikan saklar
