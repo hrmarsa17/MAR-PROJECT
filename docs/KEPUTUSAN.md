@@ -90,7 +90,9 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 
 ## Belum diputuskan (menunggu Gabriel)
 
-*Tidak ada. Semua keputusan rencana dan arsitektur gedung telah diambil per 30 Okt 2026.*
+1. **Rumus di sheet config setelah migrasi (titik henti: rumus poin).** Ditemukan 14 Nov malam (hanya membaca): di keluarga KMB, `Config_Jobs_Field` berisi 1.370 sel rumus `base_point = plan_hours × 2` (`=F3*2`), 160 rumus `job_type`, dan `plan_hours` seperti `=30/60`; ada juga rumus pembuat ID di baris judul `Config_Units`/`Config_Jobs_Field`. SUM hanya 1 sel rumus. Sheet operasional (WO, approval, poin, audit) tidak berisi rumus. Cermin menyimpan NILAI, jadi setelah jam mulai: mengubah `plan_hours` dari pusat admin tidak menghitung ulang `base_point` seperti di spreadsheet. Pilihan: (a) pusat admin menghitung ulang kolom berumus dengan rumus yang dibaca dari spreadsheet (khusus rumus sederhana sebaris seperti `=F3*2`), (b) kolom berumus dikunci di pusat admin dan diubah lewat prosedur khusus, (c) lainnya. Cermin balik bagaimanapun tidak menimpa sel rumus.
+
+*Selain itu tidak ada; keputusan rencana dan arsitektur gedung diambil per 30 Okt 2026, Tonggak 2 per 14 Nov 2026.*
 
 > **Catatan Penyelesaian 30 Okt 2026**:
 > Keputusan terkait project Supabase SUM telah diselesaikan: skema `sum` (22 tabel) dan RPC baca disatukan di Gedung 1 produksi (`sptgqsjgszwbreikxdph`), sedangkan project `dnnqrslftndcbmnvuveb` dialokasikan menjadi Gedung 2 (Staging). Jatah 2 gedung gratis Supabase tetap terjaga.

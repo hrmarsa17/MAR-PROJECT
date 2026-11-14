@@ -48,6 +48,8 @@ Yang dikerjakan tombol secara otomatis:
 
 Tujuannya: GAS dan PWA kembali beroperasi persis seperti sebelum migrasi, lengkap dengan semua yang sudah dikerjakan di abadiops.
 - **Cermin balik.** Setelah jam mulai, cermin balik menyalin perubahan Supabase ke spreadsheet tiap beberapa menit. Bentuk datanya sama (baris dan kolom sheet) dan hanya ada satu penulis, jadi spreadsheet selalu hampir sama dengan Supabase.
+  - Cermin balik **tidak menimpa sel berisi rumus**. Rumus hanya ada di sheet config (14 Nov: `Config_Jobs_Field` keluarga KMB, `base_point = plan_hours × 2`, 1.370 sel); spreadsheet menghitung ulang sendiri setelah sel masukannya ditulis. Cara pusat admin menangani kolom berumus setelah jam mulai menunggu keputusan Gabriel (`docs/KEPUTUSAN.md`, Belum diputuskan).
+  - Akun layanan cermin saat ini hanya Viewer di spreadsheet. Cermin balik butuh hak Editor, yang hanya dipakai setelah jam mulai.
 - **Tombol "Kembali ke GAS".** Cukup satu konfirmasi, tanpa daftar syarat. Urutannya:
   1. saklar → `membuka`;
   2. cermin balik terakhir, lalu periksa selisih;
