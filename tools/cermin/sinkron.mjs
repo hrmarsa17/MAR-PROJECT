@@ -353,6 +353,18 @@ async function sinkronRumah(skema) {
     const { default: postgres } = await import('postgres');
     sql = postgres(wajib('DATABASE_URL'), { max: 1, prepare: false, ssl: 'require', connect_timeout: 20, onnotice: () => {} });
     try {
+      // Setelah tombol "Mulai migrasi" rumah ini (docs/SAKLAR.md), Supabase satu-satunya penulis: sinkron maju dari
+      // spreadsheet TIDAK BOLEH menimpa cermin, karena pekerjaan di abadiops akan hilang. Arah sebaliknya adalah tugas
+      // cermin balik. Izin tulis dibuka/ditutup oleh prosedur di panel (public.cermin_izin_tulis).
+      const [ada] = await sql`SELECT to_regclass('public.cermin_izin_tulis') IS NOT NULL AS ada`;
+      if (ada.ada) {
+        const [izin] = await sql`SELECT boleh FROM public.cermin_izin_tulis WHERE skema = ${skema}`;
+        if (izin && izin.boleh) {
+          console.log(`${skema}: DILEWATI — migrasi sudah dimulai, Supabase satu-satunya penulis; sinkron maju dari spreadsheet dimatikan (docs/SAKLAR.md).`);
+          await sql.end({ timeout: 5 }).catch(() => {});
+          return true;
+        }
+      }
       await siapkanSkema(sql, skema);
       periksa = await perluPeriksa(sql, skema);
     } catch (e) {

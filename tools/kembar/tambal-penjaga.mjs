@@ -49,6 +49,7 @@ function masukSah_() {
 }
 
 function wajibMasukSah_(e) {
+  if (typeof wajibGasTerbuka_ === 'function') wajibGasTerbuka_();   /* tutup-gas */
   if (MASUK_SAH_) return;
   var aktif = '';
   try { aktif = Session.getActiveUser().getEmail(); } catch (x) {}

@@ -1,6 +1,7 @@
 {
   "sum": {
     "nama": "SUM V2",
+    "zona_waktu": "Asia/Makassar",
     "skema": "sum",
     "rpc": "sum",
     "awalan_token": "sum-",
@@ -27,6 +28,8 @@
     "gas": {
       "script": "1k_A_KERx8GJAamYu8SJ4ef1ddla1B3VYAao8w6XEuGs-P7XvA6uRnGll",
       "versi": 199,
+      "peralihan": "maintenance",
+      "jalan_kembali_siap": false,
       "aksi_worker": ["ping", "pull_my_wos", "pull_create_refs", "pull_pending", "pull_active", "pull_approved", "pull_rejected", "pull_cancelable", "pull_monitoring", "pull_monitoring_daftar", "pull_wo_detail", "debug_raw_wos"],
       "aksi_tulis_worker": ["submit_work", "create_wo", "approve_l1", "approve_l2", "save_override", "reject", "cancel_wo", "request_transfer", "approve_transfer", "reject_transfer", "report_expired", "reopen_expired"],
       "sheet_dasar": ["ApiTokens", "Config_Mechanics"],
@@ -36,6 +39,7 @@
   },
   "kmbtra": {
     "nama": "KMB TRA / V2",
+    "zona_waktu": "Asia/Jakarta",
     "worker": "kmb",
     "skema": "kmb",
     "rpc": "kmbtra",
@@ -66,6 +70,8 @@
     "gas": {
       "script": "17sBKK-x3qXzL7tRlejsXE1kQXGwF-CQtCoCdhA4ZWE4_E2NSq0ZUwtqo",
       "versi": 299,
+      "peralihan": "maintenance",
+      "jalan_kembali_siap": false,
       "aksi_worker": ["ping", "pull_my_wos", "pull_create_refs", "pull_pending", "pull_active", "pull_approved", "pull_rejected", "pull_transfers", "pull_monitoring", "pull_monitoring_daftar", "pull_tyre_form", "pull_wo_detail", "debug_raw_wos"],
       "aksi_tulis_worker": ["submit_work", "create_wo", "approve_l1", "approve_l2", "save_override", "reject", "kembalikan_ke_mekanik", "cancel_wo", "request_transfer", "approve_transfer", "reject_transfer", "report_expired", "reopen_expired"],
       "sheet_dasar": ["ApiTokens", "Config_Mechanics"],
@@ -75,6 +81,7 @@
   },
   "kmbprojek": {
     "nama": "KMB Projek",
+    "zona_waktu": "Asia/Jakarta",
     "skema": "kmb_projek",
     "rpc": "kmb",
     "awalan_token": "kmbp-",
@@ -104,6 +111,8 @@
     "gas": {
       "script": "1cKrVdmxH_hD4yVTwqLAXKdUjwM5wd7Glh4MdlpT7oP8KDOaGNgJCJVyh",
       "versi": 49,
+      "peralihan": "retry_later",
+      "jalan_kembali_siap": false,
       "aksi_worker": ["ping", "pull_my_wos", "pull_create_refs", "pull_pending", "pull_active", "pull_approved", "pull_rejected", "pull_transfers", "pull_monitoring", "pull_tyre_form", "debug_raw_wos"],
       "aksi_tulis_worker": ["submit_work", "create_wo", "approve_l1", "approve_l2", "save_override", "reject", "kembalikan_ke_mekanik", "cancel_wo", "request_transfer", "approve_transfer", "reject_transfer"],
       "sheet_dasar": ["ApiTokens", "Config_Mechanics"],
@@ -113,6 +122,7 @@
   },
   "kmbbupr": {
     "nama": "KMB Projek BUPR",
+    "zona_waktu": "Asia/Jakarta",
     "skema": "kmbbupr",
     "rpc": "kmbbupr",
     "awalan_token": "kmbb-",
@@ -142,6 +152,8 @@
     "gas": {
       "script": "1EMxIxcP1NMqLyjaaFOMbldYBGDdF_mb0OCLjbd3In0PymjTAoUR2XLiM",
       "versi": 11,
+      "peralihan": "retry_later",
+      "jalan_kembali_siap": false,
       "aksi_worker": ["ping", "pull_my_wos", "pull_create_refs", "pull_pending", "pull_active", "pull_approved", "pull_rejected", "pull_transfers", "pull_monitoring", "pull_tyre_form", "debug_raw_wos"],
       "aksi_tulis_worker": ["submit_work", "create_wo", "approve_l1", "approve_l2", "save_override", "reject", "kembalikan_ke_mekanik", "cancel_wo", "request_transfer", "approve_transfer", "reject_transfer"],
       "sheet_dasar": ["ApiTokens", "Config_Mechanics"],

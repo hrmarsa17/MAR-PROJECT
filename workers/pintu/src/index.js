@@ -18,6 +18,7 @@
 import { SaklarDO } from './saklar-do.js';
 import { verifikasiKataSandi, validasiSesi } from './saklar-auth.js';
 import { tanganiAdminCermin } from './admin-cermin.js';
+import { tanganiMigrasi } from './migrasi.js';
 import PROFIL_RUMAH from '../../../config/rumah.json';
 
 export { SaklarDO };
@@ -231,6 +232,11 @@ export default {
     // Lihat src/admin-cermin.js.
     if (url.pathname.startsWith('/saklar/api/admin/')) {
       return tanganiAdminCermin(request, env, url, json, bacaPetaSaklar);
+    }
+
+    // Tonggak 2: kesehatan cermin, tombol Mulai migrasi / Kembali ke GAS (src/migrasi.js, docs/SAKLAR.md).
+    if (url.pathname.startsWith('/saklar/api/migrasi/')) {
+      return tanganiMigrasi(request, env, url, json, validasiSesi, getSaklarStub, daftarRumah);
     }
 
     // API Status Saklar (Khusus Panel Saklar - butuh autentikasi)

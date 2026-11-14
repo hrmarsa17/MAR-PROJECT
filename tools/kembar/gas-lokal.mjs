@@ -42,7 +42,9 @@ export function bacaKodeGas(folderGas) {
   const manifest = JSON.parse(fs.readFileSync(path.join(folderGas, 'appsscript.json'), 'utf8'));
   const baca = (re) => fs.readdirSync(folderGas).filter((f) => re.test(f)).sort((a, b) => a.localeCompare(b))
     .map((nama) => ({ nama, isi: fs.readFileSync(path.join(folderGas, nama), 'utf8') }));
-  return { zonaSkrip: manifest.timeZone || 'Etc/UTC', berkas: baca(/\.(js|gs)$/), html: baca(/\.html$/) };
+  // _TutupGas (tools/kembar/tambal-tutup-gas.mjs) hanya untuk GAS di Google: jalur Supabase (Worker, GAS lokal)
+  // menjalankan kode yang sama sebagai penulis setelah migrasi dan tidak boleh ikut menutup dirinya.
+  return { zonaSkrip: manifest.timeZone || 'Etc/UTC', berkas: baca(/\.(js|gs)$/).filter((b) => !/^_TutupGas\.(js|gs)$/.test(b.nama)), html: baca(/\.html$/) };
 }
 
 const PASANG = `Object.assign(globalThis, (${buatLayanan.toString()})(JSON.parse(__D), __host));

@@ -69,6 +69,39 @@ const tanpaGas = (env) => !env.GAS_URL || String(env.GAS_URL).trim() === '';
 // cermin yang masih disinkron dari spreadsheet akan tertimpa, dan kedua sumber berselisih.
 const bolehTulis = (saklar, env) => saklar === 'supabase' || tanpaGas(env);
 
+// Posisi peralihan (docs/SAKLAR.md): saat `menutup` (gas → supabase) dan `membuka` (supabase → gas) TIDAK ADA
+// penulis. Bacaan tetap dilayani dari cermin; kiriman PWA dijawab dengan protokol yang membuat PWA MENYIMPAN
+// kiriman di HP dan mengirim ulang otomatis. Jangan galat biasa: galat biasa membuang kiriman di HP pemiliknya
+// (479 approval KMB hilang pada malam 16 Sep 2026; lihat Maintenance.js GAS SUM/KMB V2).
+//   gas.peralihan = "maintenance"  → teks "MAINTENANCE|<sampai ISO>|<pesan>" (PWA SUM, KMB V2)
+//   gas.peralihan = "retry_later"  → JSON { success:false, retry_later:true } (PWA KMB Projek, BUPR, KMB V2)
+const POSISI_PERALIHAN = new Set(['menutup', 'membuka']);
+const MENIT_PERALIHAN = 15;
+const PESAN_PERALIHAN_WEB = 'Sistem sedang pindah jalur. Tidak ada yang tersimpan; coba lagi beberapa menit lagi.';
+
+function jawabPeralihanApi(env, p) {
+  const sampai = new Date(Date.now() + MENIT_PERALIHAN * 60000);
+  if (p.gas.peralihan === 'maintenance') {
+    const jam = sampai.toLocaleTimeString('id-ID', { timeZone: p.zona_waktu || 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false });
+    const isi = `MAINTENANCE|${sampai.toISOString()}|Sistem sedang pindah jalur sampai sekitar pukul ${jam}. `
+      + 'Kiriman Anda tersimpan dan akan terkirim otomatis setelah selesai.';
+    return new Response(isi, {
+      status: 200,
+      headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Abadi-Rumah': env.RUMAH, 'X-Abadi-Jalur': 'peralihan' },
+    });
+  }
+  return jawab({ success: false, retry_later: true, error: 'Sistem sedang pindah jalur — operasi ini tetap di antrean dan akan dikirim ulang otomatis.' },
+    'peralihan', env);
+}
+
+function halamanPeralihan(env) {
+  return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MAR</title>`
+    + `<p style="font:16px system-ui;margin:2em">${PESAN_PERALIHAN_WEB}</p>`, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '120', 'X-Abadi-Rumah': env.RUMAH, 'X-Abadi-Jalur': 'peralihan' },
+  });
+}
+
 function jawab(isi, jalur, env, tambahan = {}) {
   return new Response(typeof isi === 'string' ? isi : JSON.stringify(isi), {
     status: 200,
@@ -91,6 +124,8 @@ async function tanganiApi(request, env, url) {
   const aksi = String(isi.action || '');
   const p = profil(env);
   const saklar = await bacaStatusSaklar(env);
+  // Peralihan: selain aksi baca (dilayani dari cermin di bawah), semua kiriman ditahan di HP.
+  if (POSISI_PERALIHAN.has(saklar) && !p.gas.aksi_worker.includes(aksi)) return jawabPeralihanApi(env, p);
   const diWorker = p.gas.aksi_worker.includes(aksi)
     && (saklar !== 'gas' || tanpaGas(env) || url.searchParams.get('uji') === 'supabase');
   const tulisDiWorker = (p.gas.aksi_tulis_worker || []).includes(aksi) && bolehTulis(saklar, env);
@@ -126,6 +161,7 @@ async function tanganiWeb(request, env, url) {
   if (request.method !== 'GET') return new Response('Hanya GET', { status: 405 });
   const p = profil(env);
   const saklar = await bacaStatusSaklar(env);
+  if (POSISI_PERALIHAN.has(saklar)) return halamanPeralihan(env);
   if (!bolehTulis(saklar, env)) return Response.redirect(String(env.GAS_URL) + url.search, 302);
   const h = await jalankanDanSimpan(env, p, url, `web:${url.searchParams.get('page') || ''}`, { jarang: sheetJarang(p, '') }, (G) => {
     const k = G.doGet(buatPermintaanGet(url.search));
@@ -170,6 +206,7 @@ async function tanganiRun(request, env, url) {
   const args = Array.isArray(isi.args) ? isi.args : [];
   const kirim = (o, tulis) => jawab(o, 'gas-worker-web', env, { 'X-Abadi-Tulis': tulis || '-' });
   if (!INFO_GAS.fungsiWeb.includes(fn)) return kirim({ ok: false, error: `Script function not found: ${fn}` });
+  if (POSISI_PERALIHAN.has(saklar)) return kirim({ ok: false, error: PESAN_PERALIHAN_WEB });
   if (!bolehTulis(saklar, env)) return kirim({ ok: false, error: 'MAR Web rumah ini masih dilayani GAS.' });
   const h = await jalankanDanSimpan(env, p, url, `run:${fn}`, { jarang: sheetJarang(p, '') }, (G) => {
     const f = G.fungsiWeb[fn];

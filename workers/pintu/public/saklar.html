@@ -63,6 +63,12 @@
     .badge-gas { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
     .badge-dua_cabang { background: var(--info-bg); color: var(--info); border: 1px solid #BAE6FD; }
     .badge-supabase { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
+    .badge-menutup, .badge-membuka { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+    .syarat-list { list-style: none; margin: 0.5rem 0 0; padding: 0; font-size: 0.82rem; line-height: 1.5; }
+    .syarat-list li { display: flex; gap: 0.4rem; align-items: flex-start; }
+    .langkah-list { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.8rem; line-height: 1.45; color: var(--text-muted); max-height: 11rem; overflow-y: auto; }
+    .langkah-list .gagal { color: #991B1B; }
+    .kotak-kecil { background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.75rem; margin-top: 0.6rem; }
     .badge-active { background: var(--success-bg); color: var(--success); border: 1px solid #86EFAC; }
     .badge-inactive { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
     .badge-admin { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
@@ -209,20 +215,27 @@
     <!-- Tampilan 2: Dashboard Utama (2 Tab: Saklar & User Management) -->
     <div id="viewDashboard" class="hidden">
       <div class="nav-tabs">
-        <button type="button" class="nav-tab active" id="tabBtnSaklar" onclick="pilihTab('saklar')">🎛️ Saklar Dua Cabang</button>
+        <button type="button" class="nav-tab active" id="tabBtnSaklar" onclick="pilihTab('saklar')">🎛️ Saklar Migrasi</button>
         <button type="button" class="nav-tab" id="tabBtnUsers" onclick="pilihTab('users')">👷 Manajemen Pengguna & Token (Pusat Semua Rumah)</button>
         <button type="button" class="nav-tab" id="tabBtnConfig" onclick="pilihTab('config')">⚙️ Manajemen Config & Master Data (Pusat Semua Rumah)</button>
       </div>
 
-      <!-- TAB A: SAKLAR DUA CABANG -->
+      <!-- TAB A: SAKLAR MIGRASI (docs/SAKLAR.md, rancangan 14 Nov 2026) -->
       <div id="sectionSaklar">
-        <div class="emergency-banner">
-          <div>
-            <div class="emergency-text">🚨 Tombol Penyelamat Darurat Global</div>
-            <div style="font-size:0.8rem; opacity:0.9;">Jika terjadi gangguan sistemik pada Supabase, kembalikan seluruh rumah ke GAS dalam 1 klik.</div>
-          </div>
-          <button class="btn btn-danger" onclick="daruratMundurSemua()">Balikkan Semua ke GAS</button>
+        <div class="info-banner">
+          <strong>Tonggak 2: tiap rumah pindah sekaligus, dengan jalan kembali ke GAS.</strong>
+          Tombol <em>Mulai migrasi</em> hanya aktif kalau kesehatan cermin rumah itu hijau. Saat ditekan, GAS rumah itu
+          ditutup, cadangan diambil, sinkron terakhir dan pemeriksaan selisih harus 0, lalu Supabase menjadi satu-satunya
+          penulis. Selama peralihan (beberapa menit) kiriman HP ditahan dan terkirim otomatis. <em>Kembali ke GAS</em>
+          menyamakan sisa perubahan ke spreadsheet dulu, baru membuka GAS lagi. Kegagalan di langkah mana pun selalu
+          berakhir di posisi aman.
         </div>
+        <div id="banerUji" class="alert alert-warn hidden">
+          <strong>Lingkungan uji.</strong> Prosedur berjalan sebagai <em>simulasi</em> di ruang uji (skema <code>uji_*</code> Gedung 1):
+          sinkron terakhir = salin ulang dari cermin asli, cermin balik = hanya menghitung. Kesehatan yang ditampilkan adalah
+          kesehatan cermin asli; di uji, tombol mulai tetap bisa dipakai walau belum hijau.
+        </div>
+        <div id="migrasiAlert" class="alert hidden"></div>
 
         <div class="switch-grid" id="switchCards"></div>
 
@@ -383,40 +396,27 @@
     </div>
   </div>
 
-  <!-- Modal Konfirmasi Maju Saklar -->
-  <div id="modalMaju" class="modal-overlay hidden">
+  <!-- Modal prosedur migrasi: Mulai migrasi / Kembali ke GAS / Batalkan peralihan / ubah manual (uji) -->
+  <div id="modalMigrasi" class="modal-overlay hidden">
     <div class="modal-box">
-      <div class="modal-title">⚠️ Peringatan Pembalikan ke Dua Cabang</div>
-      <div class="modal-caution">
-        <strong>Perhatian Penting:</strong> Saklar akan mengarahkan pembuatan <strong>WO BARU</strong> langsung ke basis data Supabase. WO lama tetap diselesaikan di GAS. Pastikan seluruh 10 syarat migrasi di bawah sudah terpenuhi!
+      <div class="modal-title">
+        <span id="judulModalMigrasi">Mulai migrasi</span>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="tutupModalMigrasi()">✕</button>
       </div>
-
-      <div class="checklist-container">
-        <div style="font-weight:700; font-size:0.86rem; margin-bottom:0.65rem;">Checklist Syarat Wajib (docs/SAKLAR.md §3):</div>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 1. Cermin rumah tidak punya selisih selama 7 hari berturut-turut.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 2. Semua aksi tulis & web lulus uji rekam-putar di staging.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 3. Buku tamu kiriman sudah aktif di Cloudflare.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 4. Cermin ikut menyalin ProcessedOps dari GAS.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 5. Nomor WO Supabase 4 angka (tidak akan kembar dengan GAS).</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 6. Payroll gabungan sama dengan GAS untuk bulan-bulan lalu.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 7. Cadangan per jam berjalan dan uji pulih ke staging berhasil.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 8. Halaman web GAS sudah ditutup atau dibuat hanya-baca.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 9. Latihan saklar balik sudah dilakukan di staging.</label>
-        <label class="checklist-item"><input type="checkbox" class="chk-syarat" onchange="checkSyaratForm()"> 10. Persetujuan resmi diperoleh dari Gabriel (Titik Henti).</label>
-      </div>
-
-      <div class="form-group">
-        <label id="lblKonfirmasiRumah">Ketik kode rumah untuk konfirmasi:</label>
-        <input type="text" id="inputKonfirmasiRumah" class="form-control" placeholder="kode rumah" oninput="checkSyaratForm()">
+      <div class="modal-caution" id="peringatanMigrasi"></div>
+      <div id="syaratModalMigrasi"></div>
+      <div class="form-group" style="margin-top:0.9rem;">
+        <label id="lblKonfirmasiMigrasi" for="inputKonfirmasiMigrasi">Ketik kode rumah untuk konfirmasi:</label>
+        <input type="text" id="inputKonfirmasiMigrasi" class="form-control" placeholder="kode rumah" oninput="cekFormMigrasi()" autocomplete="off">
       </div>
       <div class="form-group">
-        <label for="inputAlasanMaju">Alasan Pembalikan Saklar:</label>
-        <input type="text" id="inputAlasanMaju" class="form-control" placeholder="Contoh: Seluruh uji rekam-putar lulus di staging" oninput="checkSyaratForm()">
+        <label for="inputAlasanMigrasi">Alasan:</label>
+        <input type="text" id="inputAlasanMigrasi" class="form-control" placeholder="Contoh: semua syarat hijau, uji Gabriel lulus" oninput="cekFormMigrasi()" autocomplete="off">
       </div>
-
+      <div id="galatModalMigrasi" class="alert alert-danger hidden"></div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="tutupModalMaju()">Batal</button>
-        <button class="btn btn-danger" id="btnKonfirmasiMaju" onclick="submitMajuSaklar()" disabled>Konfirmasi & Nyalakan</button>
+        <button type="button" class="btn btn-secondary" onclick="tutupModalMigrasi()">Batal</button>
+        <button type="button" class="btn btn-danger" id="btnKonfirmasiMigrasi" onclick="kirimMigrasi()" disabled>Jalankan</button>
       </div>
     </div>
   </div>
@@ -449,8 +449,6 @@
 
   <script>
     let TOKEN_SESI = localStorage.getItem('abadi_saklar_token') || '';
-    let TARGET_RUMAH_MODAL = '';
-    let TARGET_POSISI_MODAL = '';
     // Daftar kamar beserta profilnya (skema, section, peran), diisi dari /saklar/api/status (rumah_list).
     // Sumbernya RUMAH di wrangler.toml pintu dan config/rumah.json; panel tidak menulis daftar kamar sendiri.
     let DAFTAR_RUMAH = [];
@@ -566,26 +564,32 @@
     }
 
     async function muatStatus() {
+      clearTimeout(TIMER_MUAT);
       try {
-        const res = await fetch('/saklar/api/status', {
-          headers: { 'Authorization': 'Bearer ' + TOKEN_SESI }
-        });
-        if (res.status === 401) {
-          logout();
-          return;
+        const [st, kes, mg] = await Promise.all([
+          ambilJson('/saklar/api/status'),
+          ambilJson('/saklar/api/migrasi/kesehatan').catch(() => null),
+          ambilJson('/saklar/api/migrasi/status').catch(() => null),
+        ]);
+        if (!st.data.success) return;
+        if (Array.isArray(st.data.rumah_list) && st.data.rumah_list.length > 0) {
+          DAFTAR_RUMAH = st.data.rumah_list;
+          perbaruiDropdownRumah();
         }
-        const data = await res.json();
-        if (data.success) {
-          if (Array.isArray(data.rumah_list) && data.rumah_list.length > 0) {
-            DAFTAR_RUMAH = data.rumah_list;
-            perbaruiDropdownRumah();
-          }
-          tampilkanDashboard();
-          renderCards(data.switches);
-          renderHistory(data.history);
+        KESEHATAN = {};
+        if (kes && kes.data && Array.isArray(kes.data.rumah)) {
+          DI_UJI = !!kes.data.staging;
+          for (const k of kes.data.rumah) KESEHATAN[k.rumah] = k;
         }
+        if (mg && mg.data && mg.data.success) PROSEDUR = { aktif: mg.data.aktif || {}, riwayat: mg.data.riwayat || [] };
+        document.getElementById('banerUji').classList.toggle('hidden', !DI_UJI);
+        tampilkanDashboard();
+        renderCards(st.data.switches);
+        renderHistory(st.data.history);
+        if (Object.keys(PROSEDUR.aktif).length) TIMER_MUAT = setTimeout(muatStatus, 2500);
       } catch (err) {
         console.error('Gagal memuat status saklar:', err);
+        pesanMigrasi('Gagal memuat status: ' + err.message, 'danger');
       }
     }
 
@@ -593,53 +597,110 @@
       perbaruiTabRumah();
     }
 
+    // ── SAKLAR MIGRASI (docs/SAKLAR.md rancangan 14 Nov 2026; server: src/migrasi.js + src/saklar-do.js) ──────────
+    // Tanpa alert/confirm/prompt: semua konfirmasi lewat modal, supaya panel juga bisa dioperasikan otomatis.
+    let KESEHATAN = {};          // rumah → hasil /saklar/api/migrasi/kesehatan
+    let PROSEDUR = { aktif: {}, riwayat: [] };
+    let DI_UJI = false;
+    let MODAL_MIGRASI = null;    // { rumah, jenis: 'mulai' | 'kembali' | 'batal' | 'manual', posisi }
+    let TIMER_MUAT = null;
+
+    const LABEL_POSISI = {
+      gas: ['GAS', 'badge-gas', 'GAS satu-satunya penulis; cermin spreadsheet → Supabase'],
+      menutup: ['MENUTUP', 'badge-menutup', 'Peralihan ke Supabase: tidak ada penulis, kiriman HP ditahan'],
+      supabase: ['SUPABASE', 'badge-supabase', 'Supabase satu-satunya penulis; GAS tertutup'],
+      membuka: ['MEMBUKA', 'badge-membuka', 'Peralihan kembali ke GAS: tidak ada penulis, kiriman HP ditahan'],
+    };
+
+    function pesanMigrasi(teks, jenis) {
+      const el = document.getElementById('migrasiAlert');
+      if (!teks) { el.classList.add('hidden'); return; }
+      el.className = 'alert alert-' + (jenis || 'info');
+      el.textContent = teks;
+    }
+
+    async function ambilJson(url, opsi = {}) {
+      const res = await fetch(url, {
+        ...opsi,
+        headers: { 'Authorization': 'Bearer ' + TOKEN_SESI, ...(opsi.body ? { 'Content-Type': 'application/json' } : {}), ...(opsi.headers || {}) },
+      });
+      if (res.status === 401) { logout(); throw new Error('Sesi habis, silakan masuk lagi.'); }
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+      return { ok: res.ok, status: res.status, data: data || {} };
+    }
+
+    function daftarSyaratHtml(syarat) {
+      return `<ul class="syarat-list">${syarat.map((x) => `<li><span>${x.ok ? '✅' : '❌'}</span><span>${escapeHtml(x.teks)}</span></li>`).join('')}</ul>`;
+    }
+
+    function daftarLangkahHtml(job) {
+      return `<ol class="langkah-list">${(job.langkah || []).map((l) => `<li class="${l.ok ? '' : 'gagal'}">${escapeHtml(l.waktu || '')} — ${escapeHtml(l.pesan || l.tahap || '')}</li>`).join('')}</ol>`;
+    }
+
     function renderCards(switches) {
       const grid = document.getElementById('switchCards');
       grid.innerHTML = '';
-
       for (const info of DAFTAR_RUMAH) {
         const kode = info.kode;
         const s = (switches && switches[kode]) || { posisi: 'gas', diubah_at: '—', oleh: 'Sistem', alasan: 'Bawaan' };
-        const isCabang = s.posisi === 'dua_cabang';
-        const isSupa = s.posisi === 'supabase';
-
-        let badgeClass = 'badge-gas';
-        let statusTeks = '100% GAS (Spreadsheet)';
-        if (isCabang) { badgeClass = 'badge-dua_cabang'; statusTeks = 'Dua Cabang (Supabase + GAS)'; }
-        if (isSupa) { badgeClass = 'badge-supabase'; statusTeks = '100% Supabase (GAS Tutup)'; }
-
-        let actionBtns = '';
-        if (s.posisi === 'gas') {
-          actionBtns = `<button class="btn btn-primary btn-block" onclick="bukaModalMaju('${kode}', 'dua_cabang')">Nyalakan Dua Cabang</button>`;
-        } else if (s.posisi === 'dua_cabang') {
-          actionBtns = `
-            <button class="btn btn-primary btn-block" style="background:var(--purple);" onclick="bukaModalMaju('${kode}', 'supabase')">Tuntaskan ke Supabase 100%</button>
-            <button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">🚨 Balik ke GAS Segera</button>
-          `;
-        } else {
-          actionBtns = `<button class="btn btn-danger btn-block" onclick="daruratMundur('${kode}')">🚨 Balik ke GAS Segera</button>`;
+        const [label, kelas, arti] = LABEL_POSISI[s.posisi] || [String(s.posisi).toUpperCase(), 'badge-gas', 'Posisi rancangan lama (sebelum 14 Nov)'];
+        const kes = KESEHATAN[kode];
+        const job = PROSEDUR.aktif[kode];
+        const terakhir = (PROSEDUR.riwayat || []).find((j) => j.rumah === kode);
+        const syaratHtml = !kes
+          ? '<div style="font-size:0.8rem; color:var(--text-muted);">Kesehatan cermin belum dimuat.</div>'
+          : kes.galat
+            ? `<div class="alert alert-danger" style="margin:0.5rem 0 0;">Kesehatan tidak terbaca: ${escapeHtml(kes.galat)}</div>`
+            : daftarSyaratHtml(kes.syarat || []);
+        let prosedurHtml = '';
+        if (job) {
+          prosedurHtml = `<div class="kotak-kecil"><strong>⏳ Prosedur ${escapeHtml(job.jenis)} berjalan</strong> (tahap ${escapeHtml(job.tahap)})${job.simulasi ? ' — simulasi' : ''}${daftarLangkahHtml(job)}</div>`;
+        } else if (terakhir) {
+          prosedurHtml = `<details class="kotak-kecil"><summary>Prosedur terakhir: ${escapeHtml(terakhir.jenis)} — <strong>${escapeHtml(terakhir.status)}</strong>${terakhir.simulasi ? ' (simulasi)' : ''}</summary>${daftarLangkahHtml(terakhir)}</details>`;
         }
-
+        let tombol = '';
+        if (s.posisi === 'gas' && !job) {
+          const boleh = !!kes && !kes.galat && (kes.hijau || DI_UJI);
+          tombol = `<button class="btn btn-primary btn-block" ${boleh ? '' : 'disabled'} onclick="bukaModalMigrasi('${kode}', 'mulai')">▶ Mulai migrasi${kes && !kes.hijau && DI_UJI ? ' (simulasi)' : ''}</button>`
+            + (boleh ? '' : '<div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.35rem;">Terkunci sampai semua syarat kesehatan hijau.</div>');
+        } else if (s.posisi === 'supabase' && !job) {
+          tombol = `<button class="btn btn-danger btn-block" onclick="bukaModalMigrasi('${kode}', 'kembali')">↩ Kembali ke GAS</button>`;
+        } else if (s.posisi === 'menutup') {
+          tombol = `<button class="btn btn-secondary btn-block" onclick="bukaModalMigrasi('${kode}', 'batal')">✋ Batalkan peralihan (kembali ke GAS)</button>`;
+        } else if (s.posisi === 'membuka') {
+          tombol = '<div style="font-size:0.8rem; color:var(--text-muted);">Sedang kembali ke GAS. Kalau gagal, saklar otomatis tetap di Supabase.</div>';
+        }
+        if (DI_UJI) {
+          tombol += `<div style="margin-top:0.6rem; font-size:0.78rem;">Atur manual (khusus uji):
+            <select class="form-control" style="padding:0.3rem; font-size:0.8rem;" onchange="if (this.value) bukaModalMigrasi('${kode}', 'manual', this.value); this.value = '';">
+              <option value="">— pilih posisi —</option>${Object.keys(LABEL_POSISI).filter((p) => p !== s.posisi).map((p) => `<option value="${p}">${p}</option>`).join('')}
+            </select></div>`;
+        }
         grid.innerHTML += `
-          <div class="switch-card ${isCabang ? 'active-cabang' : ''}">
+          <div class="switch-card">
             <div>
               <div class="card-header">
                 <div>
                   <div class="house-title">${escapeHtml(info.nama)}</div>
-                  <div class="house-sub">${escapeHtml(kode)}</div>
+                  <div class="house-sub">${escapeHtml(kode)} · ${kes && kes.zona_waktu === 'Asia/Makassar' ? 'WITA' : 'WIB'}</div>
                 </div>
-                <span class="badge ${badgeClass}">${escapeHtml(s.posisi.toUpperCase())}</span>
+                <span class="badge ${kelas}">${escapeHtml(label)}</span>
               </div>
               <div class="switch-meta">
-                <div class="meta-row"><span>Arsitektur:</span><span class="meta-val">${statusTeks}</span></div>
+                <div class="meta-row"><span>Arti posisi:</span><span class="meta-val">${escapeHtml(arti)}</span></div>
+                ${s.jam_mulai ? `<div class="meta-row"><span>Jam mulai migrasi:</span><span class="meta-val">${escapeHtml(s.jam_mulai)}${s.simulasi ? ' (simulasi)' : ''}</span></div>` : ''}
+                ${s.jam_kembali ? `<div class="meta-row"><span>Terakhir kembali ke GAS:</span><span class="meta-val">${escapeHtml(s.jam_kembali)}</span></div>` : ''}
                 <div class="meta-row"><span>Perubahan:</span><span class="meta-val">${escapeHtml(s.diubah_at || 'Bawaan')}</span></div>
                 <div class="meta-row"><span>Oleh:</span><span class="meta-val">${escapeHtml(s.oleh || 'Sistem')}</span></div>
                 <div style="margin-top:0.4rem; font-style:italic;">"${escapeHtml(s.alasan || '—')}"</div>
+                <div style="margin-top:0.6rem; font-weight:700; color:var(--text);">Kesehatan cermin ${kes && kes.hijau ? '🟢 hijau' : '🔴 belum hijau'}</div>
+                ${syaratHtml}
+                ${prosedurHtml}
               </div>
             </div>
-            <div class="switch-actions">${actionBtns}</div>
-          </div>
-        `;
+            <div class="switch-actions">${tombol}</div>
+          </div>`;
       }
     }
 
@@ -660,67 +721,73 @@
       `).join('');
     }
 
-    function bukaModalMaju(rumah, posisi) {
-      TARGET_RUMAH_MODAL = rumah;
-      TARGET_POSISI_MODAL = posisi;
-      document.querySelectorAll('.chk-syarat').forEach(c => c.checked = false);
-      document.getElementById('inputKonfirmasiRumah').value = '';
-      document.getElementById('inputAlasanMaju').value = '';
-      document.getElementById('lblKonfirmasiRumah').textContent = `Ketik "${rumah}" untuk konfirmasi:`;
-      document.getElementById('modalMaju').classList.remove('hidden');
-      checkSyaratForm();
+    function bukaModalMigrasi(rumah, jenis, posisi) {
+      MODAL_MIGRASI = { rumah, jenis, posisi };
+      const info = profilRumah(rumah) || { nama: rumah };
+      const kes = KESEHATAN[rumah];
+      const nama = escapeHtml(info.nama);
+      const judul = { mulai: '▶ Mulai migrasi', kembali: '↩ Kembali ke GAS', batal: '✋ Batalkan peralihan', manual: '🧪 Atur posisi manual (uji)' }[jenis];
+      const peringatan = {
+        mulai: `<strong>${nama}</strong> akan pindah ke Supabase. GAS rumah ini ditutup (web, API, pemicu), cadangan diambil, lalu sinkron terakhir dan pemeriksaan selisih harus 0. Selama beberapa menit kiriman HP ditahan dan terkirim otomatis. Kalau ada langkah yang gagal, saklar kembali ke GAS tanpa ada yang hilang.${DI_UJI ? '<br><em>Lingkungan uji: berjalan sebagai simulasi di ruang uji.</em>' : ''}`,
+        kembali: `<strong>${nama}</strong> akan kembali ke GAS. Perubahan di Supabase disalin balik ke spreadsheet dan diperiksa sampai selisih 0, baru GAS dibuka lagi. Kalau gagal, saklar tetap di Supabase.${DI_UJI ? '<br><em>Lingkungan uji: cermin balik hanya dihitung, tidak menulis apa pun.</em>' : ''}`,
+        batal: `Peralihan <strong>${nama}</strong> dibatalkan dan saklar kembali ke GAS. Aman, karena belum ada yang ditulis di Supabase.`,
+        manual: `Khusus lingkungan uji: posisi <strong>${nama}</strong> langsung diatur ke <strong>${escapeHtml(posisi || '')}</strong> tanpa prosedur.`,
+      }[jenis];
+      document.getElementById('judulModalMigrasi').textContent = judul + ' — ' + info.nama;
+      document.getElementById('peringatanMigrasi').innerHTML = peringatan;
+      document.getElementById('syaratModalMigrasi').innerHTML = (jenis === 'mulai' && kes && kes.syarat)
+        ? `<div style="font-weight:700; font-size:0.86rem; margin-top:0.8rem;">Syarat (dibaca otomatis dari cermin):</div>${daftarSyaratHtml(kes.syarat)}`
+        : '';
+      document.getElementById('lblKonfirmasiMigrasi').textContent = `Ketik "${rumah}" untuk konfirmasi:`;
+      document.getElementById('inputKonfirmasiMigrasi').value = '';
+      document.getElementById('inputAlasanMigrasi').value = '';
+      document.getElementById('galatModalMigrasi').classList.add('hidden');
+      document.getElementById('btnKonfirmasiMigrasi').textContent = { mulai: 'Mulai migrasi', kembali: 'Kembali ke GAS', batal: 'Batalkan peralihan', manual: 'Atur posisi' }[jenis];
+      document.getElementById('modalMigrasi').classList.remove('hidden');
+      cekFormMigrasi();
     }
 
-    function tutupModalMaju() {
-      document.getElementById('modalMaju').classList.add('hidden');
+    function tutupModalMigrasi() {
+      document.getElementById('modalMigrasi').classList.add('hidden');
+      MODAL_MIGRASI = null;
     }
 
-    function checkSyaratForm() {
-      const allChecked = Array.from(document.querySelectorAll('.chk-syarat')).every(c => c.checked);
-      const rumahMatch = document.getElementById('inputKonfirmasiRumah').value.trim() === TARGET_RUMAH_MODAL;
-      const alasanFilled = document.getElementById('inputAlasanMaju').value.trim().length >= 5;
-      document.getElementById('btnKonfirmasiMaju').disabled = !(allChecked && rumahMatch && alasanFilled);
+    function cekFormMigrasi() {
+      if (!MODAL_MIGRASI) return;
+      const cocok = document.getElementById('inputKonfirmasiMigrasi').value.trim().toLowerCase() === MODAL_MIGRASI.rumah;
+      const alasan = document.getElementById('inputAlasanMigrasi').value.trim().length >= 5;
+      document.getElementById('btnKonfirmasiMigrasi').disabled = !(cocok && alasan);
     }
 
-    async function submitMajuSaklar() {
-      const alasan = document.getElementById('inputAlasanMaju').value.trim();
-      tutupModalMaju();
-      await kirimPerubahanSaklar(TARGET_RUMAH_MODAL, TARGET_POSISI_MODAL, alasan);
+    function galatModal(teks) {
+      const g = document.getElementById('galatModalMigrasi');
+      g.textContent = teks;
+      g.classList.remove('hidden');
     }
 
-    async function daruratMundur(rumah) {
-      if (!confirm(`🚨 TINDAKAN PENYELAMATAN DARURAT\n\nApakah Anda yakin ingin SEGERA mengembalikan ${rumah} ke posisi GAS?`)) return;
-      const alasan = prompt('Alasan penyelamatan / pengembalian ke GAS:', 'Penyelamatan darurat via panel saklar') || 'Penyelamatan darurat';
-      await kirimPerubahanSaklar(rumah, 'gas', alasan);
-    }
-
-    async function daruratMundurSemua() {
-      if (!confirm('🚨 TINDAKAN PENYELAMATAN GLOBAL\n\nApakah Anda yakin ingin membalikkan SELURUH rumah ke posisi GAS?')) return;
-      const alasan = prompt('Alasan penyelamatan global:', 'Penyelamatan global darurat via panel') || 'Penyelamatan global';
-      for (const r of DAFTAR_RUMAH) {
-        await kirimPerubahanSaklar(r.kode, 'gas', alasan, false);
-      }
-      muatStatus();
-    }
-
-    async function kirimPerubahanSaklar(rumah, posisi, alasan, reload = true) {
+    async function kirimMigrasi() {
+      if (!MODAL_MIGRASI) return;
+      const { rumah, jenis, posisi } = MODAL_MIGRASI;
+      const alasan = document.getElementById('inputAlasanMigrasi').value.trim();
+      const konfirmasi = document.getElementById('inputKonfirmasiMigrasi').value.trim();
+      const oleh = namaPengubah() || 'Gabriel';
+      const btn = document.getElementById('btnKonfirmasiMigrasi');
+      btn.disabled = true;
       try {
-        const res = await fetch('/saklar/api/ubah', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + TOKEN_SESI,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ rumah, posisi, alasan, oleh: 'Gabriel' })
-        });
-        const data = await res.json();
-        if (data.success) {
-          if (reload) muatStatus();
-        } else {
-          alert('Gagal membalik saklar: ' + (data.error || 'Galat server'));
+        const r = (jenis === 'mulai' || jenis === 'kembali')
+          ? await ambilJson('/saklar/api/migrasi/' + jenis, { method: 'POST', body: JSON.stringify({ rumah, alasan, konfirmasi, oleh }) })
+          : await ambilJson('/saklar/api/ubah', { method: 'POST', body: JSON.stringify({ rumah, posisi: jenis === 'batal' ? 'gas' : posisi, alasan, oleh }) });
+        if (!r.data.success) {
+          galatModal(r.data.error || ('Gagal (HTTP ' + r.status + ')'));
+          btn.disabled = false;
+          return;
         }
+        tutupModalMigrasi();
+        pesanMigrasi({ mulai: 'Prosedur mulai migrasi berjalan. Kemajuannya tampil di kartu rumah.', kembali: 'Prosedur kembali ke GAS berjalan. Kemajuannya tampil di kartu rumah.' }[jenis] || 'Posisi saklar diubah.', 'success');
+        muatStatus();
       } catch (err) {
-        alert('Koneksi terputus: ' + err.message);
+        galatModal('Koneksi terputus: ' + err.message);
+        btn.disabled = false;
       }
     }
 
