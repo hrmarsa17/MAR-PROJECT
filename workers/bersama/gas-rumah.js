@@ -37,7 +37,7 @@ const CORS = {
 export function buatWorkerRumah(bundel) {
   ({ gasKamar, INFO: INFO_GAS, HTML: HTML_GAS } = bundel);
   if (typeof gasKamar !== 'function' || !INFO_GAS) throw new Error('bundel GAS rumah tidak lengkap');
-  return { fetch: layani };
+  return { fetch: layani, scheduled: terjadwal };
 }
 
 async function layani(request, env) {
@@ -49,6 +49,7 @@ async function layani(request, env) {
     if (request.method !== 'POST') return new Response('Hanya POST', { status: 405, headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' } });
     return tanganiApi(request, env, url);
   }
+  if (url.pathname === '/api/uji-pemicu' && request.method === 'POST') return tanganiUjiPemicu(request, env);
   if (url.pathname === '/web/run') return tanganiRun(request, env, url);
   if (url.pathname === '/web' || url.pathname === '/web/') return tanganiWeb(request, env, url);
   // File PWA rumah ([assets] Worker rumah). Akar folder → index.html, disajikan langsung tanpa redirect.
@@ -100,6 +101,57 @@ function halamanPeralihan(env) {
     status: 503,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '120', 'X-Abadi-Rumah': env.RUMAH, 'X-Abadi-Jalur': 'peralihan' },
   });
+}
+
+// ── Pemicu terjadwal (cron Worker) ──────────────────────────────────────────
+// Setelah migrasi, pemicu terjadwal GAS ikut tertutup (tools/kembar/tambal-tutup-gas.mjs). Worker menjalankan fungsi
+// GAS yang SAMA (config/rumah.json gas.pemicu; jam dalam zona skrip, seperti atHour GAS) lewat cron, hanya bila saklar
+// rumah ini `supabase`. Sebelum migrasi pemicu GAS yang berjalan, jadi tidak pernah dobel. Penjaga GAS menerima
+// e.triggerUid yang cocok dengan pemicu terpasang tiruan. Cron: [triggers] di wrangler.toml rumah (staging kosong;
+// di ruang uji dijalankan lewat POST /api/uji-pemicu).
+const SELISIH_ZONA = { 'Asia/Jakarta': 7, 'Asia/Makassar': 8, 'Asia/Jayapura': 9, 'Etc/UTC': 0, UTC: 0 };
+const MENIT_PEMICU = 7;
+
+export function cronPemicu(jam, zona) {
+  const s = SELISIH_ZONA[zona];
+  if (s === undefined) throw new Error(`zona skrip ${zona} belum dikenal untuk pemicu`);
+  return `${MENIT_PEMICU} ${(((Number(jam) - s) % 24) + 24) % 24} * * *`;
+}
+
+async function jalankanPemicu(env, fn) {
+  const p = profil(env);
+  const uid = `worker-${env.RUMAH}-${fn}`;
+  return jalankanDanSimpan(env, p, new URL('https://pemicu.internal/'), `pemicu:${fn}`, { jarang: sheetJarang(p, ''), pemicu: [{ uid, fungsi: fn }] }, (G) => {
+    const f = G.fungsiPemicu && G.fungsiPemicu[fn];
+    if (typeof f !== 'function') throw new Error(`fungsi pemicu ${fn} tidak ada di bundel GAS`);
+    return hasilRun(f({ triggerUid: uid, authMode: 'FULL' }));
+  });
+}
+
+async function terjadwal(event, env) {
+  const p = profil(env);
+  const daftar = (p.gas.pemicu || []).filter((x) => cronPemicu(x.jam, INFO_GAS.zonaSkrip) === event.cron);
+  if (!daftar.length) return;
+  const saklar = await bacaStatusSaklar(env);
+  if (saklar !== 'supabase') {
+    console.log(JSON.stringify({ pemicu: event.cron, rumah: env.RUMAH, dilewati: `saklar ${saklar}: pemicu GAS yang berjalan` }));
+    return;
+  }
+  for (const x of daftar) {
+    const h = await jalankanPemicu(env, x.fungsi);
+    console.log(JSON.stringify({ pemicu: x.fungsi, rumah: env.RUMAH, ok: h.ok, tulis: h.ringkas || '-', alasan: h.alasan || null, galat: (h.nilai && h.nilai.galat) || null }));
+  }
+}
+
+// Ruang uji saja (Worker uji: tanpa GAS dan ber-SKEMA_AWALAN): jalankan satu fungsi pemicu sekarang, untuk uji kembar.
+async function tanganiUjiPemicu(request, env) {
+  if (!tanpaGas(env) || !env.SKEMA_AWALAN) return new Response('Tidak ditemukan', { status: 404 });
+  let isi = {};
+  try { isi = JSON.parse(await request.text()); } catch (_) {}
+  const fn = String(isi.fungsi || '');
+  if (!(profil(env).gas.pemicu || []).some((x) => x.fungsi === fn)) return jawab({ ok: false, error: `bukan fungsi pemicu rumah ini: ${fn}` }, 'uji-pemicu', env);
+  const h = await jalankanPemicu(env, fn);
+  return jawab({ ok: h.ok, hasil: h.ok ? h.nilai : null, alasan: h.alasan || null, tulis: h.ringkas || '-', coba: h.coba || 0 }, 'uji-pemicu', env);
 }
 
 function jawab(isi, jalur, env, tambahan = {}) {
@@ -227,10 +279,12 @@ function sheetJarang(p, opId) {
     .map(([sheet, k]) => [sheet, typeof k === 'string' ? { kolom: k, nilai: opId } : { kolom: k.kolom, nilai: k.nilai }]));
 }
 
-function siapkanGas(cermin, url) {
+function siapkanGas(cermin, url, pemicu) {
   const D = dataDariCermin(cermin, INFO_GAS.zonaSkrip);
   D.html = HTML_GAS;
   D.urlWeb = `${url.origin}/web`;
+  // Pemicu terpasang tiruan ([{ uid, fungsi }]): penjaga GAS menerima e.triggerUid yang cocok (ScriptApp.getProjectTriggers).
+  if (pemicu && pemicu.length) D.pemicu = pemicu;
   const L = buatLayanan(D, buatHost());
   return { L, G: gasKamar(L) };
 }
@@ -271,7 +325,7 @@ function sheetTidakAman(pesan) {
 
 // Satu putaran: muat cermin sesuai daftar, siapkan GAS, jalankan kerja. Kembalikan { L, cermin, nilai } atau
 // { belajar: true } bila sheet baru harus dimuat dulu.
-async function putaran(env, p, url, kunci, { jarang = {}, tanpaMuat = [] }, kerja) {
+async function putaran(env, p, url, kunci, { jarang = {}, tanpaMuat = [], pemicu = null }, kerja) {
   const semua = await semuaSheet(env, p.skema);
   const perlu = himpunan(PERLU, kunci, p.gas.sheet_dasar || []);
   const penuh = himpunan(PENUH, kunci);
@@ -282,7 +336,7 @@ async function putaran(env, p, url, kunci, { jarang = {}, tanpaMuat = [] }, kerj
   const t0 = Date.now();
   const cermin = await bacaCermin(env, p.skema, { tidakDimuat, jarang: jarangKini });
   const t1 = Date.now();
-  const { L, G } = siapkanGas(cermin, url);
+  const { L, G } = siapkanGas(cermin, url, pemicu);
   let nilai;
   try { nilai = { nilai: kerja(G, L) }; } catch (e) { nilai = { galat: String((e && e.message) || e) }; }
   const C = L.__CATAT;
@@ -319,12 +373,12 @@ async function jalankanBaca(env, p, url, kunci, kerja) {
 // bila sheet yang ditulis berubah sejak dibaca, baca ulang dan jalankan ulang, paling banyak COBA_TULIS kali.
 // Seperti di GAS (Sheets tidak transaksional), tulisan tetap disimpan walaupun fungsi kemudian melempar galat;
 // galatnya dikembalikan di nilai.galat. Hasil hanya dikirim bila tulisannya benar-benar tersimpan.
-async function jalankanDanSimpan(env, p, url, kunci, { jarang = {} }, kerja) {
+async function jalankanDanSimpan(env, p, url, kunci, { jarang = {}, pemicu = null }, kerja) {
   let konflik = 0;
   for (let ulang = 1; ulang <= ULANG_MUAT + COBA_TULIS; ulang++) {
     let h;
     try {
-      h = await putaran(env, p, url, kunci, { jarang }, kerja);
+      h = await putaran(env, p, url, kunci, { jarang, pemicu }, kerja);
     } catch (e) {
       return { ok: false, alasan: `cermin tidak terbaca atau GAS gagal disiapkan (${e && e.message})`, coba: ulang };
     }

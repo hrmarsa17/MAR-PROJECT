@@ -37,6 +37,11 @@ RUMAH = "kmbprojek"
 GAS_URL = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec"
 SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 
+# Pemicu terjadwal GAS (config/rumah.json gas.pemicu; jam dalam zona skrip WIB, seperti atHour GAS). Dijalankan
+# workers/bersama/gas-rumah.js terjadwal() HANYA bila saklar rumah ini supabase; sebelum migrasi tidak melakukan apa pun.
+[triggers]
+crons = ["7 19 * * *", "7 23 * * *", "7 11 * * *"]
+
 [observability]
 enabled = true
 
@@ -57,3 +62,7 @@ GAS_URL = ""
 # Ruang uji di Gedung 1 (docs/SAKLAR.md, 14 Nov): Worker uji membaca/menulis skema uji_*; cermin asli terkunci.
 SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 SKEMA_AWALAN = "uji_"
+
+# Ruang uji: tanpa cron otomatis; pemicu dijalankan lewat POST /api/uji-pemicu (uji kembar).
+[env.staging.triggers]
+crons = []

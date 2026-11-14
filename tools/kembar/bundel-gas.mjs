@@ -61,11 +61,16 @@ for (const nama of urutan) sidik.update(nama + '\n' + isi.get(nama) + '\n');
 const web = kompilasiFolder(kode.html);
 for (const b of kode.html) sidik.update(b.nama + '\n' + b.isi + '\n');
 const fungsiWeb = pemanggilGoogleScriptRun(kode.html, fungsiPublik(kode.berkas));
+// Fungsi pemicu terjadwal (config/rumah.json gas.pemicu): dijalankan Worker lewat cron setelah migrasi, karena pemicu
+// GAS ikut tertutup (tambal-tutup-gas.mjs). Fungsi yang tidak ada di kode rumah ini adalah galat konfigurasi.
+const fungsiPemicu = [...new Set((profil.gas.pemicu || []).map((x) => x.fungsi))];
+const publik = fungsiPublik(kode.berkas);   // Map nama → berkas
+for (const f of fungsiPemicu) if (!publik.has(f)) throw new Error(`gas.pemicu ${arg.kamar}: fungsi ${f} tidak ada (atau privat) di kode GAS`);
 
 const INFO = {
   kamar: arg.kamar, script: profil.gas.script, versi: profil.gas.versi, berkas: urutan.length,
   sidik: sidik.digest('hex'), zonaSkrip: kode.zonaSkrip, dibuat: new Date().toISOString(),
-  html: kode.html.length, templat: Object.keys(web.templat).length, fungsiWeb,
+  html: kode.html.length, templat: Object.keys(web.templat).length, fungsiWeb, fungsiPemicu,
 };
 // Folder Worker rumah: config/rumah.json <kamar>.worker bila namanya beda dengan kode kamar (kmbtra → workers/kmb).
 const keluar = arg.keluar || path.join(AKAR, 'workers', profil.worker || arg.kamar, 'gas', 'gas-kamar.js');
@@ -82,7 +87,8 @@ const bagian = [
   '// ═══════ template web (tools/kembar/templat-gas.mjs) ═══════',
   kodePasangTemplat(web, 'L.__pasangTemplat'),
   "    return { doPost: typeof doPost === 'function' ? doPost : undefined, doGet: typeof doGet === 'function' ? doGet : undefined,",
-  `      fungsiWeb: { ${fungsiWeb.map((n) => `${n}: typeof ${n} === 'function' ? ${n} : undefined`).join(', ')} } };`,
+  `      fungsiWeb: { ${fungsiWeb.map((n) => `${n}: typeof ${n} === 'function' ? ${n} : undefined`).join(', ')} },`,
+  `      fungsiPemicu: { ${fungsiPemicu.map((n) => `${n}: typeof ${n} === 'function' ? ${n} : undefined`).join(', ')} } };`,
   '  })();',
   '}',
   '',
