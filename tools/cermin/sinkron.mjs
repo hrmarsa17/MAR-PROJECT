@@ -176,18 +176,27 @@ function bacaSel(c, zona) {
 }
 
 // ── Baca satu sheet utuh, bentuknya sama dengan getDataRange().getValues() ───
-async function bacaSheet(id, judul, jumlahBarisGrid, zona, token) {
+// rumus: ikut ambil teks rumus (userEnteredValue.formulaValue) di panggilan yang sama. Hanya untuk sheet config
+// (SHEET_BERUMUS): pusat admin menghitung ulang rumus setelah migrasi (keputusan Gabriel 15 Nov), dan cermin balik
+// tidak menimpa sel berumus. Sheet operasional tidak berumus (analisis 14 Nov), jadi tidak ikut membengkak.
+async function bacaSheet(id, judul, jumlahBarisGrid, zona, token, { rumus = false } = {}) {
   const mentah = [];
   for (let mulai = 1; mulai <= jumlahBarisGrid; mulai += BARIS_PER_AMBIL) {
     const akhir = Math.min(mulai + BARIS_PER_AMBIL - 1, jumlahBarisGrid);
     const range = encodeURIComponent(`'${judul.replace(/'/g, "''")}'!${mulai}:${akhir}`);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}?ranges=${range}&includeGridData=true`
-      + '&fields=sheets(data(startRow,rowData(values(effectiveValue,effectiveFormat/numberFormat/type))))';
+      + `&fields=sheets(data(startRow,rowData(values(effectiveValue,effectiveFormat/numberFormat/type${rumus ? ',userEnteredValue/formulaValue' : ''}))))`;
     const j = await gapi(url, token);
     const data = (j.sheets && j.sheets[0] && j.sheets[0].data && j.sheets[0].data[0]) || {};
     const rd = data.rowData || [];
     for (let i = 0; i < akhir - mulai + 1; i++) mentah.push((rd[i] && rd[i].values) || []);
   }
+  // Sel berumus: nomor baris sheet (mulai 1, termasuk baris judul) dan indeks kolom (mulai 0), seperti nilai[].
+  const daftarRumus = [];
+  if (rumus) mentah.forEach((sel, i) => sel.forEach((c, j) => {
+    const f = c && c.userEnteredValue && c.userEnteredValue.formulaValue;
+    if (f) daftarRumus.push({ baris: i + 1, kolom: j, rumus: f });
+  }));
   // Ubah ke nilai GAS, lalu potong baris dan kolom kosong di ujung seperti getDataRange().
   const baris = mentah.map((sel) => sel.map((c) => bacaSel(c, zona)));
   let barisTerakhir = 0, kolomTerakhir = 0;
@@ -199,7 +208,7 @@ async function bacaSheet(id, judul, jumlahBarisGrid, zona, token) {
     while (out.length < kolomTerakhir) out.push({ nilai: '', tipe: null });
     return out;
   });
-  if (potong.length === 0) return { headers: [], rows: [], tipe: {} };
+  if (potong.length === 0) return { headers: [], rows: [], tipe: {}, rumus: daftarRumus };
   const headers = potong[0].map((s) => String(s.nilai));
   const tipeKolom = headers.map(() => new Set());
   const rows = potong.slice(1).map((r, i) => {
@@ -214,7 +223,24 @@ async function bacaSheet(id, judul, jumlahBarisGrid, zona, token) {
     const t = [...tipeKolom[j]].sort();
     tipe[h] = t.length === 0 ? 'kosong' : t.length === 1 ? t[0] : `campur:${t.join('+')}`;
   });
-  return { headers, rows, tipe };
+  return { headers, rows, tipe, rumus: daftarRumus };
+}
+
+// Sheet yang rumusnya ikut dicermin (lihat bacaSheet).
+const SHEET_BERUMUS = /^Config_/;
+
+// Simpan rumus satu sheet ke <skema>.cermin_rumus. Hanya ditulis ulang bila berubah (rumus jarang berubah).
+async function tulisRumus(tx, skema, judul, headers, rumus) {
+  const lama = await tx`SELECT baris, kolom, rumus FROM ${tx(skema + '.cermin_rumus')} WHERE sheet = ${judul} ORDER BY baris, kolom`;
+  const baru = [...rumus].sort((a, b) => a.baris - b.baris || a.kolom - b.kolom);
+  const sama = lama.length === baru.length && lama.every((r, i) => r.baris === baru[i].baris && r.kolom === baru[i].kolom && r.rumus === baru[i].rumus);
+  if (sama) return false;
+  await tx`DELETE FROM ${tx(skema + '.cermin_rumus')} WHERE sheet = ${judul}`;
+  for (let i = 0; i < baru.length; i += 500) {
+    const potong = baru.slice(i, i + 500).map((r) => ({ sheet: judul, baris: r.baris, kolom: r.kolom, judul_kolom: headers[r.kolom] ?? null, rumus: r.rumus }));
+    await tx`INSERT INTO ${tx(skema + '.cermin_rumus')} ${tx(potong, 'sheet', 'baris', 'kolom', 'judul_kolom', 'rumus')}`;
+  }
+  return true;
 }
 
 const sidikDari = (headers, rows) => crypto.createHash('sha256')
@@ -245,6 +271,15 @@ async function siapkanSkema(sql, skema) {
     jumlah_baris integer,
     sidik        text,
     galat        text
+  )`;
+  // Rumus sheet config (SHEET_BERUMUS): satu baris per sel berumus. Dibaca pusat admin (hitung ulang) dan cermin balik.
+  await sql`CREATE TABLE IF NOT EXISTS ${sql(skema + '.cermin_rumus')} (
+    sheet       text NOT NULL,
+    baris       integer NOT NULL,
+    kolom       integer NOT NULL,
+    judul_kolom text,
+    rumus       text NOT NULL,
+    PRIMARY KEY (sheet, baris, kolom)
   )`;
   // Jumlah baris yang ditulis dan dihapus di setiap putaran, dan hasil --periksa (null kalau tidak diperiksa).
   await sql`ALTER TABLE ${sql(skema + '.cermin_log')}
@@ -384,12 +419,15 @@ async function sinkronRumah(skema) {
       continue;
     }
     try {
-      const { headers, rows, tipe } = await bacaSheet(id, judul, grid, zona, token);
+      const berumus = SHEET_BERUMUS.test(judul);
+      const { headers, rows, tipe, rumus } = await bacaSheet(id, judul, grid, zona, token, { rumus: berumus });
       const sidik = sidikDari(headers, rows);
       let tulis = null;
+      let rumusDitulis = false;
       if (!kering) {
         await sql.begin(async (tx) => {
           tulis = await tulisSheet(tx, skema, tabel, judul, headers, rows, sidik, periksa);
+          if (berumus) rumusDitulis = await tulisRumus(tx, skema, judul, headers, rumus);
           await tx`
             INSERT INTO ${tx(skema + '.cermin_header')} (sheet, tabel, headers, tipe, jumlah_baris, sidik, sinkron_at)
             VALUES (${judul}, ${tabel}, ${headers}, ${tx.json(tipe)}, ${rows.length}, ${sidik}, now())
@@ -413,7 +451,8 @@ async function sinkronRumah(skema) {
       }
       const campur = Object.entries(tipe).filter(([, t]) => t.startsWith('campur')).map(([h]) => h);
       const tulisan = !tulis ? '' : `${tulis.sama ? ' · tidak berubah' : ` · ${tulis.berubah} baris ditulis, ${tulis.dihapus} dihapus`}${periksa ? ' · selisih 0' : ''}`;
-      hasil.push([judul, String(rows.length), `${tabel} · ${headers.length} kolom · sidik ${sidik.slice(0, 12)}${tulisan}${campur.length ? ` · tipe campur: ${campur.join(', ')}` : ''}`]);
+      const keteranganRumus = berumus && rumus.length ? ` · ${rumus.length} rumus${rumusDitulis ? ' (ditulis)' : ''}` : '';
+      hasil.push([judul, String(rows.length), `${tabel} · ${headers.length} kolom · sidik ${sidik.slice(0, 12)}${tulisan}${keteranganRumus}${campur.length ? ` · tipe campur: ${campur.join(', ')}` : ''}`]);
     } catch (e) {
       hasil.push([judul, '-', `GAGAL: ${e.message}`]);
       if (sql) await sql`INSERT INTO ${sql(skema + '.cermin_log')} (sheet, mulai_at, galat) VALUES (${judul}, ${mulaiAt}, ${e.message})`.catch(() => {});

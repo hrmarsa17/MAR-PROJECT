@@ -25,6 +25,7 @@ import PROFIL_RUMAH from '../../../config/rumah.json';
 import { buatLayanan, dataDariCermin } from '../../bersama/gas-layanan.js';
 import { buatHost } from '../../bersama/gas-host.js';
 import { susunPerubahan } from '../../bersama/gas-simpan.js';
+import { hitungUlangSheet, templatKolom, isiTemplat } from '../../bersama/rumus.js';
 import { validasiSesi } from './saklar-auth.js';
 
 const COBA_TULIS = 3;
@@ -168,14 +169,19 @@ function kolomUang(p, sheet, headers) {
 
 function samaran(tok) { const t = String(tok || ''); return t ? t.slice(0, 4) + '…' : ''; }
 
-function ringkasSheet(p, nama, s, zona) {
+function ringkasSheet(p, nama, s, zona, rumus = []) {
   const jenis = s.headers.map((_, j) => jenisKolom(s, j));
+  // Sel berumus (🧮, dihitung otomatis; tidak bisa diubah langsung) dan kolom berumus seragam untuk baris baru.
+  const rumusSel = {};
+  for (const f of rumus) if (f.baris >= 2) (rumusSel[f.baris] = rumusSel[f.baris] || []).push(f.kolom);
   return {
     sheet: nama,
     versi: s.sinkron_at,
     kolom: s.headers,
     jenis,
     uang: kolomUang(p, nama, s.headers),
+    rumus_sel: rumusSel,
+    rumus_templat: Object.keys(templatKolom(rumus, s.rows.length)).map(Number),
     baris: s.rows.map((r, i) => ({ baris: i + 2, tampil: s.headers.map((_, j) => tampilSel(r[j], s.tanggal && s.tanggal[j], zona)) })),
   };
 }
@@ -188,21 +194,58 @@ function indeksKolom(headers, nama, sheet) {
 
 // ── Menulis: ubah di tiruan SpreadsheetApp, simpan lewat cermin_tulis ───────────
 
-// kerja(L, cermin) mengubah sheet lewat L.SpreadsheetApp dan mengembalikan { info, log: [...] }.
+// Rumus sheet (cermin_rumus, diisi alat sinkron untuk sheet Config_*): { sheet: [{ baris, kolom, judul_kolom, rumus }] }.
+async function bacaRumus(env, p, sheets) {
+  const hasil = {};
+  for (const s of sheets) {
+    try { hasil[s] = (await rpc(env, 'cermin_baca_rumus', { p_skema: p.skema, p_sheet: s })) || []; } catch (_) { hasil[s] = []; }
+  }
+  return hasil;
+}
+
+// Hitung ulang SEMUA sel berumus di sheet yang diubah (keputusan Gabriel 15 Nov: perilakunya sama dengan spreadsheet),
+// di tiruan SpreadsheetApp sebelum diekspor, sehingga ikut tersimpan dalam satu transaksi berversi. Semua sel, bukan
+// hanya baris yang diubah: XLOOKUP baris lain bisa bergantung padanya.
+function hitungUlangRumus(L, rumus) {
+  const ringkas = {};
+  for (const [sheet, daftar] of Object.entries(rumus)) {
+    if (!daftar.some((f) => f.baris >= 2)) continue;
+    const sh = L.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheet);
+    if (!sh) continue;
+    const nilai = sh.getDataRange().getValues();
+    const h = hitungUlangSheet(nilai[0].map((x) => String(x)), nilai.slice(1), daftar);
+    for (const x of h.berubah) sh.getRange(x.baris, x.kolom + 1).setValue(x.baru);
+    ringkas[sheet] = { dihitung_ulang: h.berubah.length, tidak_didukung: h.tidakDidukung.length };
+  }
+  return ringkas;
+}
+
+// kerja(L, cermin, rumus) mengubah sheet lewat L.SpreadsheetApp dan mengembalikan { info, log: [...] }. rumus adalah
+// salinan per putaran; kerja boleh menambah rumus baris baru ({ ..., baru: true }), yang didaftarkan sesudah tersimpan.
 async function ubahCermin(env, p, sheets, kerja) {
+  const rumus = await bacaRumus(env, p, sheets);
   for (let coba = 1; coba <= COBA_TULIS; coba++) {
     const cermin = await baca(env, p, sheets);
     const L = buatLayanan(dataDariCermin(cermin, zonaDari(cermin)), buatHost());
-    const hasil = kerja(L, cermin);
+    const salinan = Object.fromEntries(Object.entries(rumus).map(([s, d]) => [s, d.slice()]));
+    const hasil = kerja(L, cermin, salinan);
+    const hitung = hitungUlangRumus(L, salinan);
     const ekspor = L.__ekspor();
     if (!Object.keys(ekspor).length) return { ...hasil, tersimpan: false };
     const perubahan = susunPerubahan(cermin, ekspor);
     try {
       await rpc(env, 'cermin_tulis', { p_skema: p.skema, p_perubahan: perubahan });
-      return { ...hasil, tersimpan: true };
     } catch (e) {
       if (!e.konflik || coba === COBA_TULIS) throw e.konflik ? new Galat('Sheet sedang diubah pihak lain. Coba lagi.', 409) : e;
+      continue;
     }
+    let peringatanRumus = null;
+    for (const [s, d] of Object.entries(salinan)) {
+      const baru = d.filter((f) => f.baru).map(({ baris, kolom, judul_kolom, rumus: r }) => ({ baris, kolom, judul_kolom, rumus: r }));
+      if (!baru.length) continue;
+      try { await rpc(env, 'cermin_tambah_rumus', { p_skema: p.skema, p_sheet: s, p_rumus: baru }); } catch (e) { peringatanRumus = `rumus baris baru belum terdaftar (${e.message})`; }
+    }
+    return { ...hasil, tersimpan: true, rumus: hitung, ...(peringatanRumus ? { peringatan_rumus: peringatanRumus } : {}) };
   }
   throw new Galat('Sheet sedang diubah pihak lain. Coba lagi.', 409);
 }
@@ -257,12 +300,19 @@ function terapkanBaris(p, L, cermin, sheet, body, opsi = {}) {
   if (body.baris === null || body.baris === undefined || body.baris === '') {
     const baru = s.headers.map(() => '');
     for (const [h, t] of Object.entries(nilai)) { const j = idx(h); baru[j] = ketik(t, jenis[j], L); }
+    // Kolom berumus seragam (misalnya base_point =F{r}*2) dihitung otomatis untuk baris baru, tidak diisi orang.
+    const tpl = opsi.rumus ? templatKolom(opsi.rumus, s.rows.length) : {};
+    for (const j of Object.keys(tpl).map(Number)) {
+      if (baru[j] !== '' && baru[j] !== null && baru[j] !== undefined) throw new Galat(`Kolom "${s.headers[j]}" berisi rumus 🧮 dan dihitung otomatis; kosongkan isiannya.`, 400);
+    }
     const kunci = String(baru[kunciJ] ?? '').trim();
     if (!kunci) throw new Galat(`Kolom pertama (${s.headers[kunciJ] || 'kunci'}) wajib diisi.`);
     if (opsi.kunciUnik && s.rows.some((r) => String(r[kunciJ]).trim() === kunci)) throw new Galat(`${s.headers[kunciJ]} "${kunci}" sudah ada di ${sheet}.`, 409);
     uangDisentuh = s.headers.filter((_, j) => uang[j] && baru[j] !== '');
     if (uangDisentuh.length && !body.konfirmasi_uang) throw new Galat('Perubahan menyentuh kolom uang.', 428, { perlu_konfirmasi_uang: true, kolom_uang: uangDisentuh });
     sh.appendRow(baru);
+    const barisBaru = s.rows.length + 2;
+    for (const [j, t] of Object.entries(tpl)) opsi.rumus.push({ baris: barisBaru, kolom: Number(j), judul_kolom: s.headers[j] ?? null, rumus: isiTemplat(t, barisBaru), baru: true });
     return { info: { baris: s.rows.length + 2, kunci }, log: [{ sheet, aksi: 'tambah', baris: s.rows.length + 2, kunci, uang: uangDisentuh.length > 0, sesudah: objekBaris(s.headers, baru) }] };
   }
   cekVersi(s, body.versi, sheet);
@@ -276,6 +326,7 @@ function terapkanBaris(p, L, cermin, sheet, body, opsi = {}) {
     const asli = lama[j];
     const vJson = v instanceof Date ? v.toISOString() : v;
     if (JSON.stringify(vJson) === JSON.stringify(asli === null || asli === undefined ? '' : asli)) continue;
+    if (opsi.rumus && opsi.rumus.some((f) => f.baris === b && f.kolom === j)) throw new Galat(`Kolom "${h}" di baris ${b} berisi rumus 🧮 dan dihitung otomatis. Ubah kolom masukannya.`, 400);
     if (j === kunciJ && opsi.kunciUnik && s.rows.some((r, i) => i !== b - 2 && String(r[kunciJ]).trim() === String(v).trim())) throw new Galat(`${s.headers[kunciJ]} "${v}" sudah ada di ${sheet}.`, 409);
     if (uang[j]) uangDisentuh.push(h);
     sebelum[h] = asli; sesudah[h] = vJson;
@@ -286,8 +337,11 @@ function terapkanBaris(p, L, cermin, sheet, body, opsi = {}) {
   return { info: { baris: b, kunci: lama[kunciJ] }, log: [{ sheet, aksi: 'ubah', baris: b, kunci: String(lama[kunciJ]), uang: uangDisentuh.length > 0, sebelum, sesudah }] };
 }
 
-function hapusBaris(p, L, cermin, sheet, body) {
+function hapusBaris(p, L, cermin, sheet, body, rumus) {
   const s = sheetDari(cermin, sheet);
+  if (rumus && rumus.some((f) => f.baris >= 2)) {
+    throw new Galat(`${sheet} berisi rumus; menghapus baris akan menggeser rujukan rumus. Nonaktifkan barisnya (misalnya is_active = FALSE) alih-alih menghapus.`, 409);
+  }
   cekVersi(s, body.versi, sheet);
   const b = cekBaris(s, body.baris, sheet);
   const lama = s.rows[b - 2];
@@ -368,9 +422,10 @@ async function daftarConfig(env, p, izin) {
   const nama = (awal.semua_sheet || []).filter((n) => pola.test(n) && n !== a.sheet_pengguna);
   const cermin = nama.length ? await baca(env, p, nama) : { sheets: {}, meta: awal.meta };
   const zona = zonaDari(cermin);
+  const rumus = await bacaRumus(env, p, nama.filter((n) => cermin.sheets[n]));
   return {
     success: true, rumah: p.kode, nama: p.nama, zona, bisa_ubah: izin.boleh, alasan_baca_saja: izin.alasan || '',
-    sheets: nama.filter((n) => cermin.sheets[n]).map((n) => ringkasSheet(p, n, cermin.sheets[n], zona)),
+    sheets: nama.filter((n) => cermin.sheets[n]).map((n) => ringkasSheet(p, n, cermin.sheets[n], zona, rumus[n] || [])),
   };
 }
 
@@ -478,15 +533,18 @@ export async function tanganiAdminCermin(request, env, url, json, bacaPetaSaklar
     if (aksi === 'config') return json(await daftarConfig(env, p, izin));
     if (!izin.boleh) throw new Galat(izin.alasan, 403);
     let h;
-    if (aksi === 'pengguna/simpan') h = await ubahCermin(env, p, [p.admin.sheet_pengguna], (L, c) => terapkanBaris(p, L, c, p.admin.sheet_pengguna, body, { kunciUnik: true }));
+    if (aksi === 'pengguna/simpan') h = await ubahCermin(env, p, [p.admin.sheet_pengguna], (L, c, r) => terapkanBaris(p, L, c, p.admin.sheet_pengguna, body, { kunciUnik: true, rumus: r[p.admin.sheet_pengguna] }));
     else if (aksi === 'pengguna/hapus') h = await hapusPengguna(env, p, body);
     else if (aksi === 'token/terbit') h = await terbitkanToken(env, p, body);
     else if (aksi === 'token/cabut') h = await cabutToken(env, p, body);
-    else if (aksi === 'config/simpan') { sheetConfigSah(p, body.sheet); h = await ubahCermin(env, p, [body.sheet], (L, c) => terapkanBaris(p, L, c, body.sheet, body)); }
-    else if (aksi === 'config/hapus') { sheetConfigSah(p, body.sheet); h = await ubahCermin(env, p, [body.sheet], (L, c) => hapusBaris(p, L, c, body.sheet, body)); }
+    else if (aksi === 'config/simpan') { sheetConfigSah(p, body.sheet); h = await ubahCermin(env, p, [body.sheet], (L, c, r) => terapkanBaris(p, L, c, body.sheet, body, { rumus: r[body.sheet] })); }
+    else if (aksi === 'config/hapus') { sheetConfigSah(p, body.sheet); h = await ubahCermin(env, p, [body.sheet], (L, c, r) => hapusBaris(p, L, c, body.sheet, body, r[body.sheet])); }
     else return json({ success: false, error: `Aksi admin "${aksi}" tidak dikenal.` }, 404);
     const peringatan = h.tersimpan ? await catatLog(env, request, p, body, h.log) : null;
-    return json({ success: true, tersimpan: h.tersimpan, ...h.info, ...(peringatan ? { peringatan } : {}) });
+    return json({
+      success: true, tersimpan: h.tersimpan, ...h.info, ...(peringatan ? { peringatan } : {}),
+      ...(h.rumus && Object.keys(h.rumus).length ? { rumus: h.rumus } : {}), ...(h.peringatan_rumus ? { peringatan_rumus: h.peringatan_rumus } : {}),
+    });
   } catch (e) {
     const status = e instanceof Galat ? e.status : 500;
     return json({ success: false, error: e.message || String(e), ...(e.tambahan || {}) }, status);

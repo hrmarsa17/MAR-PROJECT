@@ -1046,7 +1046,9 @@
       const peran = (dataUntuk('pengguna') || {}).peran || [];
       const sectionDaftar = jenis === 'pengguna' ? ((DATA_PENGGUNA || {}).section || []) : [];
       document.getElementById('isiModalBaris').innerHTML = s.kolom.map((h, j) => {
-        const id = 'f_' + j, v = awal[h], nama = String(h).trim(), lbl = labelKolom(h, j) + (s.uang[j] ? ' 💰' : '') + (j === 0 ? ' (kunci)' : '');
+        // Sel berumus (🧮): dihitung otomatis seperti di spreadsheet (keputusan 15 Nov), tidak diisi langsung.
+        const berumus = b ? ((s.rumus_sel || {})[b.baris] || []).includes(j) : (s.rumus_templat || []).includes(j);
+        const id = 'f_' + j, v = awal[h], nama = String(h).trim(), lbl = labelKolom(h, j) + (s.uang[j] ? ' 💰' : '') + (berumus ? ' 🧮' : '') + (j === 0 ? ' (kunci)' : '');
         let isian;
         if (s.jenis[j] === 'boolean') {
           isian = `<select id="${id}" class="form-control">${['', 'TRUE', 'FALSE'].map((o) => `<option value="${o}" ${o === v ? 'selected' : ''}>${o || '(kosong)'}</option>`).join('')}</select>`;
@@ -1058,8 +1060,10 @@
           const petunjuk = s.jenis[j] === 'tanggal' ? 'YYYY-MM-DD atau YYYY-MM-DD JJ:MM' : s.jenis[j] === 'angka' ? 'angka' : '';
           isian = `<input type="text" id="${id}" class="form-control" value="${escapeHtml(v)}" placeholder="${escapeHtml(petunjuk)}">`;
         }
-        const tambahan = jenis === 'pengguna' && nama === 'section' && sectionDaftar.length
-          ? `<div style="font-size:0.75rem; color:var(--text-muted);">Pilihan: ${sectionDaftar.map(([sid]) => escapeHtml(sid)).join(', ')}</div>` : '';
+        if (berumus) isian = isian.replace(/^<(select|input)/, '<$1 disabled title="Dihitung otomatis dari rumus spreadsheet"');
+        const tambahan = (berumus ? '<div style="font-size:0.75rem; color:var(--text-muted);">🧮 Dihitung otomatis dari rumus; ubah kolom masukannya.</div>' : '')
+          + (jenis === 'pengguna' && nama === 'section' && sectionDaftar.length
+            ? `<div style="font-size:0.75rem; color:var(--text-muted);">Pilihan: ${sectionDaftar.map(([sid]) => escapeHtml(sid)).join(', ')}</div>` : '');
         return `<div class="form-group" style="margin-bottom:0.6rem;"><label for="${id}" style="font-weight:600;">${escapeHtml(lbl)} <span style="font-weight:400; color:var(--text-muted); font-size:0.75rem;">${escapeHtml(s.jenis[j])}</span></label>${isian}${tambahan}</div>`;
       }).join('');
       document.getElementById('modalBaris').classList.remove('hidden');
