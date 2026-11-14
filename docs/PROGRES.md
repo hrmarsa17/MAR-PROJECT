@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-14/15 (larut malam) · Claude (otorisasi penuh Gabriel, Gabriel tidur) · keempat rumah (uji 1:1 lengkap, prosedur Mulai/Kembali, tutup GAS, pemicu terjadwal)
+- Berubah:
+  - **1:1 lengkap di Cloudflare (Paid) + Gedung 1 (Micro), ruang uji:** aksi baca BUPR 66/66, KMB Projek 286/286, KMB V2 468/468, SUM 672/672; halaman web 27/27, 27/27, 27/27, 45/45; alur tulis buat WO → kerja mekanik → L1 → L2 keempat rumah 4/4 jawaban + seluruh sheet identik (24, 24, 24, 19).
+  - **AuditLogs disalin ke cermin produksi** (BUG-DICATAT #42): tanpa itu jalur Supabase gagal menulis. Sinkron per jam di `main` masih melewatinya sampai merge.
+  - **Prosedur Mulai migrasi / Kembali ke GAS** (`workers/pintu/src/migrasi.js`, `saklar-do.js`), posisi peralihan di Worker rumah (kiriman HP ditahan dengan protokol PWA), panel saklar baru, kunci tulis cermin asli di database, pengaman sinkron, fungsi pendukung SQL. Uji prosedur di staging 18/18; tampilan panel diperiksa lewat tiruan lokal.
+  - **Tambalan tutup GAS** (`tools/kembar/tambal-tutup-gas.mjs`): uji logika 14/14, kode bertambalan tetap 66/66 di uji kembar BUPR. Belum di-push ke GAS.
+  - **Pemicu terjadwal GAS di Worker** (cron, hanya bila saklar `supabase`): cleanupProcessedOps, cleanupKirimanWeb, penjagaOtomatis; uji kembar di ruang uji 11/11 identik (jawaban + seluruh sheet; bundel dibangun ulang dengan sidik kode sama).
+  - **Inventaris layanan Google** (`docs/INVENTARIS-LAYANAN-GOOGLE.md`) dan **temuan rumus config** (`base_point = plan_hours × 2`, 1.370 sel; `docs/KEPUTUSAN.md` Belum diputuskan).
+- Belum selesai / berikutnya (pagi, dengan Gabriel): izin push ke GitHub; merge ke `main` + deploy Worker produksi (sekalian batas CPU Paid) + workflow AuditLogs dan pengaman sinkron; sinkron terakhir produksi lewat GitHub; cermin balik + latihan di salinan spreadsheet (perlu salinan + hak Editor akun layanan); pengganti push (kunci VAPID dari Gabriel), payroll, saluran email; keputusan rumus config; uji satu siklus WO oleh Gabriel.
+
 ### 2026-11-14 (malam) · Gabriel (+ Claude) · bersama, keempat rumah (paket berbayar, keputusan Tonggak 2, ruang uji Gedung 1)
 - Berubah:
   - **Paket berbayar aktif** (dibayar Gabriel): Supabase Pro USD 25 untuk organisasi berisi `abadiops` (Gedung 1; mesin Nano → Micro, restart 20.12 WIB, sinkron cermin berikutnya sukses) dan Cloudflare Workers Paid USD 5. Proyek Stagging dipindah ke organisasi gratis terpisah supaya tidak menambah USD 10.

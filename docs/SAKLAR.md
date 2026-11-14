@@ -130,6 +130,7 @@ Saklar dioperasikan dari **satu panel visual di domain pintu**. Daftar kamar dan
 - **Tutup GAS:** `tools/kembar/tambal-tutup-gas.mjs` (uji logika 14/14; kode bertambalan tetap 66/66 di uji kembar BUPR). Belum di-push ke GAS: Gabriel men-deploy dari editor.
 - **Fungsi pendukung** (`db/bersama/migrasi.sql`): `cermin_bandingkan`, `cermin_cadangkan`, `cermin_kesehatan`; terpasang di Gedung 1.
 - **Uji prosedur di staging** (simulasi di ruang uji): 18/18 lulus. Mencakup kembali → mulai lengkap dengan cadangan, sinkron terakhir, periksa selisih 0, dan jam mulai tercatat; penolakan konfirmasi/posisi/prosedur ganda; dan penahanan kiriman HP saat peralihan.
+- **Pemicu terjadwal GAS di Worker:** `config/rumah.json` `gas.pemicu` (cleanupProcessedOps, cleanupKirimanWeb, penjagaOtomatis; jam WIB zona skrip), cron `[triggers]` produksi, `scheduled()` hanya bila saklar `supabase`. Uji kembar di ruang uji 11/11 identik (jawaban + seluruh sheet), termasuk pemangkasan 10.686 baris ProcessedOps KMB V2.
 - **Belum dibangun:** sinkron terakhir produksi lewat GitHub dan cermin balik (Supabase → spreadsheet) beserta latihannya. Selama itu tombol mulai produksi tetap terkunci. Pengganti layanan Google: `docs/INVENTARIS-LAYANAN-GOOGLE.md`.
 
 ## Catatan pembalikan saklar
