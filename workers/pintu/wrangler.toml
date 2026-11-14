@@ -52,6 +52,7 @@ enabled = true
 [env.staging]
 name = "abadiops-pintu-staging"
 workers_dev = true
+routes = [{ pattern = "staging.abadiops.com", custom_domain = true }]   # alamat uji (docs/GEDUNG-DAN-STAGING.md, bug #28)
 
 services = [
   { binding = "GAS_TIRUAN", service = "abadiops-gas-tiruan" }
@@ -71,8 +72,8 @@ SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 SKEMA_AWALAN = "uji_"
 SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
 RUMAH = [
-  { kode = "kmbprojek", nama = "KMB Projek (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek", alamat = "https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-kmbprojek-staging.kawanabadigrup.workers.dev/web" },
-  { kode = "sum", nama = "SUM (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum", alamat = "https://abadiops-sum-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-sum-staging.kawanabadigrup.workers.dev/web" },
-  { kode = "kmbtra", nama = "KMB TRA (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbtra", alamat = "https://abadiops-kmb-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-kmb-staging.kawanabadigrup.workers.dev/web" },
-  { kode = "kmbbupr", nama = "KMB Projek BUPR (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbbupr", alamat = "https://abadiops-kmbbupr-staging.kawanabadigrup.workers.dev/", web = "https://abadiops-kmbbupr-staging.kawanabadigrup.workers.dev/web" },
+  { kode = "kmbprojek", nama = "KMB Projek (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek", alamat = "https://staging-kmbprojek.abadiops.com/", web = "https://staging-kmbprojek.abadiops.com/web" },
+  { kode = "sum", nama = "SUM (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum", alamat = "https://staging-sum.abadiops.com/", web = "https://staging-sum.abadiops.com/web" },
+  { kode = "kmbtra", nama = "KMB TRA (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbtra", alamat = "https://staging-kmbtra.abadiops.com/", web = "https://staging-kmbtra.abadiops.com/web" },
+  { kode = "kmbbupr", nama = "KMB Projek BUPR (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbbupr", alamat = "https://staging-kmbbupr.abadiops.com/", web = "https://staging-kmbbupr.abadiops.com/web" },
 ]

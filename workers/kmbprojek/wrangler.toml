@@ -51,6 +51,7 @@ enabled = true
 [env.staging]
 name = "abadiops-kmbprojek-staging"
 workers_dev = true
+routes = [{ pattern = "staging-kmbprojek.abadiops.com", custom_domain = true }]   # alamat uji (docs/GEDUNG-DAN-STAGING.md, bug #28)
 
 services = [
   { binding = "PINTU", service = "abadiops-pintu-staging" }
