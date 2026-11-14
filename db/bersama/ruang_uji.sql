@@ -5,10 +5,13 @@
 -- Pemakaian (sebagai pemilik database, misalnya lewat DATABASE_URL Gedung 1):
 --   SELECT public.cermin_salin_ke_uji('kmbbupr');   -- membuang uji_kmbbupr lama lalu menyalin ulang
 --
--- Hanya pemilik database yang boleh menjalankan: menyalin ulang membuang semua tulisan uji di uji_<skema>.
+-- SECURITY DEFINER: berjalan dengan hak pemilik supaya bisa membaca cermin asli; hanya menulis skema uji_<skema>.
+-- Boleh dipanggil service_role (panel uji menyegarkan ruang uji, db/bersama/migrasi.sql). Menyalin ulang membuang
+-- semua tulisan uji di uji_<skema>.
 CREATE OR REPLACE FUNCTION public.cermin_salin_ke_uji(p_skema text)
 RETURNS jsonb
 LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
