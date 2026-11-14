@@ -120,6 +120,16 @@ Saklar dioperasikan dari **satu panel visual di domain pintu**. Daftar kamar dan
 - GAS membaca saklar rumahnya sendiri dari pintu, dengan cache singkat. Ini bagian dari tambalan "tutup GAS".
 - Setiap perubahan dicatat otomatis, hingga 50 riwayat terakhir, di Durable Object (siapa, kapan, dari → ke, alasan). Saat terjadi pembalikan produksi, catatan itu disalin ke tabel di bawah.
 
+**Yang sudah dibangun (14 Nov malam, branch `staging`)**
+- **Prosedur Mulai/Kembali:** `workers/pintu/src/migrasi.js` (kesehatan cermin, rute `/saklar/api/migrasi/*`, langkah-langkah) dan `SaklarDO` (mesin langkah dengan alarm Durable Object; kegagalan selalu berakhir di posisi aman: mulai → `gas`, kembali → `supabase`). Di produksi ubah manual hanya untuk membatalkan `menutup`; tombol mulai terkunci sampai `gas.jalan_kembali_siap` di `config/rumah.json` bernilai `true`.
+- **Kunci tulis di database:** `cermin_tulis` menolak skema asli (`TERKUNCI`, HTTP 423) kecuali izin dibuka prosedur (`public.cermin_izin_tulis`, `public.cermin_atur_izin_tulis`).
+- **Peralihan di Worker rumah:** kiriman PWA ditahan dengan protokol yang dikenali PWA (`gas.peralihan`: `MAINTENANCE|` untuk SUM/KMB V2, `retry_later` untuk KMB Projek/BUPR), bacaan tetap jalan, halaman web 503 "pindah jalur".
+- **Pengaman sinkron:** `tools/cermin/sinkron.mjs` melewati rumah yang izin tulisnya terbuka, supaya sinkron per jam tidak menimpa pekerjaan di abadiops. Workflow `cermin.yml` di `main` harus memakai versi ini sebelum jam mulai rumah mana pun.
+- **Tutup GAS:** `tools/kembar/tambal-tutup-gas.mjs` (uji logika 14/14; kode bertambalan tetap 66/66 di uji kembar BUPR). Belum di-push ke GAS: Gabriel men-deploy dari editor.
+- **Fungsi pendukung** (`db/bersama/migrasi.sql`): `cermin_bandingkan`, `cermin_cadangkan`, `cermin_kesehatan`; terpasang di Gedung 1.
+- **Uji prosedur di staging** (simulasi di ruang uji): 18/18 lulus. Mencakup kembali → mulai lengkap dengan cadangan, sinkron terakhir, periksa selisih 0, dan jam mulai tercatat; penolakan konfirmasi/posisi/prosedur ganda; dan penahanan kiriman HP saat peralihan.
+- **Belum dibangun:** sinkron terakhir produksi lewat GitHub dan cermin balik (Supabase → spreadsheet) beserta latihannya. Selama itu tombol mulai produksi tetap terkunci. Pengganti layanan Google: `docs/INVENTARIS-LAYANAN-GOOGLE.md`.
+
 ## Catatan pembalikan saklar
 
 | Tanggal dan jam (waktu setempat) | Rumah | Dari → ke | Alasan | Oleh |

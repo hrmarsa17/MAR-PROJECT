@@ -27,8 +27,9 @@
  *   --skema=sum              rumah yang disinkron
  *   --semua                  semua rumah yang punya <SKEMA>_SPREADSHEET_ID di lingkungan, berurutan
  *   --sheet=WorkOrders       hanya menyinkronkan satu sheet
- *   --lewati=AuditLogs       sheet yang tidak disalin, dipisah koma. Bawaannya AuditLogs (keputusan
- *                            Gabriel 13 Nov, demi ukuran Gedung 1). `--lewati=` berarti semua sheet disalin.
+ *   --lewati=NamaSheet       sheet yang tidak disalin, dipisah koma. Bawaannya kosong: semua sheet disalin,
+ *                            termasuk AuditLogs. (13 Nov AuditLogs dilewati demi batas 500 MB Gedung 1; sejak
+ *                            14 Nov Gedung 1 paket Pro dan kode GAS di jalur Supabase menulis AuditLogs, BUG #42.)
  *   --kering                 baca dan hitung saja, tanpa menulis ke database
  *   --ringkas                satu baris per rumah, tanpa judul spreadsheet, ID, atau nama sheet yang lulus.
  *                            Dipakai di GitHub Actions, karena log repo publik bisa dibaca siapa saja.
@@ -42,7 +43,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 
-const LEWATI_BAWAAN = 'AuditLogs';
+const LEWATI_BAWAAN = '';
 
 // Kolom yang biasa dipakai mencari baris. Kalau ada di header sebuah sheet, kolom itu diberi indeks.
 const KOLOM_KUNCI = ['id', 'wo_id', 'wo_number', 'mechanic_id', 'token', 'op_id'];
