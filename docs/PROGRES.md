@@ -19,6 +19,7 @@ Formatnya:
   - **Prosedur Mulai migrasi / Kembali ke GAS** (`workers/pintu/src/migrasi.js`, `saklar-do.js`), posisi peralihan di Worker rumah (kiriman HP ditahan dengan protokol PWA), panel saklar baru, kunci tulis cermin asli di database, pengaman sinkron, fungsi pendukung SQL. Uji prosedur di staging 18/18; tampilan panel diperiksa lewat tiruan lokal.
   - **Tambalan tutup GAS** (`tools/kembar/tambal-tutup-gas.mjs`): uji logika 14/14, kode bertambalan tetap 66/66 di uji kembar BUPR. Belum di-push ke GAS.
   - **Pemicu terjadwal GAS di Worker** (cron, hanya bila saklar `supabase`): cleanupProcessedOps, cleanupKirimanWeb, penjagaOtomatis; uji kembar di ruang uji 11/11 identik (jawaban + seluruh sheet; bundel dibangun ulang dengan sidik kode sama).
+  - **Regresi kode terakhir** (posisi peralihan + pemicu, 15 Nov 00.41): baca 66/286/468/672, web 27/27/27/45, tulis 4/4 + sheet 24/24/24/19, semuanya identik dengan GAS.
   - **Inventaris layanan Google** (`docs/INVENTARIS-LAYANAN-GOOGLE.md`) dan **temuan rumus config** (`base_point = plan_hours × 2`, 1.370 sel; `docs/KEPUTUSAN.md` Belum diputuskan).
 - Belum selesai / berikutnya (pagi, dengan Gabriel): izin push ke GitHub; merge ke `main` + deploy Worker produksi (sekalian batas CPU Paid) + workflow AuditLogs dan pengaman sinkron; sinkron terakhir produksi lewat GitHub; cermin balik + latihan di salinan spreadsheet (perlu salinan + hak Editor akun layanan); pengganti push (kunci VAPID dari Gabriel), payroll, saluran email; keputusan rumus config; uji satu siklus WO oleh Gabriel.
 
