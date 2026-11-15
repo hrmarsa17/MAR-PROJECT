@@ -117,6 +117,9 @@ function halamanPeralihan(env) {
 // prosedur Mulai. Tidak ada kiriman yang diproses: data GAS rumah latihan = salinan spreadsheet, yang hanya ditulis
 // lewat sinkron/cermin balik. Hanya aktif bila profil rumah Worker ini `latihan`.
 export const PESAN_TUTUP_GAS = 'Sistem MAR rumah ini sudah pindah ke abadiops. Buka https://abadiops.com dan masuk dengan token Anda.';
+// Push hanya dicatat (tidak dikirim) di ruang uji (SKEMA_AWALAN) dan di rumah latihan: keduanya memakai salinan
+// PushSubs yang berisi langganan HP mekanik sungguhan.
+export const pushHanyaDicatat = (env) => Boolean(env.SKEMA_AWALAN) || Boolean((PROFIL_RUMAH[env.RUMAH] || {}).latihan);
 
 async function gasTiruanLatihan(request, env) {
   const tertutup = (await bacaStatusSaklar(env)) !== 'gas';
@@ -501,7 +504,8 @@ function kirimPushSesudah(env, p, url, keluar, ctx) {
 // Kirim web push yang dicatat kode GAS. Jawaban 404/410 = langganan mati: PushSubs is_active → false, seperti
 // sendPushToEmails GAS. Endpoint langganan tidak pernah dicatat utuh (hanya host-nya).
 export async function kirimPush(env, p, url, keluar, { ambil = fetch, matikan = null } = {}) {
-  const uji = Boolean(env.SKEMA_AWALAN);
+  // Ruang uji dan rumah latihan: PushSubs-nya salinan berisi langganan HP sungguhan → hanya dicatat.
+  const uji = pushHanyaDicatat(env);
   const hasil = [];
   const mati = [];
   for (const k of keluar) {
@@ -591,6 +595,6 @@ async function sehat(env) {
     },
     supabase_configured: !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY),
     // Hanya ada/tidaknya kunci, tidak pernah nilainya.
-    push: { kunci_vapid: !!(env.VAPID_PRIVATE_PEM && env.VAPID_PUBLIC_B64URL), kirim: env.SKEMA_AWALAN ? (env.PUSH_UJI_AWALAN ? 'ruang uji: hanya ke penerima uji' : 'ruang uji: hanya dicatat') : 'ke layanan push' },
+    push: { kunci_vapid: !!(env.VAPID_PRIVATE_PEM && env.VAPID_PUBLIC_B64URL), kirim: pushHanyaDicatat(env) ? (env.PUSH_UJI_AWALAN ? 'ruang uji: hanya ke penerima uji' : 'ruang uji: hanya dicatat') : 'ke layanan push' },
   }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

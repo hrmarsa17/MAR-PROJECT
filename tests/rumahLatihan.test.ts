@@ -3,7 +3,7 @@ import PROFIL_RUMAH, { adalahLatihan, AWALAN_LATIHAN } from '../workers/bersama/
 import ASLI from '../config/rumah.json';
 import pintu from '../workers/pintu/src/index.js';
 import { kesehatanRumah } from '../workers/pintu/src/migrasi.js';
-import { buatWorkerRumah, PESAN_TUTUP_GAS } from '../workers/bersama/gas-rumah.js';
+import { buatWorkerRumah, PESAN_TUTUP_GAS, pushHanyaDicatat, kirimPush } from '../workers/bersama/gas-rumah.js';
 
 /**
  * RUMAH LATIHAN — uji kering prosedur Mulai migrasi / Kembali ke GAS di PRODUKSI (keputusan Gabriel 15 Nov 2026).
@@ -127,5 +127,19 @@ describe('GAS tiruan rumah latihan (/gas-tiruan)', () => {
     vi.setSystemTime(new Date('2026-11-16T02:00:00Z'));
     const r = await ping(envDengan('kmbbupr', 'gas'));
     expect(r.status).toBe(404);   // jatuh ke aset PWA
+  });
+});
+
+describe('notifikasi push rumah latihan hanya dicatat', () => {
+  it('PushSubs salinan berisi HP mekanik sungguhan: tidak ada yang dikirim, walau kunci VAPID terpasang', async () => {
+    expect(pushHanyaDicatat({ RUMAH: 'latihan_kmbtra' })).toBe(true);
+    expect(pushHanyaDicatat({ RUMAH: 'kmbtra' })).toBe(false);
+    expect(pushHanyaDicatat({ RUMAH: 'kmbtra', SKEMA_AWALAN: 'uji_' })).toBe(true);
+    const ambil = vi.fn(async () => new Response('', { status: 201 }));
+    const env = { RUMAH: 'latihan_kmbtra', VAPID_PRIVATE_PEM: 'x', VAPID_PUBLIC_B64URL: 'y' };
+    const h = await kirimPush(env, P.latihan_kmbtra, new URL('https://latihan-kmbtra.uji/api'),
+      [{ url: 'https://fcm.googleapis.com/fcm/send/hp-asli', opsi: { method: 'post', headers: { Authorization: 'vapid t=a, k=b' } } }], { ambil });
+    expect(ambil).not.toHaveBeenCalled();
+    expect(JSON.stringify(h)).toContain('ruang uji: hanya dicatat');
   });
 });

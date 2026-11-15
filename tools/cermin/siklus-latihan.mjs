@@ -12,8 +12,13 @@
  * SUM memakai component_no + work_condition dari pull_create_refs, part_type, dan hour meter/kilometer wajib > 0.
  * Pelaku bawaan di bawah = akun aktif bertoken di cermin 15 Nov 2026; ganti dengan --spv/--spt/--mekanik bila perlu.
  *
+ * --latihan: rumah LATIHAN di produksi (uji kering prosedur migrasi, 15 Nov; workers/bersama/profil-rumah.js):
+ *   Worker latihan-<rumah>.abadiops.com, skema latihan_<skema>. Hanya berguna sesudah saklar rumah latihan `supabase`
+ *   (sebelumnya kiriman dijawab GAS tiruan). Pemicu tidak dijalankan (rumah latihan tanpa cron dan tanpa
+ *   /api/uji-pemicu). Notifikasi push rumah latihan hanya dicatat.
+ *
  * Variabel lingkungan: DATABASE_URL (Gedung 1). Pemakaian:
- *   node tools/cermin/siklus-latihan.mjs --rumah=kmbprojek|kmbtra|sum [--mekanik=<id>] [--spv=<id>] [--spt=<id>]
+ *   node tools/cermin/siklus-latihan.mjs --rumah=kmbbupr|kmbprojek|kmbtra|sum [--latihan] [--mekanik=<id>] [--spv=<id>] [--spt=<id>]
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,14 +31,23 @@ const arg = Object.fromEntries(process.argv.slice(2).map((a) => {
   return i < 0 ? [a.replace(/^--/, ''), true] : [a.slice(2, i), a.slice(i + 1)];
 }));
 const BAWAAN = {
+  kmbbupr: { skema: 'uji_kmbbupr', dasar: 'https://staging-kmbbupr.abadiops.com', keluarga: 'kmb', section: 'maintenance', spv: 'SPV-P2-01', spt: 'SPT-P2-01', mekanik: 'MNT-002' },
   kmbprojek: { skema: 'uji_kmb_projek', dasar: 'https://staging-kmbprojek.abadiops.com', keluarga: 'kmb', section: 'maintenance', spv: 'SPV-001', spt: 'SUPT-001', mekanik: 'MNT-002' },
   kmbtra: { skema: 'uji_kmb', dasar: 'https://staging-kmbtra.abadiops.com', keluarga: 'kmb', section: 'field', spv: 'SPV-001', spt: 'SUPT-001', mekanik: 'MECH-001', mekanikBolehBuat: true },
   sum: { skema: 'uji_sum', dasar: 'https://staging-sum.abadiops.com', keluarga: 'sum', spv: 'SPV-000', spt: 'SUPT-000', mekanik: 'MECH-000' },
 };
 const kode = String(arg.rumah || '');
-if (!BAWAAN[kode]) throw new Error('--rumah=kmbprojek|kmbtra|sum');
-const R = { ...BAWAAN[kode], ...(arg.spv ? { spv: arg.spv } : {}), ...(arg.spt ? { spt: arg.spt } : {}), ...(arg.mekanik ? { mekanik: arg.mekanik } : {}) };
-if (!R.skema.startsWith('uji_') || !/^https:\/\/staging-/.test(R.dasar)) throw new Error('hanya ruang uji');
+if (!BAWAAN[kode]) throw new Error('--rumah=kmbbupr|kmbprojek|kmbtra|sum');
+const latihan = Boolean(arg.latihan);
+const R = {
+  ...BAWAAN[kode],
+  ...(latihan ? { skema: BAWAAN[kode].skema.replace(/^uji_/, 'latihan_'), dasar: `https://latihan-${kode}.abadiops.com` } : {}),
+  ...(arg.spv ? { spv: arg.spv } : {}), ...(arg.spt ? { spt: arg.spt } : {}), ...(arg.mekanik ? { mekanik: arg.mekanik } : {}),
+};
+const sah = latihan
+  ? R.skema.startsWith('latihan_') && /^https:\/\/latihan-/.test(R.dasar)
+  : R.skema.startsWith('uji_') && /^https:\/\/staging-/.test(R.dasar);
+if (!sah) throw new Error('hanya ruang uji atau rumah latihan');
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL (Gedung 1) wajib');
 
 const { default: postgres } = await import('postgres');
@@ -101,7 +115,8 @@ try {
     console.log(`${nama.padEnd(40)} ${r.status} ${r.jalur || '-'} tulis=${r.tulis} | ${ringkas(r.j, r.t)}`);
   }
   const profil = JSON.parse(fs.readFileSync(path.join(AKAR, 'config/rumah.json'), 'utf8'))[kode];
-  for (const fn of [...new Set((profil.gas.pemicu || []).map((x) => x.fungsi))]) {
+  if (latihan) console.log('pemicu: dilewati (rumah latihan tanpa cron dan tanpa /api/uji-pemicu)');
+  for (const fn of latihan ? [] : [...new Set((profil.gas.pemicu || []).map((x) => x.fungsi))]) {
     const r = await fetch(`${R.dasar}/api/uji-pemicu`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fungsi: fn }) });
     const t = await r.text();
     let j = null; try { j = JSON.parse(t); } catch (_) {}
