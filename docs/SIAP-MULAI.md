@@ -69,7 +69,12 @@ mengubah sistem yang dipakai orang.
    KMB V2 (pembanding 403). Penulisan tetap dijaga `public.cermin_izin_tulis` (semua tertutup).
    **Hak Editor akun layanan** *(per rumah)*: bagikan spreadsheet BUPR ("New MAR Project") ke email akun layanan cermin
    (yang sekarang Viewer) sebagai **Editor**. Dipakai cermin balik hanya setelah jam mulai.
-6. **Latihan cermin balik** (sekali, sebelum BUPR): *File → Make a copy* spreadsheet BUPR, bagikan salinannya ke akun
+6. **LULUS 15 Nov ±12.40–13.05 WIB** di salinan "Salinan New MAR Project" (`1uOZUOHw…`, dibuat Gabriel; skrip salinannya
+   `1t2eOlSw…` tidak dipakai dan tidak boleh di-deploy): tahap awal 24/24 sama (0 baris perlu ditulis); skenario tulis
+   BUPR di Worker uji (`skenario-tulis.mjs`: WO mandiri → L2, SPV → L1 → L2, kiriman ulang op_id, pembatalan, 3 penolakan)
+   + pemicu GAS (pemangkas ProcessedOps menghapus 10.402 baris); tahap akhir bertahap: 9 sheet ditulis (ProcessedOps 134
+   ditulis + 10.402 dikosongkan), **periksa 24/24 sama**. `config/rumah.json` `kmbbupr.gas.jalan_kembali_siap = true`.
+   **Latihan cermin balik** (sekali, sebelum BUPR): *File → Make a copy* spreadsheet BUPR, bagikan salinannya ke akun
    layanan sebagai Editor, kirim ID salinannya ke Claude. Claude menjalankan `tools/cermin/latihan-balik.mjs` di skema uji
    `uji_kmbbupr` → salinan: `--tahap=awal` (salin penuh + uji Editor + periksa), satu siklus WO di Worker uji, lalu
    `--tahap=akhir` (cermin balik bertahap + periksa, harus semua sheet sama). Lulus → `config/rumah.json`
