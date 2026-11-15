@@ -15,11 +15,13 @@ jalur Supabase atau sengaja dinyatakan tidak perlu.
 | Penjaga otomatis (`penjagaOtomatis`, 06.00 dan 18.00 WIB) | semua | Menulis poin yang tertinggal untuk WO approved, artinya mekanik yang belum dibayar | **Selesai 15 Nov dini hari:** cron Worker menjalankan fungsi GAS yang sama di atas cermin, hanya bila saklar rumah itu `supabase`; uji kembar identik di keempat rumah (laporan temuan yang biasanya dikirim lewat email masih hanya dicatat) |
 | Pemangkas ProcessedOps dan KirimanWeb (`cleanupProcessedOps`, `cleanupKirimanWeb`, tiap hari) | semua | Ditandai WAJIB di kode: tanpa pemangkasan setiap kiriman makin lambat | **Selesai 15 Nov dini hari:** cron Worker, fungsi GAS yang sama; uji kembar identik |
 
-## Perlu keputusan Gabriel
+## Diputuskan 15 Nov siang (atas penyerahan Gabriel, `docs/KEPUTUSAN.md`)
 
-| Fitur | Rumah | Catatan |
+| Fitur | Rumah | Keputusan |
 |---|---|---|
-| Email penjaga harian (`penjagaHarian`/`_penjagaKirim`, `MailApp`) | semua | Hanya melapor, tidak mengubah data. Perlu saluran email dari Cloudflare, misalnya Email Routing `send_email` ke alamat penerima yang sudah diverifikasi, atau layanan email transaksional |
+| Email penjaga harian (`penjagaHarian`/`_penjagaKirim`, `MailApp`) | semua | **Ditunda, bukan syarat mulai.** Hanya melapor, tidak mengubah data; laporannya tetap dicatat. Nanti lewat Cloudflare Email Routing `send_email` atau layanan email transaksional |
+| Notifikasi push | semua | **Wajib sebelum KMB Projek, KMB V2, SUM**; BUPR boleh mulai tanpa push (satu mekanik aktif, WO mandiri) |
+| Arsip payroll di Drive | semua | **Tidak dibuat ulang**; XLSX diunduh langsung. Bila dibutuhkan, arsip di Supabase Storage |
 
 ## Tidak perlu di jalur Supabase
 

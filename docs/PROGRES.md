@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (siang) · Claude (keputusan diserahkan Gabriel) · keempat rumah (cermin balik, prosedur produksi lengkap, tutup GAS siap)
+- Berubah:
+  - **Cermin balik** `tools/cermin/balik.mjs` (+ `tools/cermin/google.mjs`, pembaca bersama sinkron maju; refaktor terbukti identik: sinkron BUPR lama vs baru 24/24 sidik sama). Uji kering ke spreadsheet BUPR asli: 24/24 sheet sama dengan cermin. 8 uji spreadsheet tiruan.
+  - **Prosedur produksi lengkap:** cek GAS tertutup → sinkron terakhir + periksa → cadangan → izin tulis → cermin balik awal (uji Editor) → supabase; kembali: cermin balik terakhir + periksa → tutup izin → gas. Antrean `public.cermin_permintaan` (terpasang di Gedung 1, RLS, hanya service_role), pelaksana `tools/cermin/peralihan.mjs` + `.github/workflows/peralihan.yml`. Pemulihan otomatis (tutup izin, batalkan permintaan) di semua jalan gagal. Uji: permintaan sinkron terakhir BUPR sungguhan diproses pelaksana lokal (24/24 sama); 8 uji langkah; uji prosedur staging 18/18.
+  - **Pintu:** BUPR masuk `RUMAH` produksi; token rumah yang sudah pindah dikenali lewat Worker-nya (GAS-nya tertutup). Worker BUPR mendapat domain `kmbbupr.abadiops.com` (belum di-deploy).
+  - **Tutup GAS:** `tools/kembar/siapkan-tutup-gas.mjs` + `uji-tutup-gas.mjs`. Keempat rumah: HEAD identik dengan versi ter-deploy (@11/@49/@299/@199), tambalan persis 4 bagian, uji logika 14/14. `clasp push` ditolak pengaman otomatis sesi ini → menunggu izin Gabriel.
+  - **Temuan:** Worker produksi belum punya kunci Supabase (hanya meneruskan ke GAS); PWA BUPR lama memanggil GAS langsung; Worker rumah produksi terakhir di-deploy 30 Okt (kode lama, batas CPU lama); pintu produksi tidak mengenal BUPR. Semua masuk `docs/SIAP-MULAI.md`.
+  - Push ke `main` ditolak pengaman otomatis sesi ini → menunggu izin Gabriel.
+- Belum selesai / berikutnya: `docs/SIAP-MULAI.md` (gabung main + deploy produksi bertahap, kunci `worker_produksi`, push + Deploy tutup GAS, hak Editor, latihan cermin balik di salinan, PWA BUPR, aturan 7 hari: BUPR 19 Nov).
+
 ### 2026-11-15 (pagi, lanjutan) · Claude (+ Gabriel) · keempat rumah (payroll XLSX dari abadiops, rumus ke cermin produksi)
 - Berubah:
   - **Rumus config di cermin produksi:** sinkron penuh dengan tangkapan rumus; `cermin_rumus` terisi di skema asli dan `uji_*` (KMB V2 1.538, KMB Projek 1.536, BUPR 1.536, SUM 1). Izin tulis skema asli tetap terkunci semua.
