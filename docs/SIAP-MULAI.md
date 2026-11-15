@@ -30,9 +30,9 @@ tanpa persetujuan langsung Anda, dan itu memang benar: keduanya mengubah sistem 
    `SUPABASE_SECRET_KEY_GEDUNG1=<kuncinya>`. Claude memasangnya ke `abadiops-pintu`, `abadiops-kmb`, `abadiops-sum`,
    `abadiops-porject-kmb`, `abadiops-kmbbupr` tanpa mencetaknya. (Kunci `worker_uji` sengaja tidak dipakai untuk produksi,
    supaya memutar kunci uji tidak mematikan produksi.)
-3. **Izinkan deploy produksi** (cukup "ya, deploy produksi"):
+3. **Izinkan deploy produksi** (cukup "ya, deploy produksi"). Urutannya penting:
+   - `abadiops-kmbbupr` (baru) di `kmbbupr.abadiops.com` **lebih dulu**, karena pintu mengarahkan pengguna BUPR ke sana;
    - `abadiops-pintu`: panel migrasi baru, BUPR masuk daftar rumah, token rumah yang sudah pindah dikenali lewat Worker-nya;
-   - `abadiops-kmbbupr` (baru) di `kmbbupr.abadiops.com`;
    - Worker rumah KMB V2, SUM, KMB Projek: **bertahap** (10% lalu 100% sesudah dicek) dengan kemungkinan rollback seketika.
      Selama saklar `gas` semuanya tetap meneruskan ke GAS. Deploy ulang ini juga wajib untuk batas CPU Workers Paid
      (BUG-DICATAT #40).
@@ -42,9 +42,10 @@ tanpa persetujuan langsung Anda, dan itu memang benar: keduanya mengubah sistem 
 5. **Hak Editor akun layanan** *(per rumah)*: bagikan spreadsheet BUPR ("New MAR Project") ke email akun layanan cermin
    (yang sekarang Viewer) sebagai **Editor**. Dipakai cermin balik hanya setelah jam mulai.
 6. **Latihan cermin balik** (sekali, sebelum BUPR): *File → Make a copy* spreadsheet BUPR, bagikan salinannya ke akun
-   layanan sebagai Editor, kirim ID salinannya ke Claude. Claude menjalankan latihan di skema uji `uji_kmbbupr` → salinan:
-   salin awal, satu siklus WO di Worker uji, cermin balik bertahap, periksa harus 24/24 sama. Lulus → `config/rumah.json`
-   `kmbbupr.gas.jalan_kembali_siap = true` (syarat ke-4 tombol Mulai).
+   layanan sebagai Editor, kirim ID salinannya ke Claude. Claude menjalankan `tools/cermin/latihan-balik.mjs` di skema uji
+   `uji_kmbbupr` → salinan: `--tahap=awal` (salin penuh + uji Editor + periksa), satu siklus WO di Worker uji, lalu
+   `--tahap=akhir` (cermin balik bertahap + periksa, harus semua sheet sama). Lulus → `config/rumah.json`
+   `kmbbupr.gas.jalan_kembali_siap = true` (syarat ke-4 tombol Mulai) + deploy ulang pintu.
 7. **PWA BUPR lama** (GitHub Pages `kawanabadigrup/PWA-Project-KMB2`) masih memanggil GAS langsung. Sebelum Mulai, ganti
    alamatnya ke Worker supaya kiriman HP ikut tertahan dengan benar saat peralihan:
    `app.js` baris 15 `API_URL` dan `sw.js` baris 41 `API_URL` → `https://kmbbupr.abadiops.com/api`, lalu `sw.js` baris 1
