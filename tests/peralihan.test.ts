@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error modul .mjs tanpa deklarasi tipe
 import { jadwalAwal, perpanjang, bolehAmbil, waktunyaBalik, sudahAkhir } from '../tools/cermin/peralihan.mjs';
 
 // Jadwal putaran pelaksana (tools/cermin/peralihan.mjs). GitHub menjalankan jadwal */5 nyatanya ±1 jam sekali
