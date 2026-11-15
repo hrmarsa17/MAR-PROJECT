@@ -62,6 +62,15 @@ describe('shim: Script Properties dan web push', () => {
     expect(L.__CATAT.tak_dikenal).toEqual([]);
   });
 
+  it('UrlFetchApp.fetchAll (PushService.gs SUM): tiap permintaan dicatat dan dijawab 201', () => {
+    const L = layanan();
+    const q = (url: string) => ({ url, method: 'post', headers: KEPALA_PUSH, payload: '', muteHttpExceptions: true });
+    const r = L.UrlFetchApp.fetchAll([q(FCM), q(MOZ)]);
+    expect(r.map((x: any) => x.getResponseCode())).toEqual([201, 201]);
+    expect(L.__CATAT.keluar.map((k: any) => k.url)).toEqual([FCM, MOZ]);
+    expect(() => L.UrlFetchApp.fetchAll([q(FCM), { url: 'https://contoh.invalid/x', method: 'post' }])).toThrow(/tidak tersedia/);
+  });
+
   it('selain web push, UrlFetchApp tetap tidak tersedia', () => {
     const L = layanan();
     expect(() => L.UrlFetchApp.fetch('https://contoh.invalid/api', { method: 'post', payload: 'x' })).toThrow(/tidak tersedia/);

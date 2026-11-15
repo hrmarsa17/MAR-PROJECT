@@ -931,6 +931,13 @@ export function buatLayanan(D, host) {
       catatSekali(CATAT.layanan, 'UrlFetchApp.fetch (ekspor XLSX spreadsheet baru di memori)');
       return jawabanBerkas(host.xlsx(modelBuku(b)), b._nama + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     },
+    // fetchAll([{ url, method, headers, payload, ... } | url]): PushService.gs SUM mengirim semua push sekaligus.
+    // Tiap permintaan diperlakukan sama dengan fetch; satu yang tidak tersedia menggagalkan semuanya, seperti GAS.
+    fetchAll: function (daftar) {
+      return [].slice.call(daftar || []).map(function (q) {
+        return typeof q === 'string' ? UrlFetchApp.fetch(q) : UrlFetchApp.fetch(q.url, q);
+      });
+    },
   });
   var DriveApp = sebagian('DriveApp', {
     getFileById: function (id) {
