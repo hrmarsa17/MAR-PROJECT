@@ -30,29 +30,10 @@ CREATE TABLE IF NOT EXISTS public.cermin_izin_tulis (
 ALTER TABLE public.cermin_izin_tulis ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.cermin_izin_tulis FROM PUBLIC, anon, authenticated;
 
--- Dipanggil tombol mulai migrasi (boleh = true) dan tombol "Kembali ke GAS" (boleh = false) di panel saklar.
-CREATE OR REPLACE FUNCTION public.cermin_atur_izin_tulis(p_skema text, p_boleh boolean, p_alasan text, p_oleh text)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = pg_catalog, pg_temp
-AS $$
-BEGIN
-  IF p_skema IS NULL OR left(p_skema, 4) = 'uji_' OR to_regclass(format('%I.cermin_header', p_skema)) IS NULL THEN
-    RAISE EXCEPTION 'skema % bukan cermin asli', p_skema USING ERRCODE = '22023';
-  END IF;
-  IF coalesce(btrim(p_alasan), '') = '' OR coalesce(btrim(p_oleh), '') = '' THEN
-    RAISE EXCEPTION 'alasan dan pelaku wajib diisi' USING ERRCODE = '22023';
-  END IF;
-  INSERT INTO public.cermin_izin_tulis AS i (skema, boleh, alasan, diubah_oleh, diubah_at)
-  VALUES (p_skema, p_boleh, p_alasan, p_oleh, now())
-  ON CONFLICT (skema) DO UPDATE SET boleh = EXCLUDED.boleh, alasan = EXCLUDED.alasan,
-    diubah_oleh = EXCLUDED.diubah_oleh, diubah_at = EXCLUDED.diubah_at;
-  RETURN jsonb_build_object('skema', p_skema, 'boleh', p_boleh);
-END;
-$$;
-REVOKE ALL ON FUNCTION public.cermin_atur_izin_tulis(text, boolean, text, text) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.cermin_atur_izin_tulis(text, boolean, text, text) TO service_role;
+-- public.cermin_atur_izin_tulis (dipanggil prosedur Mulai migrasi dan Kembali ke GAS) dan kolom maju_dikunci ada di
+-- db/bersama/cermin_maju.sql sejak 15 Nov 2026: izin tulis hanya bisa dibuka sesudah sinkron maju dikunci. Pasang
+-- berkas itu SESUDAH berkas ini; definisi lama sengaja dihapus dari sini supaya menjalankan ulang berkas ini tidak
+-- mengembalikan versi tanpa kunci.
 
 CREATE OR REPLACE FUNCTION public.cermin_tulis(p_skema text, p_perubahan jsonb)
 RETURNS jsonb

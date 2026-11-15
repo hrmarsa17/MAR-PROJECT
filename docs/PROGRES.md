@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (siang, lanjutan) · Claude (+ Gabriel: "ya push main") · keempat rumah (main digabung, kunci sinkron maju)
+- Berubah:
+  - **`staging` → `main`** atas persetujuan Gabriel: fast-forward 129 commit `09b18e2..6daefcd` (10.03 WIB). Dicek dulu: tidak ada workflow yang men-deploy (`uji.yml` hanya Postgres milik runner, tanpa rahasia), tidak ada integrasi Supabase/Workers Builds, dan cermin balik terjadwal melewati semua rumah selama izin tulis tertutup. CI `uji` di `main` hijau. Sejak ini `peralihan.yml` dan sinkron per jam (kini dengan AuditLogs) berjalan dari `main`.
+  - **Celah balapan ditemukan dan ditutup sebelum pernah dipakai** (BUG-DICATAT #43): sinkron maju tidak berkunci, jadi putaran tiap jam bisa menimpa sinkron terakhir prosedur Mulai (bahkan tulisan Worker sesudah saklar `supabase`), dan dua putaran bersamaan bisa mencatat selisih palsu yang memutus hitungan 7 hari. Perbaikan: `db/bersama/cermin_maju.sql` (terpasang di Gedung 1; `cermin_tulis.sql` tidak lagi memuat `cermin_atur_izin_tulis` lama), `sinkron.mjs` (kunci bersama per rumah + eksklusif per sheet di setiap transaksi, `--akhir`), `peralihan.mjs` (`sinkron_akhir` dengan `--akhir`), `migrasi.js` (kunci sebelum sinkron terakhir; izin dibuka/ditunggu; pemulihan dan Kembali melepas kunci).
+  - Uji: SQL 16/16 di Gedung 1 (dua babak transaksi di-rollback, koneksi kedua memegang kunci bersama; sesudahnya tanpa jejak), ujung ke ujung BUPR 7/7 (termasuk kunci di tengah putaran: berhenti rapi sesudah 11 sheet; kunci dilepas lagi), langkah prosedur 12/12, typecheck bersih.
+- Belum selesai / berikutnya:
+  - **Push `main` sekali lagi** (perbaikan #43) sebelum 19 Nov; menunggu "ya" Gabriel.
+  - Permintaan uji #6 (sinkron terakhir BUPR) menunggu putaran pertama pelaksana terjadwal di GitHub.
+  - Sisanya tetap: `docs/SIAP-MULAI.md`.
+
 ### 2026-11-15 (siang) · Claude (keputusan diserahkan Gabriel) · keempat rumah (cermin balik, prosedur produksi lengkap, tutup GAS siap)
 - Berubah:
   - **Cermin balik** `tools/cermin/balik.mjs` (+ `tools/cermin/google.mjs`, pembaca bersama sinkron maju; refaktor terbukti identik: sinkron BUPR lama vs baru 24/24 sidik sama). Uji kering ke spreadsheet BUPR asli: 24/24 sheet sama dengan cermin. 8 uji spreadsheet tiruan.

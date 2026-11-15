@@ -37,13 +37,13 @@ Tombol mulai hanya aktif kalau **kesehatan cermin** rumah itu hijau:
 Yang dikerjakan tombol secara otomatis (`workers/pintu/src/migrasi.js`, dijalankan Durable Object saklar). Pekerjaan yang butuh akun layanan Google dikerjakan pelaksana GitHub (`.github/workflows/peralihan.yml`, tiap 5 menit) lewat antrean `public.cermin_permintaan`; pintu tidak memegang kunci Google maupun token GitHub.
 1. Saklar → `menutup`. Worker menahan kiriman HP (protokol PWA), dan GAS menutup dirinya sendiri (tambalan tutup GAS membaca saklar, disimpan 30 detik).
 2. **GAS terbukti tertutup:** pintu mem-ping web app GAS sampai dijawab "sudah pindah ke abadiops" (maksimal ±4 menit). Kalau tidak, berhenti: tambalan belum ter-deploy.
-3. **Sinkron terakhir + periksa selisih penuh** (`sinkron.mjs --periksa`): harus dijalankan sesudah GAS ditutup, semua sheet sama, tanpa sheet yang dilewati.
+3. **Sinkron maju dikunci, lalu sinkron terakhir + periksa selisih penuh** (`cermin_kunci_maju`, lalu `sinkron.mjs --periksa --akhir`). Kunci menunggu putaran sinkron tiap jam yang sedang menulis rumah ini selesai; sesudahnya hanya sinkron terakhir pelaksana yang boleh menulis cermin rumah ini (`db/bersama/cermin_maju.sql`). Tanpa kunci itu, potret spreadsheet yang dibaca sebelum GAS ditutup bisa tertulis sesudah sinkron terakhir. Harus dijalankan sesudah GAS ditutup, semua sheet sama, tanpa sheet yang dilewati.
 4. **Cadangan jam mulai** (`cermin_cadangkan`).
-5. **Izin tulis dibuka** (`cermin_atur_izin_tulis`). Saklar masih `menutup`, jadi belum ada yang menulis.
+5. **Izin tulis dibuka** (`cermin_atur_izin_tulis`). Basis data hanya menerimanya sesudah sinkron maju dikunci, dan menunggu bila masih ada transaksi sinkron yang menulis. Saklar masih `menutup`, jadi belum ada yang menulis.
 6. **Cermin balik awal** (`balik.mjs --penuh --tulis --periksa --uji-editor`): penanda per sheet, uji hak Editor akun layanan, dan periksa spreadsheet = cermin.
 7. Saklar → `supabase`; jam mulai dicatat dalam waktu setempat rumah itu (SUM WITA, lainnya WIB). Pemicu terjadwal dijalankan Worker, cermin balik berjalan tiap ±5 menit, dan antrean HP terkirim ke Supabase.
 
-Gagal di langkah mana pun → saklar kembali ke `gas`, izin tulis yang sudah dibuka ditutup lagi, dan permintaan yang belum diambil pelaksana dibatalkan. Tidak ada yang hilang, karena belum ada yang ditulis di Supabase. Batas waktu seluruh prosedur 90 menit; lamanya biasanya ±15–40 menit, bergantung jadwal GitHub dan besar rumah.
+Gagal di langkah mana pun → saklar kembali ke `gas`, izin tulis yang sudah dibuka ditutup lagi, kunci sinkron maju dilepas, dan permintaan yang belum diambil pelaksana dibatalkan. Tidak ada yang hilang, karena belum ada yang ditulis di Supabase. Batas waktu seluruh prosedur 90 menit; lamanya biasanya ±15–40 menit, bergantung jadwal GitHub dan besar rumah.
 
 **Urutan rumah: bertahap** (keputusan Gabriel 14 Nov, menggantikan go-live serentak 29 Okt): BUPR → KMB Projek → KMB V2 → SUM. Setiap rumah punya jam mulai sendiri, jadi kalau ada masalah dampaknya hanya ke satu rumah.
 
@@ -57,9 +57,11 @@ Tujuannya: GAS dan PWA kembali beroperasi persis seperti sebelum migrasi, lengka
 - **Tombol "Kembali ke GAS".** Cukup satu konfirmasi, tanpa daftar syarat. Urutannya:
   1. saklar → `membuka` (tidak ada penulis; HP menahan kiriman);
   2. cermin balik terakhir + periksa seluruh spreadsheet (pelaksana GitHub; bila ada selisih, diulang dengan `--penuh`);
-  3. izin tulis ditutup, saklar → `gas`.
+  3. izin tulis ditutup, kunci sinkron maju dilepas (cermin kembali mengikuti spreadsheet), saklar → `gas`. Menutup izin
+     saja tidak melepas kunci: selama belum dipastikan spreadsheet sama dengan cermin, sinkron maju tidak boleh menimpa
+     cermin. Bila prosedur macet di tengah, lepas manual: `SELECT public.cermin_kunci_maju('<skema>', false, '<alasan>', '<nama>')`.
 
-  Gagal → saklar kembali ke `supabase` (Supabase tetap penulis, GAS tidak dibuka dengan data yang belum sama).
+  Gagal → saklar kembali ke `supabase` (Supabase tetap penulis, izin tetap terbuka, sinkron maju tetap dikunci; GAS tidak dibuka dengan data yang belum sama).
 
   Setelah itu GAS terbuka lagi, pemicunya hidup lagi, PWA kembali diteruskan ke GAS, dan cermin kembali ke arah spreadsheet → Supabase.
 - **Lapisan cadangan lain:** cadangan harian Supabase Pro (7 hari), cadangan database sesaat sebelum mulai, dan riwayat versi Google Sheets.
@@ -133,6 +135,7 @@ Saklar dioperasikan dari **satu panel visual di domain pintu**. Daftar kamar dan
 - **Kunci tulis di database:** `cermin_tulis` menolak skema asli (`TERKUNCI`, HTTP 423) kecuali izin dibuka prosedur (`public.cermin_izin_tulis`, `public.cermin_atur_izin_tulis`).
 - **Peralihan di Worker rumah:** kiriman PWA ditahan dengan protokol yang dikenali PWA (`gas.peralihan`: `MAINTENANCE|` untuk SUM/KMB V2, `retry_later` untuk KMB Projek/BUPR), bacaan tetap jalan, halaman web 503 "pindah jalur".
 - **Pengaman sinkron:** `tools/cermin/sinkron.mjs` melewati rumah yang izin tulisnya terbuka, supaya sinkron per jam tidak menimpa pekerjaan di abadiops. Workflow `cermin.yml` di `main` harus memakai versi ini sebelum jam mulai rumah mana pun.
+- **Kunci sinkron maju** (15 Nov siang, `db/bersama/cermin_maju.sql`, terpasang di Gedung 1): kolom `maju_dikunci` di `public.cermin_izin_tulis` dan `public.cermin_kunci_maju`. Setiap transaksi sheet sinkron maju memegang kunci bersama per rumah lalu membaca ulang izinnya, dan kunci eksklusif per sheet supaya dua putaran tidak menulis sheet yang sama bersamaan (tanpa itu, periksa bisa melaporkan selisih palsu). Uji SQL 16/16 di Gedung 1 (transaksi di-rollback, dua koneksi); uji ujung ke ujung BUPR 7/7, termasuk kunci yang dipasang di tengah putaran (berhenti rapi sesudah 11 sheet); uji langkah prosedur 12/12. `cermin.yml` dan `peralihan.yml` memakainya begitu ada di `main`.
 - **Tutup GAS:** `tools/kembar/tambal-tutup-gas.mjs` (uji logika 14/14; kode bertambalan tetap 66/66 di uji kembar BUPR). Belum di-push ke GAS: Gabriel men-deploy dari editor.
 - **Fungsi pendukung** (`db/bersama/migrasi.sql`): `cermin_bandingkan`, `cermin_cadangkan`, `cermin_kesehatan`; terpasang di Gedung 1.
 - **Uji prosedur di staging** (simulasi di ruang uji): 18/18 lulus. Mencakup kembali → mulai lengkap dengan cadangan, sinkron terakhir, periksa selisih 0, dan jam mulai tercatat; penolakan konfirmasi/posisi/prosedur ganda; dan penahanan kiriman HP saat peralihan.

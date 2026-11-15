@@ -9,7 +9,9 @@
  *      rumah lain dilewati alat itu sendiri.
  *
  * Jenis permintaan:
- *   sinkron_akhir  sinkron.mjs --skema=<s> --periksa              berhasil: keluar 0 dan "diperiksa N/N sama"
+ *   sinkron_akhir  sinkron.mjs --skema=<s> --periksa --akhir      berhasil: keluar 0 dan "diperiksa N/N sama"
+ *                  (--akhir: satu-satunya sinkron maju yang boleh menulis sesudah prosedur Mulai mengunci sinkron maju,
+ *                  db/bersama/cermin_maju.sql)
  *   balik_awal     balik.mjs --penuh --tulis --periksa --uji-editor berhasil: keluar 0 dan "periksa N/N sama"
  *   balik_akhir    balik.mjs --tulis --periksa; bila gagal diulang dengan --penuh
  * Keluaran alat selalu --ringkas: repo publik, log Actions terbaca siapa saja.
@@ -54,7 +56,7 @@ const lolos = (h, kata) => h.kode === 0 && semuaSama(h.keluaran, kata) && !/DILE
 async function kerjakan(p) {
   const s = `--skema=${p.skema}`;
   if (p.jenis === 'sinkron_akhir') {
-    const h = await jalankan('tools/cermin/sinkron.mjs', [s, '--periksa', '--ringkas']);
+    const h = await jalankan('tools/cermin/sinkron.mjs', [s, '--periksa', '--akhir', '--ringkas']);
     return { berhasil: lolos(h, 'diperiksa'), hasil: h.keluaran };
   }
   if (p.jenis === 'balik_awal') {

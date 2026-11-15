@@ -39,6 +39,13 @@
  *   --periksa=harian         sama, tapi hanya sekali per hari kalender WIB per rumah, mulai pukul 02.00 WIB.
  *                            Hasilnya di cermin_log.selisih dan cermin_meta (periksa_terakhir, periksa_hasil,
  *                            hari_tanpa_selisih), bahan syarat saklar "7 hari tanpa selisih" (docs/SAKLAR.md).
+ *   --akhir                  sinkron terakhir prosedur "Mulai migrasi" (hanya pelaksana tools/cermin/peralihan.mjs):
+ *                            boleh menulis walaupun prosedur sudah mengunci sinkron maju (maju_dikunci,
+ *                            db/bersama/cermin_maju.sql). Tanpa opsi ini putaran berhenti menulis rumah itu. Setelah
+ *                            izin tulis terbuka, tidak ada putaran yang menulis, termasuk --akhir.
+ *
+ * Kunci: setiap transaksi sheet memegang kunci bersama 'cermin_maju:<skema>' (dibaca ulang izinnya) dan kunci
+ * eksklusif 'cermin_sinkron:<skema>:<sheet>' (dua putaran tidak menulis sheet yang sama bersamaan).
  */
 import {
   keTabel, aksesToken, gapi, bacaSheet, sidikDari,
@@ -210,6 +217,34 @@ function hitungBeruntun(hari) {
   }
 }
 
+// ── Kunci sinkron maju (db/bersama/cermin_maju.sql, docs/SAKLAR.md) ─────────────────────────────────────────────
+// Putaran ini berhenti menulis cermin sebuah rumah bila izin tulis rumah itu terbuka (Supabase satu-satunya penulis),
+// atau bila prosedur "Mulai migrasi" sudah mengunci sinkron maju dan putaran ini bukan sinkron terakhir pelaksana
+// (--akhir). Tanpa itu, putaran yang membaca sheet sebelum GAS ditutup bisa menulis potret lama sesudah sinkron
+// terakhir, atau menimpa tulisan Worker sesudah saklar `supabase`.
+class Berhenti extends Error {}
+
+async function bacaKunci(q, skema) {
+  // to_jsonb: tetap jalan di basis data yang belum punya kolom maju_dikunci.
+  const [r] = await q`SELECT to_jsonb(i) AS z FROM public.cermin_izin_tulis i WHERE i.skema = ${skema}`;
+  const z = (r && r.z) || {};
+  return { boleh: z.boleh === true, maju: z.maju_dikunci === true };
+}
+
+function alasanBerhenti(k) {
+  if (k.boleh) return 'migrasi sudah dimulai, Supabase satu-satunya penulis; sinkron maju dari spreadsheet dimatikan (docs/SAKLAR.md).';
+  if (k.maju && !arg.akhir) return 'prosedur "Mulai migrasi" sedang berjalan; hanya sinkron terakhir pelaksana (--akhir) yang boleh menulis cermin (docs/SAKLAR.md).';
+  return null;
+}
+
+// Di awal setiap transaksi yang menulis cermin: kunci BERSAMA per rumah (cermin_kunci_maju dan cermin_atur_izin_tulis
+// menunggu sampai transaksi ini selesai, dan transaksi sesudahnya membaca keadaan baru), lalu baca ulang izin.
+async function jagaMaju(tx, skema) {
+  await tx`SELECT pg_advisory_xact_lock_shared(hashtext(${'cermin_maju:' + skema}))`;
+  const sebab = alasanBerhenti(await bacaKunci(tx, skema));
+  if (sebab) throw new Berhenti(sebab);
+}
+
 // ── Satu rumah ───────────────────────────────────────────────────────────────
 async function sinkronRumah(skema) {
   const kering = Boolean(arg.kering);
@@ -233,18 +268,21 @@ async function sinkronRumah(skema) {
 
   let sql = null;
   let periksa = false;
+  let adaIzin = false;
   if (!kering) {
     const { default: postgres } = await import('postgres');
     sql = postgres(wajib('DATABASE_URL'), { max: 1, prepare: false, ssl: 'require', connect_timeout: 20, onnotice: () => {} });
     try {
       // Setelah tombol "Mulai migrasi" rumah ini (docs/SAKLAR.md), Supabase satu-satunya penulis: sinkron maju dari
       // spreadsheet TIDAK BOLEH menimpa cermin, karena pekerjaan di abadiops akan hilang. Arah sebaliknya adalah tugas
-      // cermin balik. Izin tulis dibuka/ditutup oleh prosedur di panel (public.cermin_izin_tulis).
+      // cermin balik. Izin tulis dan kunci sinkron maju diatur prosedur di panel (public.cermin_izin_tulis); keduanya
+      // dibaca ulang di setiap transaksi sheet (jagaMaju), bukan hanya di sini.
       const [ada] = await sql`SELECT to_regclass('public.cermin_izin_tulis') IS NOT NULL AS ada`;
-      if (ada.ada) {
-        const [izin] = await sql`SELECT boleh FROM public.cermin_izin_tulis WHERE skema = ${skema}`;
-        if (izin && izin.boleh) {
-          console.log(`${skema}: DILEWATI — migrasi sudah dimulai, Supabase satu-satunya penulis; sinkron maju dari spreadsheet dimatikan (docs/SAKLAR.md).`);
+      adaIzin = ada.ada;
+      if (adaIzin) {
+        const sebab = alasanBerhenti(await bacaKunci(sql, skema));
+        if (sebab) {
+          console.log(`${skema}: DILEWATI — ${sebab}`);
           await sql.end({ timeout: 5 }).catch(() => {});
           return true;
         }
@@ -259,6 +297,7 @@ async function sinkronRumah(skema) {
 
   const hasil = [];
   const jumlah = { sama: 0, berubah: 0, dihapus: 0, diperiksa: 0, cocok: 0 };
+  let berhenti = null;
   for (const { judul, grid, tabel } of target) {
     const mulaiAt = new Date();
     if (lewati.has(judul)) { hasil.push([judul, '-', 'dilewati (--lewati)']); continue; }
@@ -274,6 +313,10 @@ async function sinkronRumah(skema) {
       let rumusDitulis = false;
       if (!kering) {
         await sql.begin(async (tx) => {
+          if (adaIzin) await jagaMaju(tx, skema);
+          // Satu penulis per sheet: putaran tiap jam dan sinkron terakhir pelaksana tidak menulis sheet yang sama
+          // bersamaan, sehingga periksa di tulisSheet hanya melihat tulisan transaksi ini (tanpa selisih palsu).
+          await tx`SELECT pg_advisory_xact_lock(hashtext(${'cermin_sinkron:' + skema + ':' + judul}))`;
           tulis = await tulisSheet(tx, skema, tabel, judul, headers, rows, sidik, periksa);
           if (berumus) rumusDitulis = await tulisRumus(tx, skema, judul, headers, rumus);
           await tx`
@@ -302,9 +345,18 @@ async function sinkronRumah(skema) {
       const keteranganRumus = berumus && rumus.length ? ` · ${rumus.length} rumus${rumusDitulis ? ' (ditulis)' : ''}` : '';
       hasil.push([judul, String(rows.length), `${tabel} · ${headers.length} kolom · sidik ${sidik.slice(0, 12)}${tulisan}${keteranganRumus}${campur.length ? ` · tipe campur: ${campur.join(', ')}` : ''}`]);
     } catch (e) {
+      // Kunci sinkron maju terpasang di tengah putaran: transaksi sheet ini sudah dibatalkan (tidak ada yang
+      // tertulis), dan sheet sisanya tidak disentuh. Bukan kegagalan sinkron, jadi tidak dicatat sebagai galat.
+      if (e instanceof Berhenti) { berhenti = e.message; break; }
       hasil.push([judul, '-', `GAGAL: ${e.message}`]);
       if (sql) await sql`INSERT INTO ${sql(skema + '.cermin_log')} (sheet, mulai_at, galat) VALUES (${judul}, ${mulaiAt}, ${e.message})`.catch(() => {});
     }
+  }
+  if (berhenti) {
+    const ditulis = hasil.filter(([, , ket]) => !ket.startsWith('dilewati') && !ket.startsWith('GAGAL')).length;
+    console.log(`${skema}: DILEWATI — ${berhenti} Putaran dihentikan sesudah ${ditulis} sheet; sisanya tidak ditulis.`);
+    await sql.end({ timeout: 5 }).catch(() => {});
+    return true;
   }
 
   const gagal = hasil.filter(([, , ket]) => ket.startsWith('GAGAL'));
@@ -314,23 +366,33 @@ async function sinkronRumah(skema) {
     const isiMeta = [['spreadsheet_id', id], ['judul', meta.properties.title], ['zona_waktu', zona], ['sheet_dilewati', [...lewati].join(',')]];
     if (!arg.sheet && gagal.length === 0) isiMeta.push(['sinkron_terakhir', new Date().toISOString()]);
     try {
-      if (periksa) {
-        const hari = await sql`
-          SELECT to_char(mulai_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS h,
-                 count(*) FILTER (WHERE selisih IS NOT NULL)::int AS diperiksa,
-                 count(*) FILTER (WHERE selisih > 0)::int AS beda,
-                 count(*) FILTER (WHERE galat IS NOT NULL)::int AS gagal
-          FROM ${sql(skema + '.cermin_log')} GROUP BY 1`;
-        beruntun = hitungBeruntun(hari);
-        isiMeta.push(['periksa_hasil', `${jumlah.cocok}/${jumlah.diperiksa} sama`], ['hari_tanpa_selisih', String(beruntun)]);
-        if (!arg.sheet && gagal.length === 0) isiMeta.push(['periksa_terakhir', new Date().toISOString()]);
-      }
-      for (const [k, v] of isiMeta) {
-        await sql`INSERT INTO ${sql(skema + '.cermin_meta')} (kunci, nilai, diubah_at) VALUES (${k}, ${v}, now())
-                  ON CONFLICT (kunci) DO UPDATE SET nilai = EXCLUDED.nilai, diubah_at = now()`;
-      }
-      await sql`DELETE FROM ${sql(skema + '.cermin_log')} WHERE mulai_at < now() - make_interval(days => ${SIMPAN_LOG_HARI})`;
+      // Dijaga kunci yang sama dengan transaksi sheet: putaran yang kalah cepat dari kunci prosedur Mulai tidak boleh
+      // menimpa catatan sinkron terakhir (periksa_terakhir/periksa_hasil dipakai langkah periksa prosedur).
+      await sql.begin(async (tx) => {
+        if (adaIzin) await jagaMaju(tx, skema);
+        if (periksa) {
+          const hari = await tx`
+            SELECT to_char(mulai_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS h,
+                   count(*) FILTER (WHERE selisih IS NOT NULL)::int AS diperiksa,
+                   count(*) FILTER (WHERE selisih > 0)::int AS beda,
+                   count(*) FILTER (WHERE galat IS NOT NULL)::int AS gagal
+            FROM ${tx(skema + '.cermin_log')} GROUP BY 1`;
+          beruntun = hitungBeruntun(hari);
+          isiMeta.push(['periksa_hasil', `${jumlah.cocok}/${jumlah.diperiksa} sama`], ['hari_tanpa_selisih', String(beruntun)]);
+          if (!arg.sheet && gagal.length === 0) isiMeta.push(['periksa_terakhir', new Date().toISOString()]);
+        }
+        for (const [k, v] of isiMeta) {
+          await tx`INSERT INTO ${tx(skema + '.cermin_meta')} (kunci, nilai, diubah_at) VALUES (${k}, ${v}, now())
+                   ON CONFLICT (kunci) DO UPDATE SET nilai = EXCLUDED.nilai, diubah_at = now()`;
+        }
+        await tx`DELETE FROM ${tx(skema + '.cermin_log')} WHERE mulai_at < now() - make_interval(days => ${SIMPAN_LOG_HARI})`;
+      });
     } catch (e) {
+      if (e instanceof Berhenti) {
+        console.log(`${skema}: DILEWATI — ${e.message} Catatan putaran ini (cermin_meta) tidak disimpan.`);
+        await sql.end({ timeout: 5 }).catch(() => {});
+        return true;
+      }
       const baris = ['(cermin_meta)', '-', `GAGAL: ${e.message}`];
       hasil.push(baris);
       gagal.push(baris);

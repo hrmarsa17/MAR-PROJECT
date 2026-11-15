@@ -22,10 +22,15 @@ type Dunia = {
   permintaan: Record<string, { pollSebelumSelesai: number; berhasil: boolean; hasil: string }>;
   meta: Record<string, string>;
   panggilan: Array<{ nama: string; args: any }>;
+  kunciMenunggu?: number;           // berapa kali cermin_kunci_maju(true) menjawab "menunggu" (sinkron tiap jam menulis)
+  izinMenunggu?: number;            // berapa kali cermin_atur_izin_tulis(true) menjawab "menunggu"
+  izinSudahTerbuka?: boolean;       // keadaan janggal: izin tulis sudah terbuka sebelum prosedur
+  lepasGagal?: boolean;             // cermin_kunci_maju(false) ditolak basis data
 };
 
 function pasang(d: Dunia) {
   let pingGas = 0, idBaru = 100;
+  let kunciTunggu = d.kunciMenunggu || 0, izinTunggu = d.izinMenunggu || 0;
   const antre: Record<number, { jenis: string; poll: number }> = {};
   vi.stubGlobal('fetch', vi.fn(async (url: string, init: any) => {
     if (url === GAS) {
@@ -48,7 +53,17 @@ function pasang(d: Dunia) {
       }
       case 'cermin_kesehatan': return jawab({ meta: Object.fromEntries(Object.entries(d.meta).map(([k, v]) => [k, { nilai: v }])) });
       case 'cermin_cadangkan': return jawab({ skema: 'cad_kmbbupr_20261115_0800', tabel: 28, baris: 15308 });
-      case 'cermin_atur_izin_tulis': return jawab(null);
+      case 'cermin_kunci_maju': {
+        if (args.p_kunci && kunciTunggu > 0) { kunciTunggu--; return jawab({ skema: args.p_skema, menunggu: true }); }
+        if (!args.p_kunci && (d.lepasGagal || d.izinSudahTerbuka)) {
+          return new Response(JSON.stringify({ message: `izin tulis ${args.p_skema} masih terbuka (Supabase penulisnya); sinkron maju tidak boleh dibuka` }), { status: 400 });
+        }
+        return jawab({ skema: args.p_skema, maju_dikunci: args.p_kunci, boleh: Boolean(d.izinSudahTerbuka) });
+      }
+      case 'cermin_atur_izin_tulis': {
+        if (args.p_boleh && izinTunggu > 0) { izinTunggu--; return jawab({ skema: args.p_skema, boleh: false, menunggu: true }); }
+        return jawab({ skema: args.p_skema, boleh: args.p_boleh });
+      }
       case 'cermin_permintaan_batal': return jawab(true);
       default: throw new Error('RPC tak terduga ' + nama);
     }
@@ -61,7 +76,7 @@ async function jalankan(job: any, maks = 60) {
   for (let i = 0; i < maks; i++) {
     const h = await jalankanLangkah(env, job);
     if (h.gagal) return { akhir: 'gagal', sebab: h.gagal, log };
-    if (h.selesai) return { akhir: 'selesai', posisi: h.posisi, log: [...log, job.tahap] };
+    if (h.selesai) return { akhir: 'selesai', posisi: h.posisi, catatan: h.catatan, log: [...log, job.tahap] };
     if (h.tunggu) continue;
     log.push(job.tahap);
     job.tahap = h.lanjut;
@@ -87,10 +102,47 @@ describe('Mulai migrasi (produksi)', () => {
     expect(h).toMatchObject({ akhir: 'selesai', posisi: 'supabase' });
     expect(h.log).toEqual(['cek_gas', 'sinkron', 'periksa', 'cadangan', 'buka_tulis', 'balik_awal']);
     expect(job.izin_dibuka).toBe(true);
+    expect(job.maju_dikunci).toBe(true);
     const urutan = d.panggilan.map((p) => p.nama).filter((n) => n !== 'cermin_permintaan_status');
-    expect(urutan).toEqual(['cermin_minta', 'cermin_kesehatan', 'cermin_cadangkan', 'cermin_atur_izin_tulis', 'cermin_minta']);
+    // Sinkron maju dikunci SEBELUM sinkron terakhir diminta; izin tulis baru dibuka sesudahnya.
+    expect(urutan).toEqual(['cermin_kunci_maju', 'cermin_minta', 'cermin_kesehatan', 'cermin_cadangkan', 'cermin_atur_izin_tulis', 'cermin_minta']);
+    expect(d.panggilan.find((p) => p.nama === 'cermin_kunci_maju')!.args).toMatchObject({ p_skema: 'kmbbupr', p_kunci: true });
     expect(d.panggilan.find((p) => p.nama === 'cermin_atur_izin_tulis')!.args).toMatchObject({ p_skema: 'kmbbupr', p_boleh: true });
     expect(d.panggilan.filter((p) => p.nama === 'cermin_minta').map((p) => p.args.p_jenis)).toEqual(['sinkron_akhir', 'balik_awal']);
+  });
+
+  it('sinkron tiap jam sedang menulis: kunci sinkron maju ditunggu, sinkron terakhir baru diminta sesudah terkunci', async () => {
+    const d: Dunia = { gasTutupSetelah: 0, meta: metaSehat, panggilan: [], kunciMenunggu: 2, permintaan: {
+      sinkron_akhir: { pollSebelumSelesai: 0, berhasil: true, hasil: 'kmbbupr: diperiksa 24/24 sama' },
+      balik_awal: { pollSebelumSelesai: 0, berhasil: true, hasil: 'kmbbupr: periksa 24/24 sama' },
+    } };
+    pasang(d);
+    const h = await jalankan(jobMulai());
+    expect(h).toMatchObject({ akhir: 'selesai', posisi: 'supabase' });
+    const urutan = d.panggilan.map((p) => p.nama).filter((n) => n !== 'cermin_permintaan_status');
+    expect(urutan.slice(0, 4)).toEqual(['cermin_kunci_maju', 'cermin_kunci_maju', 'cermin_kunci_maju', 'cermin_minta']);
+  });
+
+  it('transaksi sinkron masih menulis saat izin dibuka: izin ditunggu, bukan gagal', async () => {
+    const d: Dunia = { gasTutupSetelah: 0, meta: metaSehat, panggilan: [], izinMenunggu: 1, permintaan: {
+      sinkron_akhir: { pollSebelumSelesai: 0, berhasil: true, hasil: 'kmbbupr: diperiksa 24/24 sama' },
+      balik_awal: { pollSebelumSelesai: 0, berhasil: true, hasil: 'kmbbupr: periksa 24/24 sama' },
+    } };
+    pasang(d);
+    const h = await jalankan(jobMulai());
+    expect(h).toMatchObject({ akhir: 'selesai', posisi: 'supabase' });
+    expect(d.panggilan.filter((p) => p.nama === 'cermin_atur_izin_tulis').map((p) => p.args.p_boleh)).toEqual([true, true]);
+  });
+
+  it('izin tulis sudah terbuka sebelum prosedur (keadaan janggal): gagal sebelum sinkron terakhir diminta', async () => {
+    const d: Dunia = { gasTutupSetelah: 0, meta: metaSehat, panggilan: [], izinSudahTerbuka: true, permintaan: {} };
+    pasang(d);
+    const job: any = jobMulai();
+    const h = await jalankan(job);
+    expect(h.akhir).toBe('gagal');
+    expect(h.sebab).toMatch(/sudah terbuka/);
+    expect(d.panggilan.some((p) => p.nama === 'cermin_minta')).toBe(false);
+    expect(await pulihkanGagal(env, job)).toMatch(/PERHATIAN: sinkron maju kmbbupr masih dikunci/);
   });
 
   it('GAS tidak kunjung tertutup (tambalan belum ter-deploy): gagal tanpa menyentuh Supabase', async () => {
@@ -137,8 +189,12 @@ describe('Mulai migrasi (produksi)', () => {
     expect(h.sebab).toMatch(/belum Editor/);
     const catatan = await pulihkanGagal(env, job);
     expect(catatan).toMatch(/izin tulis kmbbupr ditutup lagi/);
+    expect(catatan).toMatch(/sinkron maju kmbbupr jalan lagi/);
     const izin = d.panggilan.filter((p) => p.nama === 'cermin_atur_izin_tulis').map((p) => p.args.p_boleh);
     expect(izin).toEqual([true, false]);
+    // Izin ditutup DULU, baru sinkron maju dilepas (basis data menolak urutan sebaliknya).
+    const akhir = d.panggilan.map((p) => `${p.nama}:${p.args.p_boleh ?? p.args.p_kunci ?? ''}`).filter((x) => /izin|kunci/.test(x));
+    expect(akhir.slice(-2)).toEqual(['cermin_atur_izin_tulis:false', 'cermin_kunci_maju:false']);
   });
 
   it('pemulihan membatalkan permintaan yang belum diambil pelaksana', async () => {
@@ -149,7 +205,10 @@ describe('Mulai migrasi (produksi)', () => {
     const job: any = jobMulai();
     const h = await jalankan(job, 10);
     expect(h.akhir).toBe('macet');            // DO akan menghentikannya di batas waktu
-    expect(await pulihkanGagal(env, job)).toMatch(/permintaan sinkron_akhir #100 dibatalkan/);
+    const catatan = await pulihkanGagal(env, job);
+    expect(catatan).toMatch(/permintaan sinkron_akhir #100 dibatalkan/);
+    expect(catatan).toMatch(/sinkron maju kmbbupr jalan lagi/);
+    expect(d.panggilan.some((p) => p.nama === 'cermin_atur_izin_tulis')).toBe(false);   // izin belum pernah dibuka
   });
 });
 
@@ -162,7 +221,22 @@ describe('Kembali ke GAS (produksi)', () => {
     const job: any = { rumah: 'kmbbupr', jenis: 'kembali', tahap: 'cermin_balik', mulai_at: MULAI_AT, oleh: 'uji', alasan: 'uji kembali' };
     const h = await jalankan(job);
     expect(h).toMatchObject({ akhir: 'selesai', posisi: 'gas' });
+    expect(h.catatan).toMatch(/sinkron maju kmbbupr jalan lagi/);
+    const urutan = d.panggilan.map((p) => p.nama).filter((n) => n !== 'cermin_permintaan_status');
+    expect(urutan).toEqual(['cermin_minta', 'cermin_atur_izin_tulis', 'cermin_kunci_maju']);
     expect(d.panggilan.find((p) => p.nama === 'cermin_atur_izin_tulis')!.args).toMatchObject({ p_boleh: false });
+    expect(d.panggilan.find((p) => p.nama === 'cermin_kunci_maju')!.args).toMatchObject({ p_kunci: false });
+  });
+
+  it('kunci sinkron maju gagal dilepas: GAS tetap dibuka, dengan PERHATIAN', async () => {
+    const d: Dunia = { gasTutupSetelah: 0, meta: metaSehat, panggilan: [], lepasGagal: true, permintaan: {
+      balik_akhir: { pollSebelumSelesai: 0, berhasil: true, hasil: 'kmbbupr: periksa 24/24 sama' },
+    } };
+    pasang(d);
+    const job: any = { rumah: 'kmbbupr', jenis: 'kembali', tahap: 'cermin_balik', mulai_at: MULAI_AT, oleh: 'uji', alasan: 'uji kembali' };
+    const h = await jalankan(job);
+    expect(h).toMatchObject({ akhir: 'selesai', posisi: 'gas' });
+    expect(h.catatan).toMatch(/PERHATIAN: sinkron maju kmbbupr masih dikunci/);
   });
 
   it('cermin balik terakhir gagal: berhenti (DO mengembalikan saklar ke supabase), izin tetap terbuka', async () => {
@@ -174,6 +248,7 @@ describe('Kembali ke GAS (produksi)', () => {
     const h = await jalankan(job);
     expect(h.akhir).toBe('gagal');
     await pulihkanGagal(env, job);
-    expect(d.panggilan.some((p) => p.nama === 'cermin_atur_izin_tulis')).toBe(false);
+    // Supabase tetap penulis: izin tetap terbuka dan sinkron maju tetap dikunci.
+    expect(d.panggilan.some((p) => p.nama === 'cermin_atur_izin_tulis' || p.nama === 'cermin_kunci_maju')).toBe(false);
   });
 });

@@ -10,7 +10,8 @@ Disusun 15 Nov 2026 siang (Claude, atas penyerahan keputusan oleh Gabriel). Urut
 | Kode GAS asli berjalan di Worker, 1:1 | ruang uji Gedung 1: baca 66/286/468/672, web 27/27/27/45, tulis 4/4 + seluruh sheet sama, pemicu 11/11 |
 | Payroll XLSX dari abadiops | identik sel demi sel dengan berkas GAS (KMB V2 16 Sep–15 Okt, KMB Projek 26 Sep–25 Okt); Worker staging keempat rumah sukses |
 | Rumus config dihitung ulang | mesin rumus cocok 1.533/1.533 dengan Google Sheets; uji pusat admin 7/7 |
-| Prosedur Mulai/Kembali produksi | 7 langkah, gagal selalu ke posisi aman; uji langkah 8/8, uji prosedur staging 18/18 |
+| Prosedur Mulai/Kembali produksi | 7 langkah, gagal selalu ke posisi aman; uji langkah 12/12, uji prosedur staging 18/18 |
+| Kunci sinkron maju (15 Nov siang) | sinkron per jam tidak bisa menimpa sinkron terakhir maupun tulisan Worker; SQL terpasang di Gedung 1 (uji 16/16), uji ujung ke ujung BUPR 7/7; **kodenya baru di `staging`** (lihat langkah 1) |
 | Sinkron terakhir lewat pelaksana GitHub | permintaan sungguhan BUPR diproses: 24/24 sheet sama |
 | Cermin balik (jalan kembali ke GAS) | uji kering ke spreadsheet BUPR asli 24/24 sama; 8 uji spreadsheet tiruan |
 | Tambalan tutup GAS | keempat rumah: HEAD identik dengan versi ter-deploy, uji logika 14/14; **belum dikirim** |
@@ -18,12 +19,16 @@ Disusun 15 Nov 2026 siang (Claude, atas penyerahan keputusan oleh Gabriel). Urut
 
 ## Yang harus Gabriel lakukan (sekali, sebelum BUPR)
 
-Langkah 1–3 dan 5 cukup "ya" di chat; Claude yang mengerjakan. Pengaman otomatis sesi Claude menolak langkah 1 dan 4
-tanpa persetujuan langsung Anda, dan itu memang benar: keduanya mengubah sistem yang dipakai orang.
+Langkah 1, 3, dan 7 cukup "ya" di chat; Claude yang mengerjakan. Langkah 2, 5, dan 6 butuh tangan Gabriel (dasbor
+Supabase, berbagi spreadsheet); langkah 4 keduanya ("ya" untuk push, lalu Deploy dari editor GAS). Pengaman otomatis
+sesi Claude menolak push ke `main` dan `clasp push` tanpa persetujuan langsung Anda, dan itu memang benar: keduanya
+mengubah sistem yang dipakai orang.
 
-1. **Gabung `staging` → `main`** (cukup "ya, push main"). Perlu karena workflow terjadwal GitHub hanya jalan dari `main`:
-   pelaksana prosedur `peralihan.yml` dan sinkron per jam yang ikut membawa AuditLogs (sekarang 23/24 sheet, AuditLogs
-   dilewati). Tidak ada deploy otomatis: semua Worker di-deploy manual.
+1. **Gabung `staging` → `main`.** **Sudah 15 Nov 10.03 WIB** ("ya push main"): `main` = `6daefcd`, CI `uji` hijau;
+   pelaksana `peralihan.yml` dan sinkron per jam (kini dengan AuditLogs) berjalan dari `main`. Tidak ada deploy
+   otomatis: semua Worker di-deploy manual. **Perlu sekali lagi sebelum 19 Nov:** perbaikan kunci sinkron maju
+   (BUG-DICATAT #43) baru ada di `staging`, sedangkan sinkron per jam dan pelaksana berjalan dari `main`. Cukup "ya,
+   push main" lagi.
 2. **Kunci Supabase produksi.** Worker produksi belum punya kunci Supabase sama sekali (selama ini hanya meneruskan ke
    GAS). Buat di dasbor Supabase proyek `abadiops`: *Settings → API Keys → Secret keys → New secret key*, nama
    `worker_produksi`. Salin, lalu tambahkan satu baris di `C:\dev\rahasia\abadiops.env`:
@@ -61,7 +66,7 @@ ketik `kmbbupr`. Lalu, otomatis:
 
 1. saklar `menutup`: HP menahan kiriman, MAR Web menampilkan "pindah jalur";
 2. GAS BUPR terbukti tertutup (≤ ±4 menit);
-3. sinkron terakhir + periksa selisih oleh pelaksana GitHub;
+3. sinkron maju dikunci, lalu sinkron terakhir + periksa selisih oleh pelaksana GitHub;
 4. cadangan jam mulai;
 5. izin tulis dibuka;
 6. cermin balik awal + uji hak Editor + periksa;

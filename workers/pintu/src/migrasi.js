@@ -8,10 +8,13 @@
  *   - langkah-langkah prosedur (dipanggil DO).
  *
  * Produksi (LINGKUNGAN bukan "staging"):
- *   mulai   : gas → menutup → GAS terbukti tertutup → sinkron terakhir + periksa selisih (pelaksana GitHub) →
- *             cadangan skema jam mulai → izin tulis dibuka → cermin balik awal (penanda, uji hak Editor, periksa) →
- *             supabase
- *   kembali : supabase → membuka → cermin balik terakhir + periksa (pelaksana GitHub) → izin tulis ditutup → gas
+ *   mulai   : gas → menutup → GAS terbukti tertutup → sinkron maju dikunci + sinkron terakhir + periksa selisih
+ *             (pelaksana GitHub) → cadangan skema jam mulai → izin tulis dibuka → cermin balik awal (penanda, uji hak
+ *             Editor, periksa) → supabase
+ *   kembali : supabase → membuka → cermin balik terakhir + periksa (pelaksana GitHub) → izin tulis ditutup + sinkron
+ *             maju dibuka lagi → gas
+ *   Kunci sinkron maju (db/bersama/cermin_maju.sql): sejak langkah sinkron, putaran sinkron tiap jam tidak menulis
+ *   cermin rumah itu lagi (hanya sinkron terakhir pelaksana, --akhir), dan izin tulis hanya bisa dibuka sesudahnya.
  *   Tombol mulai terkunci sampai syarat kesehatan hijau, termasuk jalan kembali siap (config/rumah.json
  *   gas.jalan_kembali_siap, diisi sesudah latihan cermin balik). Gagal di tahap mana pun → posisi aman.
  * Staging/ruang uji (LINGKUNGAN = "staging"): simulasi di skema uji_*:
@@ -146,6 +149,18 @@ export async function pulihkanGagal(env, job) {
       catatan.push(`PERHATIAN: izin tulis ${p.skema} gagal ditutup (${e.message}); tutup manual sebelum apa pun`);
     }
   }
+  // Prosedur mulai yang berhenti kembali ke `gas`: GAS lagi-lagi satu-satunya penulis, jadi sinkron maju harus jalan
+  // lagi. Dilepas juga bila jawaban penguncian tidak sempat diterima (maju_diminta); hanya bisa sesudah izin tertutup.
+  if (job.jenis === 'mulai' && (job.maju_dikunci || job.maju_diminta) && !job.izin_dibuka) {
+    try {
+      await rpc(env, 'cermin_kunci_maju', { p_skema: p.skema, p_kunci: false, p_alasan: `prosedur mulai berhenti: ${job.alasan}`, p_oleh: job.oleh });
+      job.maju_dikunci = false;
+      job.maju_diminta = false;
+      catatan.push(`sinkron maju ${p.skema} jalan lagi`);
+    } catch (e) {
+      catatan.push(`PERHATIAN: sinkron maju ${p.skema} masih dikunci (${e.message}); lepas manual: SELECT public.cermin_kunci_maju('${p.skema}', false, '<alasan>', '<nama>')`);
+    }
+  }
   return catatan.join('; ');
 }
 
@@ -178,6 +193,19 @@ export async function jalankanLangkah(env, job) {
           const s = await rpc(env, 'cermin_salin_ke_uji', { p_skema: p.skema });
           return { lanjut: 'periksa', catatan: `Simulasi sinkron terakhir: ${s.skema} disalin ulang dari ${p.skema} (${s.baris} baris).` };
         }
+        // Kunci sinkron maju dulu (db/bersama/cermin_maju.sql): putaran sinkron tiap jam yang sedang menulis ditunggu
+        // selesai, dan sesudahnya tidak ada putaran yang menulis cermin rumah ini kecuali sinkron terakhir (--akhir).
+        // Tanpa itu, potret spreadsheet dari SEBELUM GAS ditutup bisa tertulis sesudah sinkron terakhir.
+        if (!job.maju_dikunci) {
+          job.maju_diminta = true;
+          const k = await rpc(env, 'cermin_kunci_maju', { p_skema: p.skema, p_kunci: true, p_alasan: job.alasan, p_oleh: job.oleh });
+          if (k && k.menunggu) return { tunggu: true, catatan: 'Menunggu putaran sinkron tiap jam yang sedang menulis rumah ini selesai, lalu sinkron maju dikunci.' };
+          if (!k || k.maju_dikunci !== true) return { gagal: `Sinkron maju ${p.skema} tidak terkunci (${JSON.stringify(k)}).` };
+          if (k.boleh) return { gagal: `Izin tulis ${p.skema} sudah terbuka sebelum sinkron terakhir; periksa keadaan rumah ini dulu.` };
+          job.maju_dikunci = true;
+          const h = await mintaDanTunggu(env, job, p, 'sinkron_akhir', { lanjut: 'periksa' });
+          return { ...h, catatan: `Sinkron maju ${p.skema} dikunci: hanya sinkron terakhir pelaksana yang boleh menulis cermin. ${h.catatan || ''}`.trim() };
+        }
         return mintaDanTunggu(env, job, p, 'sinkron_akhir', { lanjut: 'periksa' });
       }
       case 'periksa': {
@@ -205,8 +233,11 @@ export async function jalankanLangkah(env, job) {
       }
       case 'buka_tulis': {
         if (staging) return { selesai: true, posisi: 'supabase', catatan: 'Simulasi: ruang uji selalu boleh ditulis.' };
-        await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: true, p_alasan: job.alasan, p_oleh: job.oleh });
+        // Ditandai sebelum dipanggil: bila jawabannya hilang, pemulihan tetap menutupnya (menutup selalu aman).
         job.izin_dibuka = true;
+        const r = await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: true, p_alasan: job.alasan, p_oleh: job.oleh });
+        if (r && r.menunggu) return { tunggu: true, catatan: 'Menunggu transaksi sinkron yang masih menulis cermin selesai, lalu izin tulis dibuka.' };
+        if (!r || r.boleh !== true) return { gagal: `Izin tulis ${p.skema} tidak terbuka (${JSON.stringify(r)}).` };
         return { lanjut: 'balik_awal', catatan: `Izin tulis ${p.skema} dibuka (saklar masih menutup: belum ada yang menulis).` };
       }
       // Penanda cermin balik + uji hak Editor akun layanan + periksa. Gagal → izin ditutup lagi, saklar ke gas.
@@ -227,10 +258,18 @@ export async function jalankanLangkah(env, job) {
         return mintaDanTunggu(env, job, p, 'balik_akhir', { lanjut: 'tutup_tulis' });
       }
       case 'tutup_tulis': {
-        if (!staging) {
-          await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: false, p_alasan: job.alasan, p_oleh: job.oleh });
+        if (staging) return { selesai: true, posisi: 'gas', catatan: 'Simulasi selesai: GAS dibuka lagi.' };
+        await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: false, p_alasan: job.alasan, p_oleh: job.oleh });
+        // Spreadsheet sudah sama dengan cermin (cermin balik terakhir) dan GAS kembali satu-satunya penulis: sinkron
+        // maju jalan lagi. Gagal melepas kuncinya tidak menahan GAS dibuka (tidak ada yang hilang), tetapi cermin tidak
+        // mengikuti spreadsheet sampai kuncinya dilepas manual.
+        let maju = `sinkron maju ${p.skema} jalan lagi`;
+        try {
+          await rpc(env, 'cermin_kunci_maju', { p_skema: p.skema, p_kunci: false, p_alasan: job.alasan, p_oleh: job.oleh });
+        } catch (e) {
+          maju = `PERHATIAN: sinkron maju ${p.skema} masih dikunci (${e.message}); lepas manual: SELECT public.cermin_kunci_maju('${p.skema}', false, '<alasan>', '<nama>')`;
         }
-        return { selesai: true, posisi: 'gas', catatan: staging ? 'Simulasi selesai: GAS dibuka lagi.' : `Izin tulis ${p.skema} ditutup; GAS dibuka lagi.` };
+        return { selesai: true, posisi: 'gas', catatan: `Izin tulis ${p.skema} ditutup; ${maju}; GAS dibuka lagi.` };
       }
       default:
         return { gagal: `Tahap tidak dikenal: ${job.tahap}` };
