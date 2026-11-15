@@ -12,7 +12,7 @@ Disusun 15 Nov 2026 siang (Claude, atas penyerahan keputusan oleh Gabriel). Urut
 | Rumus config dihitung ulang | mesin rumus cocok 1.533/1.533 dengan Google Sheets; uji pusat admin 7/7 |
 | Prosedur Mulai/Kembali produksi | 7 langkah, gagal selalu ke posisi aman; uji langkah 12/12, uji prosedur staging 18/18 |
 | Kunci sinkron maju (15 Nov siang) | sinkron per jam tidak bisa menimpa sinkron terakhir maupun tulisan Worker; SQL terpasang di Gedung 1 (uji 16/16), uji ujung ke ujung BUPR 7/7; **kodenya baru di `staging`** (lihat langkah 1) |
-| Sinkron terakhir lewat pelaksana GitHub | permintaan sungguhan BUPR diproses: 24/24 sheet sama |
+| Sinkron terakhir lewat pelaksana GitHub | pelaksana terjadwal dari `main` (15 Nov 10.51 WIB): permintaan #6 BUPR diambil putaran pertama, selesai 2 menit 21 detik, 24/24 sheet sama |
 | Cermin balik (jalan kembali ke GAS) | uji kering ke spreadsheet BUPR asli 24/24 sama; 8 uji spreadsheet tiruan |
 | Tambalan tutup GAS | keempat rumah: HEAD identik dengan versi ter-deploy, uji logika 14/14; **belum dikirim** |
 | Kesehatan cermin | 0 selisih: BUPR 3 hari, lainnya 2 hari (syarat 7 hari) |

@@ -19,8 +19,8 @@ Formatnya:
   - Uji: SQL 16/16 di Gedung 1 (dua babak transaksi di-rollback, koneksi kedua memegang kunci bersama; sesudahnya tanpa jejak), ujung ke ujung BUPR 7/7 (termasuk kunci di tengah putaran: berhenti rapi sesudah 11 sheet; kunci dilepas lagi), langkah prosedur 12/12, typecheck bersih.
 - Belum selesai / berikutnya:
   - **Push `main` sekali lagi** (perbaikan #43) sebelum 19 Nov; menunggu "ya" Gabriel.
-  - Permintaan uji #6 (sinkron terakhir BUPR) menunggu putaran pertama pelaksana terjadwal di GitHub.
   - Sisanya tetap: `docs/SIAP-MULAI.md`.
+- Terbukti sesudah push: putaran terjadwal pertama `Peralihan` dari `main` (10.51 WIB, ±48 menit sesudah push) mengambil permintaan uji #6 (sinkron terakhir BUPR) dan selesai dalam 2 menit 21 detik: 24/24 sheet sama, 3 hari tanpa selisih. Sinkron per jam pertama dari `main` (10.30 WIB, ±17 menit) membawa AuditLogs keempat rumah, `sheet_dilewati` kosong, 0 gagal (BUG-DICATAT #42 ditutup).
 
 ### 2026-11-15 (siang) · Claude (keputusan diserahkan Gabriel) · keempat rumah (cermin balik, prosedur produksi lengkap, tutup GAS siap)
 - Berubah:
