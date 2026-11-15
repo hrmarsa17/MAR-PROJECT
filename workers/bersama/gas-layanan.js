@@ -13,14 +13,19 @@
  *   Date               berzona skrip (appsscript.json timeZone). Di GAS, getHours(), getDate(),
  *                      new Date(th, bl, tg), dan parse waktu lokal memakai zona skrip; Worker selalu UTC.
  *   CacheService       kosong di awal setiap panggilan: jawaban = isi sheet, seperti GAS tanpa cache.
- *   PropertiesService  kosong. Lock selalu didapat. Utilities.formatDate memakai zona yang diminta.
+ *   PropertiesService  kosong, kecuali Script Properties yang diberikan pemanggil di D.properti (Worker: kunci VAPID
+ *                      notifikasi push dari rahasia Worker). Lock selalu didapat. Utilities.formatDate memakai zona
+ *                      yang diminta.
  *   SpreadsheetApp.create  spreadsheet baru di MEMORI (payroll, PayrollService.gs): tidak dicermin, tidak ikut
  *                      __ekspor, dan hilang setelah panggilan. Isinya diambil sebagai XLSX lewat alamat ekspor
  *                      docs.google.com yang sama dengan di GAS (UrlFetchApp di bawah), disusun host.xlsx
  *                      (workers/bersama/xlsx.js) meniru ekspor Google. Teks yang ditulis diurai seperti Google
  *                      mengurai ketikan (spreadsheet baru berlokal en_US): "28 Sep 2026" dan "07:00" menjadi
  *                      tanggal/jam, "05 Okt 2026" tetap teks — sama dengan berkas payroll asli.
- *   UrlFetchApp        hanya ekspor XLSX spreadsheet baru di memori; alamat lain tidak tersedia.
+ *   UrlFetchApp        ekspor XLSX spreadsheet baru di memori, dan web push (PushService.gs: POST https ber-header
+ *                      "Authorization: vapid …"). Web push DICATAT di __CATAT.keluar dan dijawab 201 seperti layanan
+ *                      push yang menerima pesan; Worker mengirimnya sungguhan SESUDAH tulisan tersimpan, dan
+ *                      menangani jawaban 404/410 seperti GAS (langganan dimatikan). Alamat lain tidak tersedia.
  *   DriveApp           hanya berkas spreadsheet baru di memori (moveTo, addViewer: tanpa efek, tidak ada Drive)
  *                      dan getFoldersByName/createFolder tiruan; selebihnya tidak tersedia.
  *   GmailApp, HtmlService, Browser tidak tersedia: panggilannya dicatat dan dijawab galat. MailApp.sendEmail
@@ -32,14 +37,15 @@
 
 /**
  * @param D    { zonaSkrip, zonaSheet, judul, dilewati: [nama sheet], sheets: { nama: { headers, tanggal, rows }
- *             | { tidak_dimuat: true } } }
+ *             | { tidak_dimuat: true } }, properti: { nama: nilai } (Script Properties awal, opsional) }
  * @param host { uuid(), digest(alg, isiJson) → JSON byte bertanda, b64(isiJson, websafe) → string }
  * @returns    objek layanan yang dipasang sebagai variabel global kode GAS, ditambah __CATAT.
  */
 export function buatLayanan(D, host) {
   var NativeDate = Date;
   // tidak_aman: operasi pada sheet jarang yang tidak bisa dijawab dari baris yang dimuat. Worker menolak.
-  var CATAT = { tulis: [], tak_dikenal: [], baca_dilewati: [], tidak_aman: [], dibaca: [], layanan: [], log: [] };
+  // keluar: web push yang diminta kode GAS ({ url, headers, payload }), dikirim Worker sesudah tulisan tersimpan.
+  var CATAT = { tulis: [], tak_dikenal: [], baca_dilewati: [], tidak_aman: [], dibaca: [], layanan: [], log: [], keluar: [] };
   // Penanda baris sheet jarang yang tidak dikirim server (cermin_baca p_jarang).
   var TIDAK_DIMUAT = { tidakDimuat: true };
   var ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -433,7 +439,36 @@ export function buatLayanan(D, host) {
     return out;
   }
   function keBytes(x) { return typeof x === 'string' ? { s: x } : { b: [].slice.call(x) }; }
+  // Teks ↔ byte UTF-8 bertanda (Byte[] GAS, -128..127), tanpa TextEncoder: shim ini juga berjalan di konteks vm.
+  function utf8Byte(s) {
+    var b = unescape(encodeURIComponent(String(s))), o = [];
+    for (var i = 0; i < b.length; i++) { var c = b.charCodeAt(i); o.push(c > 127 ? c - 256 : c); }
+    return o;
+  }
+  function utf8Teks(bytes) {
+    var s = '';
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i] & 255);
+    try { return decodeURIComponent(escape(s)); } catch (e) { return s; }
+  }
+  // Utilities.newBlob(data, contentType, name): dipakai PushService.gs (JWT VAPID: newBlob(teks).getBytes()).
+  function blobBaru(data, jenis, nama) {
+    var byte = typeof data === 'string' ? utf8Byte(data) : [].slice.call(data || []).map(function (x) { var n = Number(x) & 255; return n > 127 ? n - 256 : n; });
+    var b = tanpaDikenal('Blob', {
+      getBytes: function () { return byte.slice(); },
+      getDataAsString: function () { return utf8Teks(byte); },
+      getContentType: function () { return jenis === undefined ? null : jenis; },
+      setContentType: function (j) { jenis = j; return b; },
+      getName: function () { return nama === undefined ? null : nama; },
+      setName: function (n) { nama = String(n); return b; },
+      setBytes: function (x) { byte = [].slice.call(x).map(function (v) { var n = Number(v) & 255; return n > 127 ? n - 256 : n; }); return b; },
+      setDataFromString: function (s) { byte = utf8Byte(s); return b; },
+      copyBlob: function () { return blobBaru(byte, jenis, nama); },
+      getBlob: function () { return b; },
+    });
+    return b;
+  }
   var Utilities = tanpaDikenal('Utilities', {
+    newBlob: function (data, jenis, nama) { return blobBaru(data, jenis, nama); },
     formatDate: formatTanggal,
     getUuid: function () { return host.uuid(); },
     sleep: function () {},
@@ -867,8 +902,26 @@ export function buatLayanan(D, host) {
     return new Proxy(ada, { get: function (t, p) { return Object.prototype.hasOwnProperty.call(t, p) ? t[p] : sisa[p]; } });
   }
   var UrlFetchApp = sebagian('UrlFetchApp', {
-    // Hanya ekspor XLSX spreadsheet baru di memori (generatePayrollReport). Alamat lain tetap tidak tersedia.
-    fetch: function (url) {
+    // Ekspor XLSX spreadsheet baru di memori (generatePayrollReport) dan web push (PushService.gs). Alamat lain
+    // tetap tidak tersedia.
+    fetch: function (url, opsi) {
+      var o = opsi || {};
+      var kepala = o.headers || {};
+      var otorisasi = String(kepala.Authorization || kepala.authorization || '');
+      // Web push: kode GAS sinkron, jaringan Worker tidak. Permintaan dicatat apa adanya dan dikirim Worker sesudah
+      // tulisan tersimpan; GAS menerima 201 (layanan push menerima pesan), jadi kodenya berjalan seperti biasa.
+      if (/^https:\/\//.test(String(url)) && String(o.method || 'get').toLowerCase() === 'post' && /^vapid /i.test(otorisasi)) {
+        catatSekali(CATAT.layanan, 'UrlFetchApp.fetch (web push, dikirim sesudah simpan)');
+        var salin = {};
+        Object.keys(kepala).forEach(function (k) { salin[k] = String(kepala[k]); });
+        CATAT.keluar.push({ url: String(url), headers: salin, payload: o.payload === undefined || o.payload === null ? '' : String(o.payload) });
+        return {
+          getResponseCode: function () { return 201; },
+          getContentText: function () { return ''; },
+          getHeaders: function () { return {}; },
+          getAllHeaders: function () { return {}; },
+        };
+      }
       var m = String(url).match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^\/?#]+)\/export\?(.*)$/);
       var b = m && Object.prototype.hasOwnProperty.call(BUKU, m[1]) ? BUKU[m[1]] : null;
       if (!b || !/(?:^|&)format=xlsx(?:&|$)/.test(m[2])) {
@@ -916,8 +969,10 @@ export function buatLayanan(D, host) {
     };
   }
   var cache = { script: simpanan(), user: simpanan(), document: simpanan() };
-  function properti(nama) {
+  function properti(nama, awal) {
     var isi = {};
+    // Nilai awal dari pemanggil (hanya Script Properties: D.properti), seperti properti yang sudah tersimpan di GAS.
+    if (awal) Object.keys(awal).forEach(function (k) { if (awal[k] !== undefined && awal[k] !== null && awal[k] !== '') isi[k] = String(awal[k]); });
     return {
       getProperty: function (k) { return Object.prototype.hasOwnProperty.call(isi, k) ? isi[k] : null; },
       getProperties: function () { var o = {}; Object.keys(isi).forEach(function (k) { o[k] = isi[k]; }); return o; },
@@ -928,7 +983,7 @@ export function buatLayanan(D, host) {
       deleteAllProperties: function () { isi = {}; return this; },
     };
   }
-  var prop = { script: properti('ScriptProperties'), user: properti('UserProperties'), document: properti('DocumentProperties') };
+  var prop = { script: properti('ScriptProperties', D.properti), user: properti('UserProperties'), document: properti('DocumentProperties') };
 
   function Keluaran(isi) { this._isi = String(isi); this._mime = 'TEXT'; }
   Keluaran.prototype = {

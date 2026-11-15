@@ -11,6 +11,12 @@
  * Tulisan kode GAS disimpan lewat public.cermin_tulis dalam satu transaksi (konkurensi optimistis), dan hanya
  * bila Supabase sumber datanya: saklar `supabase`, atau lingkungan tanpa GAS.
  *
+ * Notifikasi push (PushService.gs): kunci VAPID rahasia Worker (VAPID_PRIVATE_PEM, VAPID_PUBLIC_B64URL) menjadi Script
+ * Properties GAS. Web push yang diminta kode GAS dicatat shim dan dikirim SESUDAH tulisannya tersimpan (ctx.waitUntil),
+ * hanya ke layanan push yang dikenal; jawaban 404/410 mematikan langganan persis seperti GAS (PushSubs kolom
+ * is_active). Ruang uji (SKEMA_AWALAN): PushSubs salinan berisi langganan HP sungguhan, jadi tidak ada yang dikirim
+ * kecuali ke penerima uji sendiri (PUSH_UJI_AWALAN).
+ *
  * Pemakaian di Worker rumah:  import * as bundel from '../gas/gas-kamar.js';
  *                             export default buatWorkerRumah(bundel);
  * Penjelasan lengkap: workers/kmbbupr/README.md.
@@ -40,18 +46,18 @@ export function buatWorkerRumah(bundel) {
   return { fetch: layani, scheduled: terjadwal };
 }
 
-async function layani(request, env) {
+async function layani(request, env, ctx) {
   const url = new URL(request.url);
   if (url.pathname.endsWith('/api/sehat')) return sehat(env);
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   // API: PWA memanggil ./api; POST ke akar juga dilayani, sama dengan web app GAS.
   if (/\/api\/?$/.test(url.pathname) || (url.pathname === '/' && request.method === 'POST')) {
     if (request.method !== 'POST') return new Response('Hanya POST', { status: 405, headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' } });
-    return tanganiApi(request, env, url);
+    return tanganiApi(request, env, url, ctx);
   }
-  if (url.pathname === '/api/uji-pemicu' && request.method === 'POST') return tanganiUjiPemicu(request, env);
-  if (url.pathname === '/web/run') return tanganiRun(request, env, url);
-  if (url.pathname === '/web' || url.pathname === '/web/') return tanganiWeb(request, env, url);
+  if (url.pathname === '/api/uji-pemicu' && request.method === 'POST') return tanganiUjiPemicu(request, env, ctx);
+  if (url.pathname === '/web/run') return tanganiRun(request, env, url, ctx);
+  if (url.pathname === '/web' || url.pathname === '/web/') return tanganiWeb(request, env, url, ctx);
   // File PWA rumah ([assets] Worker rumah). Akar folder → index.html, disajikan langsung tanpa redirect.
   if (url.pathname.endsWith('/')) return env.ASSETS.fetch(new Request(new URL(url.pathname + 'index.html', url), request));
   return env.ASSETS.fetch(request);
@@ -128,7 +134,7 @@ async function jalankanPemicu(env, fn) {
   });
 }
 
-async function terjadwal(event, env) {
+async function terjadwal(event, env, ctx) {
   const p = profil(env);
   const daftar = (p.gas.pemicu || []).filter((x) => cronPemicu(x.jam, INFO_GAS.zonaSkrip) === event.cron);
   if (!daftar.length) return;
@@ -140,18 +146,20 @@ async function terjadwal(event, env) {
   for (const x of daftar) {
     const h = await jalankanPemicu(env, x.fungsi);
     console.log(JSON.stringify({ pemicu: x.fungsi, rumah: env.RUMAH, ok: h.ok, tulis: h.ringkas || '-', alasan: h.alasan || null, galat: (h.nilai && h.nilai.galat) || null }));
+    if (h.ok) kirimPushSesudah(env, p, new URL('https://pemicu.internal/'), h.keluar, ctx);
   }
 }
 
 // Ruang uji saja (Worker uji: tanpa GAS dan ber-SKEMA_AWALAN): jalankan satu fungsi pemicu sekarang, untuk uji kembar.
-async function tanganiUjiPemicu(request, env) {
+async function tanganiUjiPemicu(request, env, ctx) {
   if (!tanpaGas(env) || !env.SKEMA_AWALAN) return new Response('Tidak ditemukan', { status: 404 });
   let isi = {};
   try { isi = JSON.parse(await request.text()); } catch (_) {}
   const fn = String(isi.fungsi || '');
   if (!(profil(env).gas.pemicu || []).some((x) => x.fungsi === fn)) return jawab({ ok: false, error: `bukan fungsi pemicu rumah ini: ${fn}` }, 'uji-pemicu', env);
   const h = await jalankanPemicu(env, fn);
-  return jawab({ ok: h.ok, hasil: h.ok ? h.nilai : null, alasan: h.alasan || null, tulis: h.ringkas || '-', coba: h.coba || 0 }, 'uji-pemicu', env);
+  if (h.ok) kirimPushSesudah(env, profil(env), new URL('https://pemicu.internal/'), h.keluar, ctx);
+  return jawab({ ok: h.ok, hasil: h.ok ? h.nilai : null, alasan: h.alasan || null, tulis: h.ringkas || '-', coba: h.coba || 0, push: (h.keluar || []).length }, 'uji-pemicu', env);
 }
 
 function jawab(isi, jalur, env, tambahan = {}) {
@@ -169,7 +177,7 @@ function jawab(isi, jalur, env, tambahan = {}) {
 }
 
 // ── API PWA ────────────────────────────────────────────────────────────────
-async function tanganiApi(request, env, url) {
+async function tanganiApi(request, env, url, ctx) {
   const teks = await request.text();
   let isi = {};
   try { isi = JSON.parse(teks); } catch (_) {}
@@ -187,8 +195,11 @@ async function tanganiApi(request, env, url) {
       const keluar = G.doPost(buatPermintaanPost(teks));
       return keluar && keluar.getContent ? keluar.getContent() : '';
     });
-    const info = { 'X-Abadi-Gas-Versi': String(INFO_GAS.versi), 'X-Abadi-Tulis': h.ringkas || '-', 'X-Abadi-Coba': String(h.coba || 0), 'X-Abadi-Muat': h.muat || '-' };
-    if (h.ok) return jawab(h.nilai, 'gas-worker-tulis', env, info);
+    const info = { 'X-Abadi-Gas-Versi': String(INFO_GAS.versi), 'X-Abadi-Tulis': h.ringkas || '-', 'X-Abadi-Coba': String(h.coba || 0), 'X-Abadi-Muat': h.muat || '-', 'X-Abadi-Push': String((h.keluar || []).length) };
+    if (h.ok) {
+      kirimPushSesudah(env, p, url, h.keluar, ctx);
+      return jawab(h.nilai, 'gas-worker-tulis', env, info);
+    }
     if (h.ramai) return jawab(JAWABAN_RAMAI, 'gas-worker-ramai', env, info);
     return jawab({ success: false, error: `Aksi ${aksi} tidak bisa disimpan ke Supabase: ${h.alasan}` }, 'gas-worker-ditolak', env, info);
   }
@@ -209,7 +220,7 @@ async function tanganiApi(request, env, url) {
 // ── MAR Web ────────────────────────────────────────────────────────────────
 // Halaman web GAS asli: doGet beserta templatenya. Disajikan di sini hanya bila Supabase sumber datanya
 // (halaman web juga menulis, misalnya kolom yang ditambahkan doGet); selain itu diarahkan ke web app GAS.
-async function tanganiWeb(request, env, url) {
+async function tanganiWeb(request, env, url, ctx) {
   if (request.method !== 'GET') return new Response('Hanya GET', { status: 405 });
   const p = profil(env);
   const saklar = await bacaStatusSaklar(env);
@@ -225,6 +236,7 @@ async function tanganiWeb(request, env, url) {
     return new Response(`<!doctype html><meta charset="utf-8"><title>MAR</title><p>${pesan.replace(/</g, '&lt;')}</p>`,
       { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
   }
+  kirimPushSesudah(env, p, url, h.keluar, ctx);
   const v = h.nilai.galat ? null : h.nilai.nilai;
   if (!v) {
     return new Response(`<!doctype html><meta charset="utf-8"><title>MAR</title><p>${String(h.nilai.galat).replace(/</g, '&lt;')}</p>`,
@@ -248,7 +260,7 @@ async function tanganiWeb(request, env, url) {
 // google.script.run.<fn>(...args). Hanya fungsi yang disebut halaman web (INFO.fungsiWeb); di GAS semua fungsi
 // publik bisa dipanggil, termasuk alat perawatan, dan Worker tidak meniru celah itu. Identitas tetap dari token
 // yang dibawa argumen (fungsi GAS memeriksanya sendiri, misalnya applyTokenString(data.token)).
-async function tanganiRun(request, env, url) {
+async function tanganiRun(request, env, url, ctx) {
   if (request.method !== 'POST') return new Response('Hanya POST', { status: 405 });
   const p = profil(env);
   const saklar = await bacaStatusSaklar(env);
@@ -266,6 +278,8 @@ async function tanganiRun(request, env, url) {
     return hasilRun(f.apply(null, args));
   });
   if (!h.ok) return kirim({ ok: false, error: h.ramai ? 'Sistem sedang ramai, coba lagi sebentar.' : h.alasan }, h.ringkas);
+  // Tulisan sebelum galat GAS tetap tersimpan (seperti GAS), jadi push yang diminta sebelumnya juga dikirim.
+  kirimPushSesudah(env, p, url, h.keluar, ctx);
   if (h.nilai.galat) return kirim({ ok: false, error: h.nilai.galat }, h.ringkas);
   return kirim({ ok: true, hasil: h.nilai.nilai === undefined ? null : h.nilai.nilai }, h.ringkas);
 }
@@ -279,12 +293,13 @@ function sheetJarang(p, opId) {
     .map(([sheet, k]) => [sheet, typeof k === 'string' ? { kolom: k, nilai: opId } : { kolom: k.kolom, nilai: k.nilai }]));
 }
 
-function siapkanGas(cermin, url, pemicu) {
+function siapkanGas(cermin, url, pemicu, env) {
   const D = dataDariCermin(cermin, INFO_GAS.zonaSkrip);
   D.html = HTML_GAS;
   D.urlWeb = `${url.origin}/web`;
   // Pemicu terpasang tiruan ([{ uid, fungsi }]): penjaga GAS menerima e.triggerUid yang cocok (ScriptApp.getProjectTriggers).
   if (pemicu && pemicu.length) D.pemicu = pemicu;
+  D.properti = propertiGas(env);
   const L = buatLayanan(D, buatHost());
   return { L, G: gasKamar(L) };
 }
@@ -336,7 +351,7 @@ async function putaran(env, p, url, kunci, { jarang = {}, tanpaMuat = [], pemicu
   const t0 = Date.now();
   const cermin = await bacaCermin(env, p.skema, { tidakDimuat, jarang: jarangKini });
   const t1 = Date.now();
-  const { L, G } = siapkanGas(cermin, url, pemicu);
+  const { L, G } = siapkanGas(cermin, url, pemicu, env);
   let nilai;
   try { nilai = { nilai: kerja(G, L) }; } catch (e) { nilai = { galat: String((e && e.message) || e) }; }
   const C = L.__CATAT;
@@ -387,7 +402,8 @@ async function jalankanDanSimpan(env, p, url, kunci, { jarang = {}, pemicu = nul
     if (C.baca_dilewati.length) return { ok: false, alasan: `membaca sheet yang tidak dimuat (${C.baca_dilewati.join(', ')})`, coba: ulang };
     if (C.tidak_aman.length) return { ok: false, alasan: `memakai baris yang tidak dimuat (${C.tidak_aman.join('; ')})`, coba: ulang };
     const ekspor = h.L.__ekspor();
-    if (!Object.keys(ekspor).length) return { ok: true, nilai: perlu(h.nilai), ringkas: 'tanpa-tulisan', coba: ulang, muat: h.muat };
+    // keluar: web push dari putaran INI (yang tersimpan); putaran yang kalah konflik dibuang beserta push-nya.
+    if (!Object.keys(ekspor).length) return { ok: true, nilai: perlu(h.nilai), ringkas: 'tanpa-tulisan', coba: ulang, muat: h.muat, keluar: C.keluar || [] };
     let perubahan;
     try {
       perubahan = susunPerubahan(h.cermin, ekspor);
@@ -404,7 +420,7 @@ async function jalankanDanSimpan(env, p, url, kunci, { jarang = {}, pemicu = nul
       },
       body: JSON.stringify({ p_skema: p.skema, p_perubahan: perubahan }),
     });
-    if (r.ok) return { ok: true, nilai: perlu(h.nilai), ringkas, coba: ulang, muat: h.muat };
+    if (r.ok) return { ok: true, nilai: perlu(h.nilai), ringkas, coba: ulang, muat: h.muat, keluar: C.keluar || [] };
     const galat = await r.text();
     if (!/KONFLIK/.test(galat)) return { ok: false, alasan: `penyimpanan gagal (HTTP ${r.status}: ${galat.slice(0, 160)})`, ringkas, coba: ulang };
     if (++konflik >= COBA_TULIS) return { ok: false, ramai: true, coba: ulang };
@@ -432,6 +448,77 @@ async function bacaCermin(env, skema, { tidakDimuat = [], jarang = {}, hanya } =
 // Diteruskan apa adanya: status dan jenis isi jawaban GAS tidak diubah. Bila GAS tidak terjangkau, jawabannya
 // teks GAS_TIDAK_TERJANGKAU (502, bukan JSON): sw.js PWA gagal membaca JSON-nya, sehingga kiriman tetap di antrean
 // dan dikirim ulang otomatis (BUG-DICATAT #20).
+// ── Notifikasi push ───────────────────────────────────────────────────────
+// Layanan push web tempat endpoint langganan PushSubs berada (Chrome/Android FCM, Firefox, Safari/Apple, Edge/WNS).
+// Endpoint lain tidak pernah dikirimi dari produksi.
+export const LAYANAN_PUSH = /^https:\/\/([a-z0-9-]+\.)*(fcm\.googleapis\.com|android\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)\//i;
+
+// PEM yang tersimpan di rahasia Worker mungkin satu baris (disalin dari tabel Script Properties): susun ulang
+// menjadi PEM baku (baris 64 karakter) seperti yang dibuat setupPushNotif GAS.
+export function rapikanPem(x) {
+  const s = String(x || '').replace(/\\n/g, '\n').trim();
+  const m = s.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!m) return s;
+  const isi = m[2].replace(/\s+/g, '');
+  return `-----BEGIN ${m[1]}-----\r\n${isi.match(/.{1,64}/g).join('\r\n')}\r\n-----END ${m[1]}-----\r\n`;
+}
+
+// Script Properties GAS yang disediakan Worker: hanya kunci VAPID notifikasi push (rahasia Worker rumah itu).
+function propertiGas(env) {
+  if (!env || !env.VAPID_PRIVATE_PEM || !env.VAPID_PUBLIC_B64URL) return {};
+  return { VAPID_PRIVATE_PEM: rapikanPem(env.VAPID_PRIVATE_PEM), VAPID_PUBLIC_B64URL: String(env.VAPID_PUBLIC_B64URL).trim() };
+}
+
+const asalUrl = (u) => { try { return new URL(u).host; } catch (_) { return '?'; } };
+
+function kirimPushSesudah(env, p, url, keluar, ctx) {
+  if (!keluar || !keluar.length) return;
+  const kerja = kirimPush(env, p, url, keluar).catch((e) => console.log(JSON.stringify({ rumah: env.RUMAH, push_galat: String((e && e.message) || e) })));
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(kerja);
+}
+
+// Kirim web push yang dicatat kode GAS. Jawaban 404/410 = langganan mati: PushSubs is_active → false, seperti
+// sendPushToEmails GAS. Endpoint langganan tidak pernah dicatat utuh (hanya host-nya).
+export async function kirimPush(env, p, url, keluar, { ambil = fetch, matikan = null } = {}) {
+  const uji = Boolean(env.SKEMA_AWALAN);
+  const hasil = [];
+  const mati = [];
+  for (const k of keluar) {
+    const keUji = Boolean(env.PUSH_UJI_AWALAN) && k.url.startsWith(String(env.PUSH_UJI_AWALAN));
+    if (uji ? !keUji : !LAYANAN_PUSH.test(k.url)) {
+      hasil.push({ tujuan: asalUrl(k.url), dilewati: uji ? 'ruang uji: hanya dicatat' : 'bukan layanan push' });
+      continue;
+    }
+    try {
+      const r = await ambil(k.url, { method: 'POST', headers: k.headers, body: k.payload || '' });
+      hasil.push({ tujuan: asalUrl(k.url), status: r.status });
+      if (r.status === 404 || r.status === 410) mati.push(k.url);
+    } catch (e) {
+      hasil.push({ tujuan: asalUrl(k.url), galat: String((e && e.message) || e).slice(0, 80) });
+    }
+  }
+  let matikanHasil = null;
+  if (mati.length) {
+    const jalan = matikan || ((daftar) => jalankanDanSimpan(env, p, url, 'push:langganan-mati', {}, (G, L) => matikanLangganan(L, daftar)));
+    const h = await jalan(mati);
+    matikanHasil = { ok: h.ok, tulis: h.ringkas || '-', alasan: h.alasan || null };
+  }
+  console.log(JSON.stringify({ rumah: env.RUMAH, push: hasil, langganan_mati: mati.length, matikan: matikanHasil }));
+  return { hasil, mati, matikan: matikanHasil };
+}
+
+// Sama dengan sendPushToEmails GAS untuk jawaban 404/410: PushSubs kolom 9 (is_active) baris endpoint itu → false.
+export function matikanLangganan(L, mati) {
+  const sh = L.SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PushSubs');
+  if (!sh) return 0;
+  const d = sh.getDataRange().getValues();
+  let n = 0;
+  for (let i = 1; i < d.length; i++) {
+    if (mati.includes(String(d[i][3]))) { sh.getRange(i + 1, 9).setValue(false); n++; }
+  }
+  return n;
+}
+
 async function teruskanKeGas(teks, env) {
   const mulai = Date.now();
   let aksi = '';
@@ -477,5 +564,7 @@ async function sehat(env) {
       aksi_tulis: p.gas.aksi_tulis_worker || [], templat_web: INFO_GAS.templat, fungsi_web: INFO_GAS.fungsiWeb.length,
     },
     supabase_configured: !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY),
+    // Hanya ada/tidaknya kunci, tidak pernah nilainya.
+    push: { kunci_vapid: !!(env.VAPID_PRIVATE_PEM && env.VAPID_PUBLIC_B64URL), kirim: env.SKEMA_AWALAN ? (env.PUSH_UJI_AWALAN ? 'ruang uji: hanya ke penerima uji' : 'ruang uji: hanya dicatat') : 'ke layanan push' },
   }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
