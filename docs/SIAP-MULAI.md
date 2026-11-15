@@ -91,10 +91,16 @@ mengubah sistem yang dipakai orang.
 8. **Tunggu syarat 7 hari tanpa selisih** (otomatis, diperiksa tiap hari mulai 02.00 WIB): BUPR paling cepat **19 Nov**,
    rumah lain **20 Nov**, selama tidak ada selisih.
 
-## Saat menekan Mulai (BUPR)
+## Saat menekan Mulai (urutan rumah: BUPR → KMB Projek → KMB V2 → SUM)
 
-Panel `abadiops.com/saklar` → tab **Saklar Migrasi** → kartu BUPR (semua syarat hijau) → **Mulai migrasi** → isi alasan →
-ketik `kmbbupr`. Lalu, otomatis:
+0. **Jalankan pelaksana dulu:** https://github.com/kawanabadigrup/abadiops/actions/workflows/peralihan.yml →
+   **Run workflow** (menit tunggu bawaan 30) → tunggu sampai lingkarannya kuning/berputar (±30 detik). Jadwal
+   otomatisnya ±1 jam sekali, dan selama prosedur semua tulisan rumah itu tertahan; tanpa langkah ini sinkron terakhir
+   bisa menunggu sampai satu jam. (Lupa? Panel menampilkan tautan yang sama bila permintaan belum diambil 3 menit;
+   Claude juga bisa menjalankannya.)
+
+Panel `abadiops.com/saklar` → tab **Saklar Migrasi** → kartu rumah (semua syarat hijau) → **Mulai migrasi** → isi alasan →
+ketik kode rumah (`kmbbupr`, `kmbprojek`, `kmbtra`, `sum`). Lalu, otomatis:
 
 1. saklar `menutup`: HP menahan kiriman, MAR Web menampilkan "pindah jalur";
 2. GAS BUPR terbukti tertutup (≤ ±4 menit);
@@ -107,18 +113,28 @@ ketik `kmbbupr`. Lalu, otomatis:
 Lama ±15–40 menit. Gagal di mana pun → kembali ke `gas` sendiri, tidak ada yang hilang. Membatalkan saat `menutup`:
 ubah saklar manual ke `gas` (izin yang sudah dibuka ikut ditutup). Sesudah `supabase`: tombol **Kembali ke GAS** kapan saja.
 
-## Sebelum rumah berikutnya (KMB Projek, KMB V2, SUM) — keadaan 15 Nov ±14.00 WIB
+## Keempat rumah — keadaan 15 Nov ±15.30 WIB
 
-| Syarat | KMB Projek | KMB V2 | SUM |
-|---|---|---|---|
-| Worker produksi kode baru (+ push) + kunci | ✔ `7276db1b` | ✔ `50c49725` + VAPID | ✔ `66681bed` + VAPID |
-| Tutup GAS: `clasp push` (HEAD bertambalan, diverifikasi clone ulang) | ✔ | ✔ | ✔ |
-| Tutup GAS: Deploy versi baru dari editor | **menunggu Gabriel** | **menunggu Gabriel** | **menunggu Gabriel** |
-| Akun layanan Editor di spreadsheet | ✔ | ✔ | ✔ |
-| Latihan cermin balik → `jalan_kembali_siap` | skenario siap; **tunggu salinan** | skenario siap; **tunggu salinan** | skenario siap; **tunggu salinan** |
-| Notifikasi push | 0 langganan → tidak perlu | ✔ kunci VAPID di Worker produksi | ✔ kunci VAPID di Worker produksi |
-| 7 hari tanpa selisih | ≥ 20 Nov | ≥ 20 Nov | ≥ 20 Nov |
-| Uji WO Gabriel | `staging-kmbprojek` | `staging-kmbtra` | `staging-sum` |
+| Syarat | BUPR | KMB Projek | KMB V2 | SUM |
+|---|---|---|---|---|
+| Worker produksi kode baru (+ push) + kunci | ✔ | ✔ | ✔ + VAPID | ✔ + VAPID |
+| Tutup GAS: `clasp push` + Deploy dari editor (diverifikasi clone ulang) | ✔ @12 | ✔ @50 | ✔ @300 | ✔ @200 |
+| Akun layanan Editor di spreadsheet | ✔ | ✔ | ✔ | ✔ |
+| Latihan cermin balik → `jalan_kembali_siap` | ✔ LULUS | ✔ LULUS | ✔ LULUS (ulang sesudah BUG #46) | ✔ LULUS (tahap akhir; tahap awal kena BUG #46) |
+| PWA lama (GitHub Pages) → Worker rumah | ✔ projek-v5 | ✔ projek-v15 | ✔ v92 | ✔ sum-v46 |
+| Daftar aksi Worker mencakup setiap aksi PWA lama (BUG #47) | ✔ | ✔ | ✔ | ✔ |
+| Notifikasi push | 0 langganan | 0 langganan | ✔ kunci VAPID | ✔ kunci VAPID |
+| 7 hari tanpa selisih (otomatis) | ≥ 19 Nov | ≥ 20 Nov | ≥ 20 Nov | ≥ 20 Nov |
+| Uji WO Gabriel (tidak menahan tombol) | `staging-kmbbupr` | `staging-kmbprojek` | `staging-kmbtra` | `staging-sum` |
+
+Satu-satunya syarat tombol yang belum hijau: **7 hari tanpa selisih**. Tombol tiap rumah menyala sendiri begitu
+hitungannya sampai 7 (diperiksa tiap hari mulai 02.00 WIB), selama tidak ada selisih.
+
+**Bila ada bug saat BUPR berjalan:** perbaikannya di kode bersama (`workers/bersama/*`, `config/rumah.json`,
+`tools/cermin/*`), jadi satu perbaikan berlaku untuk keempat rumah. Urutannya: uji (`npm test` + ruang uji
+`staging-<rumah>`) → push `staging` lalu `main` → deploy Worker staging keempat rumah → deploy produksi bertahap
+keempat Worker rumah + pintu (1% → uji versi baru lewat header `Cloudflare-Workers-Version-Overrides` → 100%).
+Rumah yang belum dimigrasi tetap meneruskan ke GAS, jadi deploy ini tidak mengubah apa pun bagi penggunanya.
 
 Tidak ada izin OAuth baru di ketiga tambalan (`UrlFetchApp`, `CacheService`, `PropertiesService` sudah dipakai kodenya).
 Kunci VAPID KMB V2 dan SUM diambil 15 Nov dari Script Properties (Chrome, nilai dialirkan lewat berkas sementara tanpa
@@ -126,13 +142,22 @@ pernah ditampilkan), diperiksa satu pasangan P-256 (kunci publik turunan PEM = `
 `abadiops.env` (`VAPID_*_KMBTRA`, `VAPID_*_SUM`), dan dipasang di `abadiops-kmb`/`abadiops-sum`; `/api/sehat`:
 `kunci_vapid: true`, kirim "ke layanan push" (baru terjadi sesudah saklar rumah itu `supabase`).
 
+Deploy editor 15 Nov ±14.00 dicek Claude: clone @50/@300/@200 = tambalan yang dikirim (118/118/92 berkas, termasuk
+`_TutupGas.js`); `/exec` API = Worker untuk ping/getDashboard/aksi tak dikenal; halaman "MAR PROJEK KMB", "MAR KMB V2",
+"MAR SUM V2" terbuka normal (tambalan tidur selama saklar `gas`). `config/rumah.json gas.versi` SENGAJA tetap versi
+sebelum tambalan (@49/@299/@199, BUPR @11): bundel Worker adalah kode GAS tanpa tambalan tutup GAS.
+Salinan latihan (dibuat Gabriel 15 Nov, dibagikan ke akun layanan oleh Claude lewat Chrome tanpa notifikasi):
+KMB Projek `1L1myiYv…`, KMB V2 `1SHzuSq3…`, SUM `10tVvj59…`; skrip ikutannya tidak dipakai dan tidak boleh di-deploy.
+Uji WO (atas permintaan Gabriel, Claude lebih dulu): skenario lengkap di Worker uji keempat rumah lulus (BUPR 15 Nov
+±14.15 dengan kode push terbaru; tiga rumah lain bagian dari latihan); uji Gabriel sendiri menyusul.
+
 **Yang dibutuhkan dari Gabriel:**
-1. ~~clasp push~~ (sudah). **Deploy versi baru dari editor** ketiga GAS (akun yang sama seperti biasa).
+1. ~~clasp push~~, ~~Deploy dari editor~~ (sudah, terverifikasi).
 2. ~~Editor KMB V2~~ (sudah).
-3. Tiga salinan (*File → Make a copy*) KMB Projek, KMB V2, SUM, masing-masing dibagikan ke akun layanan sebagai Editor;
-   kirim tautannya. Claude menjalankan per rumah: `latihan-balik.mjs --tahap=awal` → `tools/cermin/siklus-latihan.mjs
-   --rumah=<kode>` (SUM: `--mekanik=` mekanik yang berlangganan push di ruang uji) → `latihan-balik.mjs --tahap=akhir`;
-   lulus → `jalan_kembali_siap = true` + push `main` + deploy pintu.
+3. ~~Tiga salinan~~ (sudah; latihan ketiganya LULUS 15 Nov sore, `jalan_kembali_siap = true`). Cara latihannya per
+   rumah: `latihan-balik.mjs --tahap=awal` → `tools/cermin/siklus-latihan.mjs --rumah=<kode>` (SUM: `--mekanik=`
+   mekanik yang berlangganan push di ruang uji) → `latihan-balik.mjs --tahap=akhir`.
+5. Saat menekan Mulai: jalankan pelaksana dulu (langkah 0 di atas).
 4. ~~Kunci VAPID + push main + deploy produksi~~ (sudah 15 Nov: `main` `38e5945`, Worker di atas).
 
 **Notifikasi push di Worker (15 Nov, branch `staging`, sudah di Worker staging):** kunci VAPID → Script Properties GAS;

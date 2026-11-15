@@ -100,10 +100,15 @@ export async function kesehatanRumah(env, kode) {
 // dengan data yang belum sama). Langkah boleh menyimpan keadaannya di `job` (disimpan DO setiap alarm).
 //
 // Pekerjaan yang butuh akun layanan Google (sinkron terakhir, cermin balik) diminta lewat public.cermin_permintaan
-// (db/bersama/cermin_permintaan.sql) dan dikerjakan pelaksana GitHub Actions (.github/workflows/peralihan.yml,
-// tiap 5 menit). Pintu tidak memegang kunci Google maupun token GitHub.
+// (db/bersama/cermin_permintaan.sql) dan dikerjakan pelaksana GitHub Actions (.github/workflows/peralihan.yml).
+// Jadwalnya tiap 5 menit, tetapi GitHub nyatanya menjalankannya ±1 jam sekali; karena itu workflow dijalankan manual
+// tepat sebelum tombol ditekan (docs/SIAP-MULAI.md), dan putaran yang sudah mengerjakan satu permintaan tetap
+// menunggu langkah berikutnya. Pintu tidak memegang kunci Google maupun token GitHub: panel hanya menampilkan
+// tautan "Run workflow" (PELAKSANA_URL di wrangler.toml) bila permintaan belum diambil.
 export const BATAS_PROSEDUR_MS = { staging: 30 * 60 * 1000, produksi: 90 * 60 * 1000 };
 const CEK_GAS_MAKS = 16;   // × 15 detik: GAS menyimpan posisi saklar 30 detik di CacheService
+export const MENIT_SARAN_PELAKSANA = 3;
+const saranPelaksana = (env) => (env && env.PELAKSANA_URL ? ` Jalankan pelaksana sekarang: ${env.PELAKSANA_URL} → Run workflow.` : '');
 
 export function daftarRumahEnv(env) {
   let r = env && env.RUMAH;
@@ -117,12 +122,19 @@ async function mintaDanTunggu(env, job, p, jenis, akhir) {
   if (!job.permintaan[jenis]) {
     const id = await rpc(env, 'cermin_minta', { p_skema: p.skema, p_jenis: jenis, p_oleh: job.oleh, p_alasan: job.alasan });
     job.permintaan[jenis] = Number(id);
-    return { tunggu: true, catatan: `Permintaan ${jenis} #${id} dikirim ke pelaksana (GitHub Actions, tiap 5 menit).` };
+    return { tunggu: true, catatan: `Permintaan ${jenis} #${id} dikirim ke pelaksana (GitHub Actions).` };
   }
   const s = await rpc(env, 'cermin_permintaan_status', { p_id: job.permintaan[jenis] });
   if (!s) return { gagal: `Permintaan ${jenis} #${job.permintaan[jenis]} tidak ditemukan.` };
   if (!s.selesai_at) {
-    return { tunggu: true, catatan: s.mulai_at ? `${jenis} #${s.id} sedang dikerjakan pelaksana.` : `${jenis} #${s.id} menunggu diambil pelaksana.` };
+    if (s.mulai_at) return { tunggu: true, catatan: `${jenis} #${s.id} sedang dikerjakan pelaksana.` };
+    const menit = Math.floor((Date.now() - Date.parse(s.diminta_at)) / 60000);
+    return {
+      tunggu: true,
+      catatan: menit >= MENIT_SARAN_PELAKSANA
+        ? `${jenis} #${s.id} belum diambil pelaksana sejak ${menit} menit lalu.${saranPelaksana(env)}`
+        : `${jenis} #${s.id} menunggu diambil pelaksana.`,
+    };
   }
   const hasil = String(s.hasil || '').replace(/\s+/g, ' ').slice(-400);
   if (!s.berhasil) return { gagal: `${jenis} #${s.id} gagal: ${hasil}` };

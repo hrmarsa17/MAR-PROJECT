@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 /**
- * Pelaksana prosedur migrasi (docs/SAKLAR.md, Tonggak 2), dijalankan workflow .github/workflows/peralihan.yml tiap
- * 5 menit. Selama --menit (bawaan 4), setiap 15 detik:
+ * Pelaksana prosedur migrasi (docs/SAKLAR.md, Tonggak 2), dijalankan workflow .github/workflows/peralihan.yml
+ * (jadwal tiap 5 menit, tetapi GitHub nyatanya menjalankannya ±1 jam sekali; 15 Nov: 03.51, 04.39, 05.29, 06.18, 07.24
+ * UTC), atau dijalankan manual tepat sebelum tombol ditekan. Setiap 15 detik:
  *   1. ambil satu permintaan terbuka dari public.cermin_permintaan (db/bersama/cermin_permintaan.sql), yang dibuat
  *      Durable Object saklar di pintu saat tombol Mulai migrasi / Kembali ke GAS ditekan; jalankan alatnya; tulis
  *      hasilnya. Permintaan yang macet (mulai lebih dari 45 menit tanpa selesai, misalnya runner mati) diambil ulang;
- *   2. sekali per putaran: cermin balik bertahap untuk rumah yang izin tulisnya terbuka (balik.mjs --semua --tulis);
- *      rumah lain dilewati alat itu sendiri.
+ *   2. tiap 5 menit (pertama kali di awal putaran): cermin balik bertahap untuk rumah yang izin tulisnya terbuka
+ *      (balik.mjs --semua --tulis); rumah lain dilewati alat itu sendiri.
+ * Lama putaran: menunggu permintaan pertama selama --menit (bawaan 4). Sesudah satu permintaan selesai, putaran tetap
+ * menunggu --lanjut menit lagi (bawaan 20): prosedur Mulai meminta dua pekerjaan berurutan (sinkron terakhir, lalu
+ * cermin balik awal), dan selama prosedur berjalan saklar `menutup` menahan semua tulisan, jadi langkah berikutnya
+ * tidak boleh menunggu jadwal GitHub. Permintaan baru tidak diambil lagi sesudah --maks menit (bawaan 150) sejak
+ * putaran dimulai; timeout job di workflow lebih panjang dari itu.
  *
  * Jenis permintaan:
  *   sinkron_akhir  sinkron.mjs --skema=<s> --periksa --akhir      berhasil: keluar 0 dan "diperiksa N/N sama"
@@ -17,20 +23,38 @@
  * Keluaran alat selalu --ringkas: repo publik, log Actions terbaca siapa saja.
  *
  * Variabel lingkungan: sama dengan sinkron.mjs (GOOGLE_SA_KEY_FILE, <SKEMA>_SPREADSHEET_ID, DATABASE_URL).
- * Opsi: --menit=4, --sekali (satu putaran tanpa menunggu; untuk uji).
+ * Opsi: --menit=4, --lanjut=20, --maks=150, --sekali (satu putaran tanpa menunggu; untuk uji).
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const AKAR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const arg = Object.fromEntries(process.argv.slice(2).map((a) => {
   const i = a.indexOf('=');
   return i < 0 ? [a.replace(/^--/, ''), true] : [a.slice(2, i), a.slice(i + 1)];
 }));
-const MENIT = Number(arg.menit || 4);
+const angka = (x, awal, min, maks) => { const n = Number(x); return Number.isFinite(n) && n >= min && n <= maks ? n : awal; };
+const MENIT = angka(arg.menit, 4, 1, 150);
+const LANJUT_MENIT = angka(arg.lanjut, 20, 1, 60);
+const MAKS_MENIT = angka(arg.maks, 150, 1, 300);
+const BALIK_MENIT = 5;
 const JEDA_MS = 15000;
 const MACET_MENIT = 45;
+
+// ── Jadwal putaran (murni; diuji di tests/peralihan.test.ts) ────────────────────
+// akhir: putaran berhenti menunggu; batas: sesudahnya tidak ada permintaan baru yang diambil (akhir ≤ batas).
+export function jadwalAwal(mulai, { menit = 4, maks = 150 } = {}) {
+  const batas = mulai + maks * 60000;
+  return { akhir: Math.min(batas, mulai + menit * 60000), batas };
+}
+// Sesudah satu permintaan selesai: tunggu permintaan berikutnya `lanjut` menit lagi, tidak melewati batas.
+export function perpanjang(j, sekarang, lanjut = 20) {
+  return { ...j, akhir: Math.min(j.batas, Math.max(j.akhir, sekarang + lanjut * 60000)) };
+}
+export const bolehAmbil = (j, sekarang) => sekarang < j.batas;
+export const waktunyaBalik = (terakhir, sekarang, menit = 5) => terakhir === null || sekarang - terakhir >= menit * 60000;
+export const sudahAkhir = (j, sekarang, jedaMs = 15000) => sekarang + jedaMs > j.akhir;
 const tidur = (ms) => new Promise((r) => setTimeout(r, ms));
 const PELAKSANA = process.env.GITHUB_RUN_ID ? `github-${process.env.GITHUB_RUN_ID}` : `lokal-${process.pid}`;
 
@@ -76,16 +100,18 @@ async function utama() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL belum diisi');
   const { default: postgres } = await import('postgres');
   const sql = postgres(process.env.DATABASE_URL, { max: 1, prepare: false, ssl: 'require', connect_timeout: 20, idle_timeout: 20, onnotice: () => {} });
-  const akhir = Date.now() + MENIT * 60000;
-  let balikBerkala = false, gagal = false;
+  let jadwal = jadwalAwal(Date.now(), { menit: MENIT, maks: MAKS_MENIT });
+  let balikTerakhir = null, gagal = false;
+  const jam = (t) => new Date(t).toISOString().slice(11, 16) + ' UTC';
+  console.log(`menunggu permintaan sampai ${jam(jadwal.akhir)} (diperpanjang ${LANJUT_MENIT} menit sesudah tiap permintaan, paling lama sampai ${jam(jadwal.batas)})`);
   try {
     for (;;) {
-      const [p] = await sql`
+      const [p] = bolehAmbil(jadwal, Date.now()) ? await sql`
         UPDATE public.cermin_permintaan SET mulai_at = now(), pelaksana = ${PELAKSANA}
          WHERE id = (SELECT id FROM public.cermin_permintaan
                       WHERE selesai_at IS NULL AND (mulai_at IS NULL OR mulai_at < now() - make_interval(mins => ${MACET_MENIT}))
                       ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED)
-        RETURNING id, skema, jenis`;
+        RETURNING id, skema, jenis` : [];
       if (p) {
         console.log(`permintaan #${p.id} ${p.jenis} ${p.skema}: dikerjakan`);
         let h;
@@ -93,15 +119,18 @@ async function utama() {
         await sql`UPDATE public.cermin_permintaan SET selesai_at = now(), berhasil = ${h.berhasil}, hasil = ${String(h.hasil).slice(-4000)} WHERE id = ${p.id}`;
         console.log(`permintaan #${p.id} ${p.jenis} ${p.skema}: ${h.berhasil ? 'BERHASIL' : 'GAGAL'}\n${String(h.hasil).split('\n').map((x) => '  ' + x).join('\n')}`);
         if (!h.berhasil) gagal = true;
+        // Langkah prosedur berikutnya biasanya diminta beberapa menit kemudian: jangan sampai menunggu jadwal GitHub.
+        jadwal = perpanjang(jadwal, Date.now(), LANJUT_MENIT);
+        console.log(`menunggu permintaan berikutnya sampai ${jam(jadwal.akhir)}`);
         continue;   // mungkin ada permintaan lain yang menunggu
       }
-      if (!balikBerkala) {
-        balikBerkala = true;
+      if (waktunyaBalik(balikTerakhir, Date.now(), BALIK_MENIT)) {
+        balikTerakhir = Date.now();
         const h = await jalankan('tools/cermin/balik.mjs', ['--semua', '--tulis', '--ringkas']);
         console.log(`cermin balik berkala (keluar ${h.kode}):\n${h.keluaran.split('\n').map((x) => '  ' + x).join('\n')}`);
         if (h.kode !== 0) gagal = true;
       }
-      if (arg.sekali || Date.now() + JEDA_MS > akhir) break;
+      if (arg.sekali || sudahAkhir(jadwal, Date.now(), JEDA_MS)) break;
       await tidur(JEDA_MS);
     }
   } finally {
@@ -110,4 +139,6 @@ async function utama() {
   if (gagal) process.exitCode = 1;
 }
 
-utama().catch((e) => { console.error(`Berhenti: ${e.message}`); process.exit(1); });
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  utama().catch((e) => { console.error(`Berhenti: ${e.message}`); process.exit(1); });
+}

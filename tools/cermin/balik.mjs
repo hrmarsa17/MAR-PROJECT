@@ -362,9 +362,13 @@ async function balikRumah(sql, skema) {
     }
     let periksa = null;
     if (arg.periksa) {
+      // Ukuran grid dibaca ulang sesudah menulis: tulisan tadi bisa menambah baris sheet (appendDimension), dan baris
+      // tambahan itu harus ikut terbaca. Dengan ukuran lama, baris baru di ujung sheet terbaca hilang → "BERBEDA"
+      // palsu (BUG #46, latihan KMB V2 15 Nov).
+      if (tulis) ctx.meta = await metaSpreadsheet(sasaran, token);
       periksa = [];
       for (const judul of daftar) {
-        if (!meta.sheet.get(judul)) continue;
+        if (!ctx.meta.sheet.get(judul)) continue;
         try { periksa.push({ judul, ...(await periksaSheet(ctx, judul)) }); } catch (e) { periksa.push({ judul, gagal: samarkan(e.message) }); }
       }
     }

@@ -39,6 +39,8 @@ new_sqlite_classes = ["SaklarDO"]
 [vars]
 SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
+# Tautan "Run workflow" pelaksana prosedur migrasi, ditampilkan panel bila permintaan belum diambil (src/migrasi.js).
+PELAKSANA_URL = "https://github.com/kawanabadigrup/abadiops/actions/workflows/peralihan.yml"
 RUMAH = [
   { kode = "kmbprojek", nama = "KMB Projek", gas = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec", alamat = "https://kmbprojek.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec" },
   { kode = "sum", nama = "SUM", gas = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec", alamat = "https://sum.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec" },
@@ -72,6 +74,7 @@ LINGKUNGAN = "staging"
 SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
 SKEMA_AWALAN = "uji_"
 SUPABASE_ANON_KEY = "sb_publishable_PoWC64yv25bZizBrTL79vw_CuNQwhp3"
+PELAKSANA_URL = "https://github.com/kawanabadigrup/abadiops/actions/workflows/peralihan.yml"
 RUMAH = [
   { kode = "kmbprojek", nama = "KMB Projek (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/kmbprojek", alamat = "https://staging-kmbprojek.abadiops.com/", web = "https://staging-kmbprojek.abadiops.com/web" },
   { kode = "sum", nama = "SUM (Staging)", gas = "https://abadiops-gas-tiruan.kawanabadigrup.workers.dev/sum", alamat = "https://staging-sum.abadiops.com/", web = "https://staging-sum.abadiops.com/web" },

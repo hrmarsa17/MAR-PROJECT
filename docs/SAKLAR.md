@@ -34,14 +34,14 @@ Tombol mulai hanya aktif kalau **kesehatan cermin** rumah itu hijau:
 - sinkron terakhir berhasil, kurang dari 2 jam lalu;
 - semua syarat di bawah sudah tercentang.
 
-Yang dikerjakan tombol secara otomatis (`workers/pintu/src/migrasi.js`, dijalankan Durable Object saklar). Pekerjaan yang butuh akun layanan Google dikerjakan pelaksana GitHub (`.github/workflows/peralihan.yml`, tiap 5 menit) lewat antrean `public.cermin_permintaan`; pintu tidak memegang kunci Google maupun token GitHub.
+Yang dikerjakan tombol secara otomatis (`workers/pintu/src/migrasi.js`, dijalankan Durable Object saklar). Pekerjaan yang butuh akun layanan Google dikerjakan pelaksana GitHub (`.github/workflows/peralihan.yml`) lewat antrean `public.cermin_permintaan`; pintu tidak memegang kunci Google maupun token GitHub. Jadwal workflow itu tiap 5 menit, tetapi GitHub nyatanya menjalankannya ±1 jam sekali, jadi **tepat sebelum menekan tombol: GitHub → Actions → Peralihan → Run workflow** (menit tunggu bawaan 30). Putaran yang sudah mengerjakan satu permintaan tetap menunggu 20 menit lagi untuk langkah berikutnya; panel menampilkan tautan *Run workflow* bila permintaan belum diambil 3 menit.
 1. Saklar → `menutup`. Worker menahan kiriman HP (protokol PWA), dan GAS menutup dirinya sendiri (tambalan tutup GAS membaca saklar, disimpan 30 detik).
 2. **GAS terbukti tertutup:** pintu mem-ping web app GAS sampai dijawab "sudah pindah ke abadiops" (maksimal ±4 menit). Kalau tidak, berhenti: tambalan belum ter-deploy.
 3. **Sinkron maju dikunci, lalu sinkron terakhir + periksa selisih penuh** (`cermin_kunci_maju`, lalu `sinkron.mjs --periksa --akhir`). Kunci menunggu putaran sinkron tiap jam yang sedang menulis rumah ini selesai; sesudahnya hanya sinkron terakhir pelaksana yang boleh menulis cermin rumah ini (`db/bersama/cermin_maju.sql`). Tanpa kunci itu, potret spreadsheet yang dibaca sebelum GAS ditutup bisa tertulis sesudah sinkron terakhir. Harus dijalankan sesudah GAS ditutup, semua sheet sama, tanpa sheet yang dilewati.
 4. **Cadangan jam mulai** (`cermin_cadangkan`).
 5. **Izin tulis dibuka** (`cermin_atur_izin_tulis`). Basis data hanya menerimanya sesudah sinkron maju dikunci, dan menunggu bila masih ada transaksi sinkron yang menulis. Saklar masih `menutup`, jadi belum ada yang menulis.
 6. **Cermin balik awal** (`balik.mjs --penuh --tulis --periksa --uji-editor`): penanda per sheet, uji hak Editor akun layanan, dan periksa spreadsheet = cermin.
-7. Saklar → `supabase`; jam mulai dicatat dalam waktu setempat rumah itu (SUM WITA, lainnya WIB). Pemicu terjadwal dijalankan Worker, cermin balik berjalan tiap ±5 menit, dan antrean HP terkirim ke Supabase.
+7. Saklar → `supabase`; jam mulai dicatat dalam waktu setempat rumah itu (SUM WITA, lainnya WIB). Pemicu terjadwal dijalankan Worker, cermin balik berkala berjalan di setiap putaran pelaksana (praktiknya ±1 jam sekali; tiap 5 menit selama putaran yang diperpanjang), dan antrean HP terkirim ke Supabase.
 
 Gagal di langkah mana pun → saklar kembali ke `gas`, izin tulis yang sudah dibuka ditutup lagi, kunci sinkron maju dilepas, dan permintaan yang belum diambil pelaksana dibatalkan. Tidak ada yang hilang, karena belum ada yang ditulis di Supabase. Batas waktu seluruh prosedur 90 menit; lamanya biasanya ±15–40 menit, bergantung jadwal GitHub dan besar rumah.
 
@@ -50,11 +50,11 @@ Gagal di langkah mana pun → saklar kembali ke `gas`, izin tulis yang sudah dib
 ## Jaring pengaman: kembali ke GAS (`supabase` → `gas`)
 
 Tujuannya: GAS dan PWA kembali beroperasi persis seperti sebelum migrasi, lengkap dengan semua yang sudah dikerjakan di abadiops.
-- **Cermin balik.** Setelah jam mulai, cermin balik menyalin perubahan Supabase ke spreadsheet tiap beberapa menit. Bentuk datanya sama (baris dan kolom sheet) dan hanya ada satu penulis, jadi spreadsheet selalu hampir sama dengan Supabase.
+- **Cermin balik.** Setelah jam mulai, cermin balik menyalin perubahan Supabase ke spreadsheet di setiap putaran pelaksana (praktiknya ±1 jam sekali, mengikuti jadwal GitHub; tombol Kembali selalu menjalankan cermin balik terakhir + periksa, jadi tidak ada yang tertinggal). Bentuk datanya sama (baris dan kolom sheet) dan hanya ada satu penulis, jadi spreadsheet selalu hampir sama dengan Supabase.
   - Cermin balik **tidak menulis nilai ke sel berumus**. Sel itu ditulis dengan rumusnya (`<skema>.cermin_rumus`), jadi spreadsheet menghitung sendiri. Rumus hanya ada di sheet config (`Config_Jobs_Field` keluarga KMB, `base_point = plan_hours × 2`); pusat admin menghitung ulang rumus yang sama (keputusan 15 Nov).
   - Akun layanan cermin saat ini hanya Viewer di spreadsheet. Cermin balik butuh hak **Editor**, yang hanya dipakai setelah jam mulai; hak itu diuji otomatis di langkah 6 Mulai.
   - Alatnya `tools/cermin/balik.mjs`: hanya baris yang berubah sejak putaran terakhir (penanda `<skema>.cermin_balik`), dan dibaca ulang dengan pembaca yang sama dengan sinkron maju.
-- **Tombol "Kembali ke GAS".** Cukup satu konfirmasi, tanpa daftar syarat. Urutannya:
+- **Tombol "Kembali ke GAS".** Cukup satu konfirmasi, tanpa daftar syarat. Tepat sebelum menekannya: GitHub → Actions → Peralihan → *Run workflow* (sama dengan Mulai). Urutannya:
   1. saklar → `membuka` (tidak ada penulis; HP menahan kiriman);
   2. cermin balik terakhir + periksa seluruh spreadsheet (pelaksana GitHub; bila ada selisih, diulang dengan `--penuh`);
   3. izin tulis ditutup, kunci sinkron maju dilepas (cermin kembali mengikuti spreadsheet), saklar → `gas`. Menutup izin

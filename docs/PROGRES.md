@@ -12,6 +12,15 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (±14.00–15.45) · Claude (+ Gabriel: "lakukan keputusan push ke main saya percayakan ke kamu") · keempat rumah
+- Berubah:
+  - **Latihan cermin balik ketiga rumah LULUS**: KMB Projek; KMB V2 (tahap akhir diulang sesudah BUG #46, 24/24 sama); SUM (tahap akhir 11 sheet berubah, semua sama). `config/rumah.json` `jalan_kembali_siap = true` untuk KMB Projek, KMB V2, SUM (BUPR sudah).
+  - **BUG #46** (pemeriksa cermin balik memakai ukuran grid lama → baris baru di ujung sheet "BERBEDA" palsu): `balik.mjs` membaca ulang ukuran grid sebelum periksa. Diuji ulang: 2 baris di luar grid lama ditulis + diperiksa sama.
+  - **PWA lama tiga rumah → Worker** (temuan: data cermin menunjukkan mekanik menulis langsung ke GAS): `gabrielrurent/mar-kmb-v2-offline` `e49c63f` v92, `mar-sum-offline` `a20cc29` sum-v46, `PWA-Project-KMB` `29dc28d` projek-v15; pola sama dengan BUPR `81b8ee9`. Sebelumnya: Worker = GAS untuk ping/getDashboard/aksi tak dikenal (CORS `*`, preflight 204), setiap `API_URL` hanya POST, service worker melewatkan lintas-origin. Tayang di GitHub Pages 15.11 WIB.
+  - **BUG #47**: `get_vapid_key` dan `save_push_sub` ditambahkan ke daftar aksi Worker keempat rumah (Worker uji: kunci dijawab Worker, langganan created → updated, PushSubs aktif). Semua aksi lain di PWA lama sudah tercakup.
+  - **Pelaksana Peralihan**: GitHub menjalankan jadwal `*/5` ±1 jam sekali. `peralihan.mjs`: putaran menunggu 20 menit lagi sesudah tiap permintaan (paling lama 150 menit), cermin balik berkala tiap 5 menit di putaran panjang; `peralihan.yml`: *Run workflow* dengan menit tunggu (bawaan 30, divalidasi 1–120), timeout 200 menit; pintu menampilkan tautan *Run workflow* (`PELAKSANA_URL`) bila permintaan belum diambil 3 menit. Uji: `tests/peralihan.test.ts` 5/5, prosedur 16/16, cermin balik 8/8; jalan lokal `--sekali` bersih.
+  - Dokumen: `docs/SIAP-MULAI.md` (tabel keempat rumah, langkah 0 "jalankan pelaksana", cara perbaikan merambat ke keempat rumah), `docs/SAKLAR.md`, `docs/KEPUTUSAN.md` (2 keputusan), `docs/BUG-DICATAT.md` (#46, #47).
+- Belum selesai / berikutnya: 7 hari tanpa selisih (BUPR ≥ 19 Nov, lainnya ≥ 20 Nov); uji WO Gabriel di `staging-<rumah>`; pantau lalu lintas Worker ketiga rumah sesudah PWA lama diarahkan.
 ### 2026-11-15 (±13.30–14.00) · Claude (+ Gabriel: "ya clasp push…", "ya push main", "ya deploy produksi") · KMB Projek, KMB V2, SUM, BUPR
 - Berubah:
   - **Tutup GAS** KMB Projek, KMB V2, SUM: `clasp push` (HEAD = @49/@299/@199 + tambalan, uji 14/14, diverifikasi clone ulang). Web app berubah sesudah Gabriel Deploy dari editor.

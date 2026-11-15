@@ -252,3 +252,34 @@ describe('Kembali ke GAS (produksi)', () => {
     expect(d.panggilan.some((p) => p.nama === 'cermin_atur_izin_tulis' || p.nama === 'cermin_kunci_maju')).toBe(false);
   });
 });
+
+describe('pelaksana belum mengambil permintaan (jadwal GitHub ±1 jam sekali, 15 Nov)', () => {
+  const URL_PELAKSANA = 'https://github.com/kawanabadigrup/abadiops/actions/workflows/peralihan.yml';
+  const tanya = async (dimintaMenitLalu: number, mulai: boolean, e: any) => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (!/\/rpc\/cermin_permintaan_status$/.test(String(url))) throw new Error('RPC tak terduga ' + url);
+      return new Response(JSON.stringify({ id: 107, jenis: 'balik_awal', diminta_at: new Date(Date.now() - dimintaMenitLalu * 60000).toISOString(),
+        mulai_at: mulai ? new Date().toISOString() : null, selesai_at: null, berhasil: null, hasil: null }));
+    }));
+    const job: any = { ...jobMulai(), tahap: 'balik_awal', permintaan: { balik_awal: 107 } };
+    return jalankanLangkah(e, job);
+  };
+  it('lebih dari 3 menit belum diambil: panel menampilkan tautan Run workflow', async () => {
+    const h = await tanya(7, false, { ...env, PELAKSANA_URL: URL_PELAKSANA });
+    expect(h.tunggu).toBe(true);
+    expect(h.catatan).toContain('belum diambil pelaksana sejak 7 menit lalu');
+    expect(h.catatan).toContain(`${URL_PELAKSANA} → Run workflow`);
+  });
+  it('baru diminta: cukup "menunggu diambil", tanpa tautan', async () => {
+    const h = await tanya(1, false, { ...env, PELAKSANA_URL: URL_PELAKSANA });
+    expect(h.catatan).toBe('balik_awal #107 menunggu diambil pelaksana.');
+  });
+  it('sudah diambil: "sedang dikerjakan", walau lama', async () => {
+    const h = await tanya(30, true, { ...env, PELAKSANA_URL: URL_PELAKSANA });
+    expect(h.catatan).toBe('balik_awal #107 sedang dikerjakan pelaksana.');
+  });
+  it('tanpa PELAKSANA_URL di lingkungan: keterangan tetap ada, tanpa tautan', async () => {
+    const h = await tanya(7, false, env);
+    expect(h.catatan).toBe('balik_awal #107 belum diambil pelaksana sejak 7 menit lalu.');
+  });
+});

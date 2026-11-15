@@ -10,9 +10,15 @@ name: Peralihan
 # - Setiap putaran juga menjalankan cermin balik bertahap (Supabase -> spreadsheet) untuk rumah yang migrasinya
 #   sudah dimulai (izin tulis terbuka). Rumah lain dilewati.
 #
-# Tiap 5 menit, dan setiap putaran menunggu permintaan baru selama ±4 menit, supaya permintaan dari panel cepat
-# diambil walaupun jadwal GitHub sering terlambat beberapa menit. Repo ini publik, jadi menit Actions tidak
-# berbayar, dan log terbaca siapa saja: semua alat dijalankan dengan --ringkas (tanpa judul, ID, atau isi data).
+# Jadwal tiap 5 menit, tetapi GitHub nyatanya menjalankannya ±1 jam sekali (15 Nov: 03.51, 04.39, 05.29, 06.18,
+# 07.24 UTC). Maka:
+# - putaran terjadwal menunggu permintaan ±4 menit; sesudah satu permintaan selesai, putaran itu tetap menunggu
+#   20 menit lagi untuk langkah prosedur berikutnya (tools/cermin/peralihan.mjs, --lanjut), paling lama 150 menit;
+# - TEPAT SEBELUM menekan "Mulai migrasi" / "Kembali ke GAS": Actions -> Peralihan -> Run workflow (menit tunggu
+#   bawaan 30), supaya permintaan pertama tidak menunggu jadwal GitHub. Selama prosedur berjalan saklar `menutup`
+#   menahan semua tulisan (docs/SAKLAR.md, docs/SIAP-MULAI.md).
+# Repo ini publik, jadi menit Actions tidak berbayar, dan log terbaca siapa saja: semua alat dijalankan dengan
+# --ringkas (tanpa judul, ID, atau isi data).
 #
 # Rahasia sama dengan workflow Cermin: GOOGLE_SA_KEY_JSON, CERMIN_DATABASE_URL, CERMIN_RUMAH.
 # Cermin balik butuh akun layanan sebagai EDITOR di spreadsheet rumah yang dimigrasi (sebelum itu cukup Viewer).
@@ -21,6 +27,11 @@ on:
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
+    inputs:
+      menit:
+        description: 'Menit menunggu permintaan pertama (jalankan tepat sebelum menekan Mulai migrasi / Kembali ke GAS)'
+        required: false
+        default: '30'
 
 permissions:
   contents: read
@@ -33,8 +44,9 @@ concurrency:
 jobs:
   peralihan:
     runs-on: ubuntu-latest
-    # Sinkron terakhir rumah besar (KMB V2, SUM) bisa ±10 menit; cermin balik penuh lebih lama.
-    timeout-minutes: 60
+    # Sinkron terakhir rumah besar (KMB V2, SUM) bisa ±10 menit; cermin balik penuh lebih lama. Putaran berhenti
+    # mengambil permintaan sesudah 150 menit (--maks); sisa waktu untuk pekerjaan terakhir yang sedang berjalan.
+    timeout-minutes: 200
     steps:
       - uses: actions/checkout@v4
 
@@ -50,6 +62,8 @@ jobs:
           GOOGLE_SA_KEY_JSON: ${{ secrets.GOOGLE_SA_KEY_JSON }}
           DATABASE_URL: ${{ secrets.CERMIN_DATABASE_URL }}
           CERMIN_RUMAH: ${{ secrets.CERMIN_RUMAH }}
+          # Kosong untuk putaran terjadwal; jalan manual: menit tunggu (angka 1-120, selain itu 4).
+          MENIT_TUNGGU: ${{ inputs.menit }}
         run: |
           if [ -z "$GOOGLE_SA_KEY_JSON" ] || [ -z "$DATABASE_URL" ] || [ -z "$CERMIN_RUMAH" ]; then
             echo "::error::Rahasia GOOGLE_SA_KEY_JSON, CERMIN_DATABASE_URL, atau CERMIN_RUMAH belum diisi."
@@ -66,4 +80,6 @@ jobs:
               export "$kunci=$nilai"
             fi
           done <<< "$CERMIN_RUMAH"
-          node tools/cermin/peralihan.mjs --menit=4
+          menit=4
+          if [[ "$MENIT_TUNGGU" =~ ^[0-9]{1,3}$ ]] && (( MENIT_TUNGGU >= 1 && MENIT_TUNGGU <= 120 )); then menit="$MENIT_TUNGGU"; fi
+          node tools/cermin/peralihan.mjs --menit="$menit" --lanjut=20 --maks=150
