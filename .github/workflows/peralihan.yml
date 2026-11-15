@@ -1,0 +1,69 @@
+name: Peralihan
+
+# Pelaksana prosedur migrasi (docs/SAKLAR.md, Tonggak 2) dan cermin balik berkala. Alatnya
+# `tools/cermin/peralihan.mjs`.
+#
+# - Saat tombol "Mulai migrasi" / "Kembali ke GAS" ditekan di panel, Durable Object saklar menulis permintaan ke
+#   public.cermin_permintaan (sinkron terakhir, cermin balik awal/akhir). Workflow ini mengambilnya, menjalankan
+#   tools/cermin/sinkron.mjs atau balik.mjs dengan akun layanan, dan menulis hasilnya; panel menunggu hasil itu.
+#   Pintu tidak memegang kunci Google maupun token GitHub.
+# - Setiap putaran juga menjalankan cermin balik bertahap (Supabase -> spreadsheet) untuk rumah yang migrasinya
+#   sudah dimulai (izin tulis terbuka). Rumah lain dilewati.
+#
+# Tiap 5 menit, dan setiap putaran menunggu permintaan baru selama ±4 menit, supaya permintaan dari panel cepat
+# diambil walaupun jadwal GitHub sering terlambat beberapa menit. Repo ini publik, jadi menit Actions tidak
+# berbayar, dan log terbaca siapa saja: semua alat dijalankan dengan --ringkas (tanpa judul, ID, atau isi data).
+#
+# Rahasia sama dengan workflow Cermin: GOOGLE_SA_KEY_JSON, CERMIN_DATABASE_URL, CERMIN_RUMAH.
+# Cermin balik butuh akun layanan sebagai EDITOR di spreadsheet rumah yang dimigrasi (sebelum itu cukup Viewer).
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Satu putaran pada satu waktu; putaran berikutnya menunggu (tidak membatalkan pekerjaan yang sedang berjalan).
+concurrency:
+  group: peralihan
+  cancel-in-progress: false
+
+jobs:
+  peralihan:
+    runs-on: ubuntu-latest
+    # Sinkron terakhir rumah besar (KMB V2, SUM) bisa ±10 menit; cermin balik penuh lebih lama.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Alat ini hanya butuh paket postgres, versi sama dengan package-lock.json.
+      - run: npm install --prefix tools/cermin --no-save --no-package-lock --no-audit --no-fund postgres@3.4.9
+
+      - name: Pelaksana
+        env:
+          GOOGLE_SA_KEY_JSON: ${{ secrets.GOOGLE_SA_KEY_JSON }}
+          DATABASE_URL: ${{ secrets.CERMIN_DATABASE_URL }}
+          CERMIN_RUMAH: ${{ secrets.CERMIN_RUMAH }}
+        run: |
+          if [ -z "$GOOGLE_SA_KEY_JSON" ] || [ -z "$DATABASE_URL" ] || [ -z "$CERMIN_RUMAH" ]; then
+            echo "::error::Rahasia GOOGLE_SA_KEY_JSON, CERMIN_DATABASE_URL, atau CERMIN_RUMAH belum diisi."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$GOOGLE_SA_KEY_JSON" > "$RUNNER_TEMP/akun-layanan.json"
+          export GOOGLE_SA_KEY_FILE="$RUNNER_TEMP/akun-layanan.json"
+          while IFS='=' read -r kunci nilai; do
+            kunci="${kunci//[$'\r\t ']/}"
+            nilai="${nilai//[$'\r\t ']/}"
+            if [[ "$kunci" =~ ^[A-Z][A-Z0-9_]*_SPREADSHEET_ID$ && -n "$nilai" ]]; then
+              echo "::add-mask::$nilai"
+              export "$kunci=$nilai"
+            fi
+          done <<< "$CERMIN_RUMAH"
+          node tools/cermin/peralihan.mjs --menit=4

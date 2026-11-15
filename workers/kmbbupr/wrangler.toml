@@ -14,11 +14,12 @@ workers_dev = true
 # Akun Cloudflare kawanabadigrup. Dikunci supaya deploy tidak pernah nyasar ke akun lain.
 account_id = "9273ece6d47a3bb103159295c10ce9e6"
 
-# Produksi BELUM PERNAH di-deploy (langkah 5 rencana BUPR). Saklar BUPR belum ada di RUMAH pintu produksi,
-# jadi saklarnya 'gas' dan semua aksi diteruskan ke web app GAS BUPR.
+# Produksi: kmbbupr.abadiops.com (15 Nov 2026, persiapan Tonggak 2). Selama saklar BUPR 'gas' semua aksi
+# diteruskan ke web app GAS BUPR, sama seperti PWA BUPR lama yang memanggil GAS langsung.
 services = [
   { binding = "PINTU", service = "abadiops-pintu" }
 ]
+routes = [{ pattern = "kmbbupr.abadiops.com", custom_domain = true }]
 
 # File PWA BUPR: salinan 1:1 kawanabadigrup/PWA-Project-KMB2 (ba4d81d, 5 Nov 2026); hanya alamat API diganti ./api.
 # html_handling "none": /index.html disajikan langsung (200, tanpa redirect).

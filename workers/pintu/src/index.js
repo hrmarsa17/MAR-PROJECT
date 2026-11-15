@@ -141,6 +141,12 @@ async function bacaPetaSaklar(env) {
 }
 
 async function periksaSatuRumah(rumah, token, modeSaklar, env) {
+  // Kamar "GAS asli di Worker" sesudah jam mulai (saklar bukan gas): GAS rumah itu ditutup (tambalan tutup GAS), jadi
+  // token dikenali lewat Worker rumahnya, yang menjawab `ping` dari cermin seperti GAS. Staging tetap lewat GAS tiruan.
+  const profil = PROFIL_RUMAH[String(rumah.kode || '').toLowerCase()];
+  if (profil && profil.gas && modeSaklar !== 'gas' && rumah.alamat && !(env && env.GAS_TIRUAN)) {
+    return tanyaGas({ ...rumah, gas: `${String(rumah.alamat).replace(/\/$/, '')}/api` }, token, env);
+  }
   const tanpaGas = !rumah.gas || modeSaklar === 'supabase';
   // Cek di Supabase lebih dulu bila rumah memakai Supabase / dua_cabang atau tanpa GAS
   if (tanpaGas || modeSaklar === 'dua_cabang' || (env && env.SUPABASE_URL && env.SUPABASE_ANON_KEY)) {

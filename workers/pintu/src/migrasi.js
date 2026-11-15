@@ -8,10 +8,12 @@
  *   - langkah-langkah prosedur (dipanggil DO).
  *
  * Produksi (LINGKUNGAN bukan "staging"):
- *   mulai   : gas → menutup → cadangan skema → sinkron terakhir + periksa selisih → izin tulis dibuka → supabase
- *   kembali : supabase → membuka → cermin balik terakhir → periksa → izin tulis ditutup → gas
- *   Tombol mulai terkunci sampai jalan kembali siap (config/rumah.json gas.jalan_kembali_siap). Sinkron terakhir
- *   lewat GitHub dan cermin balik belum dipasang: langkah itu gagal tertutup (kembali ke posisi aman).
+ *   mulai   : gas → menutup → GAS terbukti tertutup → sinkron terakhir + periksa selisih (pelaksana GitHub) →
+ *             cadangan skema jam mulai → izin tulis dibuka → cermin balik awal (penanda, uji hak Editor, periksa) →
+ *             supabase
+ *   kembali : supabase → membuka → cermin balik terakhir + periksa (pelaksana GitHub) → izin tulis ditutup → gas
+ *   Tombol mulai terkunci sampai syarat kesehatan hijau, termasuk jalan kembali siap (config/rumah.json
+ *   gas.jalan_kembali_siap, diisi sesudah latihan cermin balik). Gagal di tahap mana pun → posisi aman.
  * Staging/ruang uji (LINGKUNGAN = "staging"): simulasi di skema uji_*:
  *   sinkron terakhir = cermin_salin_ke_uji(<skema>), periksa = cermin_bandingkan(<skema>, uji_<skema>),
  *   cermin balik = hanya menghitung sheet yang akan ditulis balik (tidak menulis apa pun).
@@ -88,42 +90,128 @@ export async function kesehatanRumah(env, kode) {
   };
 }
 
-// ── Langkah prosedur (dipanggil SaklarDO.alarm) ─────────────────────────────────
-// Setiap langkah mengembalikan { lanjut: '<tahap berikut>' } atau { selesai: true, posisi } atau
-// { gagal: '<sebab>' }. Kegagalan selalu berakhir di posisi aman: mulai → gas (belum ada yang ditulis di
-// Supabase), kembali → supabase (Supabase tetap penulis; GAS tidak dibuka dengan data yang belum sama).
+/// ── Langkah prosedur (dipanggil SaklarDO.alarm) ─────────────────────────────────
+// Setiap langkah mengembalikan { lanjut: '<tahap berikut>' }, { tunggu: true } (tahap yang sama diulang pada alarm
+// berikutnya), { selesai: true, posisi }, atau { gagal: '<sebab>' }. Kegagalan selalu berakhir di posisi aman:
+// mulai → gas (belum ada yang ditulis di Supabase), kembali → supabase (Supabase tetap penulis; GAS tidak dibuka
+// dengan data yang belum sama). Langkah boleh menyimpan keadaannya di `job` (disimpan DO setiap alarm).
+//
+// Pekerjaan yang butuh akun layanan Google (sinkron terakhir, cermin balik) diminta lewat public.cermin_permintaan
+// (db/bersama/cermin_permintaan.sql) dan dikerjakan pelaksana GitHub Actions (.github/workflows/peralihan.yml,
+// tiap 5 menit). Pintu tidak memegang kunci Google maupun token GitHub.
+export const BATAS_PROSEDUR_MS = { staging: 30 * 60 * 1000, produksi: 90 * 60 * 1000 };
+const CEK_GAS_MAKS = 16;   // × 15 detik: GAS menyimpan posisi saklar 30 detik di CacheService
+
+export function daftarRumahEnv(env) {
+  let r = env && env.RUMAH;
+  try { r = typeof r === 'string' ? JSON.parse(r) : r; } catch (_) { r = null; }
+  return Array.isArray(r) ? r : [];
+}
+
+// Minta satu pekerjaan ke pelaksana lalu tunggu hasilnya. `akhir`: { lanjut } atau { selesai, posisi } bila berhasil.
+async function mintaDanTunggu(env, job, p, jenis, akhir) {
+  job.permintaan = job.permintaan || {};
+  if (!job.permintaan[jenis]) {
+    const id = await rpc(env, 'cermin_minta', { p_skema: p.skema, p_jenis: jenis, p_oleh: job.oleh, p_alasan: job.alasan });
+    job.permintaan[jenis] = Number(id);
+    return { tunggu: true, catatan: `Permintaan ${jenis} #${id} dikirim ke pelaksana (GitHub Actions, tiap 5 menit).` };
+  }
+  const s = await rpc(env, 'cermin_permintaan_status', { p_id: job.permintaan[jenis] });
+  if (!s) return { gagal: `Permintaan ${jenis} #${job.permintaan[jenis]} tidak ditemukan.` };
+  if (!s.selesai_at) {
+    return { tunggu: true, catatan: s.mulai_at ? `${jenis} #${s.id} sedang dikerjakan pelaksana.` : `${jenis} #${s.id} menunggu diambil pelaksana.` };
+  }
+  const hasil = String(s.hasil || '').replace(/\s+/g, ' ').slice(-400);
+  if (!s.berhasil) return { gagal: `${jenis} #${s.id} gagal: ${hasil}` };
+  return { ...akhir, catatan: `${jenis} #${s.id} berhasil: ${hasil}` };
+}
+
+// Dipanggil DO sebelum prosedur yang gagal/dibatalkan berakhir di posisi aman: tutup lagi izin tulis yang sudah
+// dibuka prosedur mulai, dan batalkan permintaan yang belum diambil pelaksana. Kembalikan catatan (bisa kosong).
+export async function pulihkanGagal(env, job) {
+  if (diStaging(env)) return '';
+  const catatan = [];
+  const p = profilMigrasi(job.rumah);
+  for (const [jenis, id] of Object.entries(job.permintaan || {})) {
+    try {
+      if (await rpc(env, 'cermin_permintaan_batal', { p_id: id, p_sebab: `prosedur ${job.jenis} berhenti` })) catatan.push(`permintaan ${jenis} #${id} dibatalkan`);
+    } catch (_) {}
+  }
+  if (job.jenis === 'mulai' && job.izin_dibuka) {
+    try {
+      await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: false, p_alasan: `prosedur mulai berhenti: ${job.alasan}`, p_oleh: job.oleh });
+      job.izin_dibuka = false;
+      catatan.push(`izin tulis ${p.skema} ditutup lagi`);
+    } catch (e) {
+      catatan.push(`PERHATIAN: izin tulis ${p.skema} gagal ditutup (${e.message}); tutup manual sebelum apa pun`);
+    }
+  }
+  return catatan.join('; ');
+}
+
 export async function jalankanLangkah(env, job) {
   const p = profilMigrasi(job.rumah);
   const staging = diStaging(env);
   const uji = `uji_${p.skema}`;
   if (job.jenis === 'mulai') {
     switch (job.tahap) {
-      case 'cadangan': {
-        if (staging) return { lanjut: 'sinkron', catatan: 'Simulasi: cadangan dilewati (ruang uji).' };
-        const c = await rpc(env, 'cermin_cadangkan', { p_skema: p.skema });
-        return { lanjut: 'sinkron', catatan: `Cadangan ${c.skema}: ${c.tabel} tabel, ${c.baris} baris.` };
+      // GAS rumah ini harus benar-benar tertutup (tambalan tutup GAS ter-deploy dan sudah membaca saklar `menutup`)
+      // sebelum sinkron terakhir: kalau tidak, GAS terus menerima tulisan sesudah jam mulai dan ada dua penulis.
+      case 'cek_gas': {
+        if (staging) return { lanjut: 'sinkron', catatan: 'Simulasi: GAS tiruan tidak ditutup (ruang uji).' };
+        const r = daftarRumahEnv(env).find((x) => String(x.kode) === job.rumah);
+        if (!r || !r.gas) return { gagal: 'Alamat GAS rumah ini tidak ada di RUMAH pintu.' };
+        let teks = '';
+        try {
+          const res = await fetch(r.gas, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'ping' }), redirect: 'follow' });
+          teks = await res.text();
+        } catch (e) { teks = `(tidak terjangkau: ${e.message})`; }
+        if (/sudah pindah ke abadiops/i.test(teks)) return { lanjut: 'sinkron', catatan: 'GAS rumah ini sudah tertutup (menjawab "sudah pindah ke abadiops").' };
+        job.cek_gas = (job.cek_gas || 0) + 1;
+        if (job.cek_gas >= CEK_GAS_MAKS) {
+          return { gagal: 'GAS rumah ini belum tertutup sesudah ±4 menit. Tambalan tutup GAS belum ter-deploy (Deploy versi baru dari editor), atau GAS tidak bisa membaca saklar.' };
+        }
+        return { tunggu: true, catatan: 'Menunggu GAS tertutup (GAS menyimpan posisi saklar 30 detik).' };
       }
       case 'sinkron': {
         if (staging) {
           const s = await rpc(env, 'cermin_salin_ke_uji', { p_skema: p.skema });
           return { lanjut: 'periksa', catatan: `Simulasi sinkron terakhir: ${s.skema} disalin ulang dari ${p.skema} (${s.baris} baris).` };
         }
-        return { gagal: 'Sinkron terakhir lewat GitHub belum dipasang di produksi.' };
+        return mintaDanTunggu(env, job, p, 'sinkron_akhir', { lanjut: 'periksa' });
       }
       case 'periksa': {
         if (staging) {
           const b = await rpc(env, 'cermin_bandingkan', { p_a: p.skema, p_b: uji });
           if (!b.nol) return { gagal: `Selisih ${b.beda.length} sheet: ${b.beda.map((x) => x.sheet).join(', ')}` };
-          return { lanjut: 'buka_tulis', catatan: `Periksa selisih: ${b.sama} sheet sama, selisih 0.` };
+          return { lanjut: 'cadangan', catatan: `Periksa selisih: ${b.sama} sheet sama, selisih 0.` };
         }
-        return { gagal: 'Periksa selisih produksi belum dipasang.' };
+        // Hasil sinkron terakhir di cermin_meta: diperiksa SESUDAH GAS ditutup, seluruh sheet sama, tanpa sheet dilewati.
+        const k = await rpc(env, 'cermin_kesehatan', { p_skema: p.skema });
+        const meta = (k && k.meta) || {};
+        const nilai = (x) => (meta[x] ? meta[x].nilai : null);
+        const waktu = Date.parse(nilai('periksa_terakhir') || '');
+        if (!(waktu >= Date.parse(job.mulai_at))) return { gagal: 'Tidak ada pemeriksaan selisih sesudah GAS ditutup.' };
+        const hasil = String(nilai('periksa_hasil') || '');
+        const m = hasil.match(/^(\d+)\/(\d+) sama$/);
+        if (!m || m[1] !== m[2]) return { gagal: `Selisih sesudah sinkron terakhir: ${hasil || 'tidak terbaca'}.` };
+        if (nilai('sheet_dilewati')) return { gagal: `Sinkron terakhir melewati sheet ${nilai('sheet_dilewati')}; semua sheet wajib dicermin.` };
+        return { lanjut: 'cadangan', catatan: `Periksa selisih sesudah GAS ditutup: ${hasil}.` };
+      }
+      case 'cadangan': {
+        if (staging) return { lanjut: 'buka_tulis', catatan: 'Simulasi: cadangan dilewati (ruang uji).' };
+        const c = await rpc(env, 'cermin_cadangkan', { p_skema: p.skema });
+        return { lanjut: 'buka_tulis', catatan: `Cadangan jam mulai ${c.skema}: ${c.tabel} tabel, ${c.baris} baris.` };
       }
       case 'buka_tulis': {
-        if (!staging) {
-          await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: true, p_alasan: job.alasan, p_oleh: job.oleh });
-        }
-        return { selesai: true, posisi: 'supabase', catatan: staging ? 'Simulasi: ruang uji selalu boleh ditulis.' : `Izin tulis ${p.skema} dibuka.` };
+        if (staging) return { selesai: true, posisi: 'supabase', catatan: 'Simulasi: ruang uji selalu boleh ditulis.' };
+        await rpc(env, 'cermin_atur_izin_tulis', { p_skema: p.skema, p_boleh: true, p_alasan: job.alasan, p_oleh: job.oleh });
+        job.izin_dibuka = true;
+        return { lanjut: 'balik_awal', catatan: `Izin tulis ${p.skema} dibuka (saklar masih menutup: belum ada yang menulis).` };
       }
+      // Penanda cermin balik + uji hak Editor akun layanan + periksa. Gagal → izin ditutup lagi, saklar ke gas.
+      case 'balik_awal':
+        return mintaDanTunggu(env, job, p, 'balik_awal', { selesai: true, posisi: 'supabase' });
       default:
         return { gagal: `Tahap tidak dikenal: ${job.tahap}` };
     }
@@ -135,7 +223,8 @@ export async function jalankanLangkah(env, job) {
           const b = await rpc(env, 'cermin_bandingkan', { p_a: uji, p_b: p.skema });
           return { lanjut: 'tutup_tulis', catatan: `Simulasi cermin balik: ${b.beda.length} sheet akan ditulis balik ke spreadsheet (tidak ada yang ditulis).` };
         }
-        return { gagal: 'Cermin balik belum dipasang di produksi.' };
+        // Cermin balik terakhir + periksa seluruh spreadsheet: selisih harus 0 sebelum GAS dibuka lagi.
+        return mintaDanTunggu(env, job, p, 'balik_akhir', { lanjut: 'tutup_tulis' });
       }
       case 'tutup_tulis': {
         if (!staging) {

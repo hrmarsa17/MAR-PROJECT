@@ -43,6 +43,7 @@ RUMAH = [
   { kode = "kmbprojek", nama = "KMB Projek", gas = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec", alamat = "https://kmbprojek.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbxh4086qGRZGDqAvdpO7UDdsvqk1Li9NR2rFZLlyVS6gS1zpGrZdcEsb_z-HzKOY02Y/exec" },
   { kode = "sum", nama = "SUM", gas = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec", alamat = "https://sum.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec" },
   { kode = "kmbtra", nama = "KMB TRA", gas = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec", alamat = "https://kmbtra.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec" },
+  { kode = "kmbbupr", nama = "KMB Projek BUPR", gas = "https://script.google.com/macros/s/AKfycbykSslm5SFzAHRGJRLApDVNvR2JvZzW_Y3JEazdXaISJxADGlXwEWXHNg9pwpr4SJ73/exec", alamat = "https://kmbbupr.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbykSslm5SFzAHRGJRLApDVNvR2JvZzW_Y3JEazdXaISJxADGlXwEWXHNg9pwpr4SJ73/exec" },
 ]
 
 [observability]

@@ -15,13 +15,13 @@
  * Produksi: posisi hanya berpindah lewat prosedur; ubah manual hanya untuk membatalkan `menutup` kembali ke `gas`
  * (belum ada yang ditulis di Supabase). Staging: ubah manual bebas, untuk menyiapkan uji.
  */
-import { POSISI_SAH, jalankanLangkah, profilMigrasi, jamSetempat, diStaging } from './migrasi.js';
+import { POSISI_SAH, jalankanLangkah, pulihkanGagal, profilMigrasi, jamSetempat, diStaging, BATAS_PROSEDUR_MS } from './migrasi.js';
 
 // Umur catatan buku tamu. Kiriman yang dikirim ulang lebih dari 30 hari kemudian diproses seperti kiriman baru.
 const UMUR_BUKU_TAMU_MS = 30 * 24 * 60 * 60 * 1000;
-// Batas waktu satu prosedur. Lewat dari ini, prosedur gagal ke posisi aman.
-const BATAS_PROSEDUR_MS = 30 * 60 * 1000;
 const RIWAYAT_PROSEDUR = 20;
+// Batas waktu satu prosedur (lewat dari ini, prosedur gagal ke posisi aman): produksi menunggu pelaksana GitHub.
+const batasProsedurMs = (env) => (diStaging(env) ? BATAS_PROSEDUR_MS.staging : BATAS_PROSEDUR_MS.produksi);
 
 const jsonResp = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -142,14 +142,14 @@ export class SaklarDO {
     const job = {
       id: `${rumah}-${Date.now()}`,
       rumah, jenis,
-      tahap: jenis === 'mulai' ? 'cadangan' : 'cermin_balik',
+      tahap: jenis === 'mulai' ? 'cek_gas' : 'cermin_balik',
       status: 'jalan',
       oleh: String(body.oleh || 'Gabriel'),
       alasan: String(body.alasan || ''),
       simulasi: diStaging(this.env),
       hijau_saat_mulai: body.hijau,
       mulai_at: new Date().toISOString(),
-      batas_at: new Date(Date.now() + BATAS_PROSEDUR_MS).toISOString(),
+      batas_at: new Date(Date.now() + batasProsedurMs(this.env)).toISOString(),
       langkah: [],
     };
     const posisiPeralihan = jenis === 'mulai' ? 'menutup' : 'membuka';
@@ -177,7 +177,8 @@ export class SaklarDO {
       const job = pr.aktif[rumah];
       const posisiAman = job.jenis === 'mulai' ? 'gas' : 'supabase';
       if (Date.now() > Date.parse(job.batas_at)) {
-        await this.selesaikan(pr, job, 'gagal', posisiAman, `Melewati batas waktu ${BATAS_PROSEDUR_MS / 60000} menit di tahap ${job.tahap}; saklar kembali ke ${posisiAman}.`);
+        const pulih = await pulihkanGagal(this.env, job).catch((e) => `pemulihan gagal: ${e.message}`);
+        await this.selesaikan(pr, job, 'gagal', posisiAman, `Melewati batas waktu ${Math.round(batasProsedurMs(this.env) / 60000)} menit di tahap ${job.tahap}; saklar kembali ke ${posisiAman}.${pulih ? ` (${pulih})` : ''}`);
         continue;
       }
       let h;
@@ -187,7 +188,14 @@ export class SaklarDO {
         h = { gagal: e.message };
       }
       if (h.gagal) {
-        await this.selesaikan(pr, job, 'gagal', posisiAman, `Gagal di tahap ${job.tahap}: ${h.gagal} Saklar kembali ke ${posisiAman}.`);
+        const pulih = await pulihkanGagal(this.env, job).catch((e) => `pemulihan gagal: ${e.message}`);
+        await this.selesaikan(pr, job, 'gagal', posisiAman, `Gagal di tahap ${job.tahap}: ${h.gagal} Saklar kembali ke ${posisiAman}.${pulih ? ` (${pulih})` : ''}`);
+      } else if (h.tunggu) {
+        // Tahap yang sama diulang pada alarm berikutnya. Catatan hanya ditulis bila berubah, supaya riwayat tidak penuh.
+        if (h.catatan && h.catatan !== job.menunggu) {
+          job.langkah.push({ waktu: waktuWib(), tahap: job.tahap, ok: true, pesan: h.catatan });
+          job.menunggu = h.catatan;
+        }
       } else if (h.selesai) {
         const p = profilMigrasi(rumah);
         const tambahan = job.jenis === 'mulai'
@@ -199,6 +207,7 @@ export class SaklarDO {
       } else {
         job.langkah.push({ waktu: waktuWib(), tahap: job.tahap, ok: true, pesan: h.catatan || '' });
         job.tahap = h.lanjut;
+        job.menunggu = null;
       }
     }
     await this.simpanProsedur(pr);
@@ -278,9 +287,11 @@ export class SaklarDO {
       }
       if (pr.aktif[rumah]) {
         const job = pr.aktif[rumah];
+        // Ke gas dari prosedur mulai: izin tulis yang sudah dibuka ditutup lagi, permintaan yang belum diambil dibatalkan.
+        const pulih = await pulihkanGagal(this.env, job).catch((e) => `pemulihan gagal: ${e.message}`);
         job.status = 'dibatalkan';
         job.selesai_at = new Date().toISOString();
-        job.langkah.push({ waktu: waktuWib(), tahap: 'dibatalkan', ok: false, pesan: `Dibatalkan lewat ubah manual ke ${posisi}.` });
+        job.langkah.push({ waktu: waktuWib(), tahap: 'dibatalkan', ok: false, pesan: `Dibatalkan lewat ubah manual ke ${posisi}.${pulih ? ` (${pulih})` : ''}` });
         delete pr.aktif[rumah];
         pr.riwayat.unshift(job);
         if (pr.riwayat.length > RIWAYAT_PROSEDUR) pr.riwayat.length = RIWAYAT_PROSEDUR;

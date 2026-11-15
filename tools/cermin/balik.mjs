@@ -42,6 +42,7 @@
  *   --penuh                     bandingkan seluruh sheet (lihat di atas)
  *   --periksa                   sesudah menulis, baca ulang seluruh spreadsheet dan bandingkan; selisih > 0 = GAGAL
  *   --sheet=Nama                satu sheet saja
+ *   --uji-editor                bersama --tulis: pastikan akun layanan Editor (judul spreadsheet ditulis sama)
  *   --ringkas                   untuk log publik GitHub Actions: tanpa judul, ID, atau nama sheet yang lulus
  */
 import { pathToFileURL } from 'node:url';
@@ -341,6 +342,17 @@ async function balikRumah(sql, skema) {
     const { token, email } = await aksesToken(wajib('GOOGLE_SA_KEY_FILE'), tulis ? CAKUPAN_TULIS : CAKUPAN_BACA);
     const meta = await metaSpreadsheet(sasaran, token);
     if (!arg.ringkas) console.log(`Sasaran: "${meta.judul}"${sasaran === asli ? ' (ASLI)' : ' (salinan latihan)'} · skema ${skema} · zona ${meta.zona} · akun ${email}${tulis ? '' : ' · KERING'}`);
+    // --uji-editor: tulisan tanpa efek (judul ditulis sama) untuk memastikan akun layanan benar-benar Editor sebelum
+    // cermin balik diandalkan (prosedur Mulai migrasi, langkah balik_awal). Hanya bersama --tulis (izin sudah dicek).
+    if (tulis && arg['uji-editor']) {
+      try {
+        await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${sasaran}:batchUpdate`, token,
+          { requests: [{ updateSpreadsheetProperties: { properties: { title: meta.judul }, fields: 'title' } }] });
+        if (!arg.ringkas) console.log('  uji hak Editor: lulus');
+      } catch (e) {
+        throw new Error(/\b40[13]\b/.test(e.message) ? 'akun layanan belum Editor di spreadsheet sasaran (hak tulis ditolak Google)' : e.message);
+      }
+    }
     const daftar = (await sql`SELECT sheet FROM ${sql(skema + '.cermin_header')} ORDER BY sheet`).map((r) => r.sheet)
       .filter((s) => !arg.sheet || s === arg.sheet);
     const ctx = { sql, skema, sasaran, token, meta, zona: meta.zona, tulis, penuh: Boolean(arg.penuh), adaPenanda: ap.ada };
