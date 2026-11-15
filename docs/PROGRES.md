@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (pagi, lanjutan) · Claude (+ Gabriel) · keempat rumah (payroll XLSX dari abadiops, rumus ke cermin produksi)
+- Berubah:
+  - **Rumus config di cermin produksi:** sinkron penuh dengan tangkapan rumus; `cermin_rumus` terisi di skema asli dan `uji_*` (KMB V2 1.538, KMB Projek 1.536, BUPR 1.536, SUM 1). Izin tulis skema asli tetap terkunci semua.
+  - **Payroll XLSX langsung dari abadiops** (keputusan Gabriel 15 Nov): `SpreadsheetApp.create` kini spreadsheet di MEMORI (`workers/bersama/gas-layanan.js`), ekspor XLSX-nya lewat alamat docs.google.com yang sama dengan di GAS dilayani `UrlFetchApp` tiruan dan disusun `workers/bersama/xlsx.js` (kompresi `node:zlib`). `DriveApp` hanya melayani berkas di memori itu (moveTo/addViewer tanpa efek); alamat dan berkas lain tetap tidak tersedia. Tidak ada tulisan ke cermin.
+  - **Kebiasaan ekspor Google ditiru dari berkas payroll asli di laptop Gabriel:** teks diurai seperti ketikan lokal en_US ("28 Sep 2026" jadi tanggal, "05 Okt 2026" tetap teks, "07:00" jadi jam), Date ditulis sebagai jam dinding Asia/Jakarta, gabungan A1:AA1 di kisi 26 kolom tersimpan A1:Z1, kolom yang lahir belakangan mewarisi format kolom Z (judul SUM berwarna sampai AC1), lebar kolom px/8 + 0.13 dibulatkan ke bawah.
+  - **Bukti 1:1 sel demi sel** dengan berkas GAS untuk periode yang sama: KMB V2 16 Sep–15 Okt 2026 (315.930 sel) dan KMB Projek 26 Sep–25 Okt 2026 (31.582 sel) identik kecuali stempel "Dibuat:", termasuk total poin dan rupiah. SUM Jul 2026: bentuk, gaya, dan jumlah sel identik; angkanya berbeda karena data poin/rupiah SUM Juli berubah sesudah berkas acuan 31 Agu (base point dihitung ulang, rupiah per WO ×1,1). BUPR belum punya berkas acuan.
+  - **Di Worker staging sungguhan** (`/web/run`, seperti tombol halaman Reports): keempat rumah sukses, hasil identik dengan uji lokal. CPU (analitik Cloudflare): KMB V2 11,0 s, SUM 7,9 s, KMB Projek 1,0 s, BUPR 0,1 s (batas Paid 30 s); tanpa galat memori. Berkas dibuka bersih oleh Excel 16 dan openpyxl.
+  - Uji permanen `tests/gasXlsx.test.ts` (6 uji, tanpa jaringan/database).
+- Belum selesai / berikutnya: satu ekspor payroll SUM (dan BUPR) baru dari GAS untuk membandingkan angka 1:1 dengan data hari ini; arsip Drive per ekspor (di GAS berkas payroll tersimpan di folder Drive dan dibagikan ke peminta) tidak ada di jalur Supabase — perlu keputusan Gabriel apakah arsip itu dibutuhkan.
+
 ### 2026-11-15 (pagi) · Gabriel (+ Claude) · keempat rumah (keputusan pagi, alamat uji, hitung ulang rumus config)
 - Berubah:
   - **Keputusan Gabriel:** push ke staging; rumus config dihitung ulang otomatis; payroll sebagai XLSX langsung dari abadiops; alamat uji `staging-*.abadiops.com` (`docs/KEPUTUSAN.md`).

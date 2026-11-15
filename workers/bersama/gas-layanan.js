@@ -14,8 +14,17 @@
  *                      new Date(th, bl, tg), dan parse waktu lokal memakai zona skrip; Worker selalu UTC.
  *   CacheService       kosong di awal setiap panggilan: jawaban = isi sheet, seperti GAS tanpa cache.
  *   PropertiesService  kosong. Lock selalu didapat. Utilities.formatDate memakai zona yang diminta.
- *   UrlFetchApp, GmailApp, DriveApp, HtmlService, Browser tidak tersedia: panggilannya dicatat dan
- *                      dijawab galat. MailApp.sendEmail dicatat tanpa mengirim.
+ *   SpreadsheetApp.create  spreadsheet baru di MEMORI (payroll, PayrollService.gs): tidak dicermin, tidak ikut
+ *                      __ekspor, dan hilang setelah panggilan. Isinya diambil sebagai XLSX lewat alamat ekspor
+ *                      docs.google.com yang sama dengan di GAS (UrlFetchApp di bawah), disusun host.xlsx
+ *                      (workers/bersama/xlsx.js) meniru ekspor Google. Teks yang ditulis diurai seperti Google
+ *                      mengurai ketikan (spreadsheet baru berlokal en_US): "28 Sep 2026" dan "07:00" menjadi
+ *                      tanggal/jam, "05 Okt 2026" tetap teks — sama dengan berkas payroll asli.
+ *   UrlFetchApp        hanya ekspor XLSX spreadsheet baru di memori; alamat lain tidak tersedia.
+ *   DriveApp           hanya berkas spreadsheet baru di memori (moveTo, addViewer: tanpa efek, tidak ada Drive)
+ *                      dan getFoldersByName/createFolder tiruan; selebihnya tidak tersedia.
+ *   GmailApp, HtmlService, Browser tidak tersedia: panggilannya dicatat dan dijawab galat. MailApp.sendEmail
+ *                      dicatat tanpa mengirim.
  *
  * buatLayanan dan buatPermintaanPost harus berdiri sendiri (tidak merujuk apa pun di luar badannya),
  * karena gas-lokal menjalankannya di konteks vm lewat toString().
@@ -429,11 +438,461 @@ export function buatLayanan(D, host) {
     getUuid: function () { return host.uuid(); },
     sleep: function () {},
     computeDigest: function (alg, isi) { return JSON.parse(host.digest(String(alg), JSON.stringify(keBytes(isi)))); },
-    base64Encode: function (isi) { return host.b64(JSON.stringify(keBytes(isi)), false); },
-    base64EncodeWebSafe: function (isi) { return host.b64(JSON.stringify(keBytes(isi)), true); },
+    // Byte dari Blob tiruan (XLSX payroll) membawa base64-nya sendiri: tidak perlu diubah bolak-balik.
+    base64Encode: function (isi) {
+      if (isi && typeof isi === 'object' && typeof isi.__b64 === 'string' && arguments.length < 2) return isi.__b64;
+      return host.b64(JSON.stringify(keBytes(isi)), false);
+    },
+    base64EncodeWebSafe: function (isi) {
+      if (isi && typeof isi === 'object' && typeof isi.__b64 === 'string' && arguments.length < 2) return isi.__b64.replace(/\+/g, '-').replace(/\//g, '_');
+      return host.b64(JSON.stringify(keBytes(isi)), true);
+    },
     formatString: function (f) { var a = [].slice.call(arguments, 1), i = 0; return String(f).replace(/%[sdif]/g, function () { return String(a[i++]); }); },
     DigestAlgorithm: { MD2: 'MD2', MD5: 'MD5', SHA_1: 'SHA_1', SHA_256: 'SHA_256', SHA_384: 'SHA_384', SHA_512: 'SHA_512' },
     Charset: { UTF_8: 'UTF_8', US_ASCII: 'US_ASCII' },
+  });
+
+  // ── Spreadsheet baru di memori (SpreadsheetApp.create) ──
+  // Dipakai payroll: kode GAS membuat spreadsheet, mengisinya, lalu mengambil XLSX-nya dari alamat ekspor
+  // docs.google.com. Model selnya meniru Google: nilai + format per sel (huruf, latar, garis, rata, format angka),
+  // gabungan sel, lebar kolom, baris beku, dan kisi bawaan 1000 baris × 26 kolom. Acuannya berkas payroll asli
+  // hasil GAS (ekspor Google); perilaku yang ditiru dicatat di tempatnya.
+  var BUKU = {};
+  var GAYA_GARIS = { SOLID: 'thin', SOLID_MEDIUM: 'medium', SOLID_THICK: 'thick', DOTTED: 'dotted', DASHED: 'dashed', DOUBLE: 'double' };
+  var NAMA_WARNA = { white: 'FFFFFF', black: '000000', red: 'FF0000', green: '008000', blue: '0000FF', yellow: 'FFFF00', orange: 'FFA500',
+    gray: '808080', grey: '808080', silver: 'C0C0C0', purple: '800080', maroon: '800000', navy: '000080', teal: '008080', lime: '00FF00',
+    aqua: '00FFFF', cyan: '00FFFF', fuchsia: 'FF00FF', magenta: 'FF00FF', olive: '808000', pink: 'FFC0CB', brown: 'A52A2A' };
+  // Google menerima warna dengan spasi di ujung ('#b45309 ' di PayrollService) dan menyimpannya tanpa spasi.
+  function warnaHex(c) {
+    if (c === null || c === undefined) return null;
+    var s = String(c).trim().toLowerCase();
+    if (!s) return null;
+    if (NAMA_WARNA[s]) return NAMA_WARNA[s];
+    var m = s.match(/^#?([0-9a-f]{6})$/);
+    if (m) return m[1].toUpperCase();
+    m = s.match(/^#?([0-9a-f])([0-9a-f])([0-9a-f])$/);
+    if (m) return (m[1] + m[1] + m[2] + m[2] + m[3] + m[3]).toUpperCase();
+    catatSekali(CATAT.tak_dikenal, 'warna ' + s);
+    return null;
+  }
+  // Format sel disimpan sebagai nomor di daftar FMT (format yang sama dipakai bersama). Indeks 0 = bawaan.
+  // Medan: ukuran, tebal, miring, warna, huruf (huruf), latar, rataH, rataV, bungkus, angka (format angka),
+  // gA/gK/gB/gN (garis atas/kiri/bawah/kanan: "gaya RRGGBB").
+  var MEDAN_FORMAT = ['ukuran', 'tebal', 'miring', 'warna', 'huruf', 'latar', 'rataH', 'rataV', 'bungkus', 'angka', 'gA', 'gK', 'gB', 'gN'];
+  var FMT = [{}], FMT_KUNCI = {}, FMT_UBAH = {};
+  function kunciFormat(f) {
+    var s = '';
+    for (var i = 0; i < MEDAN_FORMAT.length; i++) { var x = f[MEDAN_FORMAT[i]]; s += (x === undefined ? '' : typeof x + ':' + x) + '\u0001'; }
+    return s;
+  }
+  FMT_KUNCI[kunciFormat({})] = 0;
+  function ubahFormat(id, medan, nilai) {
+    var k = id + '\u0002' + medan + '\u0002' + (nilai === null || nilai === undefined ? '\u0003' : typeof nilai + ':' + nilai);
+    var t = FMT_UBAH[k];
+    if (t !== undefined) return t;
+    var lama = FMT[id], baru = {};
+    for (var i = 0; i < MEDAN_FORMAT.length; i++) if (lama[MEDAN_FORMAT[i]] !== undefined) baru[MEDAN_FORMAT[i]] = lama[MEDAN_FORMAT[i]];
+    if (nilai === null || nilai === undefined) delete baru[medan]; else baru[medan] = nilai;
+    var kk = kunciFormat(baru), idBaru = FMT_KUNCI[kk];
+    if (idBaru === undefined) { idBaru = FMT.length; FMT.push(baru); FMT_KUNCI[kk] = idBaru; }
+    FMT_UBAH[k] = idBaru;
+    return idBaru;
+  }
+
+  // Penguraian ketikan seperti Google Sheets untuk spreadsheet berlokal en_US (lokal spreadsheet baru payroll):
+  // angka, persen, TRUE/FALSE, jam, dan tanggal dengan nama bulan INGGRIS. Format tampilan yang dipasang Google
+  // ikut ditiru: "06 Jul 2026" → "dd mmm yyyy", "28 Sep 2026" → "d mmm yyyy", "06 Jul 2026 17:52" →
+  // "dd mmm yyyy h:mm", "07:00" → "h:mm". Bulan Indonesia (Mei, Agu, Okt, Des) tidak dikenali: tetap teks.
+  var BULAN_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+    january: 1, february: 2, march: 3, april: 4, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
+  function serialTanggal(y, M, d, H, m, s) {
+    var t = NativeDate.UTC(y, M - 1, d);
+    var u = new NativeDate(t);
+    if (u.getUTCFullYear() !== y || u.getUTCMonth() !== M - 1 || u.getUTCDate() !== d) return null;
+    if (H > 23 || m > 59 || s >= 60) return null;
+    return (t - NativeDate.UTC(1899, 11, 30)) / 86400000 + (H * 3600 + m * 60 + s) / 86400;
+  }
+  function jamTeks(m5, m6, m7) { return m5 === undefined ? '' : (m7 !== undefined ? ' h:mm:ss' : ' h:mm'); }
+  function uraiMasukan(x, angkaSel) {
+    if (x === null || x === undefined || x === '') return { v: null };
+    if (typeof x === 'number' || typeof x === 'boolean') return { v: x };
+    if (x instanceof NativeDate) {
+      var t = NativeDate.prototype.getTime.call(x);
+      if (isNaN(t)) return { v: null };
+      var z = bagianZona(t, ZONA);   // GAS menulis Date sebagai jam dinding zona skrip (Asia/Jakarta di keempat rumah)
+      return { v: serialTanggal(z.y, z.M, z.d, z.H, z.m, z.s + z.S / 1000), angka: 'm/d/yyyy h:mm:ss' };
+    }
+    var s = typeof x === 'string' ? x : String(x);
+    if (angkaSel === '@') return { v: s };
+    if (s.charAt(0) === "'") return { v: s.slice(1) };
+    var u = s.trim(), m;
+    if (u.charAt(0) === '=' && u.length > 1) { catatSekali(CATAT.tak_dikenal, 'SpreadsheetBaru.rumus (disimpan sebagai teks)'); return { v: s }; }
+    if (/^(true|false)$/i.test(u)) return { v: u.toLowerCase() === 'true' };
+    if ((m = u.match(/^([+-]?)(\d{1,3}(?:,\d{3})+|\d+)?(\.\d+)?(?:[eE]([+-]?\d+))?$/)) && (m[2] || m[3])) {
+      var angka = Number((m[1] === '-' ? '-' : '') + (m[2] || '0').replace(/,/g, '') + (m[3] || '') + (m[4] !== undefined ? 'e' + m[4] : ''));
+      if (isFinite(angka)) {
+        var fa = m[2] && m[2].indexOf(',') !== -1 ? (m[3] ? '#,##0.00' : '#,##0') : (m[4] !== undefined ? '0.00E+00' : undefined);
+        return { v: angka, angka: fa };
+      }
+    }
+    if ((m = u.match(/^([+-]?\d+(?:\.\d+)?)%$/))) return { v: Number(m[1]) / 100, angka: m[1].indexOf('.') === -1 ? '0%' : '0.00%' };
+    if ((m = u.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([AaPp])\.?[Mm]\.?)?$/))) {
+      var H = +m[1];
+      if (m[4]) { if (H < 1 || H > 12) return { v: s }; H = H % 12 + (/p/i.test(m[4]) ? 12 : 0); }
+      if (H <= 23 && +m[2] <= 59 && (m[3] === undefined || +m[3] <= 59)) {
+        return { v: (H * 3600 + +m[2] * 60 + (m[3] ? +m[3] : 0)) / 86400, angka: (m[3] ? 'h:mm:ss' : 'h:mm') + (m[4] ? ' am/pm' : '') };
+      }
+      return { v: s };
+    }
+    var sr;
+    // d MMM yyyy [H:mm[:ss]] — bentuk yang ditulis PayrollService (_formatDateId/_formatDateTimeId)
+    if ((m = u.match(/^(\d{1,2})([ \-\/])([A-Za-z]{3,9})\.?\2(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/)) && BULAN_EN[m[3].toLowerCase()]) {
+      sr = serialTanggal(+m[4], BULAN_EN[m[3].toLowerCase()], +m[1], m[5] ? +m[5] : 0, m[6] ? +m[6] : 0, m[7] ? +m[7] : 0);
+      if (sr !== null) return { v: sr, angka: (m[1].length === 2 && m[1].charAt(0) === '0' ? 'dd' : 'd') + m[2] + (m[3].length > 3 ? 'mmmm' : 'mmm') + m[2] + 'yyyy' + jamTeks(m[5], m[6], m[7]) };
+    }
+    // MMM d, yyyy
+    if ((m = u.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/)) && BULAN_EN[m[1].toLowerCase()]) {
+      sr = serialTanggal(+m[3], BULAN_EN[m[1].toLowerCase()], +m[2], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0, m[6] ? +m[6] : 0);
+      if (sr !== null) return { v: sr, angka: (m[1].length > 3 ? 'mmmm' : 'mmm') + ' d, yyyy' + jamTeks(m[4], m[5], m[6]) };
+    }
+    // yyyy-mm-dd [H:mm[:ss]]
+    if ((m = u.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/))) {
+      sr = serialTanggal(+m[1], +m[2], +m[3], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0, m[6] ? +m[6] : 0);
+      if (sr !== null) return { v: sr, angka: 'yyyy-mm-dd' + jamTeks(m[4], m[5], m[6]) };
+    }
+    // M/d/yyyy [H:mm[:ss]] (urutan en_US)
+    if ((m = u.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/))) {
+      sr = serialTanggal(+m[3], +m[1], +m[2], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0, m[6] ? +m[6] : 0);
+      if (sr !== null) return { v: sr, angka: 'm/d/yyyy' + jamTeks(m[4], m[5], m[6]) };
+    }
+    return { v: s };
+  }
+
+  function LembarBaru(buku, nama, maxB, maxK) {
+    this._buku = buku; this._nama = String(nama); this._v = []; this._f = [];
+    this._maxB = maxB; this._maxK = maxK; this._gabung = []; this._lebar = {}; this._tinggi = {};
+    this._bekuB = 0; this._bekuK = 0; this._idLembar = buku._lembar.length ? Math.floor(Math.random() * 2e9) : 0;
+  }
+  LembarBaru.prototype = {
+    _format: function (b, k) { var r = this._f[b - 1]; return r ? (r[k - 1] || 0) : 0; },
+    _aturFormat: function (b, k, id) { var r = this._f[b - 1] || (this._f[b - 1] = []); r[k - 1] = id; },
+    _gabungDi: function (b, k) {
+      for (var i = 0; i < this._gabung.length; i++) {
+        var g = this._gabung[i];
+        if (b >= g.b && b < g.b + g.nb && k >= g.k && k < g.k + g.nk) return g;
+      }
+      return null;
+    },
+    // Sel di dalam gabungan tampil dengan format sel kiri-atasnya.
+    _formatTampil: function (b, k) { var g = this._gabungDi(b, k); return g ? this._format(g.b, g.k) : this._format(b, k); },
+    // Menulis nilai di luar kisi memperluas kisi. Kolom baru mewarisi format kolom terakhir (ekspor payroll SUM:
+    // judul tergabung A1:Z1 ikut berwarna di AA1:AC1), baris baru mewarisi format baris terakhir.
+    _perluas: function (b, k) {
+      var r, c, f;
+      if (k > this._maxK) {
+        var lamaK = this._maxK;
+        for (r = 1; r <= this._f.length; r++) {
+          f = this._formatTampil(r, lamaK);
+          if (f) for (c = lamaK + 1; c <= k; c++) this._aturFormat(r, c, f);
+        }
+        this._maxK = k;
+      }
+      if (b > this._maxB) {
+        var lamaB = this._maxB;
+        if (this._f[lamaB - 1]) {
+          for (c = 1; c <= this._maxK; c++) {
+            f = this._formatTampil(lamaB, c);
+            if (f) for (r = lamaB + 1; r <= b; r++) this._aturFormat(r, c, f);
+          }
+        }
+        this._maxB = b;
+      }
+    },
+    _isi: function (b, k, x) {
+      var fid = this._format(b, k), u = uraiMasukan(x, FMT[fid].angka);
+      (this._v[b - 1] || (this._v[b - 1] = []))[k - 1] = u.v;
+      if (u.angka && FMT[fid].angka === undefined) this._aturFormat(b, k, ubahFormat(fid, 'angka', u.angka));
+    },
+    _ujungIsi: function () {
+      var nb = 0, nk = 0;
+      for (var i = 0; i < this._v.length; i++) {
+        var r = this._v[i] || [];
+        for (var j = r.length; j > 0; j--) if (r[j - 1] !== null && r[j - 1] !== undefined && r[j - 1] !== '') { nb = i + 1; if (j > nk) nk = j; break; }
+      }
+      return { b: nb, k: nk };
+    },
+    getName: function () { return this._nama; },
+    getSheetName: function () { return this._nama; },
+    setName: function (n) { this._nama = String(n); return this; },
+    getSheetId: function () { return this._idLembar; },
+    getIndex: function () { for (var i = 0; i < this._buku._lembar.length; i++) if (this._buku._lembar[i].getName() === this._nama) return i + 1; return 0; },
+    getParent: function () { return this._buku._proxy; },
+    getMaxRows: function () { return this._maxB; },
+    getMaxColumns: function () { return this._maxK; },
+    getLastRow: function () { return this._ujungIsi().b; },
+    getLastColumn: function () { return this._ujungIsi().k; },
+    getFrozenRows: function () { return this._bekuB; },
+    getFrozenColumns: function () { return this._bekuK; },
+    setFrozenRows: function (n) { this._bekuB = Number(n) || 0; },
+    setFrozenColumns: function (n) { this._bekuK = Number(n) || 0; },
+    getColumnWidth: function (k) { return this._lebar[k] || 100; },
+    setColumnWidth: function (k, px) { this._lebar[k] = Number(px); return this; },
+    setColumnWidths: function (k, n, px) { for (var i = 0; i < n; i++) this._lebar[k + i] = Number(px); return this; },
+    getRowHeight: function (b) { return this._tinggi[b] || 21; },
+    setRowHeight: function (b, px) { this._tinggi[b] = Number(px); return this; },
+    getRange: function (a, b, c, d) {
+      if (typeof a === 'string') return rentangBaruA1(this, a);
+      return rentangBaru(this, a, b, c === undefined ? 1 : c, d === undefined ? 1 : d);
+    },
+    getRangeList: function (daftar) { var l = this; return daftarRentang([].slice.call(daftar).map(function (a) { return rentangBaruA1(l, a); })); },
+    getDataRange: function () { var u = this._ujungIsi(); return rentangBaru(this, 1, 1, Math.max(u.b, 1), Math.max(u.k, 1)); },
+    appendRow: function (arr) { rentangBaru(this, this._ujungIsi().b + 1, 1, 1, arr.length).setValues([arr]); return this; },
+    clear: function () { this._v = []; this._f = []; this._gabung = []; return this; },
+    clearContents: function () { this._v = []; return this; },
+    clearFormats: function () { this._f = []; return this; },
+  };
+  function RentangBaru(l, b, k, nb, nk) { this._l = l; this._b = b; this._k = k; this._nb = nb; this._nk = nk; }
+  function cekUkuran(m, nb, nk) {
+    if (!m || m.length !== nb) throw new Error('The number of rows in the data does not match the number of rows in the range. The data has ' + (m ? m.length : 0) + ' but the range has ' + nb + '.');
+    for (var i = 0; i < m.length; i++) {
+      if (!m[i] || m[i].length !== nk) throw new Error('The number of columns in the data does not match the number of columns in the range. The data has ' + (m[i] ? m[i].length : 0) + ' but the range has ' + nk + '.');
+    }
+  }
+  RentangBaru.prototype = {
+    // Format hanya mengenai sel di dalam kisi (gabungan A1:AA1 di kisi 26 kolom menjadi A1:Z1, seperti ekspor asli).
+    _setiap: function (fn) {
+      var bm = Math.min(this._b + this._nb - 1, this._l._maxB), km = Math.min(this._k + this._nk - 1, this._l._maxK);
+      for (var b = this._b; b <= bm; b++) for (var k = this._k; k <= km; k++) fn(b, k, b - this._b, k - this._k);
+    },
+    _ubah: function (medan, nilai) {
+      var l = this._l;
+      this._setiap(function (b, k) { l._aturFormat(b, k, ubahFormat(l._format(b, k), medan, nilai)); });
+      return this;
+    },
+    _ubahMatriks: function (m, medan, ubah) {
+      cekUkuran(m, this._nb, this._nk);
+      var l = this._l;
+      this._setiap(function (b, k, i, j) { l._aturFormat(b, k, ubahFormat(l._format(b, k), medan, ubah(m[i][j]))); });
+      return this;
+    },
+    getRow: function () { return this._b; },
+    getColumn: function () { return this._k; },
+    getNumRows: function () { return this._nb; },
+    getNumColumns: function () { return this._nk; },
+    getLastRow: function () { return this._b + this._nb - 1; },
+    getLastColumn: function () { return this._k + this._nk - 1; },
+    getSheet: function () { return this._l; },
+    getA1Notation: function () {
+      var awal = hurufKolom(this._k) + this._b;
+      return this._nb === 1 && this._nk === 1 ? awal : awal + ':' + hurufKolom(this._k + this._nk - 1) + (this._b + this._nb - 1);
+    },
+    offset: function (b, k, nb, nk) { return rentangBaru(this._l, this._b + b, this._k + k, nb === undefined ? this._nb : nb, nk === undefined ? this._nk : nk); },
+    getValues: function () {
+      var out = [];
+      for (var i = 0; i < this._nb; i++) {
+        var r = this._l._v[this._b - 1 + i] || [], baris = [];
+        for (var j = 0; j < this._nk; j++) { var x = r[this._k - 1 + j]; baris.push(x === null || x === undefined ? '' : x); }
+        out.push(baris);
+      }
+      return out;
+    },
+    getValue: function () { return this.getValues()[0][0]; },
+    setValues: function (m) {
+      cekUkuran(m, this._nb, this._nk);
+      this._l._perluas(this._b + this._nb - 1, this._k + this._nk - 1);
+      for (var i = 0; i < this._nb; i++) for (var j = 0; j < this._nk; j++) this._l._isi(this._b + i, this._k + j, m[i][j]);
+      return this;
+    },
+    // Seperti GAS: setValue pada rentang banyak sel mengisi SEMUA selnya dengan nilai itu.
+    setValue: function (x) {
+      this._l._perluas(this._b + this._nb - 1, this._k + this._nk - 1);
+      for (var i = 0; i < this._nb; i++) for (var j = 0; j < this._nk; j++) this._l._isi(this._b + i, this._k + j, x);
+      return this;
+    },
+    clearContent: function () { var l = this._l; this._setiap(function (b, k) { var r = l._v[b - 1]; if (r) r[k - 1] = null; }); return this; },
+    clearFormat: function () { var l = this._l; this._setiap(function (b, k) { l._aturFormat(b, k, 0); }); return this; },
+    clear: function () { this.clearContent(); return this.clearFormat(); },
+    merge: function () {
+      var b2 = Math.min(this._b + this._nb - 1, this._l._maxB), k2 = Math.min(this._k + this._nk - 1, this._l._maxK);
+      if (b2 < this._b || k2 < this._k || (b2 === this._b && k2 === this._k)) return this;
+      var g = { b: this._b, k: this._k, nb: b2 - this._b + 1, nk: k2 - this._k + 1 };
+      this._l._gabung = this._l._gabung.filter(function (x) { return x.b + x.nb <= g.b || g.b + g.nb <= x.b || x.k + x.nk <= g.k || g.k + g.nk <= x.k; });
+      this._l._gabung.push(g);
+      // Sheets hanya menyimpan nilai sel kiri-atas gabungan.
+      var l = this._l;
+      this._setiap(function (b, k) { if ((b !== g.b || k !== g.k) && l._v[b - 1]) l._v[b - 1][k - 1] = null; });
+      return this;
+    },
+    breakApart: function () { var t = this; this._l._gabung = this._l._gabung.filter(function (x) { return !(x.b >= t._b && x.k >= t._k && x.b + x.nb <= t._b + t._nb && x.k + x.nk <= t._k + t._nk); }); return this; },
+    setFontSize: function (n) { return this._ubah('ukuran', n === null || n === undefined ? null : Number(n)); },
+    setFontWeight: function (w) { return this._ubah('tebal', String(w).toLowerCase() === 'bold' ? true : null); },
+    setFontWeights: function (m) { return this._ubahMatriks(m, 'tebal', function (w) { return String(w).toLowerCase() === 'bold' ? true : null; }); },
+    setFontStyle: function (s) { return this._ubah('miring', String(s).toLowerCase() === 'italic' ? true : null); },
+    setFontColor: function (c) { return this._ubah('warna', warnaHex(c)); },
+    setFontColors: function (m) { return this._ubahMatriks(m, 'warna', warnaHex); },
+    setFontFamily: function (f) { return this._ubah('huruf', f ? String(f) : null); },
+    setBackground: function (c) { return this._ubah('latar', warnaHex(c)); },
+    setBackgroundColor: function (c) { return this._ubah('latar', warnaHex(c)); },
+    setBackgrounds: function (m) { return this._ubahMatriks(m, 'latar', warnaHex); },
+    setHorizontalAlignment: function (a) { return this._ubah('rataH', { left: 'left', center: 'center', right: 'right' }[String(a).toLowerCase()] || null); },
+    setVerticalAlignment: function (a) { return this._ubah('rataV', { top: 'top', middle: 'center', bottom: 'bottom' }[String(a).toLowerCase()] || null); },
+    setWrap: function (w) { return this._ubah('bungkus', !!w); },
+    setNumberFormat: function (f) { return this._ubah('angka', f === null || f === undefined ? null : String(f)); },
+    setNumberFormats: function (m) { return this._ubahMatriks(m, 'angka', function (f) { return f === null || f === undefined ? null : String(f); }); },
+    // setBorder(atas, kiri, bawah, kanan, tegak, datar[, warna, gaya]): true memasang, false menghapus, null tidak
+    // mengubah. Disimpan per sel tanpa menyentuh sel tetangga di luar rentang (begitu ekspor Google menuliskannya).
+    setBorder: function (atas, kiri, bawah, kanan, tegak, datar, warna, gaya) {
+      var garis = (GAYA_GARIS[gaya] || 'thin') + ' ' + (warnaHex(warna) || '000000');
+      var l = this._l, nb = this._nb, nk = this._nk;
+      function pasang(id, medan, p) { return p === null || p === undefined ? id : ubahFormat(id, medan, p ? garis : null); }
+      this._setiap(function (b, k, i, j) {
+        var id = l._format(b, k);
+        id = pasang(id, 'gA', i === 0 ? atas : datar);
+        id = pasang(id, 'gB', i === nb - 1 ? bawah : datar);
+        id = pasang(id, 'gK', j === 0 ? kiri : tegak);
+        id = pasang(id, 'gN', j === nk - 1 ? kanan : tegak);
+        l._aturFormat(b, k, id);
+      });
+      return this;
+    },
+  };
+  function rentangBaru(l, b, k, nb, nk) {
+    if (!(b >= 1) || !(k >= 1) || !(nb >= 1) || !(nk >= 1)) throw new Error('The coordinates of the range are outside the dimensions of the sheet.');
+    return tanpaDikenal('Range', new RentangBaru(l, b, k, nb, nk));
+  }
+  function rentangBaruA1(l, a1) {
+    var t = String(a1).replace(/^.*!/, '').replace(/\$/g, '').toUpperCase();
+    var sel = t.split(':').map(function (s) { var m = s.match(/^([A-Z]*)(\d*)$/); if (!m) throw new Error('Range not found'); return { k: m[1] ? angkaKolom(m[1]) : null, b: m[2] ? parseInt(m[2], 10) : null }; });
+    var awal = sel[0], akhir = sel[1] || sel[0];
+    return rentangBaru(l, awal.b || 1, awal.k || 1, (akhir.b || l._maxB) - (awal.b || 1) + 1, (akhir.k || l._maxK) - (awal.k || 1) + 1);
+  }
+  function daftarRentang(arr) {
+    var rl = tanpaDikenal('RangeList', { getRanges: function () { return arr.slice(); } });
+    ['setBackground', 'setFontColor', 'setFontWeight', 'setFontStyle', 'setFontSize', 'setFontFamily', 'setNumberFormat', 'setHorizontalAlignment',
+      'setVerticalAlignment', 'setWrap', 'setBorder', 'setValue', 'clear', 'clearContent', 'clearFormat'].forEach(function (nama) {
+      rl[nama] = function () { var a = arguments; arr.forEach(function (r) { r[nama].apply(r, a); }); return rl; };
+    });
+    return rl;
+  }
+  function bukuBaru(nama, baris, kolom) {
+    var id = 'abadiops-' + String(host.uuid()).replace(/-/g, '');
+    var b = { _id: id, _nama: String(nama), _lembar: [], _aktif: null, _proxy: null, _b: baris > 0 ? Number(baris) : 1000, _k: kolom > 0 ? Number(kolom) : 26 };
+    function tambah(n) { var l = tanpaDikenal('Sheet', new LembarBaru(b, n, b._b, b._k)); b._lembar.push(l); return l; }
+    function cari(n) { for (var i = 0; i < b._lembar.length; i++) if (b._lembar[i].getName() === String(n)) return b._lembar[i]; return null; }
+    b._proxy = tanpaDikenal('Spreadsheet', {
+      getId: function () { return id; },
+      getName: function () { return b._nama; },
+      rename: function (n) { b._nama = String(n); },
+      getUrl: function () { return 'https://docs.google.com/spreadsheets/d/' + id + '/edit'; },
+      getActiveSheet: function () { return b._aktif; },
+      setActiveSheet: function (l) { b._aktif = l; return l; },
+      getSheets: function () { return b._lembar.slice(); },
+      getNumSheets: function () { return b._lembar.length; },
+      getSheetByName: function (n) { return cari(n); },
+      insertSheet: function (n) {
+        if (typeof n !== 'string') { n = 'Sheet' + (b._lembar.length + 1); }
+        if (cari(n)) throw new Error('A sheet with the name "' + n + '" already exists. Please enter another name.');
+        var l = tambah(n); b._aktif = l; return l;
+      },
+      deleteSheet: function (l) { b._lembar = b._lembar.filter(function (x) { return x !== l; }); if (b._aktif === l) b._aktif = b._lembar[0] || null; },
+      getSpreadsheetTimeZone: function () { return ZONA; },
+      getSpreadsheetLocale: function () { return 'en_US'; },
+    });
+    b._aktif = tambah('Sheet1');
+    BUKU[id] = b;
+    return b._proxy;
+  }
+  // Isi buku untuk host.xlsx: hanya larik, objek polos, teks, angka, dan boolean (aman lintas konteks vm).
+  function modelBuku(b) {
+    return {
+      judul: b._nama,
+      format: FMT,
+      lembar: b._lembar.map(function (l) {
+        return { nama: l._nama, nilai: l._v, format: l._f, gabung: l._gabung, lebar: l._lebar, tinggi: l._tinggi, bekuB: l._bekuB, bekuK: l._bekuK };
+      }),
+    };
+  }
+  var B64_INDEKS = (function () {
+    var a = [], abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    for (var i = 0; i < 64; i++) a[abc.charCodeAt(i)] = i;
+    return a;
+  })();
+  // Byte bertanda (-128..127) seperti Blob.getBytes() GAS. Base64-nya ikut dibawa (Utilities.base64Encode).
+  function bytesDariB64(s) {
+    var n = s.length, pad = s.charAt(n - 1) === '=' ? (s.charAt(n - 2) === '=' ? 2 : 1) : 0;
+    var panjang = n / 4 * 3 - pad, out = new Array(panjang), j = 0;
+    for (var i = 0; i < n; i += 4) {
+      var x = (B64_INDEKS[s.charCodeAt(i)] << 18) | (B64_INDEKS[s.charCodeAt(i + 1)] << 12) | ((B64_INDEKS[s.charCodeAt(i + 2)] || 0) << 6) | (B64_INDEKS[s.charCodeAt(i + 3)] || 0);
+      if (j < panjang) out[j++] = (x >> 16 & 255) << 24 >> 24;
+      if (j < panjang) out[j++] = (x >> 8 & 255) << 24 >> 24;
+      if (j < panjang) out[j++] = (x & 255) << 24 >> 24;
+    }
+    Object.defineProperty(out, '__b64', { value: s });
+    return out;
+  }
+  function jawabanBerkas(b64, nama, jenis) {
+    var blob = tanpaDikenal('Blob', {
+      getBytes: function () { return bytesDariB64(b64); },
+      getContentType: function () { return jenis; },
+      getName: function () { return nama; },
+      setName: function (n) { nama = String(n); return blob; },
+    });
+    return tanpaDikenal('HTTPResponse', {
+      getResponseCode: function () { return 200; },
+      getBlob: function () { return blob; },
+      getContent: function () { return blob.getBytes(); },
+      getHeaders: function () { return { 'Content-Type': jenis }; },
+      getAllHeaders: function () { return { 'Content-Type': jenis }; },
+    });
+  }
+  function berkasDrive(b) {
+    var f = tanpaDikenal('File', {
+      getId: function () { return b._id; },
+      getName: function () { return b._nama; },
+      getUrl: function () { return b._proxy.getUrl(); },
+      getMimeType: function () { return 'application/vnd.google-apps.spreadsheet'; },
+      moveTo: function () { return f; },
+      addViewer: function () { return f; },
+      addViewers: function () { return f; },
+      addEditor: function () { return f; },
+      setSharing: function () { return f; },
+    });
+    return f;
+  }
+  function folderTiruan(nama) {
+    return tanpaDikenal('Folder', { getId: function () { return 'abadiops-folder'; }, getName: function () { return String(nama); }, getUrl: function () { return ''; } });
+  }
+  function sebagian(nama, ada) {
+    var sisa = tidakTersedia(nama);
+    return new Proxy(ada, { get: function (t, p) { return Object.prototype.hasOwnProperty.call(t, p) ? t[p] : sisa[p]; } });
+  }
+  var UrlFetchApp = sebagian('UrlFetchApp', {
+    // Hanya ekspor XLSX spreadsheet baru di memori (generatePayrollReport). Alamat lain tetap tidak tersedia.
+    fetch: function (url) {
+      var m = String(url).match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^\/?#]+)\/export\?(.*)$/);
+      var b = m && Object.prototype.hasOwnProperty.call(BUKU, m[1]) ? BUKU[m[1]] : null;
+      if (!b || !/(?:^|&)format=xlsx(?:&|$)/.test(m[2])) {
+        catatSekali(CATAT.layanan, 'UrlFetchApp.fetch');
+        throw new Error('GAS lokal: UrlFetchApp.fetch tidak tersedia');
+      }
+      catatSekali(CATAT.layanan, 'UrlFetchApp.fetch (ekspor XLSX spreadsheet baru di memori)');
+      return jawabanBerkas(host.xlsx(modelBuku(b)), b._nama + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    },
+  });
+  var DriveApp = sebagian('DriveApp', {
+    getFileById: function (id) {
+      var b = Object.prototype.hasOwnProperty.call(BUKU, String(id)) ? BUKU[String(id)] : null;
+      if (!b) { catatSekali(CATAT.layanan, 'DriveApp.getFileById'); throw new Error('GAS lokal: DriveApp.getFileById tidak tersedia'); }
+      catatSekali(CATAT.layanan, 'DriveApp.getFileById (spreadsheet baru di memori, tanpa Drive)');
+      return berkasDrive(b);
+    },
+    // Folder arsip payroll: di GAS folder itu sudah ada sejak ekspor pertama, jadi ditiru "ada".
+    getFoldersByName: function (nama) {
+      catatSekali(CATAT.layanan, 'DriveApp.getFoldersByName (tiruan, tanpa Drive)');
+      var habis = false;
+      return { hasNext: function () { return !habis; }, next: function () { if (habis) throw new Error('No more items'); habis = true; return folderTiruan(nama); } };
+    },
+    createFolder: function (nama) { catatSekali(CATAT.layanan, 'DriveApp.createFolder (tiruan, tanpa Drive)'); return folderTiruan(nama); },
   });
 
   // Eksekusi PWA berjalan sebagai deployer dengan pengguna anonim; identitas selalu dari token.
@@ -623,7 +1082,8 @@ export function buatLayanan(D, host) {
       openById: function () { catatSekali(CATAT.layanan, 'SpreadsheetApp.openById'); throw new Error('GAS lokal: openById tidak tersedia'); },
       openByUrl: function () { catatSekali(CATAT.layanan, 'SpreadsheetApp.openByUrl'); throw new Error('GAS lokal: openByUrl tidak tersedia'); },
       getUi: function () { catatSekali(CATAT.layanan, 'SpreadsheetApp.getUi'); throw new Error('GAS lokal: getUi tidak tersedia'); },
-      BorderStyle: {},
+      create: function (nama, baris, kolom) { catatSekali(CATAT.layanan, 'SpreadsheetApp.create (di memori)'); return bukuBaru(nama, baris, kolom); },
+      BorderStyle: { DOTTED: 'DOTTED', DASHED: 'DASHED', SOLID: 'SOLID', SOLID_MEDIUM: 'SOLID_MEDIUM', SOLID_THICK: 'SOLID_THICK', DOUBLE: 'DOUBLE' },
     }),
     Utilities: Utilities,
     Session: Session,
@@ -645,16 +1105,17 @@ export function buatLayanan(D, host) {
       },
       newTrigger: function () { catatSekali(CATAT.layanan, 'ScriptApp.newTrigger'); return tanpaDikenal('TriggerBuilder', {}); },
       deleteTrigger: function () { catatSekali(CATAT.layanan, 'ScriptApp.deleteTrigger'); },
-      getOAuthToken: function () { catatSekali(CATAT.layanan, 'ScriptApp.getOAuthToken'); throw new Error('GAS lokal: getOAuthToken tidak tersedia'); },
+      // Hanya dipakai payroll untuk mengambil ekspor XLSX, yang dilayani UrlFetchApp tiruan di memori. Bukan token sungguhan.
+      getOAuthToken: function () { catatSekali(CATAT.layanan, 'ScriptApp.getOAuthToken (tiruan)'); return 'gas-lokal-tanpa-token'; },
       AuthMode: { FULL: 'FULL', LIMITED: 'LIMITED', NONE: 'NONE' },
     }),
     MailApp: {
       sendEmail: function () { catatSekali(CATAT.layanan, 'MailApp.sendEmail (tidak dikirim)'); },
       getRemainingDailyQuota: function () { return 0; },
     },
-    UrlFetchApp: tidakTersedia('UrlFetchApp'),
+    UrlFetchApp: UrlFetchApp,
     GmailApp: tidakTersedia('GmailApp'),
-    DriveApp: tidakTersedia('DriveApp'),
+    DriveApp: DriveApp,
     HtmlService: HtmlService,
     Browser: tidakTersedia('Browser'),
     Logger: Logger,

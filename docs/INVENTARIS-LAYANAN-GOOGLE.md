@@ -3,7 +3,7 @@
 Disusun 14 Nov 2026 malam dari kode GAS yang dipatok (BUPR @11, KMB Projek @49, KMB V2 @299, SUM @199), untuk syarat
 "fitur yang memakai layanan Google sudah punya pengganti" di `docs/SAKLAR.md`. Jalur Supabase menjalankan kode GAS yang
 sama, tetapi `DriveApp`, `MailApp`, `UrlFetchApp`, dan pemicu terjadwal tidak tersedia di Worker
-(`workers/bersama/gas-layanan.js`). Setelah jam mulai, GAS ditutup, sehingga semua yang di bawah ini harus berjalan di
+(`workers/bersama/gas-layanan.js`; sejak 15 Nov kecuali spreadsheet baru payroll di memori dan ekspor XLSX-nya). Setelah jam mulai, GAS ditutup, sehingga semua yang di bawah ini harus berjalan di
 jalur Supabase atau sengaja dinyatakan tidak perlu.
 
 ## Wajib sebelum jam mulai
@@ -11,7 +11,7 @@ jalur Supabase atau sengaja dinyatakan tidak perlu.
 | Fitur (fungsi GAS) | Rumah | Kenapa penting | Rencana pengganti |
 |---|---|---|---|
 | Notifikasi push ke HP (`sendPushToEmails`, web-push VAPID lewat `UrlFetchApp`) | semua | WO yang menunggu tindakan diberitahukan ke orangnya. Saat ini di jalur Supabase push **diam-diam tidak terkirim**: kunci VAPID ada di Script Properties GAS, sedangkan PropertiesService Worker kosong (fungsi pulang dengan 0) | (1) Gabriel menyalin kunci VAPID dari editor GAS (Project Settings → Script properties) ke rahasia Worker, karena itu kunci rahasia; (2) `UrlFetchApp` di Worker dicatat selama kode GAS berjalan lalu dikirim sesudahnya (`ctx.waitUntil`). Langganan yang dijawab 404/410 dihapus sesudahnya dengan aturan yang sama dengan kode GAS. Di ruang uji hanya dicatat, tidak dikirim ke HP sungguhan |
-| Unduh laporan payroll (`generatePayrollReport`: membuat spreadsheet di Drive lalu mengekspornya) | semua | Payroll dibayar dari laporan ini | Kode GAS yang sama menulis ke spreadsheet tiruan di memori; Worker mengubahnya menjadi berkas XLSX untuk diunduh. Angka dicocokkan dengan laporan GAS untuk beberapa periode lalu (titik henti: rumus poin/rupiah tidak diubah) |
+| Unduh laporan payroll (`generatePayrollReport`: membuat spreadsheet di Drive lalu mengekspornya) | semua | Payroll dibayar dari laporan ini | **Selesai 15 Nov pagi:** kode GAS yang sama menulis ke spreadsheet di memori; ekspor XLSX-nya disusun `workers/bersama/xlsx.js` meniru ekspor Google. Identik sel demi sel dengan berkas GAS: KMB V2 16 Sep–15 Okt 2026 dan KMB Projek 26 Sep–25 Okt 2026 (kecuali stempel "Dibuat:"); SUM identik bentuknya, angkanya menunggu satu ekspor GAS baru karena data Juli sudah berubah. Rumus poin/rupiah tidak diubah. Yang hilang: arsip berkas di folder Drive `Payroll_*` dan akses baca untuk peminta (keputusan Gabriel) |
 | Penjaga otomatis (`penjagaOtomatis`, 06.00 dan 18.00 WIB) | semua | Menulis poin yang tertinggal untuk WO approved, artinya mekanik yang belum dibayar | **Selesai 15 Nov dini hari:** cron Worker menjalankan fungsi GAS yang sama di atas cermin, hanya bila saklar rumah itu `supabase`; uji kembar identik di keempat rumah (laporan temuan yang biasanya dikirim lewat email masih hanya dicatat) |
 | Pemangkas ProcessedOps dan KirimanWeb (`cleanupProcessedOps`, `cleanupKirimanWeb`, tiap hari) | semua | Ditandai WAJIB di kode: tanpa pemangkasan setiap kiriman makin lambat | **Selesai 15 Nov dini hari:** cron Worker, fungsi GAS yang sama; uji kembar identik |
 

@@ -1,7 +1,9 @@
 // Fungsi bantu dari luar konteks GAS untuk workers/bersama/gas-layanan.js (Utilities.computeDigest, getUuid,
-// base64Encode). Sinkron, karena kode GAS memanggilnya sinkron; di Worker butuh compatibility flag nodejs_compat.
+// base64Encode, ekspor XLSX spreadsheet baru). Sinkron, karena kode GAS memanggilnya sinkron; di Worker butuh
+// compatibility flag nodejs_compat.
 import { createHash, randomUUID } from 'node:crypto';
 import { Buffer } from 'node:buffer';
+import { susunXlsx } from './xlsx.js';
 
 const ALGORITMA = { MD2: 'md2', MD5: 'md5', SHA_1: 'sha1', SHA_256: 'sha256', SHA_384: 'sha384', SHA_512: 'sha512' };
 
@@ -19,5 +21,7 @@ export function buatHost() {
       const s = bytes(isiJson).toString('base64');
       return websafe ? s.replace(/\+/g, '-').replace(/\//g, '_') : s;
     },
+    // Isi spreadsheet baru (gas-layanan.js modelBuku) → XLSX dalam base64.
+    xlsx: (model) => susunXlsx(model).toString('base64'),
   };
 }
