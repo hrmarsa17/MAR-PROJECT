@@ -55,15 +55,16 @@ mengubah sistem yang dipakai orang.
    - Worker rumah KMB V2, SUM, KMB Projek: **bertahap** (10% lalu 100% sesudah dicek) dengan kemungkinan rollback seketika.
      Selama saklar `gas` semuanya tetap meneruskan ke GAS. Deploy ulang ini juga wajib untuk batas CPU Workers Paid
      (BUG-DICATAT #40).
-4. **`clasp push` BUPR sudah 15 Nov ±11.33 WIB** (HEAD = @11 + tambalan, diverifikasi clone ulang; tidak ada izin OAuth
-   baru karena `UrlFetchApp`, `CacheService`, `PropertiesService` sudah dipakai kode BUPR). **Tinggal Gabriel: Deploy
-   versi baru dari editor** (web app berjalan atas nama akun yang men-deploy, `USER_DEPLOYING`, jadi jangan dari akun
-   lain). Sesudahnya Claude memastikan /exec tetap menjawab sama. Cara semula:
+4. **BUPR selesai 15 Nov ±12.05 WIB:** `clasp push` (HEAD = @11 + tambalan, tanpa izin OAuth baru), lalu Gabriel
+   Deploy dari editor → deployment produksi `AKfycbykSslm…` **@12**. Clone @12 = 119 berkas, sama persis dengan yang
+   dikirim; /exec tetap menjawab sama dengan sebelumnya (API = Worker, halaman "MAR BUPR" 200). Tambalan tidur selama
+   saklar `gas`. Rumah lain: tambalan siap, menunggu gilirannya. Cara semula:
    **Tutup GAS BUPR** *(per rumah)*: izinkan `node tools/kembar/siapkan-tutup-gas.mjs --kamar=kmbbupr --push`, lalu di
    editor GAS BUPR: *Deploy → Manage deployments → pensil pada deployment produksi → Version: New version → Deploy*.
    **Jangan `clasp deploy`.** Tambalan tidur selama saklar `gas`; uji di panel tidak berubah apa-apa.
-5. **Belum (15 Nov):** ekstensi Claude di Chrome tidak tersambung, jadi Gabriel membagikan sendiri (Share → email akun
-   layanan dari `akun-layanan.json` → Editor → hapus centang "Notify" → Share), atau menyambungkan ulang ekstensi.
+5. **BUPR selesai 15 Nov** (dibagikan Gabriel). Dicek tanpa mengubah apa pun (`batchUpdate` kosong: Viewer → 403,
+   Editor → 400 "Must specify at least one request"): akun layanan **Editor** di BUPR, KMB Projek, dan SUM; **Viewer** di
+   KMB V2 (pembanding 403). Penulisan tetap dijaga `public.cermin_izin_tulis` (semua tertutup).
    **Hak Editor akun layanan** *(per rumah)*: bagikan spreadsheet BUPR ("New MAR Project") ke email akun layanan cermin
    (yang sekarang Viewer) sebagai **Editor**. Dipakai cermin balik hanya setelah jam mulai.
 6. **Latihan cermin balik** (sekali, sebelum BUPR): *File → Make a copy* spreadsheet BUPR, bagikan salinannya ke akun
