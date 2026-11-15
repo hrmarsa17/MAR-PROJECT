@@ -107,9 +107,33 @@ ketik `kmbbupr`. Lalu, otomatis:
 Lama ±15–40 menit. Gagal di mana pun → kembali ke `gas` sendiri, tidak ada yang hilang. Membatalkan saat `menutup`:
 ubah saklar manual ke `gas` (izin yang sudah dibuka ikut ditutup). Sesudah `supabase`: tombol **Kembali ke GAS** kapan saja.
 
-## Sebelum rumah berikutnya (KMB Projek, KMB V2, SUM)
+## Sebelum rumah berikutnya (KMB Projek, KMB V2, SUM) — keadaan 15 Nov sore
 
-- Langkah 4 dan 5 untuk rumah itu (tambalan sudah dicek siap; tinggal izin push + Deploy dari editor + Editor).
-- **Notifikasi push** wajib sebelum rumah besar: kunci VAPID dari Script Properties GAS disalin Gabriel ke rahasia Worker
-  (`docs/INVENTARIS-LAYANAN-GOOGLE.md`). BUPR boleh mulai tanpa push (satu mekanik aktif, WO mandiri).
-- Satu siklus WO uji oleh Gabriel di `staging-<rumah>.abadiops.com`.
+| Syarat | KMB Projek | KMB V2 | SUM |
+|---|---|---|---|
+| Worker produksi kode baru + kunci | ✔ `0aa0f170` | ✔ `da2d4843` | ✔ `0352395b` |
+| Tutup GAS (`siapkan-tutup-gas.mjs`) | siap: HEAD = @49, 14/14 | siap: HEAD = @299, 14/14 | siap: HEAD = @199, 14/14 |
+| Akun layanan Editor di spreadsheet | ✔ | **✗ Viewer** | ✔ |
+| Latihan cermin balik → `jalan_kembali_siap` | skenario siap | skenario siap | skenario siap |
+| Notifikasi push (langganan aktif di PushSubs) | 0 → tidak menghalangi | 64 → **wajib kunci VAPID** | 109 → **wajib kunci VAPID** |
+| 7 hari tanpa selisih | ≥ 20 Nov | ≥ 20 Nov | ≥ 20 Nov |
+| Uji WO Gabriel | `staging-kmbprojek` | `staging-kmbtra` | `staging-sum` |
+
+Tidak ada izin OAuth baru di ketiga tambalan (`UrlFetchApp`, `CacheService`, `PropertiesService` sudah dipakai kodenya).
+
+**Yang dibutuhkan dari Gabriel:**
+1. "ya clasp push kmbprojek kmbtra sum", lalu Deploy versi baru dari editor ketiga GAS (akun yang sama seperti biasa).
+2. Spreadsheet KMB V2 → bagikan ke akun layanan sebagai Editor.
+3. Tiga salinan (*File → Make a copy*) KMB Projek, KMB V2, SUM, masing-masing dibagikan ke akun layanan sebagai Editor;
+   kirim tautannya. Claude menjalankan per rumah: `latihan-balik.mjs --tahap=awal` → `tools/cermin/siklus-latihan.mjs
+   --rumah=<kode>` (SUM: `--mekanik=` mekanik yang berlangganan push di ruang uji) → `latihan-balik.mjs --tahap=akhir`;
+   lulus → `jalan_kembali_siap = true` + push `main` + deploy pintu.
+4. Kunci VAPID KMB V2 dan SUM (Script Properties `VAPID_PRIVATE_PEM`, `VAPID_PUBLIC_B64URL`) ke `abadiops.env`
+   sebagai `VAPID_PRIVATE_PEM_KMBTRA`, `VAPID_PUBLIC_B64URL_KMBTRA`, `VAPID_PRIVATE_PEM_SUM`, `VAPID_PUBLIC_B64URL_SUM`
+   (satu baris; dirapikan otomatis). KMB Projek bila ada. Lalu "ya push main" + "ya deploy produksi" untuk kode push
+   (`3b9605b`, `30554a1`) + rahasia VAPID di Worker produksi.
+
+**Notifikasi push di Worker (15 Nov, branch `staging`, sudah di Worker staging):** kunci VAPID → Script Properties GAS;
+web push dicatat shim dan dikirim sesudah tulisan tersimpan, hanya ke layanan push yang dikenal; 404/410 mematikan
+langganan seperti GAS; ruang uji hanya mencatat. Uji ujung ke ujung dengan kode GAS BUPR asli: JWT ES256 sah. Di
+Worker uji (kunci VAPID uji, tidak dikirim): KMB V2 buat WO 31 push, L2 31; SUM buat WO 17 push ke HP mekanik, L2 17.

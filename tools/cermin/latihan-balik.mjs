@@ -8,6 +8,8 @@
  *                  + uji hak Editor + periksa. Sesudah ini, salinan = uji_<skema>.
  *   (di antaranya) jalankan satu siklus WO di Worker uji staging-<rumah>.abadiops.com: buat WO → kerja mekanik → L1 → L2,
  *                  dan bila perlu pemicu pemangkas (POST /api/uji-pemicu). Tulisan itu masuk ke uji_<skema>.
+ *                  KMB Projek, KMB V2, SUM: tools/cermin/siklus-latihan.mjs --rumah=<kode> (BUPR 15 Nov: skenario tulis
+ *                  BUPR dengan WO mandiri).
  *   --tahap=akhir  cermin balik BERTAHAP (hanya baris yang berubah) ke salinan + periksa. Lulus = semua sheet sama.
  *
  * Variabel lingkungan: DATABASE_URL (Gedung 1), GOOGLE_SA_KEY_FILE, dan keempat <SKEMA>_SPREADSHEET_ID asli (supaya

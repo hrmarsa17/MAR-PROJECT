@@ -12,6 +12,14 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (sore) · Claude (+ Gabriel: "siapkan utk 3 project lainnya") · KMB Projek, KMB V2, SUM
+- Berubah:
+  - **Tutup GAS** ketiga rumah dicek ulang: HEAD = @49/@299/@199, tambalan tepat 4 bagian, uji 14/14, tanpa izin OAuth baru. Belum dikirim (menunggu "ya clasp push").
+  - **Skenario latihan** `tools/cermin/siklus-latihan.mjs` (isian meniru PWA tiap rumah): di Worker uji KMB Projek, KMB V2, SUM berjalan penuh (buat → kirim → L1 → L2, dedup op_id, pembatalan, penolakan) + pemicu. Temuan: GAS KMB V2 mengizinkan mekanik membuat WO; GAS SUM mewajibkan hour meter dan kilometer > 0.
+  - **Notifikasi push di Worker** (`3b9605b`, `30554a1`; sudah di Worker staging): kunci VAPID → Script Properties; web push dicatat shim, dikirim sesudah simpan ke layanan push yang dikenal; 404/410 → langganan mati seperti GAS; ruang uji hanya mencatat; `/api/sehat` melaporkan ada/tidaknya kunci. Uji: 13 uji otomatis; ujung ke ujung kode GAS BUPR asli (JWT ES256 sah); Worker uji dengan kunci VAPID uji (tidak dikirim): KMB V2 31 push saat buat WO, SUM 17. Ikut diperbaiki BUG #45 (`Utilities.newBlob`, `UrlFetchApp.fetchAll`).
+  - Langganan push aktif di produksi: BUPR 0, KMB Projek 0, KMB V2 64, SUM 109 → kunci VAPID wajib untuk KMB V2 dan SUM (`docs/KEPUTUSAN.md`).
+- Belum selesai / berikutnya: lihat `docs/SIAP-MULAI.md` bagian "Sebelum rumah berikutnya" (izin clasp push, Editor KMB V2, tiga salinan, kunci VAPID, push `main` + deploy produksi kode push).
+
 ### 2026-11-15 (siang, ±12.45–13.10) · Claude (+ Gabriel: salinan spreadsheet, "ya push main") · keempat rumah (SUM produksi, latihan cermin balik)
 - Berubah:
   - **`main` = `7d3540b`**. **Worker SUM produksi** `0352395b` (GAS @199, 1% → uji override → 10% → 100%, + kunci): aset hanya beda penanda versi `app.js` dan `sw.js` (+ pengecualian `/web`), API = GAS; rollback `d1d2db45`. **Aset PWA baru** di BUPR `a198399e`, KMB Projek `0aa0f170`, KMB V2 `da2d4843` (rollback `08a356e5`, `144e7be7`, `860b5541`); hanya `sw.js`/`app.js` yang beda, kunci terwariskan. Kelima Worker produksi: saklar `gas`, `supabase_configured=true`.
