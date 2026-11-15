@@ -12,6 +12,14 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (±13.30–14.00) · Claude (+ Gabriel: "ya clasp push…", "ya push main", "ya deploy produksi") · KMB Projek, KMB V2, SUM, BUPR
+- Berubah:
+  - **Tutup GAS** KMB Projek, KMB V2, SUM: `clasp push` (HEAD = @49/@299/@199 + tambalan, uji 14/14, diverifikasi clone ulang). Web app berubah sesudah Gabriel Deploy dari editor.
+  - Akun layanan **Editor** di keempat spreadsheet (KMB V2 dibagikan Gabriel; dicek tanpa mengubah apa pun).
+  - **Kunci VAPID** KMB V2 dan SUM diambil dari Script Properties lewat Chrome (akun Google kedua di Chrome); nilai tidak pernah tampil: halaman mengunduh berkas kecil, skrip lokal memeriksa pasangan P-256, menyimpan ke `abadiops.env`, menghapus unduhan. Unduhan kedua sempat diblokir Chrome sampai Gabriel mengizinkan.
+  - **`main` = `38e5945`**; **deploy produksi bertahap** (1% → uji override, semua jalur sama → 100%) BUPR `9375ce38`, KMB Projek `7276db1b`, KMB V2 `50c49725`, SUM `66681bed` (kode push); rahasia `VAPID_PRIVATE_PEM`/`VAPID_PUBLIC_B64URL` di `abadiops-kmb` dan `abadiops-sum`; semua jalur tetap sama sesudahnya.
+- Belum selesai / berikutnya: Gabriel Deploy dari editor ketiga GAS; tiga salinan spreadsheet untuk latihan; uji WO Gabriel; 7 hari (≥ 20 Nov).
+
 ### 2026-11-15 (sore) · Claude (+ Gabriel: "siapkan utk 3 project lainnya") · KMB Projek, KMB V2, SUM
 - Berubah:
   - **Tutup GAS** ketiga rumah dicek ulang: HEAD = @49/@299/@199, tambalan tepat 4 bagian, uji 14/14, tanpa izin OAuth baru. Belum dikirim (menunggu "ya clasp push").
