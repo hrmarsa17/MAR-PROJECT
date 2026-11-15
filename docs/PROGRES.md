@@ -12,6 +12,16 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (siang, ±12.05–12.45) · Claude (+ Gabriel: "putuskan dan lanjutkan") · keempat rumah (PWA, GAS BUPR @12)
+- Berubah:
+  - **GAS BUPR @12** (Deploy dari editor oleh Gabriel) = tambalan tutup GAS yang dikirim, 119 berkas identik; /exec normal. Akun layanan Editor di spreadsheet BUPR (juga KMB Projek, SUM; KMB V2 Viewer).
+  - **Keputusan PWA SUM:** riwayat `pwa/sum` menunjukkan PWA asli (28 Okt) hanya mengizinkan `pending_mechanic_work`, padahal web GAS SUM mengizinkan `in_progress` juga. Perubahan 11 Nov = mengubah aplikasi asli → BUG #44, ditunda; `app.js` kembali ke isi tayang v49. `sw.js` tetap dengan perbaikan #30 (lahir dari sistem baru).
+  - **BUG #30 untuk semua rumah:** `sw.js` PWA BUPR (salinan Worker), KMB Projek, KMB V2 melewatkan `/web` dan `/api` ke jaringan. Ditemukan karena pintu mengarahkan pengguna ke PWA di domain rumah, dan sesudah migrasi MAR Web dilayani Worker di domain yang sama (cache-first → basi).
+  - Worker staging kelima di-deploy dari `7a09662` (sw.js baru tayang di `staging-*.abadiops.com`; API staging tetap `gas-worker`).
+- Belum selesai / berikutnya:
+  - **"Ya push main"** untuk `7a09662` (push ke `main` ditolak pengaman otomatis tanpa izin baru), lalu deploy produksi SUM + deploy ulang BUPR/KMB Projek/KMB V2 (aset PWA).
+  - Salinan spreadsheet BUPR untuk latihan cermin balik (Gabriel), lalu `jalan_kembali_siap`.
+
 ### 2026-11-15 (siang, ±11.00–11.55) · Claude (+ Gabriel: "lakukan semua") · BUPR, pintu, KMB Projek, KMB V2 (produksi)
 - Berubah:
   - **`main` = `51efbc7`** (perbaikan #43 + docs). **Kunci `worker_produksi`** dibuat Gabriel; namanya sempat tertulis `SUPABASE_SECRET_KEY_UJI` (baris kembar), dibetulkan dan diuji (service_role Gedung 1, beda dari kunci uji).

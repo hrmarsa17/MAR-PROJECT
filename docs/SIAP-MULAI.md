@@ -47,9 +47,11 @@ mengubah sistem yang dipakai orang.
    dengan versi lama dan dengan GAS; satu-satunya beda `/web` (dulu halaman "Perlu Token", kini dialihkan ke web app
    GAS; PWA tidak menautkannya, pintu mengirim pengguna rumah `gas` langsung ke web GAS). Rollback seketika ke versi
    sebelum: pintu `6ac7fea8`, KMB Projek `2be3bb6a`, KMB V2 `fac0593d` (`wrangler versions deploy <id>@100`).
-   **`abadiops-sum` sengaja BELUM:** PWA SUM di repo (v51, 11 Nov) beda dengan yang tayang (v49): status `in_progress`/
-   `assigned`/`open` jadi "Perlu diisi" dan bisa diisi; belum terbukti 1:1 dengan web GAS SUM. Putuskan sebelum giliran
-   SUM (`docs/KEPUTUSAN.md`). Urutan semula:
+   **`abadiops-sum` menyusul** (keputusan 15 Nov siang, `docs/KEPUTUSAN.md`): PWA SUM `app.js` dikembalikan ke v49 yang
+   tayang (BUG #44 ditunda), `sw.js` dengan perbaikan BUG #30 (`mar-sum-v52`). **Menunggu "ya push main"** untuk
+   `7a09662`; sesudahnya SUM di-deploy dengan cara yang sama + kunci, dan Worker BUPR, KMB Projek, KMB V2 di-deploy ulang
+   supaya `sw.js` baru (tanpa cache `/web` dan `/api`) tayang beberapa hari sebelum migrasinya. Staging sudah memakainya
+   (15 Nov). Urutan semula:
    - `abadiops-kmbbupr` (baru) di `kmbbupr.abadiops.com` **lebih dulu**, karena pintu mengarahkan pengguna BUPR ke sana;
    - `abadiops-pintu`: panel migrasi baru, BUPR masuk daftar rumah, token rumah yang sudah pindah dikenali lewat Worker-nya;
    - Worker rumah KMB V2, SUM, KMB Projek: **bertahap** (10% lalu 100% sesudah dicek) dengan kemungkinan rollback seketika.
