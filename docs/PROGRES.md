@@ -12,6 +12,17 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (siang, ±11.00–11.55) · Claude (+ Gabriel: "lakukan semua") · BUPR, pintu, KMB Projek, KMB V2 (produksi)
+- Berubah:
+  - **`main` = `51efbc7`** (perbaikan #43 + docs). **Kunci `worker_produksi`** dibuat Gabriel; namanya sempat tertulis `SUPABASE_SECRET_KEY_UJI` (baris kembar), dibetulkan dan diuji (service_role Gedung 1, beda dari kunci uji).
+  - **Deploy produksi** dari `main`, dengan kunci produksi: Worker BUPR baru (`kmbbupr.abadiops.com`, GAS @11), pintu (`8cf12155`), KMB Projek (`105df4e9`, GAS @49), KMB V2 (`61ecc873`, GAS @299). Pintu dan rumah bertahap 1% → (10%) → 100%; versi baru diuji lebih dulu di domain produksi lewat `Cloudflare-Workers-Version-Overrides`: aset PWA + API sama persis dengan versi lama dan dengan GAS (ping, getDashboard, aksi tak dikenal; CORS `*`, preflight 204). Beda yang disengaja: `/web` dialihkan ke web app GAS (dulu halaman "Perlu Token"), status saklar memuat `kmbbupr`, panel migrasi baru. 0 galat di analitik. Alamat pratinjau `*.workers.dev` tidak bisa dibuka dari jaringan ini (diblokir DNS).
+  - **Worker SUM ditahan** (`docs/KEPUTUSAN.md`): PWA v51 di repo ≠ v49 yang tayang.
+  - **Tutup GAS BUPR:** `clasp push` (HEAD = @11 + tambalan, diverifikasi clone ulang; tanpa izin OAuth baru).
+  - **PWA BUPR** (`kawanabadigrup/PWA-Project-KMB2` `81b8ee9`): API → `https://kmbbupr.abadiops.com/api`, `projek-v5`; tayang di GitHub Pages 30 detik sesudah push.
+- Belum selesai / berikutnya:
+  - Gabriel: Deploy versi baru BUPR dari editor GAS; bagikan spreadsheet BUPR ke akun layanan sebagai Editor (ekstensi Chrome tidak tersambung); salinan spreadsheet untuk latihan cermin balik.
+  - Keputusan PWA SUM sebelum giliran SUM.
+
 ### 2026-11-15 (siang, lanjutan) · Claude (+ Gabriel: "ya push main") · keempat rumah (main digabung, kunci sinkron maju)
 - Berubah:
   - **`staging` → `main`** atas persetujuan Gabriel: fast-forward 129 commit `09b18e2..6daefcd` (10.03 WIB). Dicek dulu: tidak ada workflow yang men-deploy (`uji.yml` hanya Postgres milik runner, tanpa rahasia), tidak ada integrasi Supabase/Workers Builds, dan cermin balik terjadwal melewati semua rumah selama izin tulis tertutup. CI `uji` di `main` hijau. Sejak ini `peralihan.yml` dan sinkron per jam (kini dengan AuditLogs) berjalan dari `main`.

@@ -40,23 +40,40 @@ mengubah sistem yang dipakai orang.
    `abadiops-sum`, `abadiops-porject-kmb`, `abadiops-kmbbupr` **bersamaan dengan deploy produksi** (langkah 3): memasang
    rahasia ke Worker langsung men-deploy ulang Worker itu, dan kode produksi sekarang (30 Okt) belum pernah diuji dengan
    kunci. (Kunci `worker_uji` sengaja tidak dipakai untuk produksi, supaya memutar kunci uji tidak mematikan produksi.)
-3. **Izinkan deploy produksi** (cukup "ya, deploy produksi"). Urutannya penting:
+3. **Sudah 15 Nov 11.18–11.37 WIB** ("ya deploy produksi"), dari `main` `51efbc7`, semuanya dengan kunci produksi:
+   `abadiops-kmbbupr` (baru, GAS @11), `abadiops-pintu` (`8cf12155`, 1% → 100%), `abadiops-porject-kmb` (`105df4e9`, GAS
+   @49, 1% → 10% → 100%), `abadiops-kmb` (`61ecc873`, GAS @299, 1% → 10% → 100%). Sebelum tiap kenaikan, versi baru diuji
+   di domain produksi lewat header `Cloudflare-Workers-Version-Overrides`: aset PWA dan semua jawaban API sama persis
+   dengan versi lama dan dengan GAS; satu-satunya beda `/web` (dulu halaman "Perlu Token", kini dialihkan ke web app
+   GAS; PWA tidak menautkannya, pintu mengirim pengguna rumah `gas` langsung ke web GAS). Rollback seketika ke versi
+   sebelum: pintu `6ac7fea8`, KMB Projek `2be3bb6a`, KMB V2 `fac0593d` (`wrangler versions deploy <id>@100`).
+   **`abadiops-sum` sengaja BELUM:** PWA SUM di repo (v51, 11 Nov) beda dengan yang tayang (v49): status `in_progress`/
+   `assigned`/`open` jadi "Perlu diisi" dan bisa diisi; belum terbukti 1:1 dengan web GAS SUM. Putuskan sebelum giliran
+   SUM (`docs/KEPUTUSAN.md`). Urutan semula:
    - `abadiops-kmbbupr` (baru) di `kmbbupr.abadiops.com` **lebih dulu**, karena pintu mengarahkan pengguna BUPR ke sana;
    - `abadiops-pintu`: panel migrasi baru, BUPR masuk daftar rumah, token rumah yang sudah pindah dikenali lewat Worker-nya;
    - Worker rumah KMB V2, SUM, KMB Projek: **bertahap** (10% lalu 100% sesudah dicek) dengan kemungkinan rollback seketika.
      Selama saklar `gas` semuanya tetap meneruskan ke GAS. Deploy ulang ini juga wajib untuk batas CPU Workers Paid
      (BUG-DICATAT #40).
-4. **Tutup GAS BUPR** *(per rumah)*: izinkan `node tools/kembar/siapkan-tutup-gas.mjs --kamar=kmbbupr --push`, lalu di
+4. **`clasp push` BUPR sudah 15 Nov ±11.33 WIB** (HEAD = @11 + tambalan, diverifikasi clone ulang; tidak ada izin OAuth
+   baru karena `UrlFetchApp`, `CacheService`, `PropertiesService` sudah dipakai kode BUPR). **Tinggal Gabriel: Deploy
+   versi baru dari editor** (web app berjalan atas nama akun yang men-deploy, `USER_DEPLOYING`, jadi jangan dari akun
+   lain). Sesudahnya Claude memastikan /exec tetap menjawab sama. Cara semula:
+   **Tutup GAS BUPR** *(per rumah)*: izinkan `node tools/kembar/siapkan-tutup-gas.mjs --kamar=kmbbupr --push`, lalu di
    editor GAS BUPR: *Deploy → Manage deployments → pensil pada deployment produksi → Version: New version → Deploy*.
    **Jangan `clasp deploy`.** Tambalan tidur selama saklar `gas`; uji di panel tidak berubah apa-apa.
-5. **Hak Editor akun layanan** *(per rumah)*: bagikan spreadsheet BUPR ("New MAR Project") ke email akun layanan cermin
+5. **Belum (15 Nov):** ekstensi Claude di Chrome tidak tersambung, jadi Gabriel membagikan sendiri (Share → email akun
+   layanan dari `akun-layanan.json` → Editor → hapus centang "Notify" → Share), atau menyambungkan ulang ekstensi.
+   **Hak Editor akun layanan** *(per rumah)*: bagikan spreadsheet BUPR ("New MAR Project") ke email akun layanan cermin
    (yang sekarang Viewer) sebagai **Editor**. Dipakai cermin balik hanya setelah jam mulai.
 6. **Latihan cermin balik** (sekali, sebelum BUPR): *File → Make a copy* spreadsheet BUPR, bagikan salinannya ke akun
    layanan sebagai Editor, kirim ID salinannya ke Claude. Claude menjalankan `tools/cermin/latihan-balik.mjs` di skema uji
    `uji_kmbbupr` → salinan: `--tahap=awal` (salin penuh + uji Editor + periksa), satu siklus WO di Worker uji, lalu
    `--tahap=akhir` (cermin balik bertahap + periksa, harus semua sheet sama). Lulus → `config/rumah.json`
    `kmbbupr.gas.jalan_kembali_siap = true` (syarat ke-4 tombol Mulai) + deploy ulang pintu.
-7. **PWA BUPR lama** (GitHub Pages `kawanabadigrup/PWA-Project-KMB2`) masih memanggil GAS langsung. Sebelum Mulai, ganti
+7. **Sudah 15 Nov ±11.50 WIB:** commit `81b8ee9` di `kawanabadigrup/PWA-Project-KMB2` (API `app.js` + `sw.js` →
+   `https://kmbbupr.abadiops.com/api`, versi `projek-v5`), sesudah API Worker BUPR terbukti sama persis dengan GAS.
+   Semula: **PWA BUPR lama** (GitHub Pages `kawanabadigrup/PWA-Project-KMB2`) masih memanggil GAS langsung. Sebelum Mulai, ganti
    alamatnya ke Worker supaya kiriman HP ikut tertahan dengan benar saat peralihan:
    `app.js` baris 15 `API_URL` dan `sw.js` baris 41 `API_URL` → `https://kmbbupr.abadiops.com/api`, lalu `sw.js` baris 1
    `CACHE` → `mar-projek-v5`. Selama saklar `gas`, Worker meneruskan ke GAS yang sama, jadi pengguna tidak merasakan beda.

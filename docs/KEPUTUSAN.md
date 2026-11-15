@@ -80,6 +80,7 @@ Keputusan bisnis dan angka uang ada di tangan **Gabriel**.
 | 15 Nov 2026 | **PWA BUPR lama (GitHub Pages) diarahkan ke Worker `kmbbupr.abadiops.com`**, bukan pengguna disuruh pindah aplikasi. | Pengguna tidak perlu memasang ulang atau mengetik token; selama saklar `gas` Worker meneruskan ke GAS yang sama. Atas penyerahan Gabriel. |
 | 15 Nov 2026 | **Arsip berkas payroll di Drive tidak dibuat ulang**; payroll diunduh langsung sebagai XLSX. **Email laporan penjaga ditunda** (laporan tetap dicatat). Keduanya bukan syarat mulai. | Tidak mengubah data atau angka; bisa ditambah kemudian (arsip di Supabase Storage, email lewat Cloudflare). Atas penyerahan Gabriel. |
 | 15 Nov 2026 | **Notifikasi push wajib sebelum KMB Projek, KMB V2, dan SUM; BUPR boleh mulai tanpa push.** | BUPR hanya satu mekanik aktif dengan WO mandiri; rumah lain bergantung pada pemberitahuan antrean approval. Kunci VAPID harus disalin Gabriel. Atas penyerahan Gabriel. |
+| 15 Nov 2026 | **Worker SUM produksi belum di-deploy ulang** (tetap kode 30 Okt, tanpa kunci Supabase); BUPR, pintu, KMB Projek, KMB V2 di-deploy. | PWA SUM di repo (v51, 11 Nov) berbeda dengan yang tayang (v49): status `in_progress`/`assigned`/`open` dianggap "Perlu diisi" dan bisa diisi; belum terbukti 1:1 dengan web GAS SUM. SUM rumah terakhir, dan selama saklar `gas` Worker hanya meneruskan ke GAS, jadi tidak ada yang tertunda. Diambil Claude atas "lakukan semua" Gabriel; ditinjau sebelum giliran SUM (kembalikan PWA ke v49, atau buktikan v51 = GAS). |
 
 ## Tahapan per rumah
 
