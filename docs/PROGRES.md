@@ -16,9 +16,9 @@ Formatnya:
 - Berubah:
   - **`main` = `7d3540b`**. **Worker SUM produksi** `0352395b` (GAS @199, 1% → uji override → 10% → 100%, + kunci): aset hanya beda penanda versi `app.js` dan `sw.js` (+ pengecualian `/web`), API = GAS; rollback `d1d2db45`. **Aset PWA baru** di BUPR `a198399e`, KMB Projek `0aa0f170`, KMB V2 `da2d4843` (rollback `08a356e5`, `144e7be7`, `860b5541`); hanya `sw.js`/`app.js` yang beda, kunci terwariskan. Kelima Worker produksi: saklar `gas`, `supabase_configured=true`.
   - **Latihan cermin balik LULUS** di salinan buatan Gabriel: tahap awal 24/24 sama; skenario tulis BUPR lengkap di Worker uji + pemicu (pemangkas ProcessedOps 10.735 → 333 baris); tahap akhir bertahap 9 sheet, periksa 24/24 sama. `kmbbupr.gas.jalan_kembali_siap = true`.
+  - Sesudahnya (Gabriel: "ya push main"): `main` = `4c599d3`, pintu produksi `5f80640a` (1% → uji override → 100%; semua jalur publik sama; rollback `b9a1b246`) membawa `jalan_kembali_siap` BUPR. `uji_kmbbupr` disegarkan lagi dari cermin BUPR (24/24 sama).
 - Belum selesai / berikutnya:
-  - Push `main` + deploy pintu supaya syarat "jalan kembali siap" terbaca di panel.
-  - Tombol Mulai BUPR: tunggu 7 hari tanpa selisih (paling cepat 19 Nov) + uji WO Gabriel di `staging-kmbbupr.abadiops.com`.
+  - Tombol Mulai BUPR: tunggu 7 hari tanpa selisih (paling cepat 19 Nov) + uji WO Gabriel di `staging-kmbbupr.abadiops.com` + persetujuan Gabriel.
 
 ### 2026-11-15 (siang, ±12.05–12.45) · Claude (+ Gabriel: "putuskan dan lanjutkan") · keempat rumah (PWA, GAS BUPR @12)
 - Berubah:

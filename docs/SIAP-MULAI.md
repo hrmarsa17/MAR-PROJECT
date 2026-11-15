@@ -73,7 +73,9 @@ mengubah sistem yang dipakai orang.
    `1t2eOlSw…` tidak dipakai dan tidak boleh di-deploy): tahap awal 24/24 sama (0 baris perlu ditulis); skenario tulis
    BUPR di Worker uji (`skenario-tulis.mjs`: WO mandiri → L2, SPV → L1 → L2, kiriman ulang op_id, pembatalan, 3 penolakan)
    + pemicu GAS (pemangkas ProcessedOps menghapus 10.402 baris); tahap akhir bertahap: 9 sheet ditulis (ProcessedOps 134
-   ditulis + 10.402 dikosongkan), **periksa 24/24 sama**. `config/rumah.json` `kmbbupr.gas.jalan_kembali_siap = true`.
+   ditulis + 10.402 dikosongkan), **periksa 24/24 sama**. `config/rumah.json` `kmbbupr.gas.jalan_kembali_siap = true`
+   (`main` `4c599d3`), pintu produksi `5f80640a` (rollback `b9a1b246`) sudah membacanya. Sesudah latihan, `uji_kmbbupr`
+   disegarkan lagi dari cermin BUPR (24/24 sama) untuk uji WO Gabriel.
    **Latihan cermin balik** (sekali, sebelum BUPR): *File → Make a copy* spreadsheet BUPR, bagikan salinannya ke akun
    layanan sebagai Editor, kirim ID salinannya ke Claude. Claude menjalankan `tools/cermin/latihan-balik.mjs` di skema uji
    `uji_kmbbupr` → salinan: `--tahap=awal` (salin penuh + uji Editor + periksa), satu siklus WO di Worker uji, lalu
