@@ -1,4 +1,4 @@
-var CACHE = 'mar-projek-v4';
+var CACHE = 'mar-projek-v5';
 var ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', function(e) {
   // cache:'reload' — WAJIB. addAll() memakai cache HTTP biasa, jadi app.js bisa
@@ -251,7 +251,9 @@ self.addEventListener('fetch', function(e) {
   // Permintaan ber-query (mis. cek versi './sw.js?cek=<timestamp>') SELALU unik,
   // jadi kalau ikut disimpan, cache menggelembung tanpa batas — satu entri baru
   // tiap kali tombol Versi ditekan. Lewatkan saja ke jaringan.
-  if (url.search) return;
+  // /web (MAR Web) dan /api juga langsung ke jaringan: sesudah migrasi rumah ini, MAR Web dilayani Worker di domain
+  // yang sama dengan PWA, dan halaman dinamis tidak boleh disajikan basi dari cache (BUG-DICATAT #30).
+  if (url.search || url.pathname.startsWith('/web') || url.pathname.startsWith('/api')) return;
   e.respondWith(
     caches.match(e.request).then(function(hit) {
       if (hit) return hit;
