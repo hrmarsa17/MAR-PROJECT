@@ -58,6 +58,12 @@ const JEDA_MS = 1100;
 let terakhirMs = 0;
 export const tidur = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Galat sementara yang aman diulang: 429 (kuota), 5xx, dan 409 ABORTED ("The operation was aborted": Google membatalkan
+// operasi, biasanya karena beban/konkurensi; tidak ada yang diterapkan, jadi mengulang aman, juga untuk batchUpdate).
+// 409 ABORTED pernah menggagalkan sinkron per jam KMB V2 (WorkOrders_Archive, 15 Nov 17.24 WIB); di hari H galat yang
+// sama akan menggagalkan sinkron terakhir prosedur Mulai.
+export const bolehUlang = (status, isi = '') => status === 429 || status >= 500 || (status === 409 && /ABORTED/.test(String(isi)));
+
 // badan: objek untuk POST JSON (spreadsheets.batchUpdate). Tanpa badan: GET.
 export async function gapi(url, token, badan) {
   for (let coba = 1; ; coba++) {
@@ -75,8 +81,9 @@ export async function gapi(url, token, badan) {
       continue;
     }
     if (res.ok) return res.json();
-    const pesan = `${res.status} ${url.split('?')[0]}: ${(await res.text()).replace(/\s+/g, ' ').slice(0, 300)}`;
-    if ((res.status !== 429 && res.status < 500) || coba >= 5) throw new Error(pesan);
+    const isi = (await res.text()).replace(/\s+/g, ' ');
+    const pesan = `${res.status} ${url.split('?')[0]}: ${isi.slice(0, 300)}`;
+    if (!bolehUlang(res.status, isi) || coba >= 5) throw new Error(pesan);
     console.log(`  ${res.status}, mencoba lagi (${coba + 1}/5)`);
     await tidur(res.status === 429 ? 61000 : 5000 * coba);
   }

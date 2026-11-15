@@ -204,3 +204,16 @@ describe('cermin balik: pengaman sasaran', () => {
     expect(cekSasaran({ skema: 'uji_kmbbupr', sasaran: 'SALINAN', asli: null, semuaAsli, dariOpsi: true })).toBe(false);
   });
 });
+
+describe('galat Google yang diulang (tools/cermin/google.mjs bolehUlang)', () => {
+  const { bolehUlang } = modGoogle as any;
+  it('409 ABORTED diulang (15 Nov: sinkron per jam KMB V2 gagal karenanya), 409 lain tidak', () => {
+    expect(bolehUlang(409, '{ "error": { "code": 409, "message": "The operation was aborted.", "status": "ABORTED" } }')).toBe(true);
+    expect(bolehUlang(409, '{ "error": { "code": 409, "status": "ALREADY_EXISTS" } }')).toBe(false);
+  });
+  it('429 dan 5xx diulang; 400/403/404 tidak', () => {
+    expect(bolehUlang(429)).toBe(true);
+    expect(bolehUlang(503)).toBe(true);
+    for (const s of [400, 403, 404]) expect(bolehUlang(s, 'ABORTED')).toBe(false);
+  });
+});
