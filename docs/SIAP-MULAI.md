@@ -127,7 +127,7 @@ spreadsheet; rumah asli tidak tersentuh. Panel `abadiops.com/saklar` menampilkan
 | Worker | `abadiops-<w>-latihan` di `latihan-<rumah>.abadiops.com`; tanpa cron; push hanya dicatat (PushSubs salinan berisi HP asli) |
 | Login pengguna | rumah latihan TIDAK ikut mengenali token (salinan memuat token asli; tanpa ini login mekanik ditolak "token kembar") |
 | Syarat tombol | 7 hari dan umur sinkron tidak berlaku (salinan tidak ikut sinkron per jam); periksa selisih dan jalan kembali tetap |
-| Pelaksana | permintaan rumah latihan hanya diambil pelaksana yang punya ID salinannya: rahasia GitHub `CERMIN_RUMAH_LATIHAN` (belum dibuat: pengaman sesi Claude menolak membuat rahasia repo tanpa izin langsung), atau pelaksana lokal `peralihan.mjs --menit=60 --hanya=latihan_` dengan `abadiops.env` |
+| Pelaksana | pelaksana GitHub yang sama dengan hari H: rahasia `CERMIN_RUMAH_LATIHAN` (dibuat 15 Nov atas izin Gabriel; putaran uji: "melayani 8 rumah"). Pelaksana hanya mengambil permintaan rumah yang ID spreadsheet-nya ia punya; cadangan: pelaksana lokal `peralihan.mjs --menit=60 --hanya=latihan_` dengan `abadiops.env` |
 
 Gladi per rumah (BUPR dulu): jalankan pelaksana → kartu "… (LATIHAN)" → **Mulai migrasi** → ketik `latihan_<kode>` →
 tunggu `supabase` → Claude menjalankan satu siklus WO (`tools/cermin/siklus-latihan.mjs --rumah=<kode> --latihan`) →
