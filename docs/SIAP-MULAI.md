@@ -29,8 +29,10 @@ mengubah sistem yang dipakai orang.
    otomatis: semua Worker di-deploy manual. **Perlu sekali lagi sebelum 19 Nov:** perbaikan kunci sinkron maju
    (BUG-DICATAT #43) baru ada di `staging`, sedangkan sinkron per jam dan pelaksana berjalan dari `main`. Cukup "ya,
    push main" lagi.
-2. **Kunci Supabase produksi.** Worker produksi belum punya kunci Supabase sama sekali (selama ini hanya meneruskan ke
-   GAS). Buat di dasbor Supabase proyek Gedung 1 (`sptgqsjgszwbreikxdph`,
+2. **Kunci Supabase produksi.** **Kunci sudah ada (15 Nov 11.01 WIB):** `SUPABASE_SECRET_KEY_GEDUNG1` di
+   `abadiops.env` diuji tanpa dicetak: format `sb_secret_`, berbeda dari kunci uji dan Gedung 2, Gedung 1 menerimanya
+   dengan hak service_role (tanpa kunci ditolak 401). Tinggal dipasang ke Worker produksi bersamaan dengan langkah 3.
+   Worker produksi belum punya kunci Supabase sama sekali (selama ini hanya meneruskan ke GAS). Buat di dasbor Supabase proyek Gedung 1 (`sptgqsjgszwbreikxdph`,
    https://supabase.com/dashboard/project/sptgqsjgszwbreikxdph/settings/api-keys): tab kunci baru (bukan *Legacy*) →
    *Secret keys → New secret key*, nama `worker_produksi`. Salin (diawali `sb_secret_`), lalu tambahkan satu baris di
    `C:\dev\rahasia\abadiops.env`: `SUPABASE_SECRET_KEY_GEDUNG1=<kuncinya>`. Jangan ditempel di chat. Claude langsung
