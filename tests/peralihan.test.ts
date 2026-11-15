@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { jadwalAwal, perpanjang, bolehAmbil, waktunyaBalik, sudahAkhir } from '../tools/cermin/peralihan.mjs';
+import { jadwalAwal, perpanjang, bolehAmbil, waktunyaBalik, sudahAkhir, skemaDilayani } from '../tools/cermin/peralihan.mjs';
 
 // Jadwal putaran pelaksana (tools/cermin/peralihan.mjs). GitHub menjalankan jadwal */5 nyatanya ±1 jam sekali
 // (15 Nov), jadi putaran yang baru mengerjakan satu permintaan harus tetap menunggu langkah prosedur berikutnya.
@@ -45,5 +45,21 @@ describe('jadwal pelaksana Peralihan', () => {
     expect(waktunyaBalik(null, T0, 5)).toBe(true);
     expect(waktunyaBalik(T0, T0 + 4 * M, 5)).toBe(false);
     expect(waktunyaBalik(T0, T0 + 5 * M, 5)).toBe(true);
+  });
+});
+
+describe('rumah yang dilayani pelaksana', () => {
+  const lingkungan = {
+    KMBBUPR_SPREADSHEET_ID: 'a', KMB_PROJEK_SPREADSHEET_ID: 'b', KMB_SPREADSHEET_ID: 'c', SUM_SPREADSHEET_ID: 'd',
+    LATIHAN_KMBBUPR_SPREADSHEET_ID: 'e', LATIHAN_SUM_SPREADSHEET_ID: '', DATABASE_URL: 'x', GOOGLE_SA_KEY_FILE: 'y',
+  };
+  it('pelaksana GitHub: rumah dari rahasianya saja; ID kosong tidak dihitung', () => {
+    expect(skemaDilayani(lingkungan)).toEqual(['kmb', 'kmb_projek', 'kmbbupr', 'latihan_kmbbupr', 'sum']);
+  });
+  it('pelaksana lokal rumah latihan (--hanya=latihan_) tidak pernah mengambil permintaan rumah asli', () => {
+    expect(skemaDilayani(lingkungan, 'latihan_')).toEqual(['latihan_kmbbupr']);
+  });
+  it('tanpa ID spreadsheet: tidak melayani apa pun (tidak mengambil permintaan lalu menggagalkannya)', () => {
+    expect(skemaDilayani({ DATABASE_URL: 'x' })).toEqual([]);
   });
 });

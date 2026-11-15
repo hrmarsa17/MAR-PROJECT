@@ -19,7 +19,7 @@ import { SaklarDO } from './saklar-do.js';
 import { verifikasiKataSandi, validasiSesi } from './saklar-auth.js';
 import { tanganiAdminCermin } from './admin-cermin.js';
 import { tanganiMigrasi } from './migrasi.js';
-import PROFIL_RUMAH from '../../../config/rumah.json';
+import PROFIL_RUMAH, { adalahLatihan } from '../../bersama/profil-rumah.js';
 
 export { SaklarDO };
 
@@ -162,8 +162,11 @@ async function periksaSatuRumah(rumah, token, modeSaklar, env) {
 
 async function kenaliRumah(token, env) {
   const petaSaklar = await bacaPetaSaklar(env);
+  // Rumah latihan (workers/bersama/profil-rumah.js) TIDAK ikut mengenali token: datanya salinan spreadsheet asli,
+  // jadi token mekanik sungguhan juga ada di sana. Kalau ikut, token terdaftar di dua rumah dan login ditolak.
   const hasil = await Promise.all(
-    daftarRumah(env).map((r) => periksaSatuRumah(r, token, petaSaklar[r.kode] || 'gas', env))
+    daftarRumah(env).filter((r) => !adalahLatihan(r.kode))
+      .map((r) => periksaSatuRumah(r, token, petaSaklar[r.kode] || 'gas', env))
   );
   const cocok = hasil.filter((h) => h.cocok);
   const gagal = hasil.filter((h) => h.gagal);

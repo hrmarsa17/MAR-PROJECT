@@ -21,7 +21,7 @@
  * - Setiap perubahan dicatat di public.cermin_admin_log (bukan AuditLogs GAS); token disamarkan.
  * Hanya sesi panel (kata sandi panel) yang boleh memakai semua rute ini, termasuk melihat.
  */
-import PROFIL_RUMAH from '../../../config/rumah.json';
+import PROFIL_RUMAH from '../../bersama/profil-rumah.js';
 import { buatLayanan, dataDariCermin } from '../../bersama/gas-layanan.js';
 import { buatHost } from '../../bersama/gas-host.js';
 import { susunPerubahan } from '../../bersama/gas-simpan.js';

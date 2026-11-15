@@ -21,7 +21,7 @@
  *                             export default buatWorkerRumah(bundel);
  * Penjelasan lengkap: workers/kmbbupr/README.md.
  */
-import PROFIL_RUMAH from '../../config/rumah.json';
+import PROFIL_RUMAH from './profil-rumah.js';
 import { buatLayanan, buatPermintaanPost, buatPermintaanGet, hasilRun, dataDariCermin } from './gas-layanan.js';
 import { buatHost } from './gas-host.js';
 import { bacaStatusSaklar } from './saklar.js';
@@ -56,6 +56,7 @@ async function layani(request, env, ctx) {
     return tanganiApi(request, env, url, ctx);
   }
   if (url.pathname === '/api/uji-pemicu' && request.method === 'POST') return tanganiUjiPemicu(request, env, ctx);
+  if (url.pathname === '/gas-tiruan' && (PROFIL_RUMAH[env.RUMAH] || {}).latihan) return gasTiruanLatihan(request, env);
   if (url.pathname === '/web/run') return tanganiRun(request, env, url, ctx);
   if (url.pathname === '/web' || url.pathname === '/web/') return tanganiWeb(request, env, url, ctx);
   // File PWA rumah ([assets] Worker rumah). Akar folder → index.html, disajikan langsung tanpa redirect.
@@ -107,6 +108,26 @@ function halamanPeralihan(env) {
     status: 503,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '120', 'X-Abadi-Rumah': env.RUMAH, 'X-Abadi-Jalur': 'peralihan' },
   });
+}
+
+// ── GAS tiruan rumah latihan (uji kering di produksi, keputusan Gabriel 15 Nov) ─────
+// "GAS" rumah latihan (workers/bersama/profil-rumah.js) adalah titik ini: meniru jawaban tambalan tutup GAS
+// (tools/kembar/tambal-tutup-gas.mjs pesanTutupGas_) menurut saklar rumah latihan di pintu. Selama `gas` menjawab
+// seperti GAS untuk token yang tidak sah; posisi lain → "sudah pindah ke abadiops", yang ditunggu langkah cek_gas
+// prosedur Mulai. Tidak ada kiriman yang diproses: data GAS rumah latihan = salinan spreadsheet, yang hanya ditulis
+// lewat sinkron/cermin balik. Hanya aktif bila profil rumah Worker ini `latihan`.
+export const PESAN_TUTUP_GAS = 'Sistem MAR rumah ini sudah pindah ke abadiops. Buka https://abadiops.com dan masuk dengan token Anda.';
+
+async function gasTiruanLatihan(request, env) {
+  const tertutup = (await bacaStatusSaklar(env)) !== 'gas';
+  const headers = { ...CORS, 'Cache-Control': 'no-store', 'X-Abadi-Rumah': env.RUMAH, 'X-Abadi-Jalur': 'gas-tiruan-latihan' };
+  if (request.method === 'GET') {
+    const isi = tertutup ? PESAN_TUTUP_GAS : 'GAS tiruan rumah latihan (uji kering prosedur migrasi). Tidak melayani pengguna.';
+    return new Response(`<!doctype html><meta charset="utf-8"><title>MAR latihan</title><p style="font:16px system-ui;margin:2em">${isi}</p>`,
+      { status: 200, headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+  const isi = tertutup ? { success: false, error: PESAN_TUTUP_GAS } : { success: false, error: 'Token tidak dikenal / nonaktif' };
+  return new Response(JSON.stringify(isi), { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } });
 }
 
 // ── Pemicu terjadwal (cron Worker) ──────────────────────────────────────────

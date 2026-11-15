@@ -46,6 +46,12 @@ RUMAH = [
   { kode = "sum", nama = "SUM", gas = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec", alamat = "https://sum.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbzB5EUJlpGRaDTFvfr3bl117hd_Oa2k4seCecTYy4Ct8_oYRefu8U9BqG6zu3M-BoFS/exec" },
   { kode = "kmbtra", nama = "KMB TRA", gas = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec", alamat = "https://kmbtra.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbwlwlQvOGVF6FdKkYRNlbgdJCets5L-0AfufMB4_79_HzvoQkeE9aZAqkKZiXCZHXnG6Q/exec" },
   { kode = "kmbbupr", nama = "KMB Projek BUPR", gas = "https://script.google.com/macros/s/AKfycbykSslm5SFzAHRGJRLApDVNvR2JvZzW_Y3JEazdXaISJxADGlXwEWXHNg9pwpr4SJ73/exec", alamat = "https://kmbbupr.abadiops.com/", web = "https://script.google.com/macros/s/AKfycbykSslm5SFzAHRGJRLApDVNvR2JvZzW_Y3JEazdXaISJxADGlXwEWXHNg9pwpr4SJ73/exec" },
+  # Rumah LATIHAN (uji kering prosedur Mulai/Kembali di produksi, 15 Nov 2026; workers/bersama/profil-rumah.js):
+  # data = salinan spreadsheet, GAS = titik tiruan di Worker latihan. Tidak ikut mengenali token pengguna.
+  { kode = "latihan_kmbbupr", nama = "KMB Projek BUPR (LATIHAN)", gas = "https://latihan-kmbbupr.abadiops.com/gas-tiruan", alamat = "https://latihan-kmbbupr.abadiops.com/", web = "https://latihan-kmbbupr.abadiops.com/gas-tiruan" },
+  { kode = "latihan_kmbprojek", nama = "KMB Projek (LATIHAN)", gas = "https://latihan-kmbprojek.abadiops.com/gas-tiruan", alamat = "https://latihan-kmbprojek.abadiops.com/", web = "https://latihan-kmbprojek.abadiops.com/gas-tiruan" },
+  { kode = "latihan_kmbtra", nama = "KMB TRA (LATIHAN)", gas = "https://latihan-kmbtra.abadiops.com/gas-tiruan", alamat = "https://latihan-kmbtra.abadiops.com/", web = "https://latihan-kmbtra.abadiops.com/gas-tiruan" },
+  { kode = "latihan_sum", nama = "SUM (LATIHAN)", gas = "https://latihan-sum.abadiops.com/gas-tiruan", alamat = "https://latihan-sum.abadiops.com/", web = "https://latihan-sum.abadiops.com/gas-tiruan" },
 ]
 
 [observability]

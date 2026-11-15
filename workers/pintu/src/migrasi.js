@@ -21,7 +21,7 @@
  *   sinkron terakhir = cermin_salin_ke_uji(<skema>), periksa = cermin_bandingkan(<skema>, uji_<skema>),
  *   cermin balik = hanya menghitung sheet yang akan ditulis balik (tidak menulis apa pun).
  */
-import PROFIL_RUMAH from '../../../config/rumah.json';
+import PROFIL_RUMAH from '../../bersama/profil-rumah.js';
 
 export const POSISI_SAH = ['gas', 'menutup', 'supabase', 'membuka'];
 export const HARI_MINIMAL = 7;
@@ -75,10 +75,13 @@ export async function kesehatanRumah(env, kode) {
   const periksaNol = !!m && m[1] === m[2];
   const sinkron = nilai('sinkron_terakhir');
   const menitSinkron = sinkron ? Math.round((Date.now() - Date.parse(sinkron)) / 60000) : null;
+  // Rumah latihan (workers/bersama/profil-rumah.js): salinan spreadsheet tidak ikut sinkron tiap jam (job Cermin
+  // hanya rumah asli), jadi syarat 7 hari dan umur sinkron tidak berlaku; periksa selisih dan jalan kembali tetap.
+  const latihan = !!p.latihan;
   const syarat = [
-    { kunci: 'hari', ok: hari >= HARI_MINIMAL, teks: `Tidak ada selisih ${hari} hari berturut-turut (syarat ${HARI_MINIMAL})` },
+    { kunci: 'hari', ok: latihan || hari >= HARI_MINIMAL, teks: latihan ? `Rumah latihan: syarat ${HARI_MINIMAL} hari tidak berlaku` : `Tidak ada selisih ${hari} hari berturut-turut (syarat ${HARI_MINIMAL})` },
     { kunci: 'periksa', ok: periksaNol, teks: `Pemeriksaan selisih terakhir: ${periksa || 'belum ada'}${nilai('periksa_terakhir') ? ` (${jamSetempat(p, new Date(nilai('periksa_terakhir')))})` : ''}` },
-    { kunci: 'sinkron', ok: menitSinkron !== null && menitSinkron <= MENIT_SINKRON_MAKS, teks: menitSinkron === null ? 'Belum pernah sinkron' : `Sinkron terakhir ${menitSinkron} menit lalu (maks ${MENIT_SINKRON_MAKS})` },
+    { kunci: 'sinkron', ok: latihan || (menitSinkron !== null && menitSinkron <= MENIT_SINKRON_MAKS), teks: latihan ? `Rumah latihan: tanpa sinkron tiap jam (sinkron terakhir ${menitSinkron === null ? 'belum ada' : `${menitSinkron} menit lalu`}; prosedur Mulai menyinkron sendiri)` : (menitSinkron === null ? 'Belum pernah sinkron' : `Sinkron terakhir ${menitSinkron} menit lalu (maks ${MENIT_SINKRON_MAKS})`) },
     { kunci: 'jalan_kembali', ok: !!p.gas.jalan_kembali_siap, teks: p.gas.jalan_kembali_siap ? 'Jalan kembali ke GAS (cermin balik) siap dan sudah dilatih' : 'Jalan kembali ke GAS (cermin balik) belum siap' },
   ];
   return {

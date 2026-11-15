@@ -65,3 +65,25 @@ SKEMA_AWALAN = "uji_"
 # Ruang uji: tanpa cron otomatis; pemicu dijalankan lewat POST /api/uji-pemicu (uji kembar).
 [env.staging.triggers]
 crons = []
+
+# Rumah LATIHAN (uji kering prosedur Mulai/Kembali di PRODUKSI, keputusan Gabriel 15 Nov 2026; docs/SIAP-MULAI.md):
+# kode GAS yang sama di atas skema latihan_<skema> (dicermin dari SALINAN spreadsheet rumah ini), saklar sendiri
+# (latihan_kmbbupr) di pintu produksi. "GAS"-nya titik tiruan /gas-tiruan di Worker ini (workers/bersama/gas-rumah.js).
+# Tanpa cron dan tanpa kunci VAPID: tidak ada pemicu otomatis dan tidak ada notifikasi ke HP sungguhan.
+# Rahasia: SUPABASE_SERVICE_ROLE_KEY (kunci worker_produksi), --env latihan.
+[env.latihan]
+name = "abadiops-kmbbupr-latihan"
+workers_dev = true
+routes = [{ pattern = "latihan-kmbbupr.abadiops.com", custom_domain = true }]
+
+services = [
+  { binding = "PINTU", service = "abadiops-pintu" }
+]
+
+[env.latihan.vars]
+RUMAH = "latihan_kmbbupr"
+GAS_URL = "https://latihan-kmbbupr.abadiops.com/gas-tiruan"
+SUPABASE_URL = "https://sptgqsjgszwbreikxdph.supabase.co"
+
+[env.latihan.triggers]
+crons = []
