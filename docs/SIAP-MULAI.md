@@ -113,6 +113,26 @@ ketik kode rumah (`kmbbupr`, `kmbprojek`, `kmbtra`, `sum`). Lalu, otomatis:
 Lama ±15–40 menit. Gagal di mana pun → kembali ke `gas` sendiri, tidak ada yang hilang. Membatalkan saat `menutup`:
 ubah saklar manual ke `gas` (izin yang sudah dibuka ikut ditutup). Sesudah `supabase`: tombol **Kembali ke GAS** kapan saja.
 
+## Uji kering di produksi: rumah LATIHAN (keputusan Gabriel 15 Nov malam)
+
+Prosedur Mulai/Kembali yang SAMA dengan hari H, di produksi, tetapi pada empat **rumah latihan** yang datanya salinan
+spreadsheet; rumah asli tidak tersentuh. Panel `abadiops.com/saklar` menampilkan empat kartu tambahan
+"… (LATIHAN)", kode `latihan_kmbbupr`, `latihan_kmbprojek`, `latihan_kmbtra`, `latihan_sum`.
+
+| Bagian | Rumah latihan |
+|---|---|
+| Profil | `workers/bersama/profil-rumah.js`: kembaran otomatis rumah asli (kode GAS dan aturan sama); `latihan: true` |
+| Data | skema `latihan_<skema>` di Gedung 1, dicermin dari salinan (15 Nov: 24/24, 24/24, 24/24, 19/19 sama); database memperlakukannya seperti rumah asli (kunci tulis PT423, kunci sinkron maju, izin tulis) |
+| GAS | titik tiruan `latihan-<rumah>.abadiops.com/gas-tiruan`: meniru tambalan tutup GAS menurut saklar rumah latihan (keputusan: GAS tiruan, bukan skrip salinan) |
+| Worker | `abadiops-<w>-latihan` di `latihan-<rumah>.abadiops.com`; tanpa cron; push hanya dicatat (PushSubs salinan berisi HP asli) |
+| Login pengguna | rumah latihan TIDAK ikut mengenali token (salinan memuat token asli; tanpa ini login mekanik ditolak "token kembar") |
+| Syarat tombol | 7 hari dan umur sinkron tidak berlaku (salinan tidak ikut sinkron per jam); periksa selisih dan jalan kembali tetap |
+| Pelaksana | permintaan rumah latihan hanya diambil pelaksana yang punya ID salinannya: rahasia GitHub `CERMIN_RUMAH_LATIHAN` (belum dibuat: pengaman sesi Claude menolak membuat rahasia repo tanpa izin langsung), atau pelaksana lokal `peralihan.mjs --menit=60 --hanya=latihan_` dengan `abadiops.env` |
+
+Gladi per rumah (BUPR dulu): jalankan pelaksana → kartu "… (LATIHAN)" → **Mulai migrasi** → ketik `latihan_<kode>` →
+tunggu `supabase` → Claude menjalankan satu siklus WO (`tools/cermin/siklus-latihan.mjs --rumah=<kode> --latihan`) →
+cermin balik berkala menulis ke salinan → **Kembali ke GAS** → periksa: salinan = skema latihan, GAS tiruan terbuka lagi.
+
 ## Keempat rumah — keadaan 15 Nov ±15.30 WIB
 
 | Syarat | BUPR | KMB Projek | KMB V2 | SUM |

@@ -12,6 +12,12 @@ Formatnya:
 
 ---
 
+### 2026-11-15 (±17.30–19.00) · Claude (+ Gabriel: "uji kering start migration ... langsung di produksi") · rumah latihan
+- Berubah:
+  - **Empat rumah LATIHAN di produksi** (`main` `719cb05`, `ddbc4e1`, `d7e2b30`): profil turunan `workers/bersama/profil-rumah.js`; skema `latihan_*` dicermin dari salinan (24/24, 24/24, 24/24, 19/19 sama); Worker `abadiops-<w>-latihan` di `latihan-<rumah>.abadiops.com` (GAS tiruan `/gas-tiruan`, tanpa cron, push hanya dicatat); pintu produksi `18b5e9bb` (rollback `453c0963`) dengan empat kartu latihan, semua saklar `gas`.
+  - Pengaman: rumah latihan tidak ikut mengenali token pengguna (uji gagal tanpa pengecualian ini: login mekanik akan ditolak "token kembar"); syarat 7 hari/umur sinkron hanya dilonggarkan untuk rumah latihan; pelaksana hanya mengambil permintaan rumah yang ID spreadsheet-nya ia punya (`--hanya=` untuk pelaksana lokal).
+  - Uji: `tests/rumahLatihan.test.ts` 9/9, `tests/peralihan.test.ts` 8/8; seluruh uji 354+ lulus (8 sisanya butuh Postgres lokal).
+- Belum selesai / berikutnya: rahasia GitHub `CERMIN_RUMAH_LATIHAN` (ditolak pengaman sesi; perlu izin Gabriel) atau pelaksana lokal; gladi BUPR latihan lalu tiga lainnya.
 ### 2026-11-15 (±14.00–15.45) · Claude (+ Gabriel: "lakukan keputusan push ke main saya percayakan ke kamu") · keempat rumah
 - Berubah:
   - **Latihan cermin balik ketiga rumah LULUS**: KMB Projek; KMB V2 (tahap akhir diulang sesudah BUG #46, 24/24 sama); SUM (tahap akhir 11 sheet berubah, semua sama). `config/rumah.json` `jalan_kembali_siap = true` untuk KMB Projek, KMB V2, SUM (BUPR sudah).
