@@ -541,6 +541,11 @@ export function matikanLangganan(L, mati) {
 }
 
 async function teruskanKeGas(teks, env) {
+  // Rumah latihan: "GAS"-nya titik /gas-tiruan di Worker ini sendiri. Cloudflare tidak mengizinkan Worker memanggil
+  // domainnya sendiri (522), jadi dijawab langsung, sama seperti bila dipanggil dari luar.
+  if ((PROFIL_RUMAH[env.RUMAH] || {}).latihan) {
+    return gasTiruanLatihan(new Request('https://latihan.internal/gas-tiruan', { method: 'POST', body: teks }), env);
+  }
   const mulai = Date.now();
   let aksi = '';
   try { aksi = String(JSON.parse(teks).action || ''); } catch (_) {}

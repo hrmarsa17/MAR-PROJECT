@@ -113,6 +113,15 @@ describe('GAS tiruan rumah latihan (/gas-tiruan)', () => {
       expect(j.error).toMatch(/sudah pindah ke abadiops/i);   // yang ditunggu langkah cek_gas prosedur Mulai
     }
   });
+  it('API Worker latihan selama saklar gas dijawab GAS tiruan langsung (tanpa memanggil domainnya sendiri, 522)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-16T03:00:00Z'));
+    const ambil = vi.fn(async () => { throw new Error('tidak boleh fetch keluar'); });
+    vi.stubGlobal('fetch', ambil);
+    const r = await worker.fetch(new Request('https://latihan-kmbbupr.uji/api', { method: 'POST', body: JSON.stringify({ action: 'ping', token: 'x' }) }), envDengan('latihan_kmbbupr', 'gas'), {} as any);
+    expect(await r.json()).toEqual({ success: false, error: 'Token tidak dikenal / nonaktif' });
+    expect(ambil).not.toHaveBeenCalled();
+  });
   it('Worker rumah asli tidak punya titik ini', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-16T02:00:00Z'));
