@@ -413,6 +413,11 @@
         <label for="inputAlasanMigrasi">Alasan:</label>
         <input type="text" id="inputAlasanMigrasi" class="form-control" placeholder="Contoh: semua syarat hijau, uji Gabriel lulus" oninput="cekFormMigrasi()" autocomplete="off">
       </div>
+      <!-- Sandi kedua: hanya Mulai/Kembali rumah ASLI di produksi (src/saklar-auth.js verifikasiSandiMigrasiAsli). -->
+      <div class="form-group hidden" id="grupSandiAsli">
+        <label for="inputSandiAsli">Sandi migrasi asli (bukan sandi panel):</label>
+        <input type="password" id="inputSandiAsli" class="form-control" placeholder="sandi migrasi asli" oninput="cekFormMigrasi()" autocomplete="off">
+      </div>
       <div id="galatModalMigrasi" class="alert alert-danger hidden"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="tutupModalMigrasi()">Batal</button>
@@ -722,8 +727,10 @@
     }
 
     function bukaModalMigrasi(rumah, jenis, posisi) {
-      MODAL_MIGRASI = { rumah, jenis, posisi };
       const info = profilRumah(rumah) || { nama: rumah };
+      // Sandi kedua hanya untuk Mulai/Kembali rumah asli di produksi (rumah latihan dan lingkungan uji: tidak).
+      const perluSandiAsli = (jenis === 'mulai' || jenis === 'kembali') && !DI_UJI && !info.latihan;
+      MODAL_MIGRASI = { rumah, jenis, posisi, perluSandiAsli };
       const kes = KESEHATAN[rumah];
       const nama = escapeHtml(info.nama);
       const judul = { mulai: '▶ Mulai migrasi', kembali: '↩ Kembali ke GAS', batal: '✋ Batalkan peralihan', manual: '🧪 Atur posisi manual (uji)' }[jenis];
@@ -741,6 +748,8 @@
       document.getElementById('lblKonfirmasiMigrasi').textContent = `Ketik "${rumah}" untuk konfirmasi:`;
       document.getElementById('inputKonfirmasiMigrasi').value = '';
       document.getElementById('inputAlasanMigrasi').value = '';
+      document.getElementById('inputSandiAsli').value = '';
+      document.getElementById('grupSandiAsli').classList.toggle('hidden', !perluSandiAsli);
       document.getElementById('galatModalMigrasi').classList.add('hidden');
       document.getElementById('btnKonfirmasiMigrasi').textContent = { mulai: 'Mulai migrasi', kembali: 'Kembali ke GAS', batal: 'Batalkan peralihan', manual: 'Atur posisi' }[jenis];
       document.getElementById('modalMigrasi').classList.remove('hidden');
@@ -749,6 +758,7 @@
 
     function tutupModalMigrasi() {
       document.getElementById('modalMigrasi').classList.add('hidden');
+      document.getElementById('inputSandiAsli').value = '';
       MODAL_MIGRASI = null;
     }
 
@@ -756,7 +766,8 @@
       if (!MODAL_MIGRASI) return;
       const cocok = document.getElementById('inputKonfirmasiMigrasi').value.trim().toLowerCase() === MODAL_MIGRASI.rumah;
       const alasan = document.getElementById('inputAlasanMigrasi').value.trim().length >= 5;
-      document.getElementById('btnKonfirmasiMigrasi').disabled = !(cocok && alasan);
+      const sandi = !MODAL_MIGRASI.perluSandiAsli || document.getElementById('inputSandiAsli').value.length > 0;
+      document.getElementById('btnKonfirmasiMigrasi').disabled = !(cocok && alasan && sandi);
     }
 
     function galatModal(teks) {
@@ -767,15 +778,16 @@
 
     async function kirimMigrasi() {
       if (!MODAL_MIGRASI) return;
-      const { rumah, jenis, posisi } = MODAL_MIGRASI;
+      const { rumah, jenis, posisi, perluSandiAsli } = MODAL_MIGRASI;
       const alasan = document.getElementById('inputAlasanMigrasi').value.trim();
       const konfirmasi = document.getElementById('inputKonfirmasiMigrasi').value.trim();
+      const sandiAsli = perluSandiAsli ? document.getElementById('inputSandiAsli').value : undefined;
       const oleh = namaPengubah() || 'Gabriel';
       const btn = document.getElementById('btnKonfirmasiMigrasi');
       btn.disabled = true;
       try {
         const r = (jenis === 'mulai' || jenis === 'kembali')
-          ? await ambilJson('/saklar/api/migrasi/' + jenis, { method: 'POST', body: JSON.stringify({ rumah, alasan, konfirmasi, oleh }) })
+          ? await ambilJson('/saklar/api/migrasi/' + jenis, { method: 'POST', body: JSON.stringify({ rumah, alasan, konfirmasi, oleh, sandi_asli: sandiAsli }) })
           : await ambilJson('/saklar/api/ubah', { method: 'POST', body: JSON.stringify({ rumah, posisi: jenis === 'batal' ? 'gas' : posisi, alasan, oleh }) });
         if (!r.data.success) {
           galatModal(r.data.error || ('Gagal (HTTP ' + r.status + ')'));

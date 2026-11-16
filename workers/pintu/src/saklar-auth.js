@@ -60,6 +60,31 @@ export async function validasiSesi(request, env) {
   return await verifikasiSessionToken(token, env);
 }
 
+// ── Sandi kedua: migrasi rumah ASLI (keputusan Gabriel 16 Nov 2026) ─────────────────────────────────────
+// Selain sesi panel, tombol Mulai migrasi / Kembali ke GAS pada rumah asli (bukan rumah latihan) di produksi meminta
+// sandi kedua. Secret MIGRASI_ASLI_SECRET = SHA-256 (hex) sandi itu; nilainya tidak pernah di repo. Tanpa secret,
+// rumah asli tidak bisa dipindah (gagal tertutup). Lima kali salah per IP → dikunci 15 menit, seperti sandi panel.
+const GAGAL_SANDI_ASLI = new Map();
+
+export async function verifikasiSandiMigrasiAsli(sandi, env, clientIp) {
+  const now = Date.now();
+  const kunci = String(clientIp || '-');
+  const percobaan = GAGAL_SANDI_ASLI.get(kunci);
+  if (percobaan && percobaan.resetAt > now && percobaan.count >= 5) {
+    return { ok: false, error: `Terlalu banyak sandi migrasi asli yang salah. Dikunci ${Math.ceil((percobaan.resetAt - now) / 60000)} menit.` };
+  }
+  const harap = String((env && env.MIGRASI_ASLI_SECRET) || '');
+  if (!/^[0-9a-fA-F]{64}$/.test(harap)) return { ok: false, error: 'Sandi migrasi asli belum dipasang (secret MIGRASI_ASLI_SECRET).' };
+  const cocok = typeof sandi === 'string' && sandi.length > 0 && (await hitungSha256(sandi)).toLowerCase() === harap.toLowerCase();
+  if (!cocok) {
+    const count = (percobaan && percobaan.resetAt > now ? percobaan.count : 0) + 1;
+    GAGAL_SANDI_ASLI.set(kunci, { count, resetAt: now + 15 * 60 * 1000 });
+    return { ok: false, error: `Sandi migrasi asli salah. Sisa percobaan: ${Math.max(0, 5 - count)}` };
+  }
+  GAGAL_SANDI_ASLI.delete(kunci);
+  return { ok: true };
+}
+
 async function hitungSha256(str) {
   const enc = new TextEncoder().encode(str);
   const buf = await crypto.subtle.digest('SHA-256', enc);

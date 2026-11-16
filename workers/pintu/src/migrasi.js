@@ -22,6 +22,7 @@
  *   cermin balik = hanya menghitung sheet yang akan ditulis balik (tidak menulis apa pun).
  */
 import PROFIL_RUMAH from '../../bersama/profil-rumah.js';
+import { verifikasiSandiMigrasiAsli } from './saklar-auth.js';
 
 export const POSISI_SAH = ['gas', 'menutup', 'supabase', 'membuka'];
 export const HARI_MINIMAL = 7;
@@ -327,6 +328,14 @@ export async function tanganiMigrasi(request, env, url, json, validasiSesi, getS
       return json({ success: false, error: `Ketik kode rumah "${rumah}" persis sebagai konfirmasi.` }, 400);
     }
     const jenis = url.pathname.endsWith('/mulai') ? 'mulai' : 'kembali';
+    // Rumah ASLI di produksi butuh sandi kedua (keputusan Gabriel 16 Nov; saklar-auth.js). Rumah latihan dan staging
+    // cukup sesi panel. Sandi tidak diteruskan ke Durable Object maupun dicatat.
+    let profilR;
+    try { profilR = profilMigrasi(rumah); } catch (e) { return json({ success: false, error: e.message }, 400); }
+    if (!diStaging(env) && !profilR.latihan) {
+      const v = await verifikasiSandiMigrasiAsli(String(body.sandi_asli || ''), env, request.headers.get('CF-Connecting-IP') || '');
+      if (!v.ok) return json({ success: false, error: v.error, perlu_sandi_asli: true }, 403);
+    }
     let kesehatan = null;
     if (jenis === 'mulai') {
       try { kesehatan = await kesehatanRumah(env, rumah); } catch (e) { return json({ success: false, error: `Kesehatan cermin tidak terbaca: ${e.message}` }, 503); }

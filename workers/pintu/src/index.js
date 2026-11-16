@@ -35,7 +35,7 @@ function daftarRumah(env) {
 // Satu kamar untuk panel: identitas dari RUMAH (berbeda per lingkungan), sifat dari config/rumah.json.
 function ringkasRumahPanel(r) {
   const p = PROFIL_RUMAH[r.kode];
-  return { kode: r.kode, nama: r.nama || p.nama, alamat: r.alamat, skema: p.skema, section: p.section, peran: p.peran };
+  return { kode: r.kode, nama: r.nama || p.nama, alamat: r.alamat, skema: p.skema, section: p.section, peran: p.peran, latihan: !!p.latihan };
 }
 
 function json(obj, status = 200, headers = {}) {
