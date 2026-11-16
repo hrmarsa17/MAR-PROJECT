@@ -102,6 +102,12 @@ Cara kerja yang terbukti 28–29 Okt 2026. Ikuti seperti aturan, bukan saran.
       - data rekaan di `workers/pintu/src/user-admin.js`;
       - tarif dan faktor yang tertulis mati;
       - pemilih jalur dari klien (`?uji=supabase`, header `X-Active-Engine`, `engine` di body).
+17. **16 Nov 2026: kelanjutan migrasi diserahkan Gabriel ke Raka** (Gabriel lepas tangan). Butir 16 tidak berlaku lagi
+    untuk pekerjaan itu. **Mulai dari `docs/SERAH-TERIMA-2026-11-16.md`.** Garis merah §5 dan titik henti tetap:
+    pembayaran, menyalakan saklar produksi (tombol Mulai rumah asli), rumus poin/rupiah, menghapus data produksi, dan
+    `clasp push`/deployment GAS baru hanya dengan persetujuan Gabriel. Catatan: sejak 14–15 Nov, atas keputusan
+    Gabriel, tambalan GAS (penjaga, tutup GAS) sudah di-push dan di-deploy, dan cermin balik boleh menulis spreadsheet
+    sesudah jam mulai (`docs/SAKLAR.md`); itu pengecualian yang sudah disetujui, bukan izin umum.
 
 ---
 

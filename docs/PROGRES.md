@@ -12,6 +12,12 @@ Formatnya:
 
 ---
 
+### 2026-11-16 (pagi) · Claude (+ Gabriel: "habis ini saya hands off, dilanjutkan Raka") · keempat rumah
+- Berubah:
+  - Rahasia GitHub `CERMIN_RUMAH_LATIHAN` dibuat (izin Gabriel): pelaksana Peralihan dari `main` "melayani 8 rumah" (4 asli + 4 latihan); keempat kartu latihan hijau.
+  - Pemeriksaan pagi: hari tanpa selisih BUPR 4, KMB Projek 3, SUM 3, **KMB V2 1** (15 Nov: 0 selisih, tetapi 1 sheet gagal "409 ABORTED" pukul 17.25 → beruntun terputus; galat itu kini diulang, BUG #48; KMB V2 paling cepat 22 Nov). Worker 24 jam: 0 galat; `clientDisconnected` KMB V2 ±13% saat menunggu GAS (median 7 detik, p99 ±50 detik).
+  - **Serah-terima ke Raka:** `docs/SERAH-TERIMA-2026-11-16.md`, `AGENTS.md` butir 17, `docs/KEPUTUSAN.md` 16 Nov.
+- Belum selesai / berikutnya: gladi rumah latihan (BUPR dulu), tunggu 7 hari, hari H per rumah dengan persetujuan Gabriel (lihat serah-terima §2).
 ### 2026-11-15 (±17.30–19.00) · Claude (+ Gabriel: "uji kering start migration ... langsung di produksi") · rumah latihan
 - Berubah:
   - **Empat rumah LATIHAN di produksi** (`main` `719cb05`, `ddbc4e1`, `d7e2b30`): profil turunan `workers/bersama/profil-rumah.js`; skema `latihan_*` dicermin dari salinan (24/24, 24/24, 24/24, 19/19 sama); Worker `abadiops-<w>-latihan` di `latihan-<rumah>.abadiops.com` (GAS tiruan `/gas-tiruan`, tanpa cron, push hanya dicatat); pintu produksi `18b5e9bb` (rollback `453c0963`) dengan empat kartu latihan, semua saklar `gas`.

@@ -144,7 +144,7 @@ cermin balik berkala menulis ke salinan → **Kembali ke GAS** → periksa: sali
 | PWA lama (GitHub Pages) → Worker rumah | ✔ projek-v5 | ✔ projek-v15 | ✔ v92 | ✔ sum-v46 |
 | Daftar aksi Worker mencakup setiap aksi PWA lama (BUG #47) | ✔ | ✔ | ✔ | ✔ |
 | Notifikasi push | 0 langganan | 0 langganan | ✔ kunci VAPID | ✔ kunci VAPID |
-| 7 hari tanpa selisih (otomatis) | ≥ 19 Nov | ≥ 20 Nov | ≥ 20 Nov | ≥ 20 Nov |
+| 7 hari tanpa selisih (otomatis) | ≥ 19 Nov | ≥ 20 Nov | ≥ 22 Nov (16 Nov: hitungan kembali ke 1, BUG #48) | ≥ 20 Nov |
 | Uji WO Gabriel (tidak menahan tombol) | `staging-kmbbupr` | `staging-kmbprojek` | `staging-kmbtra` | `staging-sum` |
 
 Satu-satunya syarat tombol yang belum hijau: **7 hari tanpa selisih**. Tombol tiap rumah menyala sendiri begitu
