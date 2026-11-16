@@ -47,3 +47,9 @@ gas-backup/
 # Kode GAS asli yang dibungkus untuk Worker rumah (tools/kembar/bundel-gas.mjs). Repo ini publik:
 # kode bisnis rumah tidak ikut ke GitHub, dan dibuat ulang dari versi yang dipatok di config/rumah.json.
 workers/*/gas/
+
+# Konfigurasi & workspace AI agent lokal (Antigravity / OpenCode / dsb.)
+.agent/
+opencode.json*
+
+
