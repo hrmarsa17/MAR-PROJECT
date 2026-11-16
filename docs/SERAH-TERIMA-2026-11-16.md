@@ -25,7 +25,7 @@ Semua syarat tombol Mulai rumah asli sudah hijau **kecuali 7 hari**; tombolnya m
 
 | Worker | Versi tayang | Rollback |
 |---|---|---|
-| `abadiops-pintu` (abadiops.com) | `18b5e9bb` | `453c0963` |
+| `abadiops-pintu` (abadiops.com) | `2e500a8b` (kode `c87e894d` + sandi baru 16 Nov) | `18b5e9bb` — lalu pasang ulang kedua secret sandi (lihat §8) |
 | `abadiops-kmbbupr` (kmbbupr.abadiops.com) | `ca991cdc` | `9375ce38` |
 | `abadiops-porject-kmb` (kmbprojek.abadiops.com) | `543b321f` | `7276db1b` |
 | `abadiops-kmb` (kmbtra.abadiops.com) | `37398406` | `4ff03a67` |
@@ -59,7 +59,7 @@ lewat API: `POST /repos/kawanabadigrup/abadiops/actions/workflows/peralihan.yml/
 `{"ref":"main","inputs":{"menit":"30"}}` dengan `GITHUB_TOKEN_ABADIOPS`. Panel menampilkan tautan yang sama bila
 permintaan belum diambil 3 menit. Putaran yang sudah mengerjakan satu permintaan menunggu 20 menit lagi.
 
-**Mulai** (panel → tab Saklar Migrasi → kartu rumah → ▶ Mulai migrasi → alasan → ketik kode rumah). Otomatis:
+**Mulai** (panel → tab Saklar Migrasi → kartu rumah → ▶ Mulai migrasi → alasan → ketik kode rumah → untuk kartu rumah ASLI isi juga **sandi migrasi asli**). Otomatis:
 MENUTUP (HP menahan kiriman) → GAS terbukti tertutup → sinkron maju dikunci + sinkron terakhir + periksa selisih →
 cadangan skema jam mulai → izin tulis dibuka → cermin balik awal + uji hak Editor + periksa → SUPABASE. Lama ±15–40
 menit (KMB V2/SUM lebih lama). Gagal di mana pun → kembali ke `gas` sendiri, tidak ada yang hilang. Selama MENUTUP bisa
@@ -143,7 +143,7 @@ SUPABASE_SERVICE_ROLE_KEY --env latihan` (kunci `worker_produksi`).
 `abadiops-cermin`: repo abadiops, Actions + Secrets), `DATABASE_URL_GEDUNG1_POOLER`, `SUPABASE_SECRET_KEY_GEDUNG1`
 (kunci `worker_produksi`), `SUPABASE_SECRET_KEY_UJI` (kunci `worker_uji`), `GOOGLE_SA_KEY_FILE` (kunci akun layanan
 `abadi-operation-sync@…`, berkas `akun-layanan.json`), `<SKEMA>_SPREADSHEET_ID` keempat rumah,
-`LATIHAN_*_SPREADSHEET_ID`, kunci VAPID KMB V2/SUM, sandi panel staging. Sandi panel produksi: dari Gabriel.
+`LATIHAN_*_SPREADSHEET_ID`, kunci VAPID KMB V2/SUM, sandi panel staging, dan **dua sandi panel produksi** (sejak 16 Nov; sandi lama tidak berlaku): `PANEL_SAKLAR_SANDI_PRODUKSI` (masuk panel + Mulai/Kembali kartu latihan) dan `PANEL_SAKLAR_SANDI_MIGRASI_ASLI` (diminta lagi untuk Mulai/Kembali kartu rumah asli; Gabriel yang menentukan siapa memegangnya). Sidiknya (`PANEL_SAKLAR_SECRET_SHA256`, `MIGRASI_ASLI_SECRET_SHA256`) = nilai secret `PANEL_SAKLAR_SECRET` dan `MIGRASI_ASLI_SECRET` Worker pintu. Versi Worker menyimpan secret-nya sendiri: rollback pintu ke versi sebelum 16 Nov pagi menghidupkan sandi lama, jadi sesudah rollback pasang ulang kedua secret itu (`wrangler secret put`, nilai = sidik dari env).
 Rahasia GitHub Actions repo: `GOOGLE_SA_KEY_JSON`, `CERMIN_DATABASE_URL`, `CERMIN_RUMAH`, `CERMIN_RUMAH_LATIHAN`.
 Alat operasional Claude (pembungkus deploy bertahap, rekaman pembanding, pemantau lalu lintas) ada di laptop Gabriel
 `C:\dev\rahasia\alat\` (README di sana; tanpa rahasia, membaca `abadiops.env`). Worktree kerja: `C:\dev\abadiops-staging`

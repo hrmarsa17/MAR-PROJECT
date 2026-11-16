@@ -12,6 +12,9 @@ Formatnya:
 
 ---
 
+### 2026-11-16 (siang) · Claude (+ Gabriel: "dua sandi") · pintu
+- Berubah: sandi kedua untuk Mulai/Kembali rumah asli (`e21632a`: server `verifikasiSandiMigrasiAsli`, kolom sandi di jendela konfirmasi, uji `tests/sandiMigrasi.test.ts` 7/7). Pintu produksi `c87e894d` (1% → diff panel hanya perubahan yang dimaksud → 100%), lalu secret `MIGRASI_ASLI_SECRET` dan `PANEL_SAKLAR_SECRET` baru → `2e500a8b`; jalur publik sama. Sandi di `abadiops.env` (`PANEL_SAKLAR_SANDI_PRODUKSI`, `PANEL_SAKLAR_SANDI_MIGRASI_ASLI`); sandi lama tidak berlaku.
+- Belum selesai / berikutnya: Gabriel mencoba masuk panel dengan sandi baru.
 ### 2026-11-16 (pagi) · Claude (+ Gabriel: "habis ini saya hands off, dilanjutkan Raka") · keempat rumah
 - Berubah:
   - Rahasia GitHub `CERMIN_RUMAH_LATIHAN` dibuat (izin Gabriel): pelaksana Peralihan dari `main` "melayani 8 rumah" (4 asli + 4 latihan); keempat kartu latihan hijau.

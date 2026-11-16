@@ -100,7 +100,7 @@ mengubah sistem yang dipakai orang.
    Claude juga bisa menjalankannya.)
 
 Panel `abadiops.com/saklar` → tab **Saklar Migrasi** → kartu rumah (semua syarat hijau) → **Mulai migrasi** → isi alasan →
-ketik kode rumah (`kmbbupr`, `kmbprojek`, `kmbtra`, `sum`). Lalu, otomatis:
+ketik kode rumah (`kmbbupr`, `kmbprojek`, `kmbtra`, `sum`) → isi **sandi migrasi asli** (sandi kedua, bukan sandi panel; `abadiops.env` `PANEL_SAKLAR_SANDI_MIGRASI_ASLI`; kartu latihan tidak memintanya). Lalu, otomatis:
 
 1. saklar `menutup`: HP menahan kiriman, MAR Web menampilkan "pindah jalur";
 2. GAS BUPR terbukti tertutup (≤ ±4 menit);
