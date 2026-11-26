@@ -12,6 +12,82 @@ Formatnya:
 
 ---
 
+### 2026-11-20 · Raka (+ Antigravity) · kmbbupr
+- Berubah:
+  - Memperbarui formulir **Buat WO Mandiri Mekanik** di PWA BUPR (`pwa/kmbbupr/app.js`):
+    * Membuka pembatasan `timHanyaSaya()` sehingga mekanik dapat memilih lebih dari 1 orang (multi-personil) di tim mekanik, sama persis seperti form pembuatan WO biasa.
+    * Tombol "+ Tambah Mekanik" (`cTeamAdd`) dan checkbox lintas fungsi (`cCrossFuncRow`) diaktifkan normal.
+    * Tombol hapus baris tim (`✕`) diaktifkan kembali sehingga personil tambahan bisa dihapus atau disesuaikan.
+    * Dropdown mekanik menampilkan semua personil sesuai seksi (atau lintas seksi jika dicentang), dengan baris pertama otomatis default ke mekanik pembuat/lead.
+    * Menyesuaikan `pullRefs()` agar sinkronisasi referensi personil mekanik tetap ditarik untuk mekanik yang memiliki akses pembuatan WO (`bolehBuatWoSaya()`).
+    * Menaikkan versi cache PWA ke `kmbbupr-pwa-v7` di `pwa/kmbbupr/sw.js`.
+  - Uji serah-terima token: 32/32 skenario lulus (`scripts/uji-serahan-token.mjs`).
+- Belum selesai / berikutnya: -
+
+### 2026-11-19 (malam) · Raka (+ Antigravity) · kmbbupr
+- Berubah:
+  - Mengaktifkan fitur **WO Mandiri** (`wo_mandiri`) untuk mekanik di Rumah BUPR (`kmbbupr`):
+    1. Di `workers/kmbbupr/gas/gas-kamar.js`:
+       - `_resolveToken`: membaca status `wo_mandiri` dari `Config_Mechanics` untuk token yang bersangkutan dan menyertakannya di objek `who`.
+       - `ping`: meneruskan atribut `wo_mandiri: true/false` pada hasil API `ping` sehingga PWA HP dapat langsung mendeteksi izin dan menampilkan tab **➕ Buat WO**.
+       - `create_wo` & `createWorkOrder`: meloloskan izin pembuatan Work Order untuk mekanik yang memiliki flag `wo_mandiri: true` (dengan pengaman: WO jenis "Others" yang memuat tarif/poin manual tetap dikunci khusus approver).
+       - `getCurrentUserWithRole`: menyematkan `wo_mandiri` ke profil pengguna web.
+       - `doGet` & `renderCreateWO`: mengizinkan akses ke halaman `?page=create` untuk mekanik jika `wo_mandiri: true` (sebelumnya dipentalkan ke `?page=mechanic`).
+       - Template menu navbar: menampilkan tautan menu **Create WO** di header navigasi web untuk pengguna dengan `wo_mandiri: true`.
+  - Deploy Worker `abadiops-kmbbupr` (versi `0fb712fb`).
+  - Verifikasi live:
+    - Token mekanik BUPR dengan `wo_mandiri: true` (`bupr-159079964fa630addb9c` / MECH-006): API `ping` terbukti mengembalikan `wo_mandiri: true`.
+    - Akses ke `https://kmbbupr.abadiops.com/web?page=create` untuk mekanik sukses menampilkan formulir Create Work Order tanpa pengalihan (HTTP 200).
+- Belum selesai / berikutnya: -
+
+### 2026-11-19 (sore) · Raka (+ Antigravity) · kmbbupr & bersama
+- Berubah:
+  - Di `config/rumah.json`: menambahkan konfigurasi `label_site` untuk tiap rumah (`BUPR` untuk BUPR, `KMB Projek` untuk KMB Projek, `KMB TRA` untuk KMB TRA, dan `SUM V2` untuk SUM V2).
+  - Di `workers/bersama/gas-web.js`:
+    1. Memperbarui `sisipkanKeHtml`: menyisipkan badge nama site/tenant (`<span class="site-label-badge">...</span>`) di sebelah teks brand `⚙️ Mechanic Activity Report` pada header navigasi secara server-side rendered (SSR).
+    2. Memperbarui `skripGoogleScript`: menambahkan modul injeksi `pasangLabelSite` berbasis DOM client-side sebagai cadangan jika navigasi dinamis merender ulang header.
+  - Di `workers/bersama/gas-rumah.js` (`tanganiWeb`): menyematkan `label_site` dari konfigurasi rumah ke dalam `sisipkanKeHtml` dan `skripGoogleScript`, serta memperbarui `<title>` halaman web menjadi `... · <label_site>`.
+  - Deploy Worker `abadiops-kmbbupr` (versi `23888e67`) dan `abadiops-porject-kmb` (versi `efef8c31`).
+  - Verifikasi live di `https://kmbbupr.abadiops.com/web`: header navigasi terbukti memuat badge `BUPR` tepat di sebelah `Mechanic Activity Report`.
+- Belum selesai / berikutnya: -
+
+### 2026-11-19 (siang) · Raka (+ Antigravity) · pintu & bersama
+- Berubah:
+  - Di `workers/pintu/public/saklar.html` & `workers/pintu/src/admin-cermin.js`:
+    1. **Auto-suggest / auto-fill ID Mekanik (`mechanic_id`)**: saat membuka modal Tambah Pengguna (`Config_Mechanics`), sistem otomatis mendeteksi format penomoran ID mekanik terakhir yang ada di sistem/site tersebut (misal `MECH-006` -> otomatis terisi `MECH-007`, `MNT-014` -> `MNT-015`, dsb.) dengan padding nol yang sesuai. Jika pengguna mengubah pilihan peran (`role`) ke Supervisor / Superintendent, input ID otomatis menyesuaikan awalan (misal `SPV-` / `SUPT-`), dan pengguna tetap bisa menyunting manual jika diinginkan.
+    2. **Dropdown `position` per site/sistem**: field `position` pada form modal kini berupa dropdown `<select>` yang opsinya spesifik per rumah (dikonfigurasi di `config/rumah.json` dan digabungkan secara dinamis dengan nilai unik yang sudah ada di sheet). Tersedia juga opsi `+ Ketik nilai baru...` jika ada posisi baru di masa depan.
+    3. **Dropdown `grade` / `golongan` per site/sistem**: field `grade` pada form modal kini berupa dropdown `<select>` dengan opsi spesifik per rumah (BUPR: `Helper Mekanik`, `Mekanik Jr`, `Mekanik Mid`, `Mekanik Sr`, `SPV`, `Supten`; SUM: `1A`..`4C`; dsb.) serta opsi `+ Ketik nilai baru...`.
+    4. **Dropdown `section`**: field `section` pada form modal kini juga berupa `<select>` otomatis.
+  - Di `config/rumah.json`: menambahkan array daftar `posisi` dan `grade` standar untuk keempat rumah (`sum`, `kmbtra`, `kmbprojek`, `kmbbupr`).
+  - Deploy Worker `abadiops-pintu` (versi `3af31b81`). Verifikasi live: form modal `saklar.html` telah memuat fitur auto-suggest ID dan dropdown dinamis.
+- Belum selesai / berikutnya: -
+
+### 2026-11-19 (siang) · Raka (+ Antigravity) · kmbbupr & bersama
+- Berubah:
+  - Memasang fitur serah-terima token otomatis dari pintu (`ambilTokenSerahan`, `masukDariPintu`, dan anti-kedip `dari-pintu`) pada PWA BUPR (`pwa/kmbbupr/index.html` dan `pwa/kmbbupr/app.js`), 1:1 identik dengan standar PWA rumah lain (KMB Projek, KMB V2, SUM - aturan 13 AGENTS.md).
+  - Menambahkan kamar `kmbbupr` ke dalam `scripts/uji-serahan-token.mjs`. Hasil uji serahan token: **32/32 skenario lulus** (termasuk 8/8 skenario untuk BUPR).
+  - Deploy Worker `abadiops-kmbbupr` (versi `889c4d2e`) dengan aset statis PWA terbaru. Verifikasi live: aset `index.html` dan `app.js` telah memuat modul serah-terima token.
+  - Memperbaiki hilangnya token sesi saat navigasi antar menu/halaman di MAR Web (`kmbbupr.abadiops.com/web`):
+    1. Di `workers/bersama/gas-web.js` (`skripGoogleScript`): menambahkan penempel token tautan menu otomatis (`pasangTokenTautan`) dan event listener click capture pada semua elemen `a[href*="/web"]` & `a[href*="?page="]`. Di GAS asli, template menu menggunakan selector `a[href*="/macros/s/"]` yang tidak pernah cocok di Worker (`/web`), sehingga tautan menu kehilangan parameter `token`.
+    2. Di `workers/bersama/gas-rumah.js` (`tanganiWeb`): menambahkan pengelolaan sesi via cookie `abadiops_token` (`Set-Cookie: abadiops_token=...; Path=/; HttpOnly; SameSite=Lax`). Jika pengguna membuka halaman atau tautan tanpa parameter query `?token=...`, Worker secara otomatis membaca cookie sesi dan menyisipkannya ke `doGet`.
+  - Verifikasi otomatis: perpindahan halaman ke `/web?page=mechanic` dengan cookie maupun query parameter berhasil 100% tanpa terlempar kembali ke layar login `Masuk dengan Token`.
+- Belum selesai / berikutnya: -
+
+### 2026-11-19 · Raka (+ Hermes) · kmbbupr & pintu
+- Berubah:
+  - Di `workers/pintu/public/saklar.html` (`bukaFormBaris`) & `workers/pintu/src/admin-cermin.js` (`daftarConfig`): field `section` pada modal Tambah/Ubah baris sheet config (`Config_Units`, `Config_Jobs_Field`, `Config_Jobs_Workshop`, `Config_Mechanics`) diubah dari text input manual menjadi dropdown pilihan (`<select>`) otomatis dengan opsi `Maintenance` dan `Vessel` untuk BUPR (serta `Field`/`Workshop` untuk KMB Projek).
+  - Di `config/rumah.json`: mengubah `awalan_token` untuk `kmbbupr` dari `kmbb-` menjadi `bupr-`. Token baru yang diterbitkan panel admin untuk BUPR akan diawali `bupr-`, sementara seluruh token terdaftar lama tetap berfungsi normal.
+  - Memperbaiki rute `web_rumah` di `workers/pintu/src/index.js` agar mengarah ke `/web` (bukan `/monitoring` yang 404 pada Worker rumah).
+  - Deploy Worker `abadiops-pintu` (`0650ee75`) dan `abadiops-kmbbupr` (`7c72516a`). Verifikasi login token BUPR via Pintu 100% sukses.
+- Belum selesai / berikutnya: -
+
+### 2026-11-19 · Raka (+ Antigravity) · kmbbupr & pintu
+- Berubah:
+  - Di `config/rumah.json`: mengubah `awalan_token` untuk `kmbbupr` dari `kmbb-` menjadi `bupr-`. Token baru yang diterbitkan panel admin untuk BUPR akan diawali `bupr-`, sementara seluruh token terdaftar lama tetap berfungsi normal.
+  - Memperbaiki rute `web_rumah` di `workers/pintu/src/index.js` agar mengarah ke `/web` (bukan `/monitoring` yang 404 pada Worker rumah).
+  - Deploy Worker `abadiops-pintu` (`0650ee75`) dan `abadiops-kmbbupr` (`7c72516a`). Verifikasi login token BUPR via Pintu 100% sukses.
+- Belum selesai / berikutnya: -
+
 ### 2026-11-16 (siang) · Claude (+ Gabriel: "dua sandi") · pintu
 - Berubah: sandi kedua untuk Mulai/Kembali rumah asli (`e21632a`: server `verifikasiSandiMigrasiAsli`, kolom sandi di jendela konfirmasi, uji `tests/sandiMigrasi.test.ts` 7/7). Pintu produksi `c87e894d` (1% → diff panel hanya perubahan yang dimaksud → 100%), lalu secret `MIGRASI_ASLI_SECRET` dan `PANEL_SAKLAR_SECRET` baru → `2e500a8b`; jalur publik sama. Sandi di `abadiops.env` (`PANEL_SAKLAR_SANDI_PRODUKSI`, `PANEL_SAKLAR_SANDI_MIGRASI_ASLI`); sandi lama tidak berlaku.
 - Belum selesai / berikutnya: Gabriel mencoba masuk panel dengan sandi baru.
