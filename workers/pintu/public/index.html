@@ -39,143 +39,216 @@
   button:disabled { opacity: 0.6; cursor: progress; }
   button.kedua { background: transparent; color: var(--utama); border: 1px solid var(--garis); }
   .pilih-ket { display: block; font-weight: 400; font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
-  #pesan { margin-top: 14px; font-size: 0.92rem; min-height: 1.3em; }
-  #pesan.salah { color: var(--salah); background: var(--salah-bg); padding: 10px 12px; border-radius: 8px; }
-  #pesan.ok { color: var(--ok); }
-  #lanjut, #pilih { display: none; }
-  #lanjut { margin-bottom: 16px; }
-  #salam { font-weight: 600; margin: 0 0 2px; }
-  #salamRumah { color: var(--redup); margin: 0 0 4px; font-size: 0.92rem; }
+  .pesan { margin-top: 14px; font-size: 0.92rem; min-height: 1.3em; }
+  .pesan.salah { color: var(--salah); background: var(--salah-bg); padding: 10px 12px; border-radius: 8px; }
+  .pesan.ok { color: var(--ok); }
+  .kotak-lanjut { margin-bottom: 16px; }
+  .salam { font-weight: 600; margin: 0 0 2px; }
+  .salam-rumah { color: var(--redup); margin: 0 0 4px; font-size: 0.92rem; }
   .tautan { background: none; border: 0; color: var(--redup); font-weight: 400; font-size: 0.85rem; text-decoration: underline; padding: 8px 0 0; }
   .kaki { color: var(--redup); font-size: 0.8rem; margin-top: 16px; text-align: center; }
+  .react-badge { display: inline-block; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(76, 141, 255, 0.15); color: var(--utama); margin-left: 6px; vertical-align: middle; font-weight: 500; }
 </style>
+<!-- React 18 & ReactDOM 18 UMD -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 </head>
 <body>
-<main>
-  <h1>Abadi Operation</h1>
-  <p class="sub" id="sub">Masukkan token akses Anda.</p>
-  <div class="kartu">
-    <div id="lanjut">
-      <button type="button" class="kedua" id="tombolLanjut"></button>
-    </div>
-    <form id="formulir" autocomplete="off">
-      <label for="token">Token akses</label>
-      <input id="token" name="token" type="text" inputmode="text" autocapitalize="off" spellcheck="false" required>
-      <button type="submit" id="tombolMasuk">Masuk</button>
-    </form>
-    <!-- Sesudah token dikenali: tawarkan pilihan Aplikasi (PWA) atau Web Biasa -->
-    <div id="pilih">
-      <p id="salam"></p>
-      <p id="salamRumah"></p>
-      <button type="button" id="tombolAplikasi">📱 Aplikasi PWA<span class="pilih-ket">untuk HP / lapangan (offline-first)</span></button>
-      <button type="button" class="kedua" id="tombolWeb">🖥️ Web Biasa<span class="pilih-ket">untuk laptop / desktop (menu lengkap)</span></button>
-      <button type="button" class="tautan" id="tombolGanti">Bukan Anda? Ganti token</button>
-    </div>
-    <div id="pesan" role="status" aria-live="polite"></div>
-  </div>
-  <p class="kaki">Token menentukan aplikasi yang Anda buka.</p>
-</main>
+<div id="root"></div>
+
 <script>
 (function () {
-  var KUNCI_RUMAH = 'abadi_rumah_terakhir'; // hanya alamat dan nama rumah, TIDAK PERNAH token
-  var form = document.getElementById('formulir');
-  var input = document.getElementById('token');
-  var tombol = document.getElementById('tombolMasuk');
-  var pesan = document.getElementById('pesan');
-  var kotakLanjut = document.getElementById('lanjut');
-  var kotakPilih = document.getElementById('pilih');
+  var KUNCI_RUMAH = 'abadi_rumah_terakhir';
+  var e = React.createElement;
+  var useState = React.useState;
+  var useEffect = React.useEffect;
+  var useRef = React.useRef;
 
-  function tampil(teks, jenis) { pesan.textContent = teks || ''; pesan.className = jenis || ''; }
-  function kembaliKeForm() {
-    kotakPilih.style.display = 'none';
-    form.style.display = '';
-    document.getElementById('sub').textContent = 'Masukkan token akses Anda.';
-    input.value = '';
-    tombol.disabled = false;
-    tampil('');
-    input.focus();
-  }
+  function AppLoginAbadiops() {
+    var [token, setToken] = useState('');
+    var [loading, setLoading] = useState(false);
+    var [pesan, setPesan] = useState({ teks: '', jenis: '' });
+    var [terakhir, setTerakhir] = useState(null);
+    var [pilihan, setPilihan] = useState(null);
+    var inputRef = useRef(null);
 
-  // Rumah terakhir: satu ketukan untuk kembali ke aplikasi rumah (sesinya disimpan aplikasi itu).
-  try {
-    var terakhir = JSON.parse(localStorage.getItem(KUNCI_RUMAH) || 'null');
-    if (terakhir && /^https:\/\/[a-z0-9-]+\.abadiops\.com\/$/.test(terakhir.alamat)) {
-      var t = document.getElementById('tombolLanjut');
-      t.textContent = 'Lanjutkan ke ' + terakhir.nama;
-      t.onclick = function () { location.href = terakhir.alamat; };
-      kotakLanjut.style.display = 'block';
-    }
-  } catch (e) {}
+    // Muat riwayat rumah terakhir dari localStorage
+    useEffect(function () {
+      try {
+        var item = JSON.parse(localStorage.getItem(KUNCI_RUMAH) || 'null');
+        if (item && /^https:\/\/[a-z0-9-]+\.abadiops\.com\/$/.test(item.alamat)) {
+          setTerakhir(item);
+        }
+      } catch (err) {}
 
-  function tawarkanPilihan(token, j) {
-    form.style.display = 'none';
-    kotakLanjut.style.display = 'none';
-    document.getElementById('sub').textContent = 'Pilih mode akses yang Anda inginkan:';
-    document.getElementById('salam').textContent = 'Halo' + (j.nama ? ', ' + j.nama : '') + '!';
-    document.getElementById('salamRumah').textContent = j.nama_rumah;
-    
-    var tApl = document.getElementById('tombolAplikasi');
-    var tWeb = document.getElementById('tombolWeb');
+      // Tangani token dari URL hash (#token=...) atau query string (?token=...)
+      var dariAlamat = '';
+      try {
+        var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
+        dariAlamat = m ? decodeURIComponent(m[1]) : (new URLSearchParams(location.search).get('token') || '');
+      } catch (err) {}
+      
+      if (dariAlamat.trim()) {
+        try { history.replaceState(null, '', location.pathname); } catch (err) {}
+        var tClean = dariAlamat.trim();
+        setToken(tClean);
+        jalankanLogin(tClean);
+      }
+    }, []);
 
-    tApl.onclick = function () {
-      try { localStorage.setItem(KUNCI_RUMAH, JSON.stringify({ alamat: j.alamat_rumah, nama: j.nama_rumah })); } catch (e) {}
-      tampil('Membuka aplikasi PWA ' + j.nama_rumah + '…', 'ok');
-      location.replace(j.alamat_rumah + '#token=' + encodeURIComponent(token));
-    };
-
-    if (j.web_rumah) {
-      tWeb.style.display = '';
-      tWeb.onclick = function () {
-        tampil('Membuka web ' + j.nama_rumah + '…', 'ok');
-        location.replace(j.web_rumah + '?token=' + encodeURIComponent(token));
-      };
-    } else {
-      tWeb.style.display = 'none';
-    }
-
-    tampil('');
-    kotakPilih.style.display = 'block';
-  }
-
-  function masuk(token) {
-    tombol.disabled = true;
-    tampil('Memeriksa token di semua rumah… (bisa sampai 15 detik)');
-    fetch('/api/pintu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: token })
-    }).then(function (r) { return r.json(); }).then(function (j) {
-      if (j && j.success && j.alamat_rumah) {
-        tawarkanPilihan(token, j);
+    function jalankanLogin(tokenAkses) {
+      var t = (tokenAkses !== undefined ? tokenAkses : token).trim();
+      if (!t) {
+        setPesan({ teks: 'Silakan masukkan token akses.', jenis: 'salah' });
         return;
       }
-      tombol.disabled = false;
-      tampil((j && j.error) || 'Token tidak dikenal / nonaktif', 'salah');
-    }).catch(function () {
-      tombol.disabled = false;
-      tampil('Tidak bisa menghubungi server. Periksa sinyal, lalu coba lagi.', 'salah');
-    });
+
+      setLoading(true);
+      setPesan({ teks: 'Memeriksa token di semua rumah… (bisa sampai 15 detik)', jenis: '' });
+
+      fetch('/api/pintu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: t })
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.success && data.alamat_rumah) {
+          setLoading(false);
+          setPilihan({
+            token: t,
+            nama: data.nama || '',
+            nama_rumah: data.nama_rumah || '',
+            alamat_rumah: data.alamat_rumah || '',
+            web_rumah: data.web_rumah || ''
+          });
+          setPesan({ teks: '', jenis: '' });
+          return;
+        }
+        setLoading(false);
+        setPesan({ teks: (data && data.error) || 'Token tidak dikenal / nonaktif', jenis: 'salah' });
+      })
+      .catch(function () {
+        setLoading(false);
+        setPesan({ teks: 'Tidak bisa menghubungi server. Periksa sinyal, lalu coba lagi.', jenis: 'salah' });
+      });
+    }
+
+    function handleBukaAplikasiPWA() {
+      if (!pilihan) return;
+      try {
+        localStorage.setItem(KUNCI_RUMAH, JSON.stringify({
+          alamat: pilihan.alamat_rumah,
+          nama: pilihan.nama_rumah
+        }));
+      } catch (err) {}
+      setPesan({ teks: 'Membuka aplikasi PWA ' + pilihan.nama_rumah + '…', jenis: 'ok' });
+      location.replace(pilihan.alamat_rumah + '#token=' + encodeURIComponent(pilihan.token));
+    }
+
+    function handleBukaWebBiasa() {
+      if (!pilihan || !pilihan.web_rumah) return;
+      setPesan({ teks: 'Membuka web ' + pilihan.nama_rumah + '…', jenis: 'ok' });
+      location.replace(pilihan.web_rumah + '?token=' + encodeURIComponent(pilihan.token));
+    }
+
+    function handleGantiToken() {
+      setPilihan(null);
+      setToken('');
+      setLoading(false);
+      setPesan({ teks: '', jenis: '' });
+      setTimeout(function () {
+        if (inputRef.current) inputRef.current.focus();
+      }, 50);
+    }
+
+    return e('main', null,
+      e('h1', null,
+        'Abadi Operation',
+        e('span', { className: 'react-badge' }, 'React')
+      ),
+      e('p', { className: 'sub' },
+        pilihan ? 'Pilih mode akses yang Anda inginkan:' : 'Masukkan token akses Anda.'
+      ),
+      e('div', { className: 'kartu' },
+        // Tombol Lanjut ke Rumah Terakhir (jika ada sesi sebelumnya)
+        (!pilihan && terakhir) ? e('div', { className: 'kotak-lanjut' },
+          e('button', {
+            type: 'button',
+            className: 'kedua',
+            onClick: function () { location.href = terakhir.alamat; }
+          }, 'Lanjutkan ke ' + terakhir.nama)
+        ) : null,
+
+        // Form Login Token
+        (!pilihan) ? e('form', {
+          autoComplete: 'off',
+          onSubmit: function (evt) {
+            evt.preventDefault();
+            jalankanLogin();
+          }
+        },
+          e('label', { htmlFor: 'tokenInput' }, 'Token akses'),
+          e('input', {
+            id: 'tokenInput',
+            name: 'token',
+            type: 'text',
+            ref: inputRef,
+            inputMode: 'text',
+            autoCapitalize: 'off',
+            spellCheck: 'false',
+            required: true,
+            value: token,
+            onChange: function (evt) { setToken(evt.target.value); },
+            disabled: loading
+          }),
+          e('button', {
+            type: 'submit',
+            disabled: loading
+          }, loading ? 'Memeriksa…' : 'Masuk')
+        ) : null,
+
+        // Pilihan PWA vs Web Biasa (setelah token valid)
+        pilihan ? e('div', null,
+          e('p', { className: 'salam' }, 'Halo' + (pilihan.nama ? ', ' + pilihan.nama : '') + '!'),
+          e('p', { className: 'salam-rumah' }, pilihan.nama_rumah),
+          e('button', {
+            type: 'button',
+            onClick: handleBukaAplikasiPWA
+          },
+            '📱 Aplikasi PWA',
+            e('span', { className: 'pilih-ket' }, 'untuk HP / lapangan (offline-first)')
+          ),
+          pilihan.web_rumah ? e('button', {
+            type: 'button',
+            className: 'kedua',
+            onClick: handleBukaWebBiasa
+          },
+            '🖥️ Web Biasa',
+            e('span', { className: 'pilih-ket' }, 'untuk laptop / desktop (menu lengkap)')
+          ) : null,
+          e('button', {
+            type: 'button',
+            className: 'tautan',
+            onClick: handleGantiToken
+          }, 'Bukan Anda? Ganti token')
+        ) : null,
+
+        // Notifikasi / Pesan Status
+        pesan.teks ? e('div', {
+          className: 'pesan ' + (pesan.jenis || ''),
+          role: 'status',
+          'aria-live': 'polite'
+        }, pesan.teks) : null
+      ),
+      e('p', { className: 'kaki' }, 'Token menentukan aplikasi yang Anda buka.')
+    );
   }
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var token = input.value.trim();
-    if (!token) { tampil('Silakan masukkan token akses.', 'salah'); return; }
-    masuk(token);
-  });
-  document.getElementById('tombolGanti').onclick = kembaliKeForm;
-
-  // Tautan berisi token (?token=… dari fitur "salin token", atau #token=…): token dihapus
-  // dari alamat lalu langsung diperiksa.
-  var dariAlamat = '';
-  try {
-    var m = /(?:^#|&)token=([^&]+)/.exec(location.hash || '');
-    dariAlamat = m ? decodeURIComponent(m[1]) : (new URLSearchParams(location.search).get('token') || '');
-  } catch (e) {}
-  if (dariAlamat.trim()) {
-    try { history.replaceState(null, '', location.pathname); } catch (e) {}
-    input.value = dariAlamat.trim();
-    masuk(dariAlamat.trim());
+  var rootEl = document.getElementById('root');
+  if (rootEl && window.ReactDOM && ReactDOM.createRoot) {
+    var root = ReactDOM.createRoot(rootEl);
+    root.render(e(AppLoginAbadiops));
   }
 })();
 </script>

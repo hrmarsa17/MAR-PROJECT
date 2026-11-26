@@ -410,6 +410,7 @@ async function daftarPengguna(env, p, izin) {
   return {
     success: true, rumah: p.kode, nama: p.nama, zona, bisa_ubah: izin.boleh, alasan_baca_saja: izin.alasan || '',
     peran: p.peran || [], section: p.section || [],
+    posisi: p.posisi || [], grade: p.grade || [],
     pengguna: ringkasSheet(p, a.sheet_pengguna, sp, zona),
     token: { sheet: a.sheet_token, versi: st.sinkron_at, per_mekanik: perMekanik },
   };
@@ -425,6 +426,8 @@ async function daftarConfig(env, p, izin) {
   const rumus = await bacaRumus(env, p, nama.filter((n) => cermin.sheets[n]));
   return {
     success: true, rumah: p.kode, nama: p.nama, zona, bisa_ubah: izin.boleh, alasan_baca_saja: izin.alasan || '',
+    peran: p.peran || [], section: p.section || [],
+    posisi: p.posisi || [], grade: p.grade || [],
     sheets: nama.filter((n) => cermin.sheets[n]).map((n) => ringkasSheet(p, n, cermin.sheets[n], zona, rumus[n] || [])),
   };
 }

@@ -1,11 +1,19 @@
 {
   "sum": {
     "nama": "SUM V2",
+    "label_site": "SUM V2",
     "zona_waktu": "Asia/Makassar",
     "skema": "sum",
     "rpc": "sum",
     "awalan_token": "sum-",
     "section": [],
+    "posisi": ["-"],
+    "grade": [
+      "1A", "1B", "1C",
+      "2A", "2B", "2C",
+      "3A", "3B", "3C",
+      "4A", "4B", "4C"
+    ],
     "peran": [
       ["mechanic", "Mekanik"],
       ["supervisor", "Supervisor (L1)"],
@@ -40,6 +48,7 @@
   },
   "kmbtra": {
     "nama": "KMB TRA / V2",
+    "label_site": "KMB TRA",
     "zona_waktu": "Asia/Jakarta",
     "worker": "kmb",
     "skema": "kmb",
@@ -49,6 +58,31 @@
       ["field", "Field"],
       ["workshop", "Workshop"],
       ["tyreman", "Tyreman"]
+    ],
+    "posisi": [
+      "junior",
+      "middle mekanik",
+      "senior",
+      "advisor",
+      "lead mekanik",
+      "tyreman",
+      "tyreman_senior",
+      "tyreman_helper",
+      "-"
+    ],
+    "grade": [
+      "Helper Mekanik",
+      "Mekanik Jr",
+      "Mekanik Middle",
+      "Mekanik Sr",
+      "Mekanik Electric Jr",
+      "Helper Welder",
+      "Welder",
+      "Tyreman Jr",
+      "Tyreman Sr",
+      "Planner",
+      "SPV",
+      "Supten"
     ],
     "peran": [
       ["mechanic", "Mekanik"],
@@ -83,6 +117,7 @@
   },
   "kmbprojek": {
     "nama": "KMB Projek",
+    "label_site": "KMB Projek",
     "zona_waktu": "Asia/Jakarta",
     "skema": "kmb_projek",
     "rpc": "kmb",
@@ -90,6 +125,25 @@
     "section": [
       ["maintenance", "Maintenance"],
       ["vessel", "Vessel"]
+    ],
+    "posisi": [
+      "junior",
+      "middle mekanik",
+      "senior",
+      "advisor",
+      "lead mekanik",
+      "tyreman_helper",
+      "-"
+    ],
+    "grade": [
+      "Helper Mekanik",
+      "Mekanik Jr",
+      "Mekanik Mid",
+      "Mekanik Sr",
+      "Welder Jr",
+      "Vessel Jr",
+      "SPV",
+      "Supten"
     ],
     "peran": [
       ["mechanic", "Mekanik"],
@@ -125,13 +179,33 @@
   },
   "kmbbupr": {
     "nama": "KMB Projek BUPR",
+    "label_site": "BUPR",
     "zona_waktu": "Asia/Jakarta",
     "skema": "kmbbupr",
     "rpc": "kmbbupr",
-    "awalan_token": "kmbb-",
+    "awalan_token": "bupr-",
     "section": [
       ["maintenance", "Maintenance"],
       ["vessel", "Vessel"]
+    ],
+    "posisi": [
+      "junior",
+      "middle mekanik",
+      "senior",
+      "advisor",
+      "lead mekanik",
+      "tyreman_helper",
+      "-"
+    ],
+    "grade": [
+      "Helper Mekanik",
+      "Mekanik Jr",
+      "Mekanik Mid",
+      "Mekanik Sr",
+      "Welder Jr",
+      "Vessel Jr",
+      "SPV",
+      "Supten"
     ],
     "peran": [
       ["mechanic", "Mekanik"],

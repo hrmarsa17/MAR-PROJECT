@@ -1044,6 +1044,61 @@
 
     // ── Form tambah/ubah baris (pengguna atau config) ──────────────
 
+    function tebakIdBerikutnya(daftarId, role) {
+      const polaRole = role === 'supervisor' ? /^spv/i : role === 'superintendent' ? /^(supt|spt)/i : /^(mech|mnt|ves|tyre)/i;
+      const kandidat = [];
+      for (const raw of daftarId) {
+        const s = String(raw || '').trim();
+        const m = s.match(/^(.*?)(\d+)$/);
+        if (m) {
+          kandidat.push({ id: s, prefix: m[1], num: parseInt(m[2], 10), pad: m[2].length, cocok: polaRole.test(m[1]) });
+        }
+      }
+      let cocok = kandidat.filter((k) => k.cocok);
+      if (!cocok.length) cocok = kandidat;
+      const perPrefix = {};
+      for (const k of cocok) {
+        if (!perPrefix[k.prefix] || k.num > perPrefix[k.prefix].num) perPrefix[k.prefix] = k;
+      }
+      const pilihan = Object.values(perPrefix).sort((a, b) => b.num - a.num)[0];
+      if (!pilihan) return role === 'supervisor' ? 'SPV-001' : role === 'superintendent' ? 'SUPT-001' : 'MECH-001';
+      const nextNum = pilihan.num + 1;
+      const pad = Math.max(pilihan.pad, String(nextNum).length);
+      return pilihan.prefix + String(nextNum).padStart(pad, '0');
+    }
+
+    function cekPilihanBaru(el, namaKolom) {
+      if (el.value === '__baru__') {
+        const baru = prompt('Masukkan nilai baru untuk ' + namaKolom + ':');
+        if (baru && baru.trim()) {
+          const val = baru.trim();
+          let opt = Array.from(el.options).find((o) => o.value === val);
+          if (!opt) {
+            opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val;
+            el.insertBefore(opt, el.lastElementChild);
+          }
+          opt.selected = true;
+          el.value = val;
+        } else {
+          el.value = '';
+        }
+      }
+    }
+
+    function saatRoleBerubah(el) {
+      if (!FORM || FORM.baris !== null) return;
+      const s = sheetUntuk(FORM.jenis);
+      if (!s) return;
+      const jId = s.kolom.findIndex((h) => String(h).trim() === 'mechanic_id');
+      if (jId < 0) return;
+      const elId = document.getElementById('f_' + jId);
+      if (!elId) return;
+      const daftarId = (s.baris || []).map((x) => x.tampil[jId]).filter(Boolean);
+      elId.value = tebakIdBerikutnya(daftarId, el.value || 'mechanic');
+    }
+
     function sheetUntuk(jenis) { return jenis === 'pengguna' ? DATA_PENGGUNA && DATA_PENGGUNA.pengguna : sheetConfigAktif(); }
     function dataUntuk(jenis) { return jenis === 'pengguna' ? DATA_PENGGUNA : DATA_CONFIG; }
 
@@ -1053,29 +1108,67 @@
       const b = baris ? s.baris.find((x) => x.baris === baris) : null;
       const awal = {};
       s.kolom.forEach((h, j) => { awal[h] = b ? b.tampil[j] : ''; });
+
+      // Auto-suggest next mechanic_id saat tambah baris baru di sheet pengguna (Config_Mechanics)
+      const isMechanics = (jenis === 'pengguna' || s.sheet === 'Config_Mechanics');
+      const jId = isMechanics ? s.kolom.findIndex((h) => String(h).trim() === 'mechanic_id') : -1;
+      if (!b && jId >= 0 && !awal[s.kolom[jId]]) {
+        const daftarId = (s.baris || []).map((x) => x.tampil[jId]).filter(Boolean);
+        awal[s.kolom[jId]] = tebakIdBerikutnya(daftarId, 'mechanic');
+      }
+
       FORM = { jenis, sheet: s.sheet, versi: s.versi, baris: b ? b.baris : null, kunci: b ? b.tampil[0] : undefined, awal };
       document.getElementById('judulModalBaris').textContent = `${b ? 'Ubah baris ' + b.baris : 'Tambah baris'} · ${s.sheet} · ${d.nama}`;
       const peran = (dataUntuk('pengguna') || {}).peran || [];
-      const sectionDaftar = jenis === 'pengguna' ? ((DATA_PENGGUNA || {}).section || []) : [];
+      const sectionDaftar = ((d && d.section) || (DATA_PENGGUNA && DATA_PENGGUNA.section) || []).map((x) => Array.isArray(x) ? x[0] : x);
+      const posisiDaftar = (d && d.posisi) || (DATA_PENGGUNA && DATA_PENGGUNA.posisi) || [];
+      const gradeDaftar = (d && d.grade) || (DATA_PENGGUNA && DATA_PENGGUNA.grade) || [];
+
       document.getElementById('isiModalBaris').innerHTML = s.kolom.map((h, j) => {
         // Sel berumus (🧮): dihitung otomatis seperti di spreadsheet (keputusan 15 Nov), tidak diisi langsung.
         const berumus = b ? ((s.rumus_sel || {})[b.baris] || []).includes(j) : (s.rumus_templat || []).includes(j);
-        const id = 'f_' + j, v = awal[h], nama = String(h).trim(), lbl = labelKolom(h, j) + (s.uang[j] ? ' 💰' : '') + (berumus ? ' 🧮' : '') + (j === 0 ? ' (kunci)' : '');
+        const id = 'f_' + j, v = awal[h], nama = String(h).trim().toLowerCase(), lbl = labelKolom(h, j) + (s.uang[j] ? ' 💰' : '') + (berumus ? ' 🧮' : '') + (j === 0 ? ' (kunci)' : '');
         let isian;
         if (s.jenis[j] === 'boolean') {
           isian = `<select id="${id}" class="form-control">${['', 'TRUE', 'FALSE'].map((o) => `<option value="${o}" ${o === v ? 'selected' : ''}>${o || '(kosong)'}</option>`).join('')}</select>`;
         } else if (jenis === 'pengguna' && nama === 'role' && peran.length) {
           const pilihan = peran.map(([pid]) => pid);
           if (v && !pilihan.includes(v)) pilihan.push(v);
-          isian = `<select id="${id}" class="form-control">${['', ...pilihan].map((o) => `<option value="${escapeHtml(o)}" ${o === v ? 'selected' : ''}>${escapeHtml((peran.find((p) => p[0] === o) || [o, o || '(kosong)'])[1])}</option>`).join('')}</select>`;
+          isian = `<select id="${id}" class="form-control" onchange="saatRoleBerubah(this)">${['', ...pilihan].map((o) => `<option value="${escapeHtml(o)}" ${o === v ? 'selected' : ''}>${escapeHtml((peran.find((p) => p[0] === o) || [o, o || '(kosong)'])[1])}</option>`).join('')}</select>`;
+        } else if (nama === 'position' || nama === 'posisi') {
+          const dariSheet = (s.baris || []).map((x) => x.tampil[j]).filter(Boolean);
+          const opsi = Array.from(new Set([...posisiDaftar, ...dariSheet, v])).filter(Boolean);
+          isian = `<select id="${id}" class="form-control" onchange="cekPilihanBaru(this, '${escapeHtml(labelKolom(h, j))}')">
+            <option value="">(kosong)</option>
+            ${opsi.map((o) => `<option value="${escapeHtml(o)}" ${o === v ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}
+            <option value="__baru__" style="color:var(--primary); font-weight:600;">+ Ketik nilai baru...</option>
+          </select>`;
+        } else if (nama === 'grade' || nama === 'golongan') {
+          const dariSheet = (s.baris || []).map((x) => x.tampil[j]).filter(Boolean);
+          const opsi = Array.from(new Set([...gradeDaftar, ...dariSheet, v])).filter(Boolean);
+          isian = `<select id="${id}" class="form-control" onchange="cekPilihanBaru(this, '${escapeHtml(labelKolom(h, j))}')">
+            <option value="">(kosong)</option>
+            ${opsi.map((o) => `<option value="${escapeHtml(o)}" ${o === v ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}
+            <option value="__baru__" style="color:var(--primary); font-weight:600;">+ Ketik nilai baru...</option>
+          </select>`;
+        } else if (nama === 'section') {
+          const dariSheet = (s.baris || []).map((x) => x.tampil[j]).filter(Boolean);
+          const opsi = Array.from(new Set([...sectionDaftar, ...dariSheet, v])).filter(Boolean);
+          if (opsi.length) {
+            isian = `<select id="${id}" class="form-control" onchange="cekPilihanBaru(this, '${escapeHtml(labelKolom(h, j))}')">
+              <option value="">(kosong)</option>
+              ${opsi.map((o) => `<option value="${escapeHtml(o)}" ${o === v ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}
+              <option value="__baru__" style="color:var(--primary); font-weight:600;">+ Ketik nilai baru...</option>
+            </select>`;
+          } else {
+            isian = `<input type="text" id="${id}" class="form-control" value="${escapeHtml(v)}">`;
+          }
         } else {
           const petunjuk = s.jenis[j] === 'tanggal' ? 'YYYY-MM-DD atau YYYY-MM-DD JJ:MM' : s.jenis[j] === 'angka' ? 'angka' : '';
           isian = `<input type="text" id="${id}" class="form-control" value="${escapeHtml(v)}" placeholder="${escapeHtml(petunjuk)}">`;
         }
         if (berumus) isian = isian.replace(/^<(select|input)/, '<$1 disabled title="Dihitung otomatis dari rumus spreadsheet"');
-        const tambahan = (berumus ? '<div style="font-size:0.75rem; color:var(--text-muted);">🧮 Dihitung otomatis dari rumus; ubah kolom masukannya.</div>' : '')
-          + (jenis === 'pengguna' && nama === 'section' && sectionDaftar.length
-            ? `<div style="font-size:0.75rem; color:var(--text-muted);">Pilihan: ${sectionDaftar.map(([sid]) => escapeHtml(sid)).join(', ')}</div>` : '');
+        const tambahan = (berumus ? '<div style="font-size:0.75rem; color:var(--text-muted);">🧮 Dihitung otomatis dari rumus; ubah kolom masukannya.</div>' : '');
         return `<div class="form-group" style="margin-bottom:0.6rem;"><label for="${id}" style="font-weight:600;">${escapeHtml(lbl)} <span style="font-weight:400; color:var(--text-muted); font-size:0.75rem;">${escapeHtml(s.jenis[j])}</span></label>${isian}${tambahan}</div>`;
       }).join('');
       document.getElementById('modalBaris').classList.remove('hidden');
