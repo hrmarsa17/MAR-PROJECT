@@ -20,7 +20,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const PWA = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'pwa');
-const rumah = process.argv[2] ? [process.argv[2]] : ['sum', 'kmb', 'kmbprojek'];
+const rumah = process.argv[2] ? [process.argv[2]] : ['sum', 'kmb', 'kmbprojek', 'kmbbupr'];
 
 function ambilKode(src) {
   const s = src.replace(/\r\n/g, '\n');

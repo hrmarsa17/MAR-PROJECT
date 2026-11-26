@@ -18,7 +18,7 @@ var CONFIG = { API_URL: './api' };
 // service worker yang benar-benar aktif (lihat syncVersionFromCache).
 // Dengan begitu rilis cukup mengubah CACHE di sw.js; angka di sini tak bisa lagi
 // tertinggal diam-diam seperti dulu (APP_VERSION v26 vs CACHE v34).
-var APP_VERSION = 'projek-v5'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
+var APP_VERSION = 'projek-v6'; // cadangan; nilai sebenarnya dibaca dari CACHE sw.js (syncVersionFromCache)
 
 // ── Pembaruan versi otomatis ────────────────────────────────────────────────
 // sw.js sudah skipWaiting()+clients.claim(), jadi versi baru mengambil alih
@@ -687,7 +687,7 @@ function syncNow(manual) {
       // Sync otomatis tetap patuh TTL supaya tidak boros kuota.
       var perluRefs = manual || refsStale();
       var tasks = [];
-      if (S.role === 'mechanic') { tasks.push(pullWos()); if (timHanyaSaya() && perluRefs) tasks.push(pullRefs()); }
+      if (S.role === 'mechanic') { tasks.push(pullWos()); if (bolehBuatWoSaya() && perluRefs) tasks.push(pullRefs()); }
       else {
         tasks.push(pullPending()); tasks.push(pullActive()); tasks.push(pullTransfers()); tasks.push(pullMonitoring());
         // Daftar approved ikut disegarkan saat Refresh DITEKAN — kalau tidak,
@@ -1178,10 +1178,6 @@ function openCreateForm() {
   S.crossFunc=false; var _cf=document.getElementById('cCrossFunc'); if(_cf) _cf.checked=false;
   addTeamMember();
   onCreateSectionChange();
-  // WO mandiri: tim terkunci pada dirinya sendiri, jadi tambah & lintas fungsi disembunyikan.
-  var _sendiri = timHanyaSaya();
-  ['cTeamAdd','cCrossFuncRow'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display=_sendiri?'none':''; });
-  var _th=document.getElementById('cTeamHint'); if(_th) _th.style.display=_sendiri?'block':'none';
   // listeners
   var radios = document.querySelectorAll('input[name="cSec"]');
   for (var ri=0;ri<radios.length;ri++) radios[ri].onchange = onCreateSectionChange;
@@ -1202,8 +1198,9 @@ function onCompChange() {
 function bolehLihatPoin(){ return S.role === 'superintendent'; }
 /** Boleh Buat WO: approver, atau mekanik berpenanda WO mandiri (dibaca dari ping server). */
 function bolehBuatWoSaya(){ return S.role !== 'mechanic' || !!(S.me && S.me.wo_mandiri); }
-/** Mekanik WO mandiri: timnya hanya dirinya sendiri. Server menegakkannya di createWorkOrder. */
-function timHanyaSaya(){ return S.role === 'mechanic' && !!(S.me && S.me.wo_mandiri); }
+
+// BUPR: Form WO mandiri mekanik mendukung multi-personil (lebih dari 1 orang seperti WO biasa)
+function timHanyaSaya(){ return false; }
 
 function updateCreatePreview(){
   var box=document.getElementById('cPreview'); if(!box) return;
@@ -1423,10 +1420,20 @@ function isiDropdownUnit(sel, units, sectionAktif, cari, pakaiModelAttr) {
     else lain.push(u);
   });
 
+  function _urutkanUnit(a, b) {
+    var na = String(a.unit_name || a.unit_id || '').trim();
+    var nb = String(b.unit_name || b.unit_id || '').trim();
+    return na.localeCompare(nb, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  utama.sort(_urutkanUnit);
+  lain.sort(_urutkanUnit);
+  if (global.length) global.sort(_urutkanUnit);
+
   function opsi(u) {
+    var tipeStr = (u.unit_type && String(u.unit_type).trim().toLowerCase() !== 'null') ? ' ('+esc(u.unit_type)+')' : '';
     return '<option value="'+esc(u.unit_id)+'"' +
            (pakaiModelAttr ? ' data-model="'+esc(_nm(u.unit_model))+'"' : '') + '>' +
-           esc(u.unit_name)+' ('+esc(u.unit_type)+')</option>';
+           esc(u.unit_name)+tipeStr+'</option>';
   }
   function grup(judul, arr) {
     if (!arr.length) return '';
@@ -1635,20 +1642,17 @@ function refreshCreateMechanics() {
       }
       var cocok = (msList.length === 0) || (msList.indexOf(sec) !== -1);
       // Default: hanya mekanik section terpilih. Lintas fungsi → tampilkan semua (dgn tag section).
-      if (timHanyaSaya() && String(mechs[m].mechanic_id) !== String(S.me.mechanic_id)) continue;
-      if (!showAll && !timHanyaSaya() && sec && !cocok) continue;
+      if (!showAll && sec && !cocok) continue;
       var tag = (!cocok && ms) ? ' ['+ms+']' : '';
       rows[r].innerHTML += '<option value="'+esc(mechs[m].mechanic_id)+'">'+esc(mechs[m].mechanic_name)+esc(tag)+'</option>';
     }
-    rows[r].value = (timHanyaSaya() && !cur) ? String(S.me.mechanic_id) : cur;
+    var defaultVal = (r === 0 && S.role === 'mechanic' && S.me && S.me.mechanic_id) ? String(S.me.mechanic_id) : '';
+    rows[r].value = cur || defaultVal;
   }
 }
 function addTeamMember() {
-  // WO mandiri: satu baris saja, berisi dirinya sendiri, tanpa tombol hapus.
-  if (timHanyaSaya() && document.querySelectorAll('.cTeamSel').length) return;
   var div = document.createElement('div'); div.className = 'teamRow';
   div.innerHTML = '<select class="cTeamSel inp"></select><button type="button" class="mini gray" onclick="this.parentNode.remove()">✕</button>';
-  if (timHanyaSaya()) div.querySelector('button').style.display = 'none';
   document.getElementById('cTeamList').appendChild(div);
   refreshCreateMechanics();
 }
@@ -4253,6 +4257,50 @@ window.addEventListener('offline',renderAll);
   });
 })();
 
+/* ── Serah-terima token dari pintu (abadiops.com) ───────────────────────────
+   Tambahan migrasi (keputusan Gabriel 29 Okt, nomor 10): pengguna sudah mengisi token dan
+   memilih "Aplikasi" di pintu, jadi layar login TIDAK ditampilkan sama sekali. Token dipakai
+   seperti hasil doLogin(): layar utama langsung tampil, ping memastikan peran, data disinkron.
+   Token dihapus dari alamat. Kalau HP ini sudah masuk dengan token lain, token itu TIDAK
+   diganti, karena antrean kirimannya bisa hilang saat logout. */
+var _masukDariPintu = false;
+function ambilTokenSerahan() {
+  var hash = location.hash || '';
+  var search = location.search || '';
+  var m = /(?:^#|&)token=([^&]+)/.exec(hash) || /[?&]token=([^&]+)/.exec(search);
+  if (!m) return '';
+  var t = '';
+  try { t = decodeURIComponent(m[1]).trim(); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  return t;
+}
+function masukDariPintu(t) {
+  if (!t) return;
+  if (S.token) {
+    if (S.token !== t) toast('Sudah masuk dengan token lain di HP ini. Logout dulu kalau mau ganti.');
+    return;
+  }
+  _masukDariPintu = true;
+  S.token = t;
+  showScreen('main');
+  requestNotifPermission(); requestPeriodicSync();
+  if (!navigator.onLine) { saveTokenOffline(t); return; }
+  api('ping').then(function(r) {
+    if (r.success) {
+      S.me = r.result;
+      S.role = (r.result && r.result.role) ? r.result.role : 'mechanic';
+      return kvSet('token',t).then(function() { return kvSet('me',S.me); })
+        .then(function() { return kvSet('role',S.role); })
+        .then(function() { if (S.role !== 'mechanic' || (S.me && S.me.wo_mandiri)) return pullRefs().catch(function(){}); })
+        .then(function() { showScreen('main'); renderAll(); syncNow(false); });
+    }
+    S.token = null;
+    document.documentElement.classList.remove('dari-pintu');
+    showScreen('login');
+    toast('❌ '+(r.error||'Token ditolak'));
+  }).catch(function() { saveTokenOffline(t); });
+}
+
 openDb().then(function() {
   return Promise.all([kvGet('token'),kvGet('me'),kvGet('wos'),kvGet('refs'),kvGet('pending'),kvGet('last_sync'),kvGet('role'),kvGet('refs_at'),kvGet('active'),kvGet('approved'),kvGet('transfers'),kvGet('timer_states'),kvGet('monitoring'),kvGet('monitoring_overall'),kvGet('rejected')]);
 }).then(function(v) {
@@ -4283,15 +4331,17 @@ openDb().then(function() {
   // memperlihatkannya — berkedip sebentar lalu hilang, yang terbaca sebagai
   // aplikasi rusak, bukan sebagai medan yang memang ditiadakan.
   setelMeterCreate();
+  masukDariPintu(ambilTokenSerahan()); // sebelum layar dipilih: tanpa layar login (keputusan 29 Okt nomor 10)
   syncVersionFromCache().then(function(){ showScreen(S.token?'main':'login'); renderAll(); });
   showScreen(S.token?'main':'login');
+  document.documentElement.classList.remove('dari-pintu'); // anti-kedip cukup sampai layar pertama dipilih; sesudahnya layar login (token ditolak, logout) harus terlihat
   // Timer bisa masih berjalan dari sesi sebelumnya (state tersimpan di IndexedDB)
   startTimerTicker();
   if (S.token) requestPeriodicSync();
   // iOS: beforeinstallprompt tak pernah ada → tampilkan tombol Instal manual (panduan)
   if (IS_IOS && !IS_STANDALONE) { var _ib = document.getElementById('installBtn'); if (_ib) _ib.style.display = ''; }
   renderAll();
-  if (S.token && navigator.onLine) {
+  if (S.token && navigator.onLine && !_masukDariPintu) {
     // Refresh role dari server tiap buka (self-heal role lama yg salah — tanpa perlu logout/login).
     api('ping').then(function(r){
       if (r.success && r.result && r.result.role && r.result.role !== S.role) {
