@@ -250,8 +250,23 @@ async function tanganiWeb(request, env, url, ctx) {
   const saklar = await bacaStatusSaklar(env);
   if (POSISI_PERALIHAN.has(saklar)) return halamanPeralihan(env);
   if (!bolehTulis(saklar, env)) return Response.redirect(String(env.GAS_URL) + url.search, 302);
+
+  // Ambil token dari URL atau Cookie abadiops_token
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const cm = /(?:^|;\s*)abadiops_token=([^;]+)/.exec(cookieHeader);
+  const cookieToken = cm ? decodeURIComponent(cm[1]) : '';
+  const paramToken = url.searchParams.get('token');
+  const tokenAktif = paramToken || cookieToken;
+
+  let querySearch = url.search;
+  if (!paramToken && cookieToken) {
+    const sp = new URLSearchParams(url.search);
+    sp.set('token', cookieToken);
+    querySearch = '?' + sp.toString();
+  }
+
   const h = await jalankanDanSimpan(env, p, url, `web:${url.searchParams.get('page') || ''}`, { jarang: sheetJarang(p, '') }, (G) => {
-    const k = G.doGet(buatPermintaanGet(url.search));
+    const k = G.doGet(buatPermintaanGet(querySearch));
     if (!k || typeof k.getContent !== 'function') throw new Error('doGet tidak mengembalikan halaman');
     return { isi: k.getContent(), judul: k.getTitle(), meta: k.getMetaTags(), favicon: k.getFaviconUrl() };
   });
@@ -266,18 +281,33 @@ async function tanganiWeb(request, env, url, ctx) {
     return new Response(`<!doctype html><meta charset="utf-8"><title>MAR</title><p>${String(h.nilai.galat).replace(/</g, '&lt;')}</p>`,
       { status: 500, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
   }
-  const html = sisipkanKeHtml(v.isi, { judul: v.judul, meta: v.meta, favicon: v.favicon, skrip: skripGoogleScript(`${url.origin}/web/run`) });
+  const labelSite = p.label_site || p.nama || env.RUMAH;
+  const judulLengkap = v.judul ? `${v.judul} · ${labelSite}` : `MAR · ${labelSite}`;
+  const html = sisipkanKeHtml(v.isi, {
+    judul: judulLengkap,
+    meta: v.meta,
+    favicon: v.favicon,
+    skrip: skripGoogleScript(`${url.origin}/web/run`, labelSite),
+    labelSite,
+  });
+  const headers = {
+    'Content-Type': 'text/html; charset=utf-8',
+    // Halaman memuat token pengguna: jangan disimpan cache, jangan bocor lewat Referer.
+    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'no-referrer',
+    'X-Abadi-Rumah': env.RUMAH,
+    'X-Abadi-Gas-Versi': String(INFO_GAS.versi),
+    'X-Abadi-Tulis': h.ringkas || '-',
+  };
+  const valid = v.isi && v.isi.indexOf('Masuk dengan Token') === -1;
+  if (valid && tokenAktif) {
+    headers['Set-Cookie'] = `abadiops_token=${encodeURIComponent(tokenAktif)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`;
+  } else if (!valid && paramToken) {
+    headers['Set-Cookie'] = 'abadiops_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
+  }
   return new Response(html, {
     status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      // Halaman memuat token pengguna: jangan disimpan cache, jangan bocor lewat Referer.
-      'Cache-Control': 'no-store',
-      'Referrer-Policy': 'no-referrer',
-      'X-Abadi-Rumah': env.RUMAH,
-      'X-Abadi-Gas-Versi': String(INFO_GAS.versi),
-      'X-Abadi-Tulis': h.ringkas || '-',
-    },
+    headers,
   });
 }
 
