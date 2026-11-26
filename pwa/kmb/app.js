@@ -1459,10 +1459,20 @@ function isiDropdownUnit(sel, units, sectionAktif, cari, pakaiModelAttr) {
     else lain.push(u);
   });
 
+  function _urutkanUnit(a, b) {
+    var na = String(a.unit_name || a.unit_id || '').trim();
+    var nb = String(b.unit_name || b.unit_id || '').trim();
+    return na.localeCompare(nb, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  utama.sort(_urutkanUnit);
+  lain.sort(_urutkanUnit);
+  if (global.length) global.sort(_urutkanUnit);
+
   function opsi(u) {
+    var tipeStr = (u.unit_type && String(u.unit_type).trim().toLowerCase() !== 'null') ? ' ('+esc(u.unit_type)+')' : '';
     return '<option value="'+esc(u.unit_id)+'"' +
            (pakaiModelAttr ? ' data-model="'+esc(_nm(u.unit_model))+'"' : '') + '>' +
-           esc(u.unit_name)+' ('+esc(u.unit_type)+')</option>';
+           esc(u.unit_name)+tipeStr+'</option>';
   }
   function grup(judul, arr) {
     if (!arr.length) return '';
